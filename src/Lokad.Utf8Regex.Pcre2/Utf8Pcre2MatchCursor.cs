@@ -28,10 +28,9 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
         _budget = new(program.Request.DefaultLimits, invocation, false);
         try
         {
-            Pcre2Runner.CheckInput(input.Span, start, ref _budget.WorkingInvocation);
+            var admittedStart = Pcre2Runner.AdmitStart(input.Span, start, ref _budget.WorkingInvocation);
             _input = input;
-            var subject = Utf8ValidatedInput.BorrowBytes(input.Span);
-            _progress = new(subject.GetBytePosition(start, "startOffsetInBytes"));
+            _progress = new(admittedStart);
             Checkpoint();
         }
         catch (Utf8ExecutionDeadlineExpiredException) { Close(Pcre2CursorStatus.Faulted); throw TimeoutFailure(); }

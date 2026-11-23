@@ -77,7 +77,7 @@ public sealed class Pcre2LeadingSetCountTests
         var regex = Create(pattern, working: 1, result: 1);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
         var bytes = Encoding.UTF8.GetBytes(new string(filler, 65536));
-        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation, out _);
         var validation = invocation.Budget.Steps;
         Assert.True(Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
             new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
@@ -92,7 +92,7 @@ public sealed class Pcre2LeadingSetCountTests
 
         var budget = new Pcre2ResourceBudget(regex.DebugCompiledProgram.Request, default);
         ref var matchInvocation = ref budget.WorkingInvocation;
-        input = Pcre2Runner.PrepareInput(bytes, 0, ref matchInvocation);
+        input = Pcre2Runner.PrepareInput(bytes, 0, ref matchInvocation, out _);
         validation = matchInvocation.Budget.Steps;
         Assert.True(Pcre2Runner.TryIsMatch(regex.DebugCompiledProgram, ref input,
             new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget, out var found));
@@ -116,7 +116,7 @@ public sealed class Pcre2LeadingSetCountTests
         var bytes = Encoding.UTF8.GetBytes(new string(filler, 262144));
         var regex = Create(pattern);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation, out _);
         var validation = invocation.Budget.Steps;
         Assert.True(Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
             new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
@@ -165,7 +165,7 @@ public sealed class Pcre2LeadingSetCountTests
             : new Pcre2ResourceBudget(request.DefaultLimits, Pcre2SliceDriver.CreateInvocation(request, token.Token), false);
         ref var invocation = ref budget.WorkingInvocation;
         var bytes = Encoding.UTF8.GetBytes(new string('x', 262144));
-        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation, out _);
         var validation = invocation.Budget.Steps;
         var checkpoints = 0;
         invocation.CheckpointHook = _ => { checkpoints++; if (cancel) token.Cancel(); else ticks = 25; };

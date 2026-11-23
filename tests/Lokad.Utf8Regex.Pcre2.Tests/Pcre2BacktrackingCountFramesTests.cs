@@ -83,7 +83,7 @@ public sealed class Pcre2BacktrackingCountFramesTests
         });
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 100)));
         var invocation = Pcre2SliceDriver.CreateExclusiveInvocation(regex.DebugCompiledProgram.Request, default);
-        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation, out _);
         var validated = invocation.Budget.Steps;
         Exception? failure = null;
         try
@@ -125,7 +125,7 @@ public sealed class Pcre2BacktrackingCountFramesTests
         var retained = regex.Match(retained1Input, captures: retained1Captures);
         var invocation = Pcre2SliceDriver.CreateExclusiveInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 3000)));
-        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation, out _);
         var validated = invocation.Budget.Steps;
         armed = true;
         Exception? failure = null;
