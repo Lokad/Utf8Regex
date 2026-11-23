@@ -8,6 +8,19 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ScalarCountBudgetTests
 {
     [Theory]
+    [InlineData(@"\d+(?:\.\d+)?")]
+    [InlineData(@"(\d+)(?:\.(\d+))?")]
+    public void CountSeeksRequiredDecimalsAcrossSparseMixedText(string pattern)
+    {
+        using var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy { MaxWorkSteps = 256 }
+        });
+        var input = Encoding.UTF8.GetBytes(new string('x', 4096) + "𝟙٢.3Ω٤.😀5" + new string('x', 4096));
+        Assert.Equal(3, regex.Count(input));
+    }
+
+    [Theory]
     [InlineData(false)] [InlineData(true)]
     public void EveryWorkCutoffKeepsCallerStorageAndStopsCounting(bool reverse)
     {

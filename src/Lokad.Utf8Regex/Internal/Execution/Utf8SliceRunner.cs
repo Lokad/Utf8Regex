@@ -1283,13 +1283,15 @@ internal static partial class Utf8SliceRunner
             classSearch = prefixSearch;
             whitespaceLiteral = prefixSearch.Needle[0];
         }
-        // Keep the existing wide delimiter search when it applies. Otherwise
-        // the short window also makes decimal-or-wide-scalar seeking worthwhile.
+        // Keep the existing literal and delimiter searches. A required decimal
+        // starter can also skip unrelated bytes on a long forward search.
         if (whitespaceLiteral >= 0 && leadingFirst >= 128) leadingFirst = -1;
         var shortRepeatWindow = whitespaceLiteral < 0 && leadingScalarIndex > 0 && leadingFirst < 128
             ? program.LeadingRepeatLiteralWindow : default;
-        var seekDecimal = shortRepeatWindow.Min != 0 && leadingFirst < 0 && program.LeadingScalarIsDecimal;
-        var proveDecimalMatch = seekDecimal && !program.RightToLeft && leadingScalarIndex == 2 &&
+        var seekDecimal = leadingFirst < 0 && program.LeadingScalarIsDecimal &&
+            (shortRepeatWindow.Min != 0 || input.Length - fromByte >= 256 && whitespaceLiteral < 0 &&
+                !seekLiteral && !seekBeginning && !program.RightToLeft && !program.HasContiguousAnchor && !program.CanMatchEmpty);
+        var proveDecimalMatch = shortRepeatWindow.Min != 0 && seekDecimal && !program.RightToLeft && leadingScalarIndex == 2 &&
             first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } &&
             captureStarts.Length == 0 && !program.ReadsCaptures && program.Instructions.Length <= 32;
         if (seekDecimal)
