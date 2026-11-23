@@ -879,58 +879,61 @@ internal static partial class Utf8SliceRunner
         var floor = position;
         var earliest = -1;
         Utf8ExecutionLimitKind breach;
-        if (screenedDelimiter >= floor)
+        while (true)
         {
-            position = screenedDelimiter;
-            breach = Utf8ExecutionLimitKind.None;
-        }
-        else if (delimiterAlternatives is not null)
-        {
-            breach = Utf8SearchExecutor.TryFindLiteralFamilyCandidate(delimiterAlternatives, false,
-                input, position, input.Length, false, ref invocation, out var candidate, out var found);
-            position = found ? candidate.Index : -1;
-        }
-        else if (search is { } prepared && (prepared.Length > 1 || !direct))
-        {
-            var lastStart = input.Length - prepared.Length;
-            while (true)
+            if (screenedDelimiter >= floor)
             {
-                breach = Utf8SearchExecutor.TryFindLiteralCandidate(prepared, input, position, lastStart,
-                    false, ref invocation, out position);
-                if (breach != Utf8ExecutionLimitKind.None || position < 0) break;
-                var rejected = repeatPrefix.Last.HasValue &&
-                    (position == floor || input[position - 1] < 128 && !repeatPrefix.Last.Contains(input[position - 1]));
-                if (!rejected && repeatPrefix.DisjointEnd != 0)
-                {
-                    breach = TryNarrowDisjointRepeatPrefix(program, input, floor, position,
-                        repeatPrefix.DisjointEnd, ref invocation, out earliest, out rejected);
-                    if (breach != Utf8ExecutionLimitKind.None) break;
-                }
-                if (!rejected) break;
-
-                // This literal cannot follow the mandatory final repeat.
-                // A later delimiter may still match from before this hit.
-                if (position == lastStart) { position = -1; break; }
-                position++;
+                position = screenedDelimiter;
+                breach = Utf8ExecutionLimitKind.None;
             }
-        }
-        else
-            breach = TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
-        windowEnd = position;
-        if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
-        if (requiredSuffix.Second != 0 && search is { } aligned)
-        {
+            else if (delimiterAlternatives is not null)
+            {
+                breach = Utf8SearchExecutor.TryFindLiteralFamilyCandidate(delimiterAlternatives, false,
+                    input, position, input.Length, false, ref invocation, out var candidate, out var found);
+                position = found ? candidate.Index : -1;
+            }
+            else if (search is { } prepared && (prepared.Length > 1 || !direct))
+            {
+                var lastStart = input.Length - prepared.Length;
+                while (true)
+                {
+                    breach = Utf8SearchExecutor.TryFindLiteralCandidate(prepared, input, position, lastStart,
+                        false, ref invocation, out position);
+                    if (breach != Utf8ExecutionLimitKind.None || position < 0) break;
+                    var rejected = repeatPrefix.Last.HasValue &&
+                        (position == floor || input[position - 1] < 128 && !repeatPrefix.Last.Contains(input[position - 1]));
+                    if (!rejected && repeatPrefix.DisjointEnd != 0)
+                    {
+                        breach = TryNarrowDisjointRepeatPrefix(program, input, floor, position,
+                            repeatPrefix.DisjointEnd, ref invocation, out earliest, out rejected);
+                        if (breach != Utf8ExecutionLimitKind.None) break;
+                    }
+                    if (!rejected) break;
+
+                    // This literal cannot follow the mandatory final repeat.
+                    // A later delimiter may still match from before this hit.
+                    if (position == lastStart) { position = -1; break; }
+                    position++;
+                }
+            }
+            else
+                breach = TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
+            windowEnd = position;
+            if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
+            if (requiredSuffix.Second == 0 || search is not { } aligned) break;
+
             breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var code = program.Instructions;
-            if (RejectsAdjacentHybridRuns(program, code[requiredSuffix.First], code[requiredSuffix.Second],
+            if (!RejectsAdjacentHybridRuns(program, code[requiredSuffix.First], code[requiredSuffix.Second],
                 input, position + aligned.Length))
-            {
-                // The leading class cannot consume this ASCII delimiter byte.
-                // Search from its successor, retaining overlapping delimiters.
-                position++;
-                return Utf8ExecutionLimitKind.None;
-            }
+                break;
+
+            // The leading class cannot consume this ASCII delimiter byte.
+            // Advance the floor by one to retain overlapping delimiters.
+            floor = ++position;
+            screenedDelimiter = -1;
+            earliest = -1;
         }
         if (repeatPrefix.Any.HasValue)
         {
