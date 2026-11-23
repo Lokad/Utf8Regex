@@ -1798,7 +1798,7 @@ internal static partial class Utf8SliceRunner
             var window = input.Slice(start, Math.Min(input.Length - start, (int)maximum));
             var category = atom.Kind == Utf8SliceInstructionKind.CategorySet;
             var consumed = ScanAsciiMask(window, program.SetMasks[atom.A], category);
-            if (consumed >= 0 && (!category || program.GetCompleteAsciiCategoryMask(atom) != 0))
+            if (consumed >= 0 && (!category || atom.IsDecimalDigitSet || program.GetCompleteAsciiCategoryMask(atom) != 0))
             {
                 // The span probe reads at most sixteen bytes. Charge it before
                 // publishing a result, and keep the repeat-boundary check.
@@ -1824,8 +1824,8 @@ internal static partial class Utf8SliceRunner
             if (minimum != 0 && ascii.EndIndex > start) minimumEnd = start + 1;
             return ascii.EndIndex == start && minimum != 0 ? (-1, ascii.Breach) : ascii;
         }
-        if (unbounded && atom.Kind == Utf8SliceInstructionKind.CategorySet &&
-            (input.Length - start >= 64 || StartsWithFourAsciiDigits(input, start)) && atom.IsDecimalDigitSet)
+        if (unbounded && atom.IsDecimalDigitSet &&
+            (input.Length - start >= 64 || StartsWithFourAsciiDigits(input, start)))
         {
             var digits = RunUnboundedDecimalDigits(input, start, ref invocation, checkExitDeadline);
             if (minimum != 0 && digits.EndIndex > start) minimumEnd = AdvancePastScalar(input, start, reverse: false);
@@ -1873,7 +1873,7 @@ internal static partial class Utf8SliceRunner
                 ? (position, Utf8ExecutionLimitKind.None)
                 : (-1, Utf8ExecutionLimitKind.None);
         }
-        var completeMask = hybrid || atom.Kind == Utf8SliceInstructionKind.Set;
+        var completeMask = hybrid || atom.Kind == Utf8SliceInstructionKind.Set || atom.IsDecimalDigitSet;
         ReadOnlySpan<byte> asciiMask = hybrid ||
             atom.Kind is Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet &&
             atom.B == 0 && atom.C == 0 ? program.SetMasks[atom.A] : [];
@@ -2161,6 +2161,13 @@ internal static partial class Utf8SliceRunner
         if (instruction.Kind == Utf8SliceInstructionKind.Shorthand)
         {
             hit = Utf8SliceScalarClasses.MatchesShorthand(scalar, (Utf8SliceShorthand)instruction.A);
+            return Utf8ExecutionLimitKind.None;
+        }
+        if (instruction.IsDecimalDigitSet)
+        {
+            // Lowering proves one unfolded, positive Nd category with no
+            // additional members. Its single table needs no extra checkpoint.
+            hit = Rune.IsDigit(scalar);
             return Utf8ExecutionLimitKind.None;
         }
         var categorySet = instruction.Kind == Utf8SliceInstructionKind.CategorySet;
