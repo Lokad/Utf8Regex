@@ -298,7 +298,6 @@ internal static class Pcre2BacktrackingRunner
                         maximumCandidate, ref candidateState, ref budget, out candidate)
                     : TryFindNextCandidate(
                         candidateSearch,
-                        program.Request,
                         bytes,
                         start.Value,
                         meterDelimiter,
@@ -432,7 +431,6 @@ internal static class Pcre2BacktrackingRunner
 
     private static bool TryFindNextCandidate(
         in Pcre2CandidateSearchProgram candidateSearch,
-        Pcre2CompileRequest request,
         ReadOnlySpan<byte> input,
         int lowerBound,
         bool meterDelimiter,
@@ -504,18 +502,21 @@ internal static class Pcre2BacktrackingRunner
                 break;
             }
 
-            var runStart = literalStart;
+            var rewind = input[lowerBound..literalStart];
             var valid = true;
             var rewindSteps = 0;
+            // The compiler admits exact literals and character classes with default options.
             for (var i = candidateSearch.LeadingRunTokens.Length - 1; i >= 0; i--)
             {
+                ref readonly var token = ref candidateSearch.LeadingRunTokens[i];
                 var consumed = false;
-                while (TryRetreatScalarToBoundary(input, lowerBound, runStart, out var previous))
+                while (!rewind.IsEmpty)
                 {
                     if (meterDelimiter && (rewindSteps++ & 63) == 0) budget.ChargeWorkspaceStep();
-                    if (!Pcre2CharacterRunner.TryMatchToken(candidateSearch.LeadingRunTokens[i], request, input,
-                            previous, lowerBound, Pcre2MatchOptions.None, ref budget, out var next) || next != runStart) break;
-                    runStart = previous;
+                    if (Rune.DecodeLastFromUtf8(rewind, out var scalar, out var width) != OperationStatus.Done ||
+                        !(token.Kind == Pcre2CharacterTokenKind.Literal ? scalar == token.Literal :
+                            token.CharacterClass.Matches(scalar, ucp: false, Pcre2CharacterOptions.None))) break;
+                    rewind = rewind[..^width];
                     consumed = true;
                 }
 
@@ -528,7 +529,7 @@ internal static class Pcre2BacktrackingRunner
 
             if (valid)
             {
-                candidate = runStart;
+                candidate = lowerBound + rewind.Length;
                 return true;
             }
         }
@@ -673,27 +674,6 @@ internal static class Pcre2BacktrackingRunner
         }
 
         return false;
-    }
-
-    private static bool TryRetreatScalarToBoundary(
-        ReadOnlySpan<byte> input,
-        int lowerBound,
-        int position,
-        out int previous)
-    {
-        if (position <= lowerBound)
-        {
-            previous = 0;
-            return false;
-        }
-
-        previous = position - 1;
-        while (previous > lowerBound && (input[previous] & 0xC0) == 0x80)
-        {
-            previous--;
-        }
-
-        return true;
     }
 
     private static bool TryMatchAt(

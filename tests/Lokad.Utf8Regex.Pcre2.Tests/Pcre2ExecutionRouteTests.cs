@@ -642,6 +642,28 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
     }
 
     [Fact]
+    public void LeadingRunRewindKeepsTheUtf8FloorAndUnicodeClassMembership()
+    {
+        using var unicode = new Utf8Pcre2Regex(@"[\p{L}]+@(?<tail>[a-z]+)", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256, MaxWorkingBytes = 4096 },
+        });
+        using var ascii = new Utf8Pcre2Regex(@"\w+@(?<tail>[a-z]+)");
+        var input = "!!βK𐐨@tail!"u8;
+        var floor = "!!β"u8.Length;
+        var tail = "!!βK𐐨@"u8.Length;
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[2];
+
+        Assert.Equal(Pcre2CandidateSearchKind.LeadingRunThenLiteral, unicode.DebugCompiledProgram.CandidateSearch.Kind);
+        var result = unicode.Match(input, startOffsetInBytes: floor, captures: captures);
+        Assert.True(result.Success);
+        Assert.Equal((floor, input.Length - 1), (result.StartOffsetInBytes, result.EndOffsetInBytes));
+        Assert.Equal((tail, input.Length - 1), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.False(unicode.IsMatch(input, startOffsetInBytes: tail - 1));
+        Assert.False(ascii.IsMatch(input, startOffsetInBytes: floor));
+    }
+
+    [Fact]
     public void FundedRunDelimiterMissNeedsNoAttemptWorkspace()
     {
         using var regex = new Utf8Pcre2Regex(@"[\w]+://[^/\s?#]+[^\s?#]+", policy: new Utf8RegexPolicy
