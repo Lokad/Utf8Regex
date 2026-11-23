@@ -751,7 +751,7 @@ internal static class Pcre2BacktrackingRunner
         // Retain the original slot index. Later slots are unobservable in
         // the same single-reader case that skips their capture writes.
         if (onlyCaptureSlot != 0) captureSlots = onlyCaptureSlot + 1;
-        var restoresSubroutines = program.SubroutineTargets.Length != 0;
+        var restoresSubroutines = program.HasSubroutineCalls;
         // Slot zero belongs to the match result, outside the capture journal.
         var restoresMultipleCaptures = restoresSubroutines && captureSlots > 2 && onlyCaptureSlot == 0;
         var acquiredWorkspace = workspace.EnsureInitialized(repeatSlots, captureSlots,
@@ -1198,19 +1198,10 @@ internal static class Pcre2BacktrackingRunner
                         finally { ReleaseAssertionCaptures(assertionCaptures, ref budget); }
 
                     case Pcre2BacktrackingInstructionKind.SubroutineCall:
-                        var subroutineSlot = instruction.SubroutineSlot;
-                        var subroutineTarget = (uint)subroutineSlot < (uint)program.SubroutineTargets.Length
-                            ? program.SubroutineTargets[subroutineSlot]
-                            : -1;
-                        if (subroutineTarget < 0)
-                        {
-                            break;
-                        }
-
                         subroutineCalls.Push(
                             new Pcre2SubroutineCallFrame(
                                 instructionIndex + 1,
-                                subroutineSlot,
+                                instruction.SubroutineSlot,
                                 repeatMutations.Count,
                                 captureMutations.Count,
                                 frames.Count,
@@ -1240,7 +1231,7 @@ internal static class Pcre2BacktrackingRunner
                             }
                             resetStart += block.Length;
                         }
-                        instructionIndex = subroutineTarget;
+                        instructionIndex = instruction.PrimaryTarget;
                         continue;
 
                     case Pcre2BacktrackingInstructionKind.SubroutineReturn:

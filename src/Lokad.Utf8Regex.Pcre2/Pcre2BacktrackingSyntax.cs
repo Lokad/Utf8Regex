@@ -333,7 +333,7 @@ internal sealed class Pcre2BacktrackingProgram
         Pcre2BacktrackingProgram[] assertionPrograms,
         Pcre2BackreferenceSlotSet[] backreferenceSlotSets,
         Pcre2BacktrackingCondition[] conditions,
-        int[] subroutineTargets,
+        bool hasSubroutineCalls,
         string[] markNames,
         Pcre2NameEntry[] nameEntries,
         int minimumByteLength,
@@ -360,7 +360,7 @@ internal sealed class Pcre2BacktrackingProgram
         AssertionPrograms = assertionPrograms;
         BackreferenceSlotSets = backreferenceSlotSets;
         Conditions = conditions;
-        SubroutineTargets = subroutineTargets;
+        HasSubroutineCalls = hasSubroutineCalls;
         MarkNames = markNames;
         NameEntries = nameEntries;
         MinimumByteLength = minimumByteLength;
@@ -370,7 +370,7 @@ internal sealed class Pcre2BacktrackingProgram
         LeadingExtendedGraphemeCluster = leadingExtendedGraphemeCluster;
         AnchoredFinalAscii = anchoredFinalAscii;
         IsShortStateless = IsShortStatelessProgram(instructions);
-        GreedyOptionalTail = UsesMatchBoundaryReset || subroutineTargets.Length != 0 ||
+        GreedyOptionalTail = UsesMatchBoundaryReset || hasSubroutineCalls ||
             (request.Options & Pcre2CompileOptions.EndAnchored) != 0
             ? int.MaxValue : FindGreedyOptionalTail(instructions);
     }
@@ -451,7 +451,7 @@ internal sealed class Pcre2BacktrackingProgram
 
     internal Pcre2BacktrackingCondition[] Conditions { get; }
 
-    internal int[] SubroutineTargets { get; }
+    internal bool HasSubroutineCalls { get; }
 
     internal string[] MarkNames { get; }
 
@@ -632,8 +632,8 @@ internal readonly struct Pcre2BacktrackingInstruction
         Pcre2CharacterOptions options) =>
         new(Pcre2BacktrackingInstructionKind.BackreferenceSlotSet, default, 0, 0, backreferenceSlotSetId, (int)options, 0, Pcre2RepeatPreference.Greedy);
 
-    internal static Pcre2BacktrackingInstruction CreateSubroutineCall(int slot) =>
-        new(Pcre2BacktrackingInstructionKind.SubroutineCall, default, 0, 0, slot, 0, 0, Pcre2RepeatPreference.Greedy);
+    internal static Pcre2BacktrackingInstruction CreateSubroutineCall(int slot, int target = 0) =>
+        new(Pcre2BacktrackingInstructionKind.SubroutineCall, default, target, 0, slot, 0, 0, Pcre2RepeatPreference.Greedy);
 
     internal static Pcre2BacktrackingInstruction CreateSubroutineReturn() =>
         new(Pcre2BacktrackingInstructionKind.SubroutineReturn, default, 0, 0, 0, 0, 0, Pcre2RepeatPreference.Greedy);

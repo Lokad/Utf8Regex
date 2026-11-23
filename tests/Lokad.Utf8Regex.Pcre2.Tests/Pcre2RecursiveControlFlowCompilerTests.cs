@@ -38,14 +38,16 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
     }
 
     [Theory]
-    [InlineData(@"a(?R)?b", "aabb", true)]
-    [InlineData(@"a(?&x)?b(?(DEFINE)(?<x>x(?0)?y))", "axabyb", true)]
-    [InlineData(@"a(?&x)b(?(DEFINE)(?<x>x😀y))", "ax😀yb", false)]
-    public void WholePatternCallBodyIsEmittedOnlyForAWholePatternCall(string pattern, string text, bool wholeCall)
+    [InlineData(@"a(?R)?b", "aabb", true, 1)]
+    [InlineData(@"a(?&x)?b(?(DEFINE)(?<x>x(?0)?y))", "axabyb", true, 2)]
+    [InlineData(@"a(?&x)b(?(DEFINE)(?<x>x😀y))", "ax😀yb", false, 1)]
+    public void WholePatternCallBodyIsEmittedOnlyForAWholePatternCall(string pattern, string text, bool wholeCall, int bodyCount)
     {
         using var regex = new Utf8Pcre2Regex(pattern);
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
-        Assert.Equal(wholeCall, program.SubroutineTargets[0] >= 0);
+        Assert.Equal(wholeCall, program.Instructions.Any(instruction =>
+            instruction.Kind == Pcre2BacktrackingInstructionKind.SubroutineCall && instruction.SubroutineSlot == 0));
+        Assert.Equal(bodyCount, program.Instructions.Count(instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.SubroutineReturn));
 
         var input = Encoding.UTF8.GetBytes(text);
         using var token = new CancellationTokenSource();
@@ -61,12 +63,15 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
             @"\A(?=(?&first))(?&second)\z(?(DEFINE)(?<first>(?&second))(?<second>é)(?<unused>y))");
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
         var assertion = Assert.Single(program.AssertionPrograms);
-        Assert.Equal(-1, program.SubroutineTargets[1]);
-        Assert.True(program.SubroutineTargets[2] >= 0);
-        Assert.Equal(-1, program.SubroutineTargets[3]);
-        Assert.True(assertion.SubroutineTargets[1] >= 0);
-        Assert.True(assertion.SubroutineTargets[2] >= 0);
-        Assert.Equal(-1, assertion.SubroutineTargets[3]);
+        var mainCall = Assert.Single(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.SubroutineCall);
+        Assert.Equal(2, mainCall.SubroutineSlot);
+        Assert.InRange(mainCall.PrimaryTarget, 1, program.Instructions.Length - 1);
+        Assert.Single(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.SubroutineReturn);
+
+        var assertionCalls = assertion.Instructions.Where(instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.SubroutineCall).ToArray();
+        Assert.Equal(new[] { 1, 2 }, assertionCalls.Select(instruction => instruction.SubroutineSlot));
+        Assert.All(assertionCalls, call => Assert.InRange(call.PrimaryTarget, 1, assertion.Instructions.Length - 1));
+        Assert.Equal(2, assertion.Instructions.Count(instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.SubroutineReturn));
 
         Assert.Equal(3, regex.CaptureGroupCount);
         Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[4];

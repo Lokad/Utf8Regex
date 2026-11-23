@@ -49,11 +49,10 @@ internal sealed class Pcre2BacktrackingLowerer
     {
         EmitNode(root, null, followedByMatchAccept: isMainProgram);
         _instructions.Add(Pcre2BacktrackingInstruction.CreateAccept());
-        var subroutineTargets = Array.Empty<int>();
         if (_hasSubroutineCalls)
         {
             var budget = Utf8ConstructionScope.CurrentBudget;
-            subroutineTargets = budget.AllocateArray<int>(_captureCount + 1, false);
+            var subroutineTargets = budget.AllocateArray<int>(_captureCount + 1, false);
             budget.ChargeWork((ulong)subroutineTargets.Length);
             subroutineTargets.AsSpan().Fill(-1);
             // Appended bodies can introduce more calls. Publishing the entry
@@ -65,10 +64,15 @@ internal sealed class Pcre2BacktrackingLowerer
                 if (instruction.Kind != Pcre2BacktrackingInstructionKind.SubroutineCall)
                     continue;
                 var slot = instruction.SubroutineSlot;
-                if (subroutineTargets[slot] >= 0) continue;
-                subroutineTargets[slot] = _instructions.Count;
-                EmitNode(slot == 0 ? root : _captureDefinitions[slot], null);
-                _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
+                var target = subroutineTargets[slot];
+                if (target < 0)
+                {
+                    target = _instructions.Count;
+                    subroutineTargets[slot] = target;
+                    EmitNode(slot == 0 ? root : _captureDefinitions[slot], null);
+                    _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
+                }
+                _instructions[index] = Pcre2BacktrackingInstruction.CreateSubroutineCall(slot, target);
             }
         }
 
@@ -88,7 +92,7 @@ internal sealed class Pcre2BacktrackingLowerer
             _assertionPrograms.Take(),
             _backreferenceSlotSets.Take(),
             _conditions.Take(),
-            subroutineTargets,
+            _hasSubroutineCalls,
             _markNames.Take(),
             _nameEntries,
             Pcre2BacktrackingAnalysis.GetMinimumByteLength(root),
