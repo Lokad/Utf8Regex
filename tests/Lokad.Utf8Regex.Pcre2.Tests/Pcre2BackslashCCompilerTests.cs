@@ -68,6 +68,22 @@ public sealed class Pcre2BackslashCCompilerTests
     }
 
     [Fact]
+    public void ExactBackreferenceComparesOneCodeUnitEvenInsideAScalar()
+    {
+        using var regex = Create(@"\A\C(\C)\C(?&check)\z(?(DEFINE)(?<check>\1))");
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
+        var match = regex.Match("éΩ"u8, captures: captures);
+
+        Assert.True(match.Success);
+        Assert.Equal((0, 4), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.Equal((1, 2), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.False(captures[1].IsUtf8SliceWellFormed);
+        Assert.False(regex.IsMatch("éê"u8));
+        Assert.False(regex.IsMatch("é"u8));
+    }
+
+    [Fact]
     public void ScalarAtomCannotDecodeFromInsideScalar()
     {
         var regex = Create(@"^\C.$");

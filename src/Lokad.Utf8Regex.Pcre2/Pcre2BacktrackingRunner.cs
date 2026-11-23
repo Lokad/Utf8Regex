@@ -2286,7 +2286,26 @@ internal static class Pcre2BacktrackingRunner
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool TryMatchBackreference(
+        ReadOnlySpan<byte> input,
+        int captureStart,
+        int captureEnd,
+        int subjectStart,
+        Pcre2CharacterOptions options,
+        ref Pcre2ResourceBudget budget,
+        out int subjectEnd)
+    {
+        if ((options & Pcre2CharacterOptions.Caseless) != 0 || captureEnd - captureStart != 1)
+            return TryMatchBackreferenceSequence(input, captureStart, captureEnd, subjectStart, options, ref budget, out subjectEnd);
+
+        subjectEnd = subjectStart;
+        if ((uint)subjectStart >= (uint)input.Length || input[subjectStart] != input[captureStart]) return false;
+        subjectEnd = subjectStart + 1;
+        return true;
+    }
+
+    private static bool TryMatchBackreferenceSequence(
         ReadOnlySpan<byte> input,
         int captureStart,
         int captureEnd,
