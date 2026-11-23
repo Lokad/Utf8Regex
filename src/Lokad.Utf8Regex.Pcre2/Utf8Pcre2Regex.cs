@@ -423,7 +423,8 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                     input,
                     start,
                     _program.Request,
-                    leadingAsciiByte));
+                    leadingAsciiByte,
+                    slice.DisjointClassDelimiter));
         }
 
         if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Pcre2Slice)
@@ -995,7 +996,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
 
             return ReplaceSliceDetailed(
                 input, subject, start,
-                sliceProgram.SliceProgram,
+                sliceProgram,
                 replacement,
                 substitutionOptions,
                 invocation, kind, destination, preparation);
@@ -1100,12 +1101,13 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         finally { writer.Release(); }
     }
 
-    private Pcre2ReplacementResult ReplaceSliceDetailed(ReadOnlySpan<byte> input, Utf8ValidatedInput validated, Utf8BytePosition start, Utf8SliceProgram sliceProgram,
+    private Pcre2ReplacementResult ReplaceSliceDetailed(ReadOnlySpan<byte> input, Utf8ValidatedInput validated, Utf8BytePosition start, Pcre2SliceDirectProgram slice,
         ReadOnlySpan<byte> replacement, Pcre2SubstitutionOptions options, Utf8SliceInvocation invocation,
         Pcre2ReplacementResultKind kind, Span<byte> destination,
         Pcre2ReplacementPreparation? prepared)
     {
-        var cursor = new Pcre2SliceGlobalMatchCursor(sliceProgram, invocation, validated, start, _program.Request);
+        var cursor = new Pcre2SliceGlobalMatchCursor(slice.SliceProgram, invocation, validated, start, _program.Request,
+            disjointClassDelimiter: slice.DisjointClassDelimiter);
         if (!cursor.MoveNext())
         {
             if ((options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0) return new([]);

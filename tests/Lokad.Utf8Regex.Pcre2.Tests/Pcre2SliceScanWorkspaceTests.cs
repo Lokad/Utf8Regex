@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -90,6 +91,41 @@ public sealed class Pcre2SliceScanWorkspaceTests
     }
 
     [Fact]
+    public void DelimiterWindowsKeepSpanRangesAndReplacementCapturesUnderOneWorkLimit()
+    {
+        using var regex = new Utf8Pcre2Regex(@"[a-z]+@(?<tail>[a-z]+)", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 512, MaxWorkingBytes = 64 * 1024 },
+        });
+        using var source = new CancellationTokenSource();
+        var prefix = "😀" + new string('a', 2048) + "@!𐐨";
+        var input = Encoding.UTF8.GetBytes(prefix + "abc@tail!éxy@longer!");
+        var expected = Encoding.UTF8.GetBytes(prefix + "<tail>!é<longer>!");
+        var firstStart = Encoding.UTF8.GetByteCount(prefix);
+        const int floor = 4;
+        var cursor = regex.EnumerateMatches(input, floor, cancellationToken: source.Token);
+        var alias = cursor;
+
+        Assert.True(cursor.MoveNext());
+        var first = cursor.Current;
+        Assert.Equal((firstStart, firstStart + 8), (first.StartOffsetInBytes, first.EndOffsetInBytes));
+        Assert.True(cursor.MoveNext());
+        Assert.True(cursor.Current.GetValueBytes().SequenceEqual("xy@longer"u8));
+        Assert.False(cursor.MoveNext());
+        Assert.False(cursor.MoveNext());
+        Assert.True(alias.MoveNext());
+        Assert.Equal(firstStart, alias.Current.StartOffsetInBytes);
+        Assert.True(first.GetValueBytes().SequenceEqual("abc@tail"u8));
+
+        Assert.Equal(expected, regex.Replace(input, "<$1>"u8, floor, cancellationToken: source.Token));
+        var destination = new byte[expected.Length];
+        Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "<${tail}>"u8,
+            destination, out var written, floor, cancellationToken: source.Token));
+        Assert.Equal(expected.Length, written);
+        Assert.Equal(expected, destination);
+    }
+
+    [Fact]
     public void EmptyRetryKeepsWholeScalarAdvancementWithFiniteControls()
     {
         var regex = new Utf8Pcre2Regex("x*|😀+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
@@ -111,6 +147,7 @@ public sealed class Pcre2SliceScanWorkspaceTests
         while (cursor.MoveNext())
             ranges.Add((cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
         Assert.Equal(new[] { (0, 0), (2, 2), (2, 10), (10, 10) }, ranges);
+        Assert.False(cursor.MoveNext());
     }
 
     private static Utf8Pcre2Regex Create(Utf8Pcre2ExecutionLimits limits, TimeSpan? timeout = null)

@@ -32,7 +32,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
     private int _position;
     private bool _retryPending;
     private readonly byte? _leadingAsciiByte;
-    private int _retryPosition;
+    private readonly int _disjointClassDelimiter;
 
     internal Pcre2SliceGlobalMatchCursor(
         Utf8SliceProgram program,
@@ -52,7 +52,8 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        byte? leadingAsciiByte = null)
+        byte? leadingAsciiByte = null,
+        int disjointClassDelimiter = -1)
     {
         _program = program;
         _input = input;
@@ -61,7 +62,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         _position = start.Value;
         _retryPending = false;
         _leadingAsciiByte = leadingAsciiByte;
-        _retryPosition = start.Value;
+        _disjointClassDelimiter = disjointClassDelimiter;
         Current = Pcre2CharacterMatch.NoMatch;
     }
 
@@ -141,9 +142,13 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 
     private bool MoveNextCore()
     {
+        if (_position < 0) return false;
         // Each MoveNext call is one scan: pin \\G to the entry position.
         _invocation.AnchorOriginByte = _position;
-        var slots = Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation);
+        // The proved delimiter route has no capture reads. Templates obtain
+        // their captures separately from the selected byte range.
+        var slots = _disjointClassDelimiter >= 0 ? new Utf8SliceSlots([], []) :
+            Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation);
         // Reuse admitted scratch across candidates in this scan. It never
         // escapes the call, so copied or abandoned cursors retain no workspace.
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
@@ -154,34 +159,37 @@ internal ref struct Pcre2SliceGlobalMatchCursor
             {
                 _retryPending = false;
                 var retry = Utf8SliceRunner.TryMatchAt(
-                    _program, bytes, _retryPosition, slots.Starts, slots.Ends,
-                    false, true, Pcre2SliceDriver.IsScalarAligned(bytes, _retryPosition),
+                    _program, bytes, _position, slots.Starts, slots.Ends,
+                    false, true, Pcre2SliceDriver.IsScalarAligned(bytes, _position),
                     ref workspace, ref _invocation);
                 Pcre2SliceDriver.ThrowIfSliceBreached(retry.Breach);
                 if (retry.IsMatch)
                 {
-                    Current = Pcre2CharacterMatch.Create(_retryPosition, retry.EndIndex);
+                    Current = Pcre2CharacterMatch.Create(_position, retry.EndIndex);
                     _position = retry.EndIndex;
                     return true;
                 }
 
                 if (!Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
-                        ref _input, _request, Pcre2MatchOptions.None, new Utf8BytePosition(_retryPosition), out var advanced))
+                        ref _input, _request, Pcre2MatchOptions.None, new Utf8BytePosition(_position), out var advanced))
+                {
+                    _position = -1;
                     return false;
+                }
                 _position = advanced.Value;
             }
 
             var lastStart = _leadingAsciiByte.HasValue ? bytes.Length - 1 : bytes.Length;
             var end = Pcre2SliceDriver.FindMatchingEnd(_program, bytes, ref _position, lastStart, _leadingAsciiByte, slots,
-                ref workspace, ref _invocation);
-            if (end < 0) return false;
-            Current = Pcre2CharacterMatch.Create(_position, end);
-            if (end == _position)
+                ref workspace, ref _invocation, _disjointClassDelimiter);
+            if (end < 0)
             {
-                _retryPending = true;
-                _retryPosition = _position;
+                _position = -1;
+                return false;
             }
-            else _position = end;
+            Current = Pcre2CharacterMatch.Create(_position, end);
+            _retryPending = end == _position;
+            _position = end;
             return true;
         }
         catch (Utf8ExecutionDeadlineExpiredException)
