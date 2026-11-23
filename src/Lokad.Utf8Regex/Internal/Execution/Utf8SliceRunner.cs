@@ -595,15 +595,7 @@ internal static partial class Utf8SliceRunner
         // straight ASCII set and terminal repeat without entering the VM.
         var checkStraightRepeat = leading is >= 0 and < 128 && leadingScalarIndex == 0 &&
             !existenceOnly && !collectHistory && input.Length - fromByte <= 64 &&
-            program.Instructions is
-            [
-                { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 },
-                { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 4, HasSingleAtomBody: true, RepeatMaximum: long.MaxValue },
-                { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 },
-                { Kind: Utf8SliceInstructionKind.RepeatEnd },
-                { Kind: Utf8SliceInstructionKind.RepeatExit, RepeatExitAcceptsEmptyTail: true },
-                { Kind: Utf8SliceInstructionKind.Accept }
-            ];
+            program.TerminalRoot == Utf8SliceTerminalRootKind.AsciiSetThenRepeat;
         var lastProbedStart = input.Length - candidatePlan.MinRequiredLength;
         var leadingClass = -1;
         var classLiteral = -1;

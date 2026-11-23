@@ -12,7 +12,8 @@ internal enum Utf8SliceTerminalRootKind : byte
     None,
     Capture,
     Boundary,
-    ClassRepeat
+    ClassRepeat,
+    AsciiSetThenRepeat
 }
 
 internal static partial class Utf8SliceRunner
@@ -24,6 +25,16 @@ internal static partial class Utf8SliceRunner
         if (program.GroupCount == 0 && program.Assertions.Length == 0 &&
             program.Instructions is [{ Kind: Utf8SliceInstructionKind.Boundary }, { Kind: Utf8SliceInstructionKind.Accept }])
             return Utf8SliceTerminalRootKind.Boundary;
+        if (program.Instructions is
+            [
+                { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 },
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 4, HasSingleAtomBody: true, RepeatMaximum: long.MaxValue },
+                { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 },
+                { Kind: Utf8SliceInstructionKind.RepeatEnd },
+                { Kind: Utf8SliceInstructionKind.RepeatExit, RepeatExitAcceptsEmptyTail: true },
+                { Kind: Utf8SliceInstructionKind.Accept }
+            ])
+            return Utf8SliceTerminalRootKind.AsciiSetThenRepeat;
         return CanRunTerminalClassRepeat(program) ? Utf8SliceTerminalRootKind.ClassRepeat : Utf8SliceTerminalRootKind.None;
     }
 
