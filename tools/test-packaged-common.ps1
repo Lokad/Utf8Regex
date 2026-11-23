@@ -441,8 +441,14 @@ function Invoke-IsolatedConsumerTests {
     $testProjectPath = Join-Path $TestDirectory ($SourceTestProjectName + ".csproj")
     [xml] $testProject = Get-Content -LiteralPath $testProjectPath
     if ($TargetFramework) {
-        @($testProject.SelectNodes("//TargetFrameworks")) | ForEach-Object { [void] $_.ParentNode.RemoveChild($_) }
-        $testProject.SelectSingleNode("//TargetFramework").InnerText = $TargetFramework
+        $frameworks = @($testProject.SelectNodes("//TargetFrameworks"))
+        $framework = $testProject.SelectSingleNode("//TargetFramework")
+        if ($null -eq $framework) {
+            $framework = $testProject.CreateElement("TargetFramework")
+            [void] $frameworks[0].ParentNode.InsertBefore($framework, $frameworks[0])
+        }
+        $frameworks | ForEach-Object { [void] $_.ParentNode.RemoveChild($_) }
+        $framework.InnerText = $TargetFramework
     }
     # Keep linked fixture helpers inside the detached qualification tree.
     # Includes benchmark catalog/provenance and shared assembly-inventory sources.
