@@ -6,6 +6,23 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2SubroutineCaptureReturnTests
 {
+    [Fact]
+    public void RecursiveAlternativeAtEndRestoresTheCallerCaptures()
+    {
+        using var regex = new Utf8Pcre2Regex(@"\A(é)(?&body)\z(?(DEFINE)(?<body>(?<scalar>.)(?&body)|(?<empty>\z)))",
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 32 } });
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[5];
+        using var cancellation = new CancellationTokenSource();
+
+        var match = regex.Match("é😀"u8, captures: captures, cancellationToken: cancellation.Token);
+
+        Assert.Equal((0, 6), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.Equal((0, 2), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.False(captures[2].Success);
+        Assert.False(captures[3].Success);
+        Assert.False(captures[4].Success);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("(*ACCEPT)never")]

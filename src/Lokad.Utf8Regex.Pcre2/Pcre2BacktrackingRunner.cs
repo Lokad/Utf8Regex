@@ -849,6 +849,18 @@ internal static class Pcre2BacktrackingRunner
                                 ? instruction.PrimaryTarget : instruction.SecondaryTarget;
                             continue;
                         }
+                        if (inputIndex == input.Length)
+                        {
+                            ref readonly var primary = ref program.Instructions[instruction.PrimaryTarget];
+                            if (primary.Kind is Pcre2BacktrackingInstructionKind.Token or Pcre2BacktrackingInstructionKind.CaptureToken &&
+                                Pcre2BacktrackingAnalysis.ConsumesInput(primary.Token.Kind))
+                            {
+                                // A consuming token fails at EOF. A captured token
+                                // writes only after its predicate succeeds.
+                                instructionIndex = instruction.SecondaryTarget;
+                                continue;
+                            }
+                        }
                         PushFrame(
                             ref frames,
                             new Pcre2BacktrackingFrame(
