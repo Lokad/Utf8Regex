@@ -31,6 +31,19 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     }
 
     [Theory]
+    [InlineData("SW1 1Z0")]
+    [InlineData("SW1 1Z0\n")]
+    public void FinalScalarScreenUsesTheRequiredRepeatMinimum(string text)
+    {
+        using var regex = Utf8Regex.Compile(@"^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]? ?[0-9][A-Za-z]{2}$",
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 2 } });
+        using var token = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.False(regex.IsMatch(input, token.Token));
+        Assert.Equal(0, regex.Count(input, token.Token));
+    }
+
+    [Theory]
     [InlineData("ABC")]
     [InlineData("ABC]\n")]
     public void TerminalRepeatUsesDisjointSuffixAfterAlternativeJump(string subject)
@@ -59,6 +72,8 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     [InlineData(@"\A[-+]?\d*\.?\d*\z", "\n", false)]
     [InlineData(@"\A[-+]?\d*\.?\d*$", "١٢x\n", false)]
     [InlineData(@"(?m)^\d*$", "12\nx", true)]
+    [InlineData(@"\A[0-9](?:A?B?){2}\z", "7", true)]
+    [InlineData(@"\A(?<a>a*)[0-9]\k<a>{2}\z", "7", true)]
     public void FinalScalarScreenKeepsAllPossibleEndpoints(string pattern, string text, bool expected)
     {
         using var regex = new Utf8Regex(pattern);

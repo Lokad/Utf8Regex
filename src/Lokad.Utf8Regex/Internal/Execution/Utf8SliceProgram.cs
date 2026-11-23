@@ -880,8 +880,8 @@ internal sealed class Utf8SliceProgram
         }
 
         // An atom can provide the final scalar if its continuation can reach
-        // the anchor or Accept without consuming. Ignore repeat minima for this proof:
-        // admitting an extra possible last atom only widens the set.
+        // the anchor or Accept without consuming. A required scalar repeat
+        // rules out earlier atoms. Other repeat bodies may be nullable.
         Span<bool> empty = stackalloc bool[end + 1];
         empty[end] = true;
         var ascii = default(Utf8SearchAsciiSet);
@@ -908,7 +908,15 @@ internal sealed class Utf8SliceProgram
                 case Utf8SliceInstructionKind.RepeatLazyAfterMinimum:
                     // In particular, a jump around the anchor makes it optional.
                     if (instruction.A <= pc || instruction.A > end) return default;
-                    empty[pc] = empty[instruction.A] || instruction.Kind == Utf8SliceInstructionKind.Fork && next;
+                    empty[pc] = instruction switch
+                    {
+                        { Kind: Utf8SliceInstructionKind.Fork } => empty[instruction.A] || next,
+                        { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy,
+                            HasSingleAtomBody: true, RepeatMinimum: > 0 } when code[pc + 1].Kind is
+                            Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Dot or
+                            Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.Shorthand => false,
+                        _ => empty[instruction.A]
+                    };
                     break;
                 case Utf8SliceInstructionKind.RepeatEnd:
                     // Its next instruction is the repeat's exit. Any path
