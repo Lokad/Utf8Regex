@@ -1297,7 +1297,8 @@ internal static partial class Utf8SliceRunner
                     : Utf8AsciiBytePredicates.IsDigit(value) || value >= 128 &&
                         TryReadScalar(input, edge, false, out var scalar, out _) && Rune.IsDigit(scalar);
                 if (!matches) return -1;
-                provesAccept = allowAcceptProof && CanAcceptEmptyTail(code, repeat.A + 1);
+                provesAccept = allowAcceptProof && (code[repeat.A].RepeatExitAcceptsEmptyTail ||
+                    CanAcceptEmptyTail(code, repeat.A + 1));
             }
         }
         return probe == index ? verified : 0;

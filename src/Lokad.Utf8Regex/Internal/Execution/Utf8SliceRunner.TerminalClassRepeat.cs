@@ -1041,7 +1041,7 @@ internal static partial class Utf8SliceRunner
         var optionalAsciiLiteral = repeat is { RepeatMinimum: 0, RepeatMaximum: 1 } &&
             atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 };
         var prepareRequiredEmptyTail = repeat is { RepeatMinimum: 1, RepeatMaximum: long.MaxValue } &&
-            (atom is { Kind: Utf8SliceInstructionKind.Hybrid, B: 1, D: 0 } ||
+            (atom.IsDecimalDigitSet || atom is { Kind: Utf8SliceInstructionKind.Hybrid, B: 1, D: 0 } ||
              atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } && continuation == code.Length - 1);
         if (!optionalAsciiLiteral && !prepareRequiredEmptyTail && atom is not ({ Kind: Utf8SliceInstructionKind.Dot } or
                          { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
