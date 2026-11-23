@@ -29,10 +29,17 @@ public sealed class Pcre2SliceScanWorkspaceTests
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(7));
         try
         {
-            Assert.True(cursor.MoveNext());
-            Assert.Equal((11, 16), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
-            Assert.Equal(7UL, cursor.WorkingInvocation.Ledger.ReservedBytes);
-            var retained = cursor.CaptureGroupsAt(11, true);
+            var slots = Pcre2SliceDriver.RentProgramSlots(direct.SliceProgram, ref cursor.WorkingInvocation);
+            Pcre2GroupData[] retained;
+            try
+            {
+                var held = cursor.WorkingInvocation.Ledger.ReservedBytes;
+                Assert.True(cursor.MoveNext(slots));
+                Assert.Equal((11, 16), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
+                retained = cursor.ProjectCurrentCaptures(slots);
+                Assert.Equal(held, cursor.WorkingInvocation.Ledger.ReservedBytes);
+            }
+            finally { Utf8SliceRunner.ReleaseSlots(slots, ref cursor.WorkingInvocation); }
             Assert.Equal((11, 14), (retained[1].StartOffsetInBytes, retained[1].EndOffsetInBytes));
             Assert.Equal((14, 16), (retained[2].StartOffsetInBytes, retained[2].EndOffsetInBytes));
             Assert.Equal(7UL, cursor.WorkingInvocation.Ledger.ReservedBytes);
@@ -123,6 +130,15 @@ public sealed class Pcre2SliceScanWorkspaceTests
             destination, out var written, floor, cancellationToken: source.Token));
         Assert.Equal(expected.Length, written);
         Assert.Equal(expected, destination);
+    }
+
+    [Fact]
+    public void ReplacementUsesTheCaptureSelectedByAnEmptyMatchRetry()
+    {
+        using var regex = new Utf8Pcre2Regex("x*|(?<piece>😀+)");
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
+        Assert.Equal("<>é<><😀😀><>"u8.ToArray(), regex.Replace("é😀😀"u8, "<${piece}>"u8,
+            substitutionOptions: Pcre2SubstitutionOptions.UnsetEmpty));
     }
 
     [Fact]

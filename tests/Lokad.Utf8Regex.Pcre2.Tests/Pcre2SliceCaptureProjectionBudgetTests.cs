@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -9,9 +8,6 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2SliceCaptureProjectionBudgetTests
 {
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_invocation")]
-    private static extern ref Utf8SliceInvocation CursorInvocation(ref Pcre2SliceGlobalMatchCursor cursor);
-
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
@@ -126,19 +122,26 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(compiled.Operations.Match);
         var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram,
             Utf8ValidatedInput.BorrowBytes("xé😀xé😀"u8), new Utf8BytePosition(0), compiled.Request, cancellation.Token);
-        Assert.True(CursorInvocation(ref cursor).Ledger.TryReserve(7));
-        Assert.True(cursor.MoveNext());
-        var first = cursor.CaptureGroupsAt(cursor.Current.StartOffsetInBytes, true);
-        Assert.Equal(7UL, CursorInvocation(ref cursor).Ledger.ReservedBytes);
-        Assert.True(cursor.MoveNext());
-        var second = cursor.CaptureGroupsAt(cursor.Current.StartOffsetInBytes, true);
-        Assert.NotSame(first, second);
-        Assert.Equal(7UL, CursorInvocation(ref cursor).Ledger.ReservedBytes);
-        Assert.False(cursor.MoveNext());
-        Assert.Equal(7UL, CursorInvocation(ref cursor).Ledger.ReservedBytes);
-        Assert.Equal((3, 7), Edges(first[2]));
-        Assert.Equal((10, 14), Edges(second[2]));
-        CursorInvocation(ref cursor).Ledger.Release(7);
+        Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(7));
+        var slots = Pcre2SliceDriver.RentProgramSlots(direct.SliceProgram, ref cursor.WorkingInvocation);
+        var held = cursor.WorkingInvocation.Ledger.ReservedBytes;
+        try
+        {
+            Assert.True(cursor.MoveNext(slots));
+            var first = cursor.ProjectCurrentCaptures(slots);
+            Assert.Equal(held, cursor.WorkingInvocation.Ledger.ReservedBytes);
+            Assert.True(cursor.MoveNext(slots));
+            var second = cursor.ProjectCurrentCaptures(slots);
+            Assert.NotSame(first, second);
+            Assert.Equal(held, cursor.WorkingInvocation.Ledger.ReservedBytes);
+            Assert.False(cursor.MoveNext(slots));
+            Assert.Equal(held, cursor.WorkingInvocation.Ledger.ReservedBytes);
+            Assert.Equal((3, 7), Edges(first[2]));
+            Assert.Equal((10, 14), Edges(second[2]));
+        }
+        finally { Utf8SliceRunner.ReleaseSlots(slots, ref cursor.WorkingInvocation); }
+        Assert.Equal(7UL, cursor.WorkingInvocation.Ledger.ReservedBytes);
+        cursor.WorkingInvocation.Ledger.Release(7);
     }
 
     private static (int, int) Edges(Pcre2GroupData group)

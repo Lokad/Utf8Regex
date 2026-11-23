@@ -70,64 +70,26 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 
     [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _invocation;
 
-    // Single-attempt detailed capture for a yielded match start. The
-    // caller shares this cursor invocation so replacement budgets stay
-    // cumulative; slots are rented and released inside this call.
-    // A yielded non-empty range re-queries with requireNonEmpty so a
-    // retry-won match reproduces exactly; the pruned search provably
-    // returns the same first hit (pruning only removes empty accepts
-    // that precede nothing, since the unpruned search passed them by).
-    // Empty yields re-query normally. Callers pass whether the yielded
-    // range was non-empty.
-    internal Pcre2GroupData[] CaptureGroupsAt(int startByte, bool requireNonEmpty)
+    // The replacement caller supplies slots to the advance and owns their loan.
+    internal Pcre2GroupData[] ProjectCurrentCaptures(Utf8SliceSlots slots)
     {
-        var slots = Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation);
-        Pcre2GroupData[]? projected = null;
-        try
-        {
-            Array.Fill(slots.Starts, -1);
-            Array.Fill(slots.Ends, -1);
-            var outcome = Utf8SliceRunner.TryMatchAt(
-                _program,
-                _input.Bytes,
-                startByte,
-                slots.Starts,
-                slots.Ends,
-                Pcre2SliceDriver.IsScalarAligned(_input.Bytes, startByte),
-                ref _invocation,
-                requireNonEmpty: requireNonEmpty);
-            Pcre2SliceDriver.ThrowIfSliceBreached(outcome.Breach);
-            if (!outcome.IsMatch)
-            {
-                throw new InvalidOperationException(
-                    "Slice re-query missed a yielded match.");
-            }
-
-            return projected = Pcre2SliceDriver.ProjectSliceGroups(
-                _program,
-                ref _input,
-                startByte,
-                outcome.EndIndex,
-                slots.Starts,
-                slots.Ends, ref _invocation);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw new Pcre2MatchException(
-                "The PCRE2 match deadline expired.",
-                Pcre2ErrorKind.Timeout);
-        }
-        finally
-        {
-            try { Utf8SliceRunner.ReleaseSlots(slots, ref _invocation); }
-            finally { if (projected is not null) Pcre2SliceDriver.DetachProjectedGroups(projected, ref _invocation); }
-        }
+        var groups = Pcre2SliceDriver.ProjectSliceGroups(_program, ref _input,
+            Current.StartOffsetInBytes, Current.EndOffsetInBytes, slots.Starts, slots.Ends, ref _invocation);
+        Pcre2SliceDriver.DetachProjectedGroups(groups, ref _invocation);
+        return groups;
     }
 
-    internal bool MoveNext()
+    internal bool MoveNext(Utf8SliceSlots slots = default)
     {
         Pcre2SliceDriver.CheckInvocation(ref _invocation);
-        var moved = MoveNextCore();
+        if (_position < 0) return false;
+        var ownsSlots = slots.Starts is null;
+        if (ownsSlots)
+            slots = _disjointClassDelimiter >= 0 ? new Utf8SliceSlots([], []) :
+                Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation);
+        bool moved;
+        try { moved = MoveNextCore(slots); }
+        finally { if (ownsSlots) Utf8SliceRunner.ReleaseSlots(slots, ref _invocation); }
         Pcre2SliceDriver.CheckInvocation(ref _invocation);
         return moved;
     }
@@ -140,15 +102,10 @@ internal ref struct Pcre2SliceGlobalMatchCursor
             Current.EndOffsetInBytes, ref _input, new Pcre2ResultControl(ref _invocation));
     }
 
-    private bool MoveNextCore()
+    private bool MoveNextCore(Utf8SliceSlots slots)
     {
-        if (_position < 0) return false;
         // Each MoveNext call is one scan: pin \\G to the entry position.
         _invocation.AnchorOriginByte = _position;
-        // The proved delimiter route has no capture reads. Templates obtain
-        // their captures separately from the selected byte range.
-        var slots = _disjointClassDelimiter >= 0 ? new Utf8SliceSlots([], []) :
-            Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation);
         // Reuse admitted scratch across candidates in this scan. It never
         // escapes the call, so copied or abandoned cursors retain no workspace.
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
@@ -198,11 +155,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
                 "The PCRE2 match deadline expired.",
                 Pcre2ErrorKind.Timeout);
         }
-        finally
-        {
-            try { workspace.Release(ref _invocation); }
-            finally { Utf8SliceRunner.ReleaseSlots(slots, ref _invocation); }
-        }
+        finally { workspace.Release(ref _invocation); }
     }
 
 }

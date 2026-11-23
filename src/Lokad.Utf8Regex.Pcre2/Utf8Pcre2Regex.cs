@@ -1108,31 +1108,41 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     {
         var cursor = new Pcre2SliceGlobalMatchCursor(slice.SliceProgram, invocation, validated, start, _program.Request,
             disjointClassDelimiter: slice.DisjointClassDelimiter);
-        if (!cursor.MoveNext())
-        {
-            if ((options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0) return new([]);
-            return CompleteUnchangedReplacement(input, kind, destination, options, ref cursor.WorkingInvocation);
-        }
+        var slots = Pcre2SliceDriver.RentProgramSlots(slice.SliceProgram, ref cursor.WorkingInvocation);
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
-        var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
-        var preparation = prepared ?? ((options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-            ? Pcre2ReplacementPreparationControl.Prepare(replacement, options, true)
-            : GetTemplatePreparation(replacement, templateOptions));
-        cursor.WorkingInvocation.ShareStorageForCursor();
-        var writer = new Pcre2ReplacementTemplateWriter(input, NameEntries, cursor.WorkingInvocation);
+        var writer = default(Pcre2ReplacementTemplateWriter);
         try
         {
             var position = 0;
-            do
+            bool matched;
+            try
             {
-                var range = cursor.Current;
-                var groups = cursor.CaptureGroupsAt(range.StartOffsetInBytes, range.EndOffsetInBytes > range.StartOffsetInBytes);
-                var value = groups[0];
-                if (!replacementOnly) writer.AppendGap(position, value.StartOffsetInBytes - position);
-                writer.AppendTemplate(preparation, templateOptions, groups, value.StartOffsetInBytes,
-                    value.EndOffsetInBytes - value.StartOffsetInBytes, null);
-                position = value.EndOffsetInBytes;
-            } while (cursor.MoveNext());
+                matched = cursor.MoveNext(slots);
+                if (matched)
+                {
+                    var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
+                    var preparation = prepared ?? ((options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
+                        ? Pcre2ReplacementPreparationControl.Prepare(replacement, options, true)
+                        : GetTemplatePreparation(replacement, templateOptions));
+                    cursor.WorkingInvocation.ShareStorageForCursor();
+                    writer = new Pcre2ReplacementTemplateWriter(input, NameEntries, cursor.WorkingInvocation);
+                    do
+                    {
+                        var groups = cursor.ProjectCurrentCaptures(slots);
+                        var value = groups[0];
+                        if (!replacementOnly) writer.AppendGap(position, value.StartOffsetInBytes - position);
+                        writer.AppendTemplate(preparation, templateOptions, groups, value.StartOffsetInBytes,
+                            value.EndOffsetInBytes - value.StartOffsetInBytes, null);
+                        position = value.EndOffsetInBytes;
+                    } while (cursor.MoveNext(slots));
+                }
+            }
+            finally { Utf8SliceRunner.ReleaseSlots(slots, ref cursor.WorkingInvocation); }
+            if (!matched)
+            {
+                if (replacementOnly) return new([]);
+                return CompleteUnchangedReplacement(input, kind, destination, options, ref cursor.WorkingInvocation);
+            }
             if (!replacementOnly) writer.AppendGap(position, input.Length - position);
             return CompleteReplacementWriter(ref writer, kind, destination, options);
         }
