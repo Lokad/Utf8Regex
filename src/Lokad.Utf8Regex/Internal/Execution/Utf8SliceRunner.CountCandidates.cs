@@ -1516,8 +1516,11 @@ internal static partial class Utf8SliceRunner
                 var mask = program.SetMasks[entry.A];
                 foreach (var value in input.Slice(position, width))
                 {
-                    if (value >= 128 || (mask[value >> 3] & (1 << (value & 7))) == 0)
+                    if (value >= 128)
                         return entry.C != 0 ? BranchedPrefixUndecided : BranchedPrefixRejected;
+                    if ((mask[value >> 3] & (1 << (value & 7))) == 0 &&
+                        (entry.C == 0 || !Utf8SliceScalarClasses.MatchesMask(new Rune(value), mask, true, program.CaseBehavior)))
+                        return BranchedPrefixRejected;
                 }
             }
             else return BranchedPrefixUndecided;
@@ -1574,12 +1577,18 @@ internal static partial class Utf8SliceRunner
             else if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
                 { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
             {
-                // A folded set still needs its scalar predicate at any mask
-                // stop. An unfolded hybrid needs it at a wider scalar.
-                stop = ScanAsciiMask(suffix, program.SetMasks[atom.A], category: false);
-                if ((uint)stop < (uint)suffix.Length &&
-                    (atom.Kind == Utf8SliceInstructionKind.Set ? atom.C != 0 : suffix[stop] >= 128))
-                    return null;
+                var mask = program.SetMasks[atom.A];
+                stop = ScanAsciiMask(suffix, mask, category: false);
+                if ((uint)stop < (uint)suffix.Length)
+                {
+                    var value = suffix[stop];
+                    // A folded alias can extend the run. So can a wider member
+                    // of a hybrid class. The VM still owns those continuations.
+                    if (atom.Kind == Utf8SliceInstructionKind.Hybrid ? value >= 128 :
+                        atom.C != 0 && (value >= 128 ||
+                            Utf8SliceScalarClasses.MatchesMask(new Rune(value), mask, true, program.CaseBehavior)))
+                        return null;
+                }
             }
             else return null;
 
