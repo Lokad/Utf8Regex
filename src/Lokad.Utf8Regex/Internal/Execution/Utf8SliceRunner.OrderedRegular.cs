@@ -574,9 +574,17 @@ internal static partial class Utf8SliceRunner
             {
                 var bit = BitOperations.TrailingZeroCount(candidates);
                 var pc = (word << 6) + bit;
-                var hit = MatchesRegularAtom(program, instructions[pc], scalar, ref invocation, out var breach);
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
-                if (!hit) continue;
+                ref readonly var instruction = ref instructions[pc];
+                if (instruction is { Kind: Utf8SliceInstructionKind.Literal, B: 0 })
+                {
+                    if (instruction.A != scalar.Value) continue;
+                }
+                else
+                {
+                    var hit = MatchesRegularAtom(program, instruction, scalar, ref invocation, out var breach);
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                    if (!hit) continue;
+                }
                 if (!row.IsEmpty)
                 {
                     var outcome = following[pc + 1];
