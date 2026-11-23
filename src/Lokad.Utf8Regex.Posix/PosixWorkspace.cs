@@ -56,6 +56,8 @@ internal partial struct PosixWorkspace
         catch { invocation.Ledger.Release(bytes); throw; }
     }
 
+    // The caller checks interruption at its publication boundary, after
+    // writing captures or advancing the count or cursor.
     internal bool Find(ReadOnlySpan<byte> input, scoped Span<int> state, int fromByte, bool existenceOnly,
         ref Utf8SliceInvocation invocation, out int start, out int end, bool captureHistory = true)
     {
@@ -125,14 +127,12 @@ internal partial struct PosixWorkspace
                         if (trace[index].Opening >= 0) state[_lastOffset + trace[index].Tag] = index;
                     }
                 }
-                Finish(ref invocation);
                 return true;
             }
             if (candidate == lastCandidate) break;
             candidate = firstWidth == 0 ? Utf8SliceRunner.AdvancePastScalar(input, candidate, false) : candidate + firstWidth;
         }
         start = end = -1;
-        Finish(ref invocation);
         return false;
     }
 

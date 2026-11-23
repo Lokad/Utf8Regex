@@ -49,7 +49,7 @@ public sealed class Utf8PosixMatchCursor : IDisposable
                 Complete();
                 return false;
             }
-            match = regex.Publish(start, end, in _workspace, _state, output, ref _invocation);
+            match = regex.WriteCaptures(start, end, in _workspace, _state, output, ref _invocation);
             PosixWorkspace.Charge(ref _invocation);
             if (start == end && end == _input.Length) Complete();
             else _position = start == end ? Utf8SliceRunner.AdvancePastScalar(_input.Span, end, false) : end;

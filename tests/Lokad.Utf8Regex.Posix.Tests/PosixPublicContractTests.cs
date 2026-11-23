@@ -310,6 +310,36 @@ public sealed class PosixPublicContractTests
         finally { diagnostics.Complete(); }
     }
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DeadlineAtFinalPublicationClearsEveryWrittenRange(bool useCursor)
+    {
+        var output = new Utf8CaptureRange[3];
+        var reachedPublication = false;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (!output[2].Success) return 0L;
+            reachedPublication = true;
+            return 101L;
+        });
+        using var regex = new Utf8PosixRegex("^([a-z]+)([0-9]+)$", policy: new() { MatchTimeout = TimeSpan.FromMilliseconds(100) });
+        var account = new Account();
+        if (useCursor)
+        {
+            using var cursor = regex.CreateMatchCursor("sku007"u8.ToArray(), workingMemoryAllowance: account);
+            Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _, output));
+            Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
+        }
+        else
+        {
+            Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("sku007"u8, captures: output, workingMemoryAllowance: account));
+        }
+        Assert.True(reachedPublication);
+        Assert.All(output, range => Assert.False(range.Success));
+        Assert.Equal(0UL, account.Used);
+    }
+
+    [Theory]
     [InlineData(false, false, "a")]
     [InlineData(true, false, "a")]
     [InlineData(false, true, "a")]

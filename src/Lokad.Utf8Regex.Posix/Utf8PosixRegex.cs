@@ -101,7 +101,9 @@ public sealed class Utf8PosixRegex : IDisposable
             CheckStart(input, 0, ref invocation);
             InitializeWorkspace(out workspace, ref invocation, captureHistory: false);
             Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
-            return workspace.Find(input, state, 0, true, ref invocation, out _, out _);
+            var found = workspace.Find(input, state, 0, true, ref invocation, out _, out _);
+            PosixWorkspace.Finish(ref invocation);
+            return found;
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw CreateTimeout(); }
         finally { workspace.Release(ref invocation); }
@@ -125,7 +127,9 @@ public sealed class Utf8PosixRegex : IDisposable
             Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
             if (!workspace.Find(input, state, startOffsetInBytes, false, ref invocation, out var start, out var end, captureHistory))
             { ClearOutput(output, ref invocation); return default; }
-            return Publish(start, end, in workspace, state, output, ref invocation);
+            var match = WriteCaptures(start, end, in workspace, state, output, ref invocation);
+            PosixWorkspace.Finish(ref invocation);
+            return match;
         }
         catch (Utf8ExecutionDeadlineExpiredException) { output.Clear(); throw CreateTimeout(); }
         catch { output.Clear(); throw; }
@@ -192,7 +196,7 @@ public sealed class Utf8PosixRegex : IDisposable
 
     internal Span<Utf8CaptureRange> OutputWindow(Span<Utf8CaptureRange> output) => output[..Math.Min(output.Length, GroupCount + 1)];
 
-    internal Utf8CaptureRange Publish(int start, int end,
+    internal Utf8CaptureRange WriteCaptures(int start, int end,
         in PosixWorkspace workspace, scoped ReadOnlySpan<int> state, Span<Utf8CaptureRange> output, ref Utf8SliceInvocation invocation)
     {
         var whole = new Utf8CaptureRange(start, end);
@@ -207,7 +211,6 @@ public sealed class Utf8PosixRegex : IDisposable
             output[slot] = workspace.GetCapture(state, slot, ref invocation, out var from, out var to)
                 ? new Utf8CaptureRange(from, to) : default;
         }
-        PosixWorkspace.Finish(ref invocation);
         return whole;
     }
 
