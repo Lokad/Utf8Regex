@@ -20,7 +20,7 @@ internal readonly ref struct Pcre2CaptureRanges
         _ends = ends;
     }
 
-    internal (int Start, int End) this[int slot]
+    private (int Start, int End) this[int slot]
     {
         get
         {
@@ -29,6 +29,21 @@ internal readonly ref struct Pcre2CaptureRanges
             return (state.Start, state.End);
         }
     }
+
+    internal bool TryGetEdges(int slot, int matchStart, int matchEnd, bool scalarRanges,
+        out int start, out int end)
+    {
+        if (slot == 0) { start = matchStart; end = matchEnd; return true; }
+        (start, end) = this[scalarRanges ? slot - 1 : slot];
+        if (start < 0 || end < 0) return false;
+        // Shared scalar assertions may write the endpoints in reverse order.
+        if (scalarRanges && start > end) (start, end) = (end, start);
+        return end >= start;
+    }
+
+    internal static bool IsWellFormed(ReadOnlySpan<byte> input, int start, int end, bool scalarRanges)
+        => start <= end && (scalarRanges ||
+            Utf8ValidatedInput.IsScalarBoundary(input, start) && Utf8ValidatedInput.IsScalarBoundary(input, end));
 }
 
 internal static partial class Pcre2Runner
@@ -41,24 +56,26 @@ internal static partial class Pcre2Runner
     {
         var control = new Pcre2ResultControl(ref budget);
         return PublishCaptureGroups(captureSlotCount, matchStart, matchEnd,
-            captureRanges, 0, false, ref input, control);
+            captureRanges, input.Bytes, false, control);
     }
 
     internal static Pcre2GroupData[] PublishSliceCaptures(
         int captureSlotCount, int matchStart, int matchEnd,
         ReadOnlySpan<int> captureStarts, ReadOnlySpan<int> captureEnds,
-        ref Utf8ValidatedInput input, ref Utf8SliceInvocation invocation, Pcre2GroupData[]? groups = null)
+        ref Utf8SliceInvocation invocation, Pcre2GroupData[]? groups = null)
     {
         var control = new Pcre2ResultControl(ref invocation);
+        // The shared VM admits scalar starts and its consuming instructions
+        // preserve the boundary of every capture edge.
         return PublishCaptureGroups(captureSlotCount, matchStart, matchEnd,
-            new(captureStarts, captureEnds), -1, true, ref input, control, groups);
+            new(captureStarts, captureEnds), default, true, control, groups);
     }
 
     private static Pcre2GroupData[] PublishCaptureGroups(
         int captureSlotCount, int matchStart, int matchEnd,
         scoped Pcre2CaptureRanges captureRanges,
-        int slotOffset, bool normalizeDirection,
-        ref Utf8ValidatedInput input, scoped Pcre2ResultControl budget, Pcre2GroupData[]? groups = null)
+        ReadOnlySpan<byte> input, bool scalarRanges,
+        scoped Pcre2ResultControl budget, Pcre2GroupData[]? groups = null)
     {
         var groupBytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(captureSlotCount);
         var needsAllocation = groups is null;
@@ -72,8 +89,7 @@ internal static partial class Pcre2Runner
             for (var slot = 0; slot < captureSlotCount; slot++)
             {
                 if ((slot & 63) == 0) budget.ChargeWorkspaceStep();
-                if (!ReadCaptureEdges(slot, matchStart, matchEnd, captureRanges,
-                    slotOffset, normalizeDirection, out var start, out var end))
+                if (!captureRanges.TryGetEdges(slot, matchStart, matchEnd, scalarRanges, out var start, out var end))
                 {
                     groups[slot] = new Pcre2GroupData { Number = slot };
                     continue;
@@ -84,9 +100,7 @@ internal static partial class Pcre2Runner
                     Success = true,
                     StartOffsetInBytes = start,
                     EndOffsetInBytes = end,
-                    Utf8SliceIsWellFormed = start <= end &&
-                        input.IsScalarBoundary(new Utf8BytePosition(start)) &&
-                        input.IsScalarBoundary(new Utf8BytePosition(end))
+                    Utf8SliceIsWellFormed = Pcre2CaptureRanges.IsWellFormed(input, start, end, scalarRanges)
                 };
             }
             budget.ChargeWorkspaceStep();
@@ -94,17 +108,6 @@ internal static partial class Pcre2Runner
             return groups;
         }
         finally { if (needsAllocation && !completed) budget.ReleaseWorking(groupBytes); }
-    }
-
-    private static bool ReadCaptureEdges(int slot, int matchStart, int matchEnd,
-        scoped Pcre2CaptureRanges captureRanges, int slotOffset,
-        bool normalizeDirection, out int start, out int end)
-    {
-        if (slot == 0) { start = matchStart; end = matchEnd; return true; }
-        (start, end) = captureRanges[slot + slotOffset];
-        if (start < 0 || end < 0) return false;
-        if (normalizeDirection && start > end) (start, end) = (end, start);
-        return end >= start;
     }
 
 }

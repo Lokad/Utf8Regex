@@ -73,7 +73,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
     // The caller owns the slot and projection loans. An existing projection
     // buffer is already admitted and has room for this program's groups.
     internal Pcre2GroupData[] ProjectCurrentCaptures(Utf8SliceSlots slots, Pcre2GroupData[]? groups = null)
-        => Pcre2SliceDriver.ProjectSliceGroups(_program, ref _input,
+        => Pcre2SliceDriver.ProjectSliceGroups(_program,
             Current.StartOffsetInBytes, Current.EndOffsetInBytes, slots.Starts, slots.Ends, ref _invocation, groups);
 
     internal bool MoveNext(Utf8SliceSlots slots = default)
@@ -488,7 +488,7 @@ internal static class Pcre2SliceDriver
             finally { workspace.Release(ref invocation); }
             ThrowIfSliceBreached(outcome.Breach);
             if (outcome.Found)
-                groups = projected = ProjectSliceGroups(program, ref input, outcome.StartByte, outcome.EndByte,
+                groups = projected = ProjectSliceGroups(program, outcome.StartByte, outcome.EndByte,
                     slots.Starts, slots.Ends, ref invocation);
             return true;
         }
@@ -508,11 +508,11 @@ internal static class Pcre2SliceDriver
     // Slice slots are zero-based and backward assertions reverse their edges.
     // The shared batch projector handles both layouts without copied slot vectors.
     internal static Pcre2GroupData[] ProjectSliceGroups(
-        Utf8SliceProgram program, ref Utf8ValidatedInput input,
+        Utf8SliceProgram program,
         int matchStart, int matchEnd, int[] captureStarts, int[] captureEnds,
         ref Utf8SliceInvocation invocation, Pcre2GroupData[]? groups = null) =>
         Pcre2Runner.PublishSliceCaptures(checked(program.GroupCount + 1),
-            matchStart, matchEnd, captureStarts, captureEnds, ref input, ref invocation, groups);
+            matchStart, matchEnd, captureStarts, captureEnds, ref invocation, groups);
 
     // Single lexical publishing owner; immutable external arrays are never pooled.
     internal static void DetachProjectedGroups(Pcre2GroupData[] groups, ref Utf8SliceInvocation invocation)

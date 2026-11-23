@@ -1,7 +1,6 @@
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
@@ -65,12 +64,11 @@ public sealed class Pcre2ResultPolicyTests
     {
         var bytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
         var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0, 2 * bytes - 1), Timeout.InfiniteTimeSpan, default);
-        var input = Utf8ValidatedInput.BorrowBytes("😀"u8);
-        var first = Pcre2Runner.PublishSliceCaptures(1, 0, 4, [], [], ref input, ref invocation);
+        var first = Pcre2Runner.PublishSliceCaptures(1, 0, 4, [], [], ref invocation);
         Pcre2SliceDriver.DetachProjectedGroups(first, ref invocation);
         var alias = invocation;
         Exception? failure = null;
-        try { _ = Pcre2Runner.PublishSliceCaptures(1, 0, 4, [], [], ref input, ref alias); }
+        try { _ = Pcre2Runner.PublishSliceCaptures(1, 0, 4, [], [], ref alias); }
         catch (Exception error) { failure = error; }
         Assert.Equal("ResultLimit", Assert.IsType<Pcre2MatchException>(failure).ErrorKind.ToString());
         Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, invocation.TryChargeStep());

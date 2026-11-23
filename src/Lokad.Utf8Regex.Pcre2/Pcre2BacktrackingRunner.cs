@@ -2444,7 +2444,7 @@ internal static class Pcre2BacktrackingRunner
 
     internal static Utf8Pcre2CaptureRange[] MaterializeByteGroups(int count, int matchStart, int matchEnd,
         scoped Pcre2CaptureRanges captureRanges, ReadOnlySpan<byte> input,
-        ref Pcre2ResourceBudget budget, int slotOffset = 0, bool normalizeDirection = false)
+        ref Pcre2ResourceBudget budget, bool scalarRanges = false)
     {
         var bytes = Utf8ConstructionBudget.ArrayBytes<Utf8Pcre2CaptureRange>(count);
         var control = new Pcre2ResultControl(ref budget);
@@ -2454,7 +2454,7 @@ internal static class Pcre2BacktrackingRunner
         {
             control.ChargeWorkspaceStep();
             var groups = new Utf8Pcre2CaptureRange[count];
-            WriteByteGroups(groups, matchStart, matchEnd, captureRanges, input, ref budget, slotOffset, normalizeDirection);
+            WriteByteGroups(groups, matchStart, matchEnd, captureRanges, input, ref budget, scalarRanges);
             return groups;
         }
         catch { control.ReleaseWorking(bytes); throw; }
@@ -2464,17 +2464,14 @@ internal static class Pcre2BacktrackingRunner
     // A caller destination is not producer-owned result storage.
     internal static void WriteByteGroups(scoped Span<Utf8Pcre2CaptureRange> destination, int matchStart, int matchEnd,
         scoped Pcre2CaptureRanges captureRanges, ReadOnlySpan<byte> input,
-        ref Pcre2ResourceBudget budget, int slotOffset = 0, bool normalizeDirection = false)
+        ref Pcre2ResourceBudget budget, bool scalarRanges = false)
     {
         var control = new Pcre2ResultControl(ref budget);
         for (var slot = 0; slot < destination.Length; slot++)
         {
             if ((slot & 63) == 0) control.ChargeWorkspaceStep();
-            var (start, end) = slot == 0 ? (matchStart, matchEnd) : captureRanges[slot + slotOffset];
-            if (normalizeDirection && start >= 0 && end >= 0 && start > end) (start, end) = (end, start);
-            var success = slot == 0 || start >= 0 && end >= start;
-            var wellFormed = success && start <= end &&
-                Pcre2SliceDriver.IsScalarAligned(input, start) && Pcre2SliceDriver.IsScalarAligned(input, end);
+            var success = captureRanges.TryGetEdges(slot, matchStart, matchEnd, scalarRanges, out var start, out var end);
+            var wellFormed = success && Pcre2CaptureRanges.IsWellFormed(input, start, end, scalarRanges);
             destination[slot] = new(slot, success, success ? start : 0, success ? end : 0, wellFormed);
         }
     }

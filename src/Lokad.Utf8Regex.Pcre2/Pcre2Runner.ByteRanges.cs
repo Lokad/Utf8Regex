@@ -96,11 +96,11 @@ internal static partial class Pcre2Runner
         if (!destination.IsEmpty)
         {
             Pcre2BacktrackingRunner.WriteByteGroups(destination, begin, end, new(slots.Starts, slots.Ends),
-                input.Bytes, ref budget, -1, true);
+                default, ref budget, scalarRanges: true);
             return new(true, begin, end, begin, end, false, default, null);
         }
         var groups = Pcre2BacktrackingRunner.MaterializeByteGroups(checked(program.GroupCount + 1),
-            begin, end, new(slots.Starts, slots.Ends), input.Bytes, ref budget, -1, true);
+            begin, end, new(slots.Starts, slots.Ends), default, ref budget, scalarRanges: true);
         return new(true, begin, end, begin, end, false, Pcre2BacktrackingCaptureResult.FromByteGroups(groups), null);
     }
 }

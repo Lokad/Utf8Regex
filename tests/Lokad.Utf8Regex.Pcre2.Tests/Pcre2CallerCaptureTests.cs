@@ -51,19 +51,47 @@ public sealed class Pcre2CallerCaptureTests
     }
 
     [Fact]
+    public void ScalarCapturePublicationPreservesReversedLookbehindEdges()
+    {
+        using var regex = new Utf8Pcre2Regex("(?<=(é))(😀)(x)?");
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        Assert.Equal(Pcre2PartialProbeProgramKind.None, regex.DebugCompiledProgram.PartialProbe.Kind);
+        ReadOnlySpan<byte> input = "πé😀"u8;
+        Span<Utf8Pcre2CaptureRange> output = stackalloc Utf8Pcre2CaptureRange[4];
+        var match = regex.Match(input, 4, output);
+        var probe = regex.Probe(input, Pcre2PartialMode.None, 4).GetMatch();
+
+        Assert.True(match.IsUtf8SliceWellFormed);
+        Assert.Equal((2, 4), (output[1].StartOffsetInBytes, output[1].EndOffsetInBytes));
+        Assert.Equal((4, 8), (output[2].StartOffsetInBytes, output[2].EndOffsetInBytes));
+        Assert.True(output[1].IsUtf8SliceWellFormed);
+        Assert.True(output[2].IsUtf8SliceWellFormed);
+        Assert.False(output[3].Success);
+        Assert.True(probe.GetGroup(1).GetValueBytes().SequenceEqual("é"u8));
+        Assert.True(probe.GetGroup(2).GetValueBytes().SequenceEqual("😀"u8));
+        Assert.False(probe.GetGroup(3).Success);
+    }
+
+    [Fact]
     public void ByteFragmentsAndNoncontiguousWholeRangesKeepTheirStatus()
     {
         var byteRegex = new Utf8Pcre2Regex(@"(\C)", compileSettings: new() { BackslashC = Pcre2BackslashCPolicy.Allow });
         var output = new Utf8Pcre2CaptureRange[2];
         var first = byteRegex.Match("😀x"u8, captures: output);
+        var fragment = byteRegex.Probe("😀x"u8, Pcre2PartialMode.None).GetMatch().GetGroup(1);
         Assert.Equal((0, 1), (first.StartOffsetInBytes, first.EndOffsetInBytes));
         Assert.False(first.IsUtf8SliceWellFormed); Assert.False(output[1].IsUtf8SliceWellFormed);
         Assert.Equal(1, output[1].EndOffsetInBytes);
+        Assert.Equal((0, 1), (fragment.StartOffsetInBytes, fragment.EndOffsetInBytes));
+        Assert.False(fragment.IsUtf8SliceWellFormed);
         var reset = new Utf8Pcre2Regex(@"(?=(ab)\K)", compileSettings: new() { AllowLookaroundBackslashK = true });
         var noncontiguous = reset.Match("ab"u8, captures: output);
+        var probeRange = reset.Probe("ab"u8, Pcre2PartialMode.None).GetMatch().Value;
         Assert.True(noncontiguous.Success); Assert.False(noncontiguous.HasContiguousByteRange);
         Assert.Equal((2, 0), (output[0].StartOffsetInBytes, output[0].EndOffsetInBytes));
         Assert.False(output[0].IsUtf8SliceWellFormed);
+        Assert.Equal((2, 0), (probeRange.StartOffsetInBytes, probeRange.EndOffsetInBytes));
+        Assert.False(probeRange.HasContiguousByteRange);
         Assert.Equal((0, 2), (output[1].StartOffsetInBytes, output[1].EndOffsetInBytes));
     }
 
