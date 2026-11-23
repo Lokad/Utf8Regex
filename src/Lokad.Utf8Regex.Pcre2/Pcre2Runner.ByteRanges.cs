@@ -86,6 +86,14 @@ internal static partial class Pcre2Runner
             if (!retry.IsMatch) return default;
             begin = start.Value; end = retry.EndIndex;
         }
+        else if (slice.DisjointClassDelimiter >= 0 && input.ByteLength - start.Value - slice.Fallback.MinimumByteLength >= 64)
+        {
+            begin = start.Value;
+            end = Pcre2SliceDriver.FindMatchingEnd(program, input.Bytes, ref begin,
+                input.ByteLength - slice.Fallback.MinimumByteLength, leadingAsciiByte: null, slots,
+                ref workspace, ref invocation, slice.DisjointClassDelimiter);
+            if (end < 0) return default;
+        }
         else
         {
             var outcome = Utf8SliceRunner.TryFindFirst(program, input.Bytes, start.Value,

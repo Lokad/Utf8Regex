@@ -6,6 +6,40 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2MemoryCursorTests
 {
     [Fact]
+    public void DelimiterWindowsKeepGreedyCapturesAndCursorLoansAfterARejectedRun()
+    {
+        using var regex = new Utf8Pcre2Regex(@"[a-z]+@(?<tail>[a-z]+)", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256, MaxWorkingBytes = 4096 },
+        });
+        var prefix = "😀" + new string('a', 2048) + "@!𐐨";
+        var input = Encoding.UTF8.GetBytes(prefix + "abc@tail!éxy@longer!");
+        var firstStart = Encoding.UTF8.GetByteCount(prefix);
+        const int floor = 4;
+        var root = new Root();
+        var working = new Account(root);
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[2];
+
+        var match = regex.Match(input, floor, captures, workingMemoryAllowance: working);
+        Assert.True(match.Success);
+        Assert.Equal((firstStart, firstStart + 8), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.True(captures[1].Success);
+        Assert.Equal((firstStart + 4, firstStart + 8), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.Equal(0UL, root.Used);
+
+        using var cursor = regex.CreateMatchCursor(input, floor, workingMemoryAllowance: working);
+        var alias = cursor;
+        Assert.True(alias.MoveNext(out var first));
+        Assert.Equal(firstStart, first.Value.StartOffsetInBytes);
+        Assert.True(root.Used > 0);
+        Assert.True(cursor.MoveNext(out var second));
+        Assert.Equal("longer"u8.ToArray(), second.GetGroupMemory(1).ToArray());
+        Assert.False(alias.MoveNext(out _));
+        Assert.Equal(0UL, root.Used);
+        Assert.Equal("tail"u8.ToArray(), first.GetGroupMemory(1).ToArray());
+    }
+
+    [Fact]
     public void SharedSliceCandidateGapsKeepByteRangesBackreferencesAndRetainedAliases()
     {
         var regex = new Utf8Pcre2Regex(@"([0-9]+)-\1");

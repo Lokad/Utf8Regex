@@ -245,7 +245,7 @@ internal static class Pcre2SliceDriver
         int minimumByteLength,
         scoped ref Utf8SliceInvocation invocation,
         byte? leadingAsciiByte = null,
-        bool seekDelimiterAfterMiss = false)
+        int delimiter = -1)
     {
         CheckInvocation(ref invocation);
         // Bound candidate starts; the matcher still sees the full subject.
@@ -261,7 +261,7 @@ internal static class Pcre2SliceDriver
         try
         {
             end = FindMatchingEnd(program, input, ref position, lastStart, leadingAsciiByte, slots,
-                ref workspace, ref invocation, seekDelimiterAfterMiss);
+                ref workspace, ref invocation, delimiter);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -278,7 +278,7 @@ internal static class Pcre2SliceDriver
 
     internal static int FindMatchingEnd(Utf8SliceProgram program, ReadOnlySpan<byte> input, ref int position,
         int lastStart, byte? leadingAsciiByte, Utf8SliceSlots slots, scoped ref Utf8SliceRunner.AttemptWorkspace workspace,
-        scoped ref Utf8SliceInvocation invocation, bool seekDelimiterAfterMiss = false)
+        scoped ref Utf8SliceInvocation invocation, int delimiter = -1)
     {
         while (position <= lastStart)
         {
@@ -291,22 +291,18 @@ internal static class Pcre2SliceDriver
             ThrowIfSliceBreached(outcome.Breach);
             if (outcome.IsMatch) return outcome.EndIndex;
 
-            if (seekDelimiterAfterMiss && lastStart - position >= 64)
+            if (delimiter >= 0 && lastStart - position >= 64)
             {
-                seekDelimiterAfterMiss = false;
-                if (GetDisjointClassDelimiter(program) is >= 0 and var delimiter)
-                {
-                    position = Utf8SliceRunner.AdvancePastScalar(input, position, reverse: false);
-                    return FindInDelimiterWindows(program, input, (byte)delimiter, ref position,
-                        lastStart, ref workspace, ref invocation);
-                }
+                position = Utf8SliceRunner.AdvancePastScalar(input, position, reverse: false);
+                return FindInDelimiterWindows(program, input, (byte)delimiter, ref position,
+                    lastStart, slots, ref workspace, ref invocation);
             }
             position++;
         }
         return -1;
     }
 
-    private static int GetDisjointClassDelimiter(Utf8SliceProgram program)
+    internal static int GetDisjointClassDelimiter(Utf8SliceProgram program)
     {
         // The delimiter follows the unbounded leading class directly.
         // A later start in the same run reaches the same suffix with fewer
@@ -321,7 +317,7 @@ internal static class Pcre2SliceDriver
     }
 
     private static int FindInDelimiterWindows(Utf8SliceProgram program, ReadOnlySpan<byte> input, byte delimiter,
-        ref int position, int lastStart, scoped ref Utf8SliceRunner.AttemptWorkspace workspace,
+        ref int position, int lastStart, Utf8SliceSlots slots, scoped ref Utf8SliceRunner.AttemptWorkspace workspace,
         scoped ref Utf8SliceInvocation invocation)
     {
         while (position >= 0 && position <= lastStart)
@@ -332,7 +328,7 @@ internal static class Pcre2SliceDriver
             if (position < 0 || position > lastStart) break;
             if (position < windowEnd)
             {
-                var result = Utf8SliceRunner.TryMatchAt(program, input, position, [], [],
+                var result = Utf8SliceRunner.TryMatchAt(program, input, position, slots.Starts, slots.Ends,
                     false, false, true, ref workspace, ref invocation);
                 ThrowIfSliceBreached(result.Breach);
                 if (result.IsMatch) return result.EndIndex;

@@ -168,11 +168,13 @@ internal sealed class Pcre2SliceDirectProgram : IPcre2DirectProgram
     internal Pcre2SliceDirectProgram(
         Utf8SliceProgram sliceProgram,
         Pcre2BacktrackingProgram fallback,
-        Pcre2LiteralProgram? booleanLiteral)
+        Pcre2LiteralProgram? booleanLiteral,
+        int disjointClassDelimiter)
     {
         SliceProgram = sliceProgram;
         Fallback = fallback;
         BooleanLiteral = booleanLiteral;
+        DisjointClassDelimiter = disjointClassDelimiter;
     }
 
     public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2Slice;
@@ -181,6 +183,7 @@ internal sealed class Pcre2SliceDirectProgram : IPcre2DirectProgram
 
     internal Pcre2BacktrackingProgram Fallback { get; }
     internal Pcre2LiteralProgram? BooleanLiteral { get; }
+    internal int DisjointClassDelimiter { get; }
 }
 
 internal class Pcre2LiteralFamilyDirectProgram : IPcre2DirectProgram
@@ -599,7 +602,7 @@ internal static class Pcre2CompiledProgramOverlay
 
         var candidateSearch = Pcre2CandidateSearchAnalyzer.Compile(root, request);
         var partialProbe = Pcre2PartialProbeCompiler.Compile(root, request);
-        operations = WithSlice(request, root, backtrackingProgram, preparedCore, operations);
+        operations = WithSlice(request, root, backtrackingProgram, preparedCore, operations, candidateSearch.Kind);
         if (operations.Count is Pcre2BacktrackingDirectProgram &&
             Pcre2LiteralCompiler.CompileCaselessCount(root, request) is { } caselessCount)
             operations = operations with { Count = new Pcre2LiteralDirectProgram(caselessCount) };
@@ -629,7 +632,7 @@ internal static class Pcre2CompiledProgramOverlay
 
     private static Pcre2OperationPrograms WithSlice(Pcre2CompileRequest request,
         IPcre2BacktrackingNode root, Pcre2BacktrackingProgram fallback,
-        Utf8Regex? preparedCore, Pcre2OperationPrograms operations)
+        Utf8Regex? preparedCore, Pcre2OperationPrograms operations, Pcre2CandidateSearchKind candidateKind)
     {
         if (preparedCore is null) return operations;
         var sliceProgram = preparedCore.Inspection.AvailableOwnedSliceProgram;
@@ -682,7 +685,13 @@ internal static class Pcre2CompiledProgramOverlay
         // profile's original invocation; other operations keep the slice.
         var booleanLiteral = !countOnly && operations.IsMatch is Pcre2BacktrackingDirectProgram
             ? Pcre2LiteralCompiler.CompileImpliedLookahead(root) : null;
-        var shared = new Pcre2SliceDirectProgram(sliceProgram, fallback, booleanLiteral);
+        var delimiter = -1;
+        if (!countOnly && candidateKind == Pcre2CandidateSearchKind.LeadingRunThenLiteral)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            delimiter = Pcre2SliceDriver.GetDisjointClassDelimiter(sliceProgram);
+        }
+        var shared = new Pcre2SliceDirectProgram(sliceProgram, fallback, booleanLiteral, delimiter);
         if (countOnly) return operations with { Count = shared };
         return operations with
         {
@@ -1536,7 +1545,7 @@ internal static partial class Pcre2Runner
                 ? null : sliceProgram.Fallback.LeadingAsciiByte;
             result = Pcre2SliceDriver.FindFirst(sliceProgram.SliceProgram, input.Bytes, start.Value,
                 sliceProgram.Fallback.MinimumByteLength, ref invocation, leadingAsciiByte,
-                seekDelimiterAfterMiss: compiledProgram.CandidateSearch.Kind == Pcre2CandidateSearchKind.LeadingRunThenLiteral).Success;
+                sliceProgram.DisjointClassDelimiter).Success;
             return true;
         }
 
@@ -1572,7 +1581,7 @@ internal static partial class Pcre2Runner
             else
             {
                 directMatch = Pcre2SliceDriver.FindFirst(sliceProgram.SliceProgram, input.Bytes, start.Value,
-                    sliceProgram.Fallback.MinimumByteLength, ref invocation);
+                    sliceProgram.Fallback.MinimumByteLength, ref invocation, delimiter: sliceProgram.DisjointClassDelimiter);
                 invocation.CheckpointHook = null;
             }
         }
