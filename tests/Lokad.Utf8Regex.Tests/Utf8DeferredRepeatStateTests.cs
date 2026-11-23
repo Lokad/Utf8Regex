@@ -47,6 +47,23 @@ public sealed class Utf8DeferredRepeatStateTests
     }
 
     [Fact]
+    public void BooleanTerminalLoopCanAcceptWithoutRepeatingForExtent()
+    {
+        using var funded = new Utf8Regex("(ab|cd)+", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1000, MaxWorkingBytes = 1 }
+        });
+        Assert.True(funded.IsMatch("xxabcdcdyy"u8));
+        Assert.False(funded.IsMatch("xxaxcyy"u8));
+
+        using var regex = new Utf8Regex("(ab|cd)+");
+        var captures = new Utf8CaptureRange[2];
+        Assert.Equal(new Utf8CaptureRange(2, 8), regex.Match("xxabcdcdyy"u8, captures: captures));
+        Assert.Equal(new Utf8CaptureRange(6, 8), captures[1]);
+        Assert.Equal(1, regex.Count("xxabcdcdyy"u8));
+    }
+
+    [Fact]
     public void FusedImportCountNeedsNoLocalWorkingBuffers()
     {
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10000, MaxDepth = 1,

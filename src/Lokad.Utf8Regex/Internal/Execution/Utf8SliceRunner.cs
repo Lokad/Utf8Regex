@@ -1687,6 +1687,16 @@ internal static partial class Utf8SliceRunner
                     var saveAlternative = true;
                     if (instruction.B == 0 && !program.RightToLeft)
                     {
+                        if (existenceOnly && instruction.A == instructions.Length - 1 &&
+                            instructions[instruction.A].Kind == Utf8SliceInstructionKind.Accept &&
+                            instructions[programIndex + 1] is { Kind: Utf8SliceInstructionKind.Jump, A: var loopStart } &&
+                            (uint)loopStart < (uint)programIndex)
+                        {
+                            // An already accepted iteration needs no further
+                            // work when the caller only asks whether it matched.
+                            programIndex = instruction.A;
+                            break;
+                        }
                         if ((instruction.C | instruction.D) != 0)
                         {
                             var remaining = input.Length - inputIndex;
