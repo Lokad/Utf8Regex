@@ -157,13 +157,14 @@ internal sealed class Utf8NonBacktrackingSearchState
     // Input is caller-valid UTF-8. A bounded size scan and scalar pass
     // admit exact offsets and bit rows; no UTF-16 subject or unit map is built.
     internal static Utf8ExecutionLimitKind TryCreate(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        ref Utf8SliceInvocation invocation, out Utf8NonBacktrackingSearchState? state, int fromByte = 0)
+        ref Utf8SliceInvocation invocation, out Utf8NonBacktrackingSearchState? state, int fromByte = 0,
+        int? selectedEnd = null)
     {
         state = null;
         invocation.Budget.ThrowIfCancellationRequested();
         var first = fromByte;
         var singleWord = program.Instructions.Length <= 64;
-        if (!singleWord)
+        if (!singleWord && !selectedEnd.HasValue)
         {
             var seek = Utf8SliceRunner.TrySeekInitialRegularStart(program, input, ref first, ref invocation);
             if (seek != Utf8ExecutionLimitKind.None) return seek;
@@ -173,12 +174,13 @@ internal sealed class Utf8NonBacktrackingSearchState
                 return Utf8ExecutionLimitKind.None;
             }
         }
+        var end = selectedEnd ?? input.Length;
         var scalars = 0;
-        for (var edge = first; edge < input.Length;)
+        for (var edge = first; edge < end;)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            var block = input.Slice(edge, Math.Min(64, input.Length - edge));
+            var block = input.Slice(edge, Math.Min(64, end - edge));
             var firstNonAscii = block.IndexOfAnyExceptInRange((byte)0, (byte)0x7f);
             if (firstNonAscii < 0) scalars += block.Length;
             else
@@ -212,7 +214,11 @@ internal sealed class Utf8NonBacktrackingSearchState
             var result = new Utf8NonBacktrackingSearchState(boundaries, bits, stride, reservation);
             var epsilon = program.NonBacktrackingEpsilonOrder.AsSpan();
             var scalar = default(Rune);
-            var edge = input.Length;
+            // Word boundaries at the chosen end still see the next scalar.
+            // The last row has no consuming continuation out of this table.
+            if (end < input.Length && epsilon.Length != 0)
+                _ = Rune.DecodeFromUtf8(input[end..], out scalar, out _);
+            var edge = end;
             for (var boundary = scalars; boundary >= 0; boundary--)
             {
                 // Each admitted row also stores its byte offset. The same
@@ -238,7 +244,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                 }
                 boundaries[boundary] = edge;
                 // On the next reverse row this preceding scalar is current.
-                // The end row has no current scalar; the physical start has no prior one.
+                // The physical start has no preceding scalar.
                 edge -= width;
                 scalar = before;
             }
@@ -252,9 +258,9 @@ internal sealed class Utf8NonBacktrackingSearchState
     }
 
     internal static Utf8SliceSearchOutcome FindFirstWideCapture(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int fromByte, int[] captureStarts, int[] captureEnds, ref Utf8SliceInvocation invocation)
+        int fromByte, int[] captureStarts, int[] captureEnds, ref Utf8SliceInvocation invocation, int? selectedEnd = null)
     {
-        var breach = TryCreate(program, input, ref invocation, out var table, fromByte);
+        var breach = TryCreate(program, input, ref invocation, out var table, fromByte, selectedEnd);
         if (breach != Utf8ExecutionLimitKind.None)
         {
             Array.Fill(captureStarts, -1);
@@ -262,7 +268,14 @@ internal sealed class Utf8NonBacktrackingSearchState
             return new(false, -1, -1, breach);
         }
         var boundary = 0;
-        try { return table!.FindFirst(program, ref boundary, captureStarts, captureEnds, ref invocation); }
+        try
+        {
+            var outcome = table!.FindFirst(program, ref boundary, captureStarts, captureEnds, ref invocation);
+            if (selectedEnd.HasValue && outcome.Breach == Utf8ExecutionLimitKind.None &&
+                (!outcome.Found || outcome.StartByte != fromByte || outcome.EndByte != selectedEnd.Value))
+                throw new InvalidOperationException("NonBacktracking capture replay changed the selected range.");
+            return outcome;
+        }
         finally { table!.Release(ref invocation); }
     }
 

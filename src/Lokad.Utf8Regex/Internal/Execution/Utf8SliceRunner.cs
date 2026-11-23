@@ -481,14 +481,24 @@ internal static partial class Utf8SliceRunner
         {
             if (captureStarts.Length == 0 && program.NonBacktrackingOrderedClosures.Length != 0)
                 return FindOrderedRegularRange(program, input, fromByte, ref invocation);
-            // A short suffix needs comparatively few viability bits. Replay
-            // captures once when the thread register count justifies walking
-            // the suffix. Small early matches can finish without that walk.
+            // Replay one set of captures when the remaining input is small
+            // relative to the register matrix. For longer input, select the
+            // range first so an early hit avoids building the whole table.
             var suffixBytes = input.Length - fromByte;
-            if (captureStarts.Length != 0 && program.Instructions.Length > 64 && suffixBytes <= 128 &&
+            if (captureStarts.Length != 0 && program.Instructions.Length > 64 &&
                 suffixBytes <= 8L * (2L * program.GroupCount + program.NonBacktrackingCaptureOpeningCount))
-                return Utf8NonBacktrackingSearchState.FindFirstWideCapture(program, input, fromByte,
-                    captureStarts, captureEnds, ref invocation);
+            {
+                if (suffixBytes <= 128)
+                    return Utf8NonBacktrackingSearchState.FindFirstWideCapture(program, input, fromByte,
+                        captureStarts, captureEnds, ref invocation);
+                var selected = RunNonBacktracking(program, input, fromByte, [], [], false, false, ref invocation);
+                if (selected.Found)
+                    return Utf8NonBacktrackingSearchState.FindFirstWideCapture(program, input, selected.StartByte,
+                        captureStarts, captureEnds, ref invocation, selected.EndByte);
+                Array.Fill(captureStarts, -1);
+                Array.Fill(captureEnds, -1);
+                return selected;
+            }
             return RunNonBacktracking(program, input, fromByte, captureStarts, captureEnds,
                 false, false, ref invocation);
         }

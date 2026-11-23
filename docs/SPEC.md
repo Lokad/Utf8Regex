@@ -91,10 +91,11 @@ scalars in bounded input blocks to size their arrays, then record each byte
 offset under its row's work admission. A later refusal leaves prior cursor
 results valid.
 
-Short first-match searches in wide programs can build viability rows for the
-requested suffix and replay only the winning path. That path uses one set of
-capture openings and keeps byte offsets and boundary context in the original
-subject.
+First-match capture searches in wide programs can use viability rows when the
+suffix is small relative to the number of capture registers. On longer eligible
+inputs, discovery selects the range without capture registers and replay builds
+rows only for that range. Replay uses one set of capture openings and keeps
+byte offsets and boundary context in the original subject.
 
 ### Native pattern metadata
 

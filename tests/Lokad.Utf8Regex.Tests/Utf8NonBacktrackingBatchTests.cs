@@ -86,6 +86,21 @@ public sealed class Utf8NonBacktrackingBatchTests
     }
 
     [Fact]
+    public void SelectedWideCaptureRangeKeepsBothWordNeighborsUnderAWorkingCap()
+    {
+        var pattern = "(?:" + string.Concat(Enumerable.Repeat("(a)", 160)) + @")z|\B(?<symbol>K+)\B";
+        using var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking, new()
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = 32 * 1024 },
+        });
+        var input = Encoding.UTF8.GetBytes("𐐀KKx" + new string('!', 140));
+        var captures = new Utf8CaptureRange[regex.CaptureGroupCount + 1];
+        Assert.Equal(new Utf8CaptureRange(4, 10), regex.Match(input, 4, captures));
+        Assert.Equal(new Utf8CaptureRange(4, 10), captures[^1]);
+        Assert.False(captures[1].Success);
+    }
+
+    [Fact]
     public void ProvedWideMissDoesNotNeedViabilityStorage()
     {
         using var regex = new Utf8Regex(@"(?<x>a{72})z", RegexOptions.NonBacktracking, new()

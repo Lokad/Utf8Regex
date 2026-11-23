@@ -21,9 +21,10 @@ public sealed class Utf8NonBacktrackingRowAdmissionTests
     }
 
     [Theory]
-    [InlineData(1)]
-    [InlineData(129)]
-    public void OversizedThreadRegistersAreAvoidedForShortCaptureSearches(int length)
+    [InlineData(1, true)]
+    [InlineData(129, true)]
+    [InlineData(400_000, false)]
+    public void OversizedThreadRegistersAreAvoidedWhenCaptureReplayIsEligible(int length, bool replay)
     {
         using var regex = new Utf8Regex(string.Concat(Enumerable.Repeat("(a)", 16_000)), RegexOptions.NonBacktracking);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
@@ -32,7 +33,7 @@ public sealed class Utf8NonBacktrackingRowAdmissionTests
 
         var input = Encoding.UTF8.GetBytes(new string('a', length));
         var captures = new Utf8CaptureRange[2];
-        if (length == 1)
+        if (replay)
         {
             Assert.False(regex.Match(input, captures: captures).Success);
             Assert.All(captures, capture => Assert.False(capture.Success));
