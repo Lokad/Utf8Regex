@@ -824,6 +824,18 @@ internal static partial class Utf8SliceRunner
         return Utf8ExecutionLimitKind.None;
     }
 
+    private static Utf8ExecutionLimitKind TrySeekDecimalLiteralWindow(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, byte literal, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd)
+    {
+        // The caller proved a boundary, decimal run and adjacent one-byte delimiter.
+        var floor = position;
+        var breach = TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
+        windowEnd = position;
+        return breach != Utf8ExecutionLimitKind.None || position < 0 ? breach :
+            TryRewindClassWhitespace(program, input, floor, leadingClass: 2, gapMaximum: 0, directClassLiteral: true,
+                ref position, ref invocation);
+    }
+
     internal static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int leadingClass, byte literal, in PreparedSubstringSearch? search,
         long gapMaximum, bool direct, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd,

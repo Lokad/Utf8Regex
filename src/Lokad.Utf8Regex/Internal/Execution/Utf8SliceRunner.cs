@@ -654,6 +654,7 @@ internal static partial class Utf8SliceRunner
         (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) repeatPrefix = default;
         long classGapMaximum = 0;
         var directClassLiteral = false;
+        var seekDecimalWindow = false;
         var singleWindowAttempt = false;
         var requiredClassSuffix = default((int First, int Second));
         var verifiedClassLiteralLength = 0;
@@ -682,6 +683,7 @@ internal static partial class Utf8SliceRunner
                 // A leading boundary admits only a bounded direct class window.
                 // The window seeks this byte directly and verifies every start.
                 classLiteral = literal;
+                seekDecimalWindow = leadingClass == 2 && classGapMaximum == 0;
             }
             else if (leadingClass >= 0 && literal >= 0)
             {
@@ -782,10 +784,13 @@ internal static partial class Utf8SliceRunner
             // matches, captures and assertion context keep their usual order.
             while (hasClassWindow && position > classWindowEnd)
             {
-                var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
-                    (byte)classLiteral, classSearch, classGapMaximum, directClassLiteral,
-                    ref position, ref invocation, out classWindowEnd, repeatPrefix, classAlternatives,
-                    requiredClassSuffix, screenedDelimiter);
+                var seekBreach = seekDecimalWindow
+                    ? TrySeekDecimalLiteralWindow(program, input, (byte)classLiteral,
+                        ref position, ref invocation, out classWindowEnd)
+                    : TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
+                        (byte)classLiteral, classSearch, classGapMaximum, directClassLiteral,
+                        ref position, ref invocation, out classWindowEnd, repeatPrefix, classAlternatives,
+                        requiredClassSuffix, screenedDelimiter);
                 screenedDelimiter = -1;
                 if (seekBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, seekBreach);
