@@ -207,16 +207,17 @@ internal static class Pcre2SliceDriver
         int minimumByteLength,
         scoped ref Utf8SliceInvocation invocation,
         byte? leadingAsciiByte = null,
-        int delimiter = -1)
+        int delimiter = -1,
+        int firstAsciiStart = -1)
     {
         CheckInvocation(ref invocation);
         // Bound candidate starts; the matcher still sees the full subject.
         var lastStart = input.Length - minimumByteLength;
-        if (start > lastStart) return Pcre2CharacterMatch.NoMatch;
+        var position = Math.Max(start, firstAsciiStart);
+        if (position > lastStart) return Pcre2CharacterMatch.NoMatch;
         // Only matching dependencies can observe slots in a whole-value search.
         var slots = program.ReadsCaptures ? RentProgramSlots(program, ref invocation) : new Utf8SliceSlots([], []);
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
-        var position = start;
         invocation.AnchorOriginByte = start;
         if (program.CanMatchEmpty || program.HasContiguousAnchor) leadingAsciiByte = null;
         int end;

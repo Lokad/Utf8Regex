@@ -1535,7 +1535,7 @@ internal static partial class Pcre2Runner
             }
 
             if (Pcre2SliceDriver.RejectMissingCandidate(sliceProgram.SliceProgram,
-                compiledProgram.CandidateSearch, input.Bytes, start.Value, ref invocation, out _))
+                compiledProgram.CandidateSearch, input.Bytes, start.Value, ref invocation, out var firstAsciiStart))
             {
                 result = false;
                 return true;
@@ -1545,7 +1545,7 @@ internal static partial class Pcre2Runner
                 ? null : sliceProgram.Fallback.LeadingAsciiByte;
             result = Pcre2SliceDriver.FindFirst(sliceProgram.SliceProgram, input.Bytes, start.Value,
                 sliceProgram.Fallback.MinimumByteLength, ref invocation, leadingAsciiByte,
-                sliceProgram.DisjointClassDelimiter).Success;
+                sliceProgram.DisjointClassDelimiter, firstAsciiStart).Success;
             return true;
         }
 
@@ -1580,8 +1580,20 @@ internal static partial class Pcre2Runner
             }
             else
             {
+                var firstAsciiStart = -1;
+                // Bulk leading-byte discovery avoids trying every scalar in a
+                // long prefix. Short whole matches use the direct attempt.
+                if (input.ByteLength - start.Value >= 64 &&
+                    compiledProgram.CandidateSearch.Kind == Pcre2CandidateSearchKind.LeadingAsciiSet &&
+                    Pcre2SliceDriver.RejectMissingCandidate(sliceProgram.SliceProgram, compiledProgram.CandidateSearch,
+                        input.Bytes, start.Value, ref invocation, out firstAsciiStart))
+                {
+                    result = default;
+                    return true;
+                }
                 directMatch = Pcre2SliceDriver.FindFirst(sliceProgram.SliceProgram, input.Bytes, start.Value,
-                    sliceProgram.Fallback.MinimumByteLength, ref invocation, delimiter: sliceProgram.DisjointClassDelimiter);
+                    sliceProgram.Fallback.MinimumByteLength, ref invocation, delimiter: sliceProgram.DisjointClassDelimiter,
+                    firstAsciiStart: firstAsciiStart);
                 invocation.CheckpointHook = null;
             }
         }

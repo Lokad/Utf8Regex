@@ -129,6 +129,28 @@ public sealed class Pcre2FullProbeInvocationAuthorityTests
         Assert.False(afterFalseStart.GetGroup(3).Success);
     }
 
+    [Fact]
+    public void SliceMatchUsesTheProvedStartAcrossOutputWidths()
+    {
+        using var regex = Create("([a-z]+)@([a-z]+)(![0-9]+)?", 256);
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        var input = Encoding.UTF8.GetBytes(new string('_', 2048) + "😀aa@!ab@tail");
+        Assert.True(regex.IsMatch(input));
+        Assert.False(regex.IsMatch(input.AsSpan(0, 2052)));
+        Assert.False(regex.Match(input.AsSpan(0, 2052)).Success);
+
+        Span<Utf8Pcre2CaptureRange> output = stackalloc Utf8Pcre2CaptureRange[4];
+        foreach (var width in new[] { 0, 1, 4 })
+        {
+            var match = regex.Match(input, captures: output[..width]);
+            Assert.True(match.Success);
+            Assert.Equal((2056, 2063), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        }
+        Assert.Equal((2056, 2058), (output[1].StartOffsetInBytes, output[1].EndOffsetInBytes));
+        Assert.False(output[3].Success);
+    }
+
     private static Utf8Pcre2Regex Create(string pattern, uint work, ulong heap = 1 << 20, ulong result = 1 << 20)
         => new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {

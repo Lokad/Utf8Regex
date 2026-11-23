@@ -69,8 +69,9 @@ internal static partial class Pcre2Runner
         var program = slice.SliceProgram;
         ref var invocation = ref budget.WorkingInvocation;
         invocation.AnchorOriginByte = firstMatchingPosition.Value;
+        var firstAsciiStart = -1;
         if (!retryNonEmpty && Pcre2SliceDriver.RejectMissingCandidate(program, compiled.CandidateSearch,
-                input.Bytes, start.Value, ref invocation, out _)) return default;
+                input.Bytes, start.Value, ref invocation, out firstAsciiStart)) return default;
         // The exclusive memory cursor owns this admitted storage across moves,
         // just as Core's memory cursor does. Attempts reset semantic VM state;
         // capacity and its loan survive host waits until EOF/failure/Dispose.
@@ -88,7 +89,8 @@ internal static partial class Pcre2Runner
         }
         else
         {
-            var outcome = Pcre2SliceDriver.FindCaptureRanges(slice, input.Bytes, start.Value, slots, ref workspace, ref invocation);
+            var outcome = Pcre2SliceDriver.FindCaptureRanges(slice, input.Bytes,
+                Math.Max(start.Value, firstAsciiStart), slots, ref workspace, ref invocation);
             Pcre2SliceDriver.ThrowIfSliceBreached(outcome.Breach);
             if (!outcome.Found) return default;
             begin = outcome.StartByte; end = outcome.EndByte;
