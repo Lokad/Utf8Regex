@@ -177,7 +177,7 @@ internal static partial class Utf8SliceRunner
             : RunUnboundedAsciiRange(input, captureStart, (byte)lastLow, lastHigh, ref invocation);
         if (last.EndIndex <= captureStart || last.Breach != Utf8ExecutionLimitKind.None)
             return new(false, -1, last.Breach);
-        if (slot != 0 && captureStarts.Length != 0 &&
+        if (slot != 0 && captureStarts.Length > 1 &&
             (!stacks.PushTrail(0, captureEnds[0], firstEnd, false, ref invocation) ||
              !stacks.PushTrail(1, captureEnds[1], last.EndIndex, false, ref invocation)))
             return new(false, -1, stacks.Breach);
@@ -188,7 +188,11 @@ internal static partial class Utf8SliceRunner
         if (captureStarts.Length != 0)
         {
             if (slot != 0) { captureStarts[0] = start; captureEnds[0] = firstEnd; }
-            captureStarts[slot] = captureStart; captureEnds[slot] = last.EndIndex;
+            if (slot < captureStarts.Length)
+            {
+                captureStarts[slot] = captureStart;
+                captureEnds[slot] = last.EndIndex;
+            }
         }
         return new(true, last.EndIndex, Utf8ExecutionLimitKind.None);
     }

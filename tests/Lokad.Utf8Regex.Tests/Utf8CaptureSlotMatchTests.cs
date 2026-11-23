@@ -74,7 +74,7 @@ public sealed class Utf8CaptureSlotMatchTests
                 var expected = oracle.Match(text[..end], start);
                 var byteStart = Encoding.UTF8.GetByteCount(text.AsSpan(0, start));
                 var byteEnd = Encoding.UTF8.GetByteCount(text.AsSpan(0, end));
-                foreach (var length in new[] { 0, 1, numbers.Length, numbers.Length + 2 }.Distinct())
+                foreach (var length in new[] { 0, 1, 2, numbers.Length, numbers.Length + 2 }.Distinct())
                 {
                     var slots = Enumerable.Repeat(sentinel, length).ToArray();
                     var actual = regex.Match(input, byteStart, slots, controlled ? source.Token : default,
@@ -86,6 +86,25 @@ public sealed class Utf8CaptureSlotMatchTests
                 }
             }
         }
+    }
+
+    [Fact]
+    public void ShortDestinationFitsBelowTheFullCaptureWorkspace()
+    {
+        var pattern = @"\A(?<1000>é)" + string.Concat(Enumerable.Repeat("(b)", 24)) + @"\z";
+        var input = Encoding.UTF8.GetBytes("é" + new string('b', 24));
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = new() { MaxWorkingBytes = 96 } });
+        var slots = new Utf8CaptureRange[2];
+        var expected = new Utf8CaptureRange(0, input.Length);
+        Assert.Equal(expected, regex.Match(input, captures: slots));
+        Assert.Equal(expected, slots[0]);
+        Assert.Equal(1, regex.GroupNumberFromCaptureSlot(1));
+        Assert.Equal(new Utf8CaptureRange(2, 3), slots[1]);
+        Assert.False(regex.Match(input.AsSpan(0, input.Length - 1), captures: slots).Success);
+        Assert.All(slots, slot => Assert.False(slot.Success));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+                regex.Match(input, captures: new Utf8CaptureRange[regex.CaptureGroupCount + 1])).ResourceKind);
     }
 
     private static void EqualRange(string text, Group? expected, Utf8CaptureRange actual)

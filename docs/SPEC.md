@@ -40,7 +40,8 @@ and `Success = true`.
 Pre-cancellation or a closed funded expression leaves the span unchanged.
 A miss or failure after entry clears the defined window. Scratch needs
 admission and refunds synchronously. The caller span has no result-byte
-charge. Copied ranges survive later operations and disposal.
+charge. Backtracking programs without capture readers record only the
+requested groups. Copied ranges survive later operations and disposal.
 
 For history, use `CreateMatchCursor` over stable memory. `Utf8RangeMatch.Value`
 is the whole range. `GroupNumbers` lists group numbers. `TryGetGroup` gives

@@ -1892,9 +1892,9 @@ internal static partial class Utf8SliceRunner
                     programIndex++;
                     break;
                 case Utf8SliceInstructionKind.CaptureStart:
-                    // Empty buffers mean the caller proved these values are
-                    // unobserved. The instruction still spends its normal work.
-                    if (captureStarts.Length == 0) { programIndex++; break; }
+                    // Capture effects beyond the requested slots are unobserved.
+                    // The instruction still spends its normal work.
+                    if ((uint)instruction.A >= (uint)captureStarts.Length) { programIndex++; break; }
                     if (program.UsesCaptureOpeningJournal)
                     {
                         if (!stacks.PushTrailEntry(new Utf8SliceTrailEntry { Slot = instruction.A, NewValue = inputIndex, IsOpening = true }, ref invocation))
@@ -1917,7 +1917,7 @@ internal static partial class Utf8SliceRunner
                     programIndex++;
                     break;
                 case Utf8SliceInstructionKind.CaptureEnd:
-                    if (captureStarts.Length == 0) { programIndex++; break; }
+                    if ((uint)instruction.A >= (uint)captureStarts.Length) { programIndex++; break; }
                     if (program.UsesCaptureOpeningJournal)
                     {
                         // An opening capture does not overwrite the last completed one.
