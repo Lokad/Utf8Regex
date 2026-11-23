@@ -8,6 +8,25 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ScalarCountBudgetTests
 {
     [Theory]
+    [InlineData("7.12", "7.12")]
+    [InlineData("7.٢𝟙", "7.٢𝟙")]
+    [InlineData("7.Ω", "7")]
+    [InlineData("7.", "7")]
+    public void OptionalTerminalDecimalsNeedNoRetryStorage(string text, string expected)
+    {
+        using var regex = new Utf8Regex(@"\d+(?:\.\d+)?", RegexOptions.CultureInvariant, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy { MaxWorkingBytes = 1 }
+        });
+        var input = Encoding.UTF8.GetBytes(text);
+        var match = regex.Match(input);
+        Assert.True(match.Success);
+        Assert.Equal(0, match.StartOffsetInBytes);
+        Assert.Equal(Encoding.UTF8.GetByteCount(expected), match.EndOffsetInBytes);
+        Assert.Equal(1, regex.Count(input));
+    }
+
+    [Theory]
     [InlineData(@"\d+(?:\.\d+)?")]
     [InlineData(@"(\d+)(?:\.(\d+))?")]
     public void CountSeeksRequiredDecimalsAcrossSparseMixedText(string pattern)

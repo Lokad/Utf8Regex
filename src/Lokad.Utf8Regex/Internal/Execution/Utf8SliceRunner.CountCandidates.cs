@@ -1277,18 +1277,28 @@ internal static partial class Utf8SliceRunner
         if (!MatchesStraightAsciiPrefix(program, input, position, probe, 2, out var verified, out _))
             return -1;
 
-        // A required ASCII repeat immediately after a verified byte cannot
-        // match without its first byte. A greedy repeat with an empty tail
-        // then has an accepting path, but still runs for extent and captures.
+        // A required repeat immediately after a verified byte cannot match
+        // without its first scalar. Prove membership for an ASCII interval
+        // or decimal set. The repeat still runs for extent and captures.
         var next = probe + 1;
         if (verified == 1 && next < code.Length &&
             code[next] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 } repeat &&
-            IsSingleAtomRepeat(code, next, repeat) &&
-            GetUnfoldedAsciiRange(code[next + 1], out var end) is >= 0 and var start)
+            IsSingleAtomRepeat(code, next, repeat))
         {
-            var edge = position + 1;
-            if (edge == input.Length || (uint)(input[edge] - start) > (uint)(end - start)) return -1;
-            provesAccept = allowAcceptProof && CanAcceptEmptyTail(code, repeat.A + 1);
+            var atom = code[next + 1];
+            var first = GetUnfoldedAsciiRange(atom, out var last);
+            if (first >= 0 || atom.IsDecimalDigitSet)
+            {
+                var edge = position + 1;
+                if (edge == input.Length) return -1;
+                var value = input[edge];
+                var matches = first >= 0
+                    ? (uint)(value - first) <= (uint)(last - first)
+                    : Utf8AsciiBytePredicates.IsDigit(value) || value >= 128 &&
+                        TryReadScalar(input, edge, false, out var scalar, out _) && Rune.IsDigit(scalar);
+                if (!matches) return -1;
+                provesAccept = allowAcceptProof && CanAcceptEmptyTail(code, repeat.A + 1);
+            }
         }
         return probe == index ? verified : 0;
     }
