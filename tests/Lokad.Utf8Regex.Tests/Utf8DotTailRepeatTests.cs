@@ -230,6 +230,25 @@ public sealed class Utf8DotTailRepeatTests
     }
 
     [Fact]
+    public void CompactRepeatRewindSkipsImpossibleStartsAndRetainsTheLaterBalance()
+    {
+        const string pattern = @"BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\s\S]))*END(?(open)(?!))";
+        const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+        var text = "BEGIN BEGIN " + new string('x', 4096) + "😀 END";
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options);
+        using var regex = new Utf8Regex(pattern, options,
+            new() { ResourcePolicy = Policy() with { MaxWorkSteps = 512 } });
+        using var source = new CancellationTokenSource();
+
+        Assert.Equal(1, oracle.Count(text));
+        Assert.Equal(1, regex.Count(bytes, source.Token));
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes, cancellationToken: source.Token));
+        Assert.Equal((6, bytes.Length), (actual.Value.StartOffsetInBytes, actual.Value.EndOffsetInBytes));
+        Utf8MatchSequence.AssertCaptures(oracle.Match(text), actual, bytes, text);
+    }
+
+    [Fact]
     public void OverlappingDotTailAdmitsOneRewindFrame()
     {
         var input = Encoding.UTF8.GetBytes(new string('a', 2048) + "\n");

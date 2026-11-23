@@ -1960,7 +1960,8 @@ internal static partial class Utf8SliceRunner
                     var repeat = instructions[instruction.A];
                     if (!program.RightToLeft && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
                         repeat.A == programIndex + 1 && instructions[repeat.A].B == 0 &&
-                        stacks.CompactScalarRepeatExit(frameBase, repeat.A, positions[repeat.B], input, inputIndex) &&
+                        stacks.CompactScalarRepeatExit(frameBase, repeat.A, positions[repeat.B], input, inputIndex,
+                            instructions[repeat.A].RepeatExitRewindStarts) &&
                         instruction.B != 0)
                     {
                         failure = stacks.ScanScalarRepeatExit(input, instruction.B, ref positions[repeat.B], ref inputIndex, ref invocation);
@@ -2632,7 +2633,8 @@ internal static partial class Utf8SliceRunner
             return Push(ref _frameTables, ref _frameCount, FrameChunkCapacity, frame, ref invocation, ref _reservedBytes, out Breach);
         }
 
-        internal bool CompactScalarRepeatExit(int frameBase, int exit, int start, ReadOnlySpan<byte> input, int end)
+        internal bool CompactScalarRepeatExit(int frameBase, int exit, int start, ReadOnlySpan<byte> input, int end,
+            int rewindStarts)
         {
             if (_frameCount <= frameBase) return false;
             ref var latest = ref FrameAt(_frameCount - 1);
@@ -2663,7 +2665,7 @@ internal static partial class Utf8SliceRunner
 
             latest.ResumeKind = Utf8SliceResumeKind.ScalarRepeatRewind;
             latest.Aux = start;
-            latest.Count = 0;
+            latest.Count = rewindStarts;
             latest.InputIndex = end;
             return true;
         }

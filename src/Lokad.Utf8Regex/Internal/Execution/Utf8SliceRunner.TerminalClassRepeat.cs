@@ -1010,6 +1010,16 @@ internal static partial class Utf8SliceRunner
                 HasDisjointDecimalContinuation(code, repeat.A + 1, setMasks, categories, budget))
                 code[repeat.A] = new(capturedExit.Kind, capturedExit.A, capturedExit.B,
                     capturedExit.C | Utf8SliceInstruction.RepeatExitUnobservedDecimalFlag, capturedExit.D);
+            if (repeat.A < code.Length - 1 &&
+                code[repeat.A - 1] is { Kind: Utf8SliceInstructionKind.RepeatEnd, B: not 0 } guardedEnd &&
+                guardedEnd.A == repeatIndex)
+            {
+                // A compact rewind only needs endpoints that can start the continuation.
+                var starts = FindRepeatRewindStarts(code, setMasks, repeat.A + 1, budget);
+                var guardedExit = code[repeat.A];
+                if (starts != 0)
+                    code[repeat.A] = new(guardedExit.Kind, guardedExit.A, guardedExit.B, guardedExit.C, starts);
+            }
             return;
         }
         var atom = code[repeatIndex + 1];
