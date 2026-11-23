@@ -1,4 +1,5 @@
 using System.Text;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 
@@ -6,6 +7,26 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 
 public sealed class PosixWorkspaceTests
 {
+    [Fact]
+    public void DirectRunsWithPrivateTagsAdmitOnlyPublicCaptureSlots()
+    {
+        const int prefixLength = 72;
+        var pattern = "^" + string.Concat(Enumerable.Repeat("[0-9]", prefixLength)) + "([a-z]+)([0-9]+)$";
+        var input = Encoding.UTF8.GetBytes(new string('1', prefixLength) + "sku007");
+        var workingBytes = Utf8ConstructionBudget.ArrayBytes<int>(4);
+        using var regex = new Utf8PosixRegex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = workingBytes }
+        });
+        var account = new Account(workingBytes);
+        Span<Utf8CaptureRange> output = stackalloc Utf8CaptureRange[3];
+
+        Assert.Equal(new Utf8CaptureRange(0, input.Length), regex.Match(input, captures: output, workingMemoryAllowance: account));
+        Assert.Equal(new Utf8CaptureRange(prefixLength, prefixLength + 3), output[1]);
+        Assert.Equal(new Utf8CaptureRange(prefixLength + 3, input.Length), output[2]);
+        Assert.Equal(0UL, account.Used);
+    }
+
     [Theory]
     [InlineData("()", "")]
     [InlineData("(.)", "😀")]

@@ -42,7 +42,9 @@ internal partial struct PosixWorkspace
         workspace = default;
         workspace._program = program;
         workspace._openOffset = program.DirectGreedyRuns ? 0 : checked(program.Scalar.RepeatCount * 2);
-        var tags = captureHistory ? program.FirstAcceptanceIsLongest ? program.Parents.Length : program.CaptureTags.Length - 1 : 0;
+        var tags = captureHistory
+            ? program.FirstAcceptanceIsLongest && !program.DirectGreedyRuns ? program.Parents.Length : program.CaptureTags.Length - 1
+            : 0;
         workspace._lastOffset = checked(workspace._openOffset + tags);
         var count = checked(workspace._lastOffset + tags);
         if (count == 0) return;

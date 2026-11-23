@@ -145,7 +145,7 @@ internal sealed partial class PosixProgram
         if (!firstAcceptanceIsLongest) PreferLongerScalarAlternatives(scalar.Instructions, budget);
         var chart = !firstAcceptanceIsLongest && groups != 0 ? CreateChart(root, budget)
             : (Nodes: Array.Empty<ChartNode>(), Classes: Array.Empty<Utf8SliceNode.CategorySetNode>());
-        var parentTags = parents.Take();
+        int[] parentTags = directGreedyRuns ? [] : parents.Take();
         var useCaptureOffsets = firstAcceptanceIsLongest;
         if (useCaptureOffsets && !directGreedyRuns && !capturesOpenOnce)
         {
@@ -164,12 +164,53 @@ internal sealed partial class PosixProgram
         // A direct, case-sensitive run at byte zero already checks its first byte.
         var firstRequiredRunAtom = greedyRuns && (!directGreedyRuns || scalar.IgnoreCase || !startsAtInputStart)
             ? firstRunAtom : -1;
+        if (directGreedyRuns)
+        {
+            PrepareDirectCaptureSlots(scalar.Instructions, parents, captureTags, budget);
+            parents.Dispose();
+        }
         var result = budget.AllocateObject((scalar, parentTags, captureTags, firstAcceptanceIsLongest, directGreedyRuns, useCaptureOffsets, firstRequiredRunAtom,
                 startsAtInputStart, terminalLineEndRepeat, chart.Nodes, chart.Classes),
             static x => new PosixProgram(x.scalar, x.parentTags, x.captureTags, x.firstAcceptanceIsLongest, x.directGreedyRuns, x.useCaptureOffsets,
                 x.startsAtInputStart, x.firstRequiredRunAtom, x.terminalLineEndRepeat, x.Nodes, x.Classes));
         construction.Complete();
         return result;
+    }
+
+    private static void PrepareDirectCaptureSlots(Span<Utf8SliceInstruction> code, Utf8ConstructionBuffer<int> tags,
+        Span<int> captureTags, Utf8ConstructionBudget budget)
+    {
+        // Direct runs have no capture-history comparisons. Reuse the parent
+        // buffer to map semantic tag IDs to compact public capture slots.
+        for (var tag = 0; tag < tags.Count; tag++)
+        {
+            budget.ChargeWork(1);
+            tags[tag] = -1;
+        }
+        for (var slot = 1; slot < captureTags.Length; slot++)
+        {
+            budget.ChargeWork(1);
+            tags[captureTags[slot]] = slot - 1;
+            captureTags[slot] = slot - 1;
+        }
+        for (var index = 0; index < code.Length; index++)
+        {
+            budget.ChargeWork(1);
+            ref var instruction = ref code[index];
+            if (instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy)
+            {
+                // The direct runner uses the private body markers to locate
+                // the repeated atom and advances straight past the repeat.
+                index = instruction.A;
+            }
+            else if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+            {
+                var slot = tags[instruction.A];
+                instruction = slot < 0
+                    ? new(Utf8SliceInstructionKind.Jump, index + 1, 0, 0, 0)
+                    : new(instruction.Kind, slot, instruction.B, instruction.C, instruction.D);
+            }
+        }
     }
 
     private static bool RequiresInputStart(ReadOnlySpan<Utf8SliceInstruction> code, Utf8ConstructionBudget budget)

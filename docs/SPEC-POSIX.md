@@ -115,6 +115,7 @@ rejected ASCII starts when the first required atom proves their exclusion.
 Depth covers live alternatives and capture
 dependencies. General capture workspace can grow quadratically in subject
 boundaries. It requires working admission, including growth overlap.
+Proved direct runs reserve capture workspace for public groups only.
 
 POSIX publishes fixed ranges or writes caller-owned slots. Any positive
 `MaxResultBytes` admits those outputs. Cursor creation can admit capture
