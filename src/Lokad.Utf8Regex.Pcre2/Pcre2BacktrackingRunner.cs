@@ -745,6 +745,9 @@ internal static class Pcre2BacktrackingRunner
             program.CaptureReadSlot > 0 ? program.CaptureReadSlot : 0;
         var repeatSlots = program.RepeatCount;
         var captureSlots = needsCaptureState && program.CaptureSlotCount > 1 ? program.CaptureSlotCount : 0;
+        // Retain the original slot index. Later slots are unobservable in
+        // the same single-reader case that skips their capture writes.
+        if (onlyCaptureSlot != 0) captureSlots = onlyCaptureSlot + 1;
         var restoresSubroutines = program.SubroutineTargets.Length != 0;
         // Slot zero belongs to the match result, outside the capture journal.
         var restoresMultipleCaptures = restoresSubroutines && captureSlots > 2 && onlyCaptureSlot == 0;

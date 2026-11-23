@@ -126,6 +126,22 @@ public sealed class Pcre2BacktrackingControlCompilerTests
     }
 
     [Fact]
+    public void SingleReaderFitsWithoutTheUnobservedStateTail()
+    {
+        var pattern = @"\A(?:(é(*ACCEPT)z)|" + string.Concat(Enumerable.Repeat("(x)", 768)) + @"\g{1})\z";
+        using var regex = new Utf8Pcre2Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = 4096 }
+        });
+
+        Assert.True(regex.IsMatch("éz"u8));
+        Assert.Equal(1, regex.Count("éz"u8));
+        var captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var failure = Assert.Throws<Pcre2MatchException>(() => regex.Match("éz"u8, captures: captures));
+        Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind);
+    }
+
+    [Fact]
     public void FailForcesImmediateBacktracking()
     {
         var regex = new Utf8Pcre2Regex("^(?:a(*FAIL)b|ac)$");
