@@ -802,7 +802,7 @@ internal static partial class Utf8SliceRunner
             {
                 var seekBreach = seekDecimalWindow
                     ? TrySeekDecimalLiteralWindow(program, input, (byte)classLiteral,
-                        ref position, ref invocation, out classWindowEnd)
+                        ref position, ref invocation, out classWindowEnd, screenedDelimiter)
                     : TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                         (byte)classLiteral, classSearch, classGapMaximum, directClassLiteral,
                         ref position, ref invocation, out classWindowEnd, repeatPrefix, classAlternatives,
@@ -917,7 +917,14 @@ internal static partial class Utf8SliceRunner
                     // short ASCII digit run. Its delimiter is an excluded byte.
                     if (reuseDecimalWindow && remainingDigits is > 0 and <= 4 &&
                         !input.Slice(position, remainingDigits).ContainsAnyExceptInRange((byte)'0', (byte)'9'))
+                    {
+                        // The next iteration resumes immediately after this
+                        // delimiter. A verified following run with the same
+                        // delimiter can supply its next window directly.
+                        if (seekDecimalWindow && followingWindowEnd > 0 && followingWindow.Literal == classLiteral)
+                            screenedDelimiter = followingWindowEnd - 1;
                         position = classWindowEnd;
+                    }
                     continue;
                 }
                 if (acceptedEnd >= 0)
