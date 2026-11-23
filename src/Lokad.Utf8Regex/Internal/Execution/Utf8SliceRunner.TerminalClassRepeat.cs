@@ -1040,12 +1040,14 @@ internal static partial class Utf8SliceRunner
         }
         var optionalAsciiLiteral = repeat is { RepeatMinimum: 0, RepeatMaximum: 1 } &&
             atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 };
-        if (!optionalAsciiLiteral && atom is not ({ Kind: Utf8SliceInstructionKind.Dot } or
+        var prepareNegatedHybridTail = atom is { Kind: Utf8SliceInstructionKind.Hybrid, B: 1, D: 0 } &&
+            repeat is { RepeatMinimum: 1, RepeatMaximum: long.MaxValue };
+        if (!optionalAsciiLiteral && !prepareNegatedHybridTail && atom is not ({ Kind: Utf8SliceInstructionKind.Dot } or
                          { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
                          { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }))
             return;
 
-        if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 } &&
+        if (prepareNegatedHybridTail || atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 } &&
             (repeat.RepeatMinimum != 0 && atom.C == 0 ||
                 repeat.RepeatMaximum == long.MaxValue && continuation == code.Length - 1))
         {
@@ -1058,6 +1060,7 @@ internal static partial class Utf8SliceRunner
                 code[repeat.A] = exit;
             }
         }
+        if (prepareNegatedHybridTail) return;
         for (var remaining = 32; continuation < code.Length && remaining > 0 &&
             code[continuation].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd; remaining--)
         {
