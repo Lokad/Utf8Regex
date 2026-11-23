@@ -1284,6 +1284,16 @@ internal static partial class Utf8SliceRunner
             budget.ChargeWork(3);
             var prefixBytes = prefix.A | (second.A << 8);
             fork = new(fork.Kind, fork.A, 0, ~target.A, prefixBytes + 1);
+            if (code.Length - fork.A >= 3)
+            {
+                budget.ChargeWork(2);
+                if (code[fork.A + 1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } tailFirst &&
+                    code[fork.A + 2] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } tailSecond)
+                {
+                    var tail = tailFirst.A | (tailSecond.A << 8);
+                    code[fork.A] = new(target.Kind, target.A, target.B, tail + 1, target.D);
+                }
+            }
             return;
         }
 

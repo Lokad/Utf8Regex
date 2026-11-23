@@ -1458,6 +1458,16 @@ internal static partial class Utf8SliceRunner
                         remaining -= 3;
                         position++;
                         index = entry.A + 1;
+                        // A hit covers the same two literal visits. Leave a
+                        // partial or failed comparison to the ordinary walk.
+                        var tail = code[entry.A].C;
+                        if (tail != 0 && remaining >= 2 && input.Length - position >= 2 &&
+                            BinaryPrimitives.ReadUInt16LittleEndian(input[position..]) == tail - 1)
+                        {
+                            remaining -= 2;
+                            position += 2;
+                            index += 2;
+                        }
                         continue;
                     }
                     // Many arms start with a fixed byte and an exact ASCII

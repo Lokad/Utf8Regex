@@ -66,6 +66,10 @@ public sealed class Utf8OptionalRepeatTests
     [Theory]
     [InlineData("///doc")]
     [InlineData("\u2003[|\t/// doc😀\n")]
+    [InlineData("/")]
+    [InlineData("//")]
+    [InlineData("/X/")]
+    [InlineData("//😀")]
     [InlineData("[")]
     [InlineData("[é///doc")]
     public void DisjointAsciiContinuationsPrepareUnicodeWhitespaceRepeats(string text)
