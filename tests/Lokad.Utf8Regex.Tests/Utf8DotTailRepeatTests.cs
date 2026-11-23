@@ -7,6 +7,23 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8DotTailRepeatTests
 {
+    [Fact]
+    public void BoundedDotTailKeepsScalarBoundsAndCaptureAcrossBoundary()
+    {
+        using var regex = new Utf8Regex(@"\Astart(?<gap>.{8,25})\bfinish", RegexOptions.Compiled,
+            new() { ResourcePolicy = Policy() });
+        using var source = new CancellationTokenSource();
+        var gap = new string('x', 23) + "😀 ";
+        var subject = Encoding.UTF8.GetBytes("start" + gap + "finish");
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+
+        Assert.True(regex.Match(subject, captures: captures, cancellationToken: source.Token).Success);
+        Assert.Equal(gap, Encoding.UTF8.GetString(subject[captures[1].StartOffsetInBytes..captures[1].EndOffsetInBytes]));
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("startx" + gap + "finish"), source.Token));
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("start" + gap + "finley"), source.Token));
+        Assert.False(regex.IsMatch("startabcdefg\n finish"u8, source.Token));
+    }
+
     private static Utf8ResourcePolicy Policy(uint depth = 128, ulong result = 1 << 20, ulong working = 1 << 20) => new()
     {
         MaxWorkSteps = 1_000_000,

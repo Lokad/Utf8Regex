@@ -239,6 +239,7 @@ internal readonly struct Utf8SliceInstruction
     // A proved backward Jump can hold the negated ASCII body mask index plus one.
     // A Beginning or Contiguous anchor stores 1 for the short repeat proof.
     // An absolute Beginning can also store the negated start of a longer proof.
+    // A RepeatEnd can pack the first instruction and byte length of a dot-tail prefix.
     internal int D { get; }
 
     internal int AsciiIntervalStart => D & 255;

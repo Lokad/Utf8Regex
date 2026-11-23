@@ -655,6 +655,24 @@ internal static partial class Utf8SliceRunner
             outcome = RunFixedReverseClassRepeat(program, atom, input, start, repeat.RepeatMinimum, ref invocation);
             return true;
         }
+        if (atom.Kind == Utf8SliceInstructionKind.Dot && instructions[repeat.A - 1].D is > 0 and var packedTail)
+        {
+            // The repeat cannot cover more than four bytes per scalar.
+            var probeBreach = invocation.TryChargeInputStep();
+            if (probeBreach != Utf8ExecutionLimitKind.None)
+            { outcome = (-1, probeBreach); return true; }
+            Span<byte> prefix = stackalloc byte[8];
+            var tailStart = packedTail >> 4;
+            var width = packedTail & 15;
+            for (var offset = 0; offset < width; offset++)
+                prefix[offset] = (byte)instructions[tailStart + offset].A;
+            var window = input.Slice(start, Math.Min(input.Length - start, (int)repeat.RepeatMaximum * 4 + width));
+            var possible = width == 1 ? window.Contains(prefix[0]) : window.IndexOf(prefix[..width]) >= 0;
+            probeBreach = invocation.TryChargeInputStep();
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (probeBreach != Utf8ExecutionLimitKind.None || !possible)
+            { outcome = (-1, probeBreach); return true; }
+        }
         if (!existenceOnly &&
             repeat is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: long.MaxValue } &&
             atom is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } &&
@@ -951,32 +969,6 @@ internal static partial class Utf8SliceRunner
         {
             if (repeat.Kind == Utf8SliceInstructionKind.RepeatLazy || suffix.Kind != Utf8SliceInstructionKind.Literal)
                 return false;
-            if (atom.Kind == Utf8SliceInstructionKind.Dot && (uint)suffix.A < 128 && repeat.RepeatMaximum is >= 8 and <= 511)
-            {
-                // An absent prefix also rejects bounded dots with nonterminal tails.
-                // Four bytes per scalar is a conservative upper bound on its reach.
-                breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None)
-                { outcome = (-1, breach); return true; }
-                Span<byte> prefix = stackalloc byte[8];
-                prefix[0] = (byte)suffix.A;
-                var prefixLength = 1;
-                while (prefixLength < prefix.Length && prefixLength < instructions.Length - tail)
-                {
-                    var next = instructions[tail + prefixLength];
-                    if (next.Kind != Utf8SliceInstructionKind.Literal || next.B != 0 || (uint)next.A >= 128)
-                        break;
-                    prefix[prefixLength++] = (byte)next.A;
-                }
-                var length = Math.Min(input.Length - start, (int)repeat.RepeatMaximum * 4 + prefixLength);
-                var window = input.Slice(start, length);
-                var possible = prefixLength == 1 ? window.IndexOf(prefix[0]) >= 0
-                    : window.IndexOf(prefix[..prefixLength]) >= 0;
-                breach = invocation.TryChargeInputStep();
-                invocation.Budget.ThrowIfCancellationRequested();
-                if (breach != Utf8ExecutionLimitKind.None || !possible)
-                { outcome = (-1, breach); return true; }
-            }
             return TryRunGreedyRepeatTerminalLiteral(program, repeatIndex, tail, leadingBoundary, input, start,
                 requiredEnd, ref invocation, out outcome);
         }
@@ -1065,6 +1057,23 @@ internal static partial class Utf8SliceRunner
         }
         if (continuation >= code.Length) return;
         var next = code[continuation];
+        if (atom.Kind == Utf8SliceInstructionKind.Dot && repeat.RepeatMaximum is >= 8 and <= 511)
+        {
+            // Capture markers and a leading boundary consume no input.
+            var tail = continuation + (next.Kind == Utf8SliceInstructionKind.Boundary ? 1 : 0);
+            var width = 0;
+            while (width < 8 && tail + width < code.Length &&
+                code[tail + width] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 })
+            {
+                budget.ChargeWork(1);
+                width++;
+            }
+            if (width != 0 && tail <= (int.MaxValue >> 4))
+            {
+                var loop = code[repeat.A - 1];
+                code[repeat.A - 1] = new(loop.Kind, loop.A, loop.B, loop.C, (tail << 4) | width);
+            }
+        }
         if (atom is { Kind: Utf8SliceInstructionKind.Set, C: not 0 })
         {
             // Case folding leaves LF unchanged, so the mask determines
