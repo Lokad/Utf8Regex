@@ -668,6 +668,7 @@ internal static partial class Utf8SliceRunner
         var checkStraightRepeat = leading is >= 0 and < 128 && leadingScalarIndex == 0 &&
             !existenceOnly && !collectHistory && input.Length - fromByte <= 64 &&
             program.TerminalRoot == Utf8SliceTerminalRootKind.AsciiSetThenRepeat;
+        var requiresEqualScalars = StartsWithSingleScalarBackreference(program);
         var lastProbedStart = input.Length - candidatePlan.MinRequiredLength;
         var leadingClass = -1;
         var classLiteral = -1;
@@ -876,6 +877,8 @@ internal static partial class Utf8SliceRunner
             if (leadingPrefix.IsEmpty && leading >= 0 && second >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                 (uint)(input[position + 1] - second) > (uint)(secondLast - second)))
                 continue;
+            if (requiresEqualScalars && !HasEqualLeadingScalars(input[position..]))
+                continue;
             var reuseRewoundDigits = reuseDecimalWindow && position < classWindowEnd;
             var provedAsciiBoundary = false;
             if (screenDecimalWindow)
@@ -1010,6 +1013,29 @@ internal static partial class Utf8SliceRunner
     internal static int AdvancePastScalar(ReadOnlySpan<byte> input, int position, bool reverse)
         => TryReadScalar(input, position, reverse, out _, out var width)
             ? position + (reverse ? -width : width) : -1;
+
+    private static bool StartsWithSingleScalarBackreference(Utf8SliceProgram program)
+    {
+        // At instruction zero, these markers close exactly one scalar in the
+        // slot used by the immediate ordinal reference. Nothing can jump to
+        // the reference before the capture completes.
+        var code = program.Instructions;
+        return program.ReadsCaptures && !program.RightToLeft && code.Length >= 4 &&
+            code[0] is { Kind: Utf8SliceInstructionKind.CaptureStart, A: var slot, B: var opening } &&
+            code[1].Kind is Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or
+                Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.CategorySet or
+                Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.Shorthand &&
+            code[2] is { Kind: Utf8SliceInstructionKind.CaptureEnd } end && end.A == slot && end.B == opening &&
+            code[3] is { Kind: Utf8SliceInstructionKind.Backref, B: 0 } reference && reference.A == slot;
+    }
+
+    private static bool HasEqualLeadingScalars(ReadOnlySpan<byte> input)
+    {
+        if (input.Length < 2) return false;
+        if (input[0] < 128) return input[0] == input[1];
+        return TryReadScalar(input, 0, false, out _, out var width) && input.Length >= 2 * width &&
+            input[..width].SequenceEqual(input.Slice(width, width));
+    }
 
     // Count and primary matching share the same necessary-prefix proof. Every
     // candidate is still verified by the scalar VM under the original invocation.
@@ -1301,6 +1327,7 @@ internal static partial class Utf8SliceRunner
         var checkAsciiBoundary = first is { Kind: Utf8SliceInstructionKind.Boundary, C: 0 } &&
             !program.RightToLeft && !program.CanMatchEmpty && !seekLiteral &&
             leadingFirst < 0 && whitespaceLiteral < 0 && input.Length - fromByte >= 256;
+        var requiresEqualScalars = StartsWithSingleScalarBackreference(program);
         var repeatMinimum = 0;
         var repeatAscii = default(Utf8SearchAsciiSet);
         if (checkAsciiBoundary)
@@ -1424,6 +1451,12 @@ internal static partial class Utf8SliceRunner
                 if (breach != Utf8ExecutionLimitKind.None)
                     return new Utf8SliceCountOutcome(count, breach);
                 invocation.Budget.ThrowIfCancellationRequested();
+                if (requiresEqualScalars && !HasEqualLeadingScalars(input[position..]))
+                {
+                    position = AdvancePastScalar(input, position, false);
+                    if (position < 0) break;
+                    continue;
+                }
                 if (checkAsciiBoundary)
                 {
                     if (Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, position, out var boundary) &&

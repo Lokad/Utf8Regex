@@ -6,6 +6,57 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8OrdinalBackreferenceTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AdjacentScalarsStillRequireTheClassAndTailAndPublishCaptures(bool compiled)
+    {
+        var regex = new Utf8Regex(@"(.)\1!", options: compiled ? RegexOptions.Compiled : RegexOptions.None,
+            policy: new Utf8RegexPolicy { MatchTimeout = Regex.InfiniteMatchTimeout, ResourcePolicy = Limits() });
+        var prefix = "aéê中世😀😃éé?"u8;
+        byte[] input = [.. prefix, .. "世世!😀😀!aa!"u8];
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(3, regex.Count(input));
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
+        Assert.True(regex.Match(input, 1, slots).Success);
+        Assert.Equal((prefix.Length, prefix.Length + 7), (slots[0].StartOffsetInBytes, slots[0].EndOffsetInBytes));
+        Assert.Equal((prefix.Length, prefix.Length + 3), (slots[1].StartOffsetInBytes, slots[1].EndOffsetInBytes));
+        Assert.True(regex.Match(input, prefix.Length + 3, slots).Success);
+        Assert.Equal((prefix.Length + 7, prefix.Length + 11), (slots[1].StartOffsetInBytes, slots[1].EndOffsetInBytes));
+
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNext(out var retained));
+        Assert.True(cursor.MoveNext(out _));
+        Assert.True(cursor.MoveNext(out _));
+        Assert.False(cursor.MoveNext(out _));
+        Assert.True(retained.GetGroupMemory(1).Span.SequenceEqual("世"u8));
+
+        var word = new Utf8Regex(@"(\w)\1");
+        Assert.False(word.IsMatch("!! 😀😀 éc"u8));
+        Assert.Equal(1, word.Count("!! 😀😀 éé"u8));
+        var folded = new Utf8Regex(@"(.)\1", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        Assert.True(folded.IsMatch("kK"u8));
+    }
+
+    [Fact]
+    public void RejectedScalarPairsSpendWorkAndKeepTheOriginalToken()
+    {
+        var regex = new Utf8Regex(@"(\w)\1", policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Limits(4)
+        });
+        var input = "aéê中世b"u8.ToArray();
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input)).ResourceKind);
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(input)).ResourceKind);
+        using var source = new CancellationTokenSource();
+        source.Cancel();
+        Assert.Equal(source.Token,
+            Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, source.Token)).CancellationToken);
+    }
+
     private static string Pattern(int scalars, bool rtl) => rtl
         ? $@"\A\k<g>(?<g>.{{{scalars}}})\z"
         : $@"\A(?<g>.{{{scalars}}})\k<g>\z";
