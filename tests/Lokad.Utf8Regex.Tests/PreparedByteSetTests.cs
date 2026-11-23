@@ -99,7 +99,7 @@ public sealed class PreparedByteSetTests
     [Fact]
     public void SharedEmptySetHasNoAcquisitionAndAsciiComplementsExcludeNonAscii()
     {
-        var full = AsciiCharClass.FromRange(Utf8InclusiveByteRange.Create(0, 127), true);
+        var full = new AsciiCharClass(ulong.MaxValue, ulong.MaxValue, negated: true);
         using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
         Assert.Same(PreparedByteSet.Empty, PreparedByteSet.CreateOwned(Array.Empty<byte>()));
         Assert.Same(PreparedByteSet.Empty, Utf8PreparedByteSearchFactory.CreateSet(full));

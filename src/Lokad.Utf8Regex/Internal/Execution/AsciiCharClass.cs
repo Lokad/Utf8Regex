@@ -26,12 +26,10 @@ internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
         _lowMask = lowMask;
         _highMask = highMask;
         Negated = negated;
-        KnownPredicateKind = Classify(lowMask, highMask, negated);
     }
 
     public bool Negated { get; }
 
-    public AsciiCharClassPredicateKind KnownPredicateKind { get; }
 
     public bool IsEmpty => !Negated && (_lowMask | _highMask) == 0;
 
@@ -63,8 +61,6 @@ internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
         return Negated ? !bit : bit;
     }
 
-    public bool HasSameDefinition(AsciiCharClass other) => Equals(other);
-
     public bool IsDisjoint(AsciiCharClass other) =>
         (ActualLowMask & other.ActualLowMask) == 0 &&
         (ActualHighMask & other.ActualHighMask) == 0;
@@ -94,15 +90,7 @@ internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
             : new AsciiCharClass(0, 1UL << (value - 64));
     }
 
-    public static bool TryUseNonEmpty(AsciiCharClass? value, out AsciiCharClass result)
-    {
-        result = value ?? Empty;
-        return value.HasValue && !value.Value.IsEmpty;
-    }
-
-    public static AsciiCharClass FromPredicate(Func<byte, bool> predicate) => FromPredicate(predicate, false);
-
-    public static AsciiCharClass FromPredicate(Func<byte, bool> predicate, bool negated)
+    public static AsciiCharClass FromPredicate(Func<byte, bool> predicate)
     {
         ulong low = 0;
         ulong high = 0;
@@ -123,7 +111,7 @@ internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
             }
         }
 
-        return new AsciiCharClass(low, high, negated);
+        return new AsciiCharClass(low, high);
     }
 
     public static AsciiCharClass FromBytes(ReadOnlySpan<byte> values) => FromBytes(values, false);
@@ -146,32 +134,6 @@ internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
             else
             {
                 high |= 1UL << (value - 64);
-            }
-        }
-
-        return new AsciiCharClass(low, high, negated);
-    }
-
-    public static AsciiCharClass FromRange(Utf8InclusiveByteRange range) => FromRange(range, false);
-
-    public static AsciiCharClass FromRange(Utf8InclusiveByteRange range, bool negated)
-    {
-        ulong low = 0;
-        ulong high = 0;
-        for (var value = range.Low; value <= range.High; value++)
-        {
-            if (value < 64)
-            {
-                low |= 1UL << value;
-            }
-            else
-            {
-                high |= 1UL << (value - 64);
-            }
-
-            if (value == byte.MaxValue)
-            {
-                break;
             }
         }
 
@@ -247,64 +209,6 @@ internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
         return new AsciiCharClass(low, high, Negated);
     }
 
-    public bool TryGetKnownPredicateKind(out AsciiCharClassPredicateKind predicateKind)
-    {
-        predicateKind = KnownPredicateKind;
-        return predicateKind != AsciiCharClassPredicateKind.None;
-    }
-
-
-    private static AsciiCharClassPredicateKind Classify(ulong low, ulong high, bool negated)
-    {
-        if (negated)
-        {
-            return AsciiCharClassPredicateKind.None;
-        }
-
-        if (MatchesExactly(low, high, Utf8AsciiBytePredicates.IsDigit))
-        {
-            return AsciiCharClassPredicateKind.Digit;
-        }
-
-        if (MatchesExactly(low, high, Utf8AsciiBytePredicates.IsLetter))
-        {
-            return AsciiCharClassPredicateKind.AsciiLetter;
-        }
-
-        if (MatchesExactly(low, high, Utf8AsciiBytePredicates.IsLetterOrDigit))
-        {
-            return AsciiCharClassPredicateKind.AsciiLetterOrDigit;
-        }
-
-        if (MatchesExactly(low, high, Utf8AsciiBytePredicates.IsWord))
-        {
-            return AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore;
-        }
-
-        if (MatchesExactly(low, high, Utf8AsciiBytePredicates.IsHexDigit))
-        {
-            return AsciiCharClassPredicateKind.AsciiHexDigit;
-        }
-
-        return AsciiCharClassPredicateKind.None;
-    }
-
-    private static bool MatchesExactly(ulong low, ulong high, Func<byte, bool> predicate)
-    {
-        for (var value = 0; value < 128; value++)
-        {
-            var stored = value < 64
-                ? (low & (1UL << value)) != 0
-                : (high & (1UL << (value - 64))) != 0;
-            if (stored != predicate((byte)value))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     private static void Add(ref ulong low, ref ulong high, byte value)
     {
         if (value < 64)
@@ -315,38 +219,5 @@ internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
         {
             high |= 1UL << (value - 64);
         }
-    }
-}
-
-internal enum AsciiCharClassPredicateKind : byte
-{
-    None = 0,
-    Digit = 1,
-    AsciiLetter = 2,
-    AsciiLetterOrDigit = 3,
-    AsciiLetterDigitUnderscore = 4,
-    AsciiHexDigit = 5,
-}
-
-internal readonly record struct Utf8InclusiveByteRange
-{
-    private Utf8InclusiveByteRange(byte low, byte high)
-    {
-        Low = low;
-        High = high;
-    }
-
-    public byte Low { get; }
-
-    public byte High { get; }
-
-    public static Utf8InclusiveByteRange Create(byte low, byte high)
-    {
-        if (low > high || high >= 0x80)
-        {
-            throw new ArgumentOutOfRangeException(nameof(high));
-        }
-
-        return new Utf8InclusiveByteRange(low, high);
     }
 }

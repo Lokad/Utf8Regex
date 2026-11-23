@@ -11,7 +11,7 @@ public sealed class Utf8AsciiClassAndBoundaryTests
     public void MembershipAndNegationAreExactForEveryAsciiByte()
     {
         var word = AsciiCharClass.FromPredicate(Utf8AsciiBytePredicates.IsWord);
-        var notWord = AsciiCharClass.FromPredicate(Utf8AsciiBytePredicates.IsWord, negated: true);
+        var notWord = new AsciiCharClass(word.PositiveLowMask, word.PositiveHighMask, negated: true);
 
         for (var value = 0; value < 128; value++)
         {
@@ -24,46 +24,16 @@ public sealed class Utf8AsciiClassAndBoundaryTests
         Assert.False(notWord.Contains(0x80));
         Assert.Equal(63, word.Count);
         Assert.Equal(65, notWord.Count);
-        Assert.Equal(AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore, word.KnownPredicateKind);
-        Assert.Equal(AsciiCharClassPredicateKind.None, notWord.KnownPredicateKind);
     }
 
     [Fact]
-    public void EqualityRangesAndKnownPredicatesUseTheSameCarrier()
+    public void ProjectedDigitRangeAgreesWithTheAsciiPredicate()
     {
-        var range = AsciiCharClass.FromRange(Utf8InclusiveByteRange.Create((byte)'0', (byte)'9'));
+        var range = ProjectToken("[0-9]", RegexOptions.None).CharClass;
         var predicate = AsciiCharClass.FromPredicate(Utf8AsciiBytePredicates.IsDigit);
 
         Assert.Equal(range, predicate);
-        Assert.True(range.HasSameDefinition(predicate));
-        Assert.Equal(AsciiCharClassPredicateKind.Digit, range.KnownPredicateKind);
         Assert.Equal(Enumerable.Range('0', 10).Select(static value => (byte)value), range.GetPositiveMatchBytes());
-        Assert.Throws<ArgumentOutOfRangeException>(() => Utf8InclusiveByteRange.Create(0x7F, 0x80));
-    }
-
-    [Fact]
-    public void SharedKnownClassPredicateMatchesItsClassCarrierForEveryByte()
-    {
-        (AsciiCharClassPredicateKind Kind, Func<byte, bool> Predicate)[] predicates =
-        [
-            (AsciiCharClassPredicateKind.Digit, Utf8AsciiBytePredicates.IsDigit),
-            (AsciiCharClassPredicateKind.AsciiLetter, Utf8AsciiBytePredicates.IsLetter),
-            (AsciiCharClassPredicateKind.AsciiLetterOrDigit, Utf8AsciiBytePredicates.IsLetterOrDigit),
-            (AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore, Utf8AsciiBytePredicates.IsWord),
-            (AsciiCharClassPredicateKind.AsciiHexDigit, Utf8AsciiBytePredicates.IsHexDigit),
-        ];
-
-        foreach (var (kind, predicate) in predicates)
-        {
-            var charClass = AsciiCharClass.FromPredicate(predicate);
-            Assert.Equal(kind, charClass.KnownPredicateKind);
-            for (var value = 0; value <= byte.MaxValue; value++)
-            {
-                Assert.Equal(charClass.Contains((byte)value), Utf8AsciiBytePredicates.MatchesKnownClass((byte)value, kind));
-            }
-        }
-
-        Assert.False(Utf8AsciiBytePredicates.MatchesKnownClass((byte)'0', AsciiCharClassPredicateKind.None));
     }
 
     [Fact]

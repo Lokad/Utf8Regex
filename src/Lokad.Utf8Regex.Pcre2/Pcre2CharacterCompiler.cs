@@ -842,13 +842,12 @@ internal sealed class Pcre2CharacterParser : IDisposable
         _budget.ChargeWork(checked((ulong)positiveTerms.Length * 256));
         var ucp = (_request.Options & Pcre2CompileOptions.Ucp) != 0;
         var semanticClass = new Pcre2CharacterClass(positiveTerms, negated, AsciiCharClass.Empty);
-        var ascii = Pcre2AsciiByteSetFactory.CreatePredicate(
+        var ascii = AsciiCharClass.FromPredicate(
             value =>
             {
                 _budget.ChargeWork(0);
                 return semanticClass.MatchesSemantic(new Rune(value), ucp, Pcre2CharacterOptions.None);
-            },
-            negated: false);
+            });
         return new Pcre2CharacterClass(positiveTerms, negated, ascii);
     }
 
