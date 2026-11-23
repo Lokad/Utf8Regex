@@ -167,6 +167,8 @@ internal static partial class Utf8SliceRunner
             var bestStart = -1;
             var bestEnd = -1;
             var position = fromByte;
+            ref var current = ref workspace.Current;
+            ref var next = ref workspace.Next;
             while (true)
             {
                 breach = invocation.TryChargeInputStep();
@@ -174,23 +176,23 @@ internal static partial class Utf8SliceRunner
                 invocation.Budget.ThrowIfCancellationRequested();
                 if (bestStart < 0 && (!anchored || position == fromByte))
                 {
-                    breach = workspace.Seed(program, input, position, ref invocation);
+                    breach = workspace.Seed(program, input, position, ref current, ref invocation);
                     if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 }
                 breach = workspace.ClearVisited(ref invocation);
                 if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 var hasScalar = TryReadScalar(input, position, false, out var scalar, out var width);
-                for (var thread = 0; thread < workspace.Current.Count; thread++)
+                for (var thread = 0; thread < current.Count; thread++)
                 {
-                    var pc = workspace.Current.Pcs[thread];
+                    var pc = current.Pcs[thread];
                     var instruction = program.Instructions[pc];
-                    var start = workspace.Current.Starts[thread];
+                    var start = current.Starts[thread];
                     if (instruction.Kind == Utf8SliceInstructionKind.Accept)
                     {
                         if (requireNonEmpty && start == position) continue;
                         bestStart = start;
                         bestEnd = position;
-                        breach = NonBacktrackingWorkspace.Copy(workspace.Current.Registers.AsSpan(thread * workspace.RegisterCount, workspace.RegisterCount),
+                        breach = NonBacktrackingWorkspace.Copy(current.Registers.AsSpan(thread * workspace.RegisterCount, workspace.RegisterCount),
                             workspace.Best, ref invocation);
                         if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                         // Lower-priority threads can no longer determine a match.
@@ -201,11 +203,11 @@ internal static partial class Utf8SliceRunner
                     if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                     if (!hit) continue;
                     breach = workspace.AddClosure(program, input, pc + 1, position + width, start,
-                        workspace.Current.Registers.AsSpan(thread * workspace.RegisterCount, workspace.RegisterCount),
-                        workspace.Next, ref invocation);
+                        current.Registers.AsSpan(thread * workspace.RegisterCount, workspace.RegisterCount),
+                        ref next, ref invocation);
                     if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 }
-                if (bestStart >= 0 && workspace.Next.Count == 0)
+                if (bestStart >= 0 && next.Count == 0)
                 {
                     breach = workspace.Project(program, captureStarts, captureEnds, ref invocation);
                     if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
@@ -214,16 +216,18 @@ internal static partial class Utf8SliceRunner
                     completed = true;
                     return new(true, bestStart, bestEnd, Utf8ExecutionLimitKind.None);
                 }
-                if (!hasScalar || anchored && workspace.Next.Count == 0)
+                if (!hasScalar || anchored && next.Count == 0)
                 {
                     invocation.Budget.ThrowIfCancellationRequested();
                     invocation.Budget.CheckDeadline();
                     return new(false, -1, -1, Utf8ExecutionLimitKind.None);
                 }
-                (workspace.Current, workspace.Next) = (workspace.Next, workspace.Current);
-                workspace.Next.Count = 0;
+                ref var previousFrontier = ref current;
+                current = ref next;
+                next = ref previousFrontier;
+                next.Count = 0;
                 position += width;
-                if (canSeek && workspace.Current.Count == 0 && position < input.Length)
+                if (canSeek && current.Count == 0 && position < input.Length)
                 {
                     // No older thread or saved match can extend across the gap.
                     var previous = position;
@@ -250,13 +254,13 @@ internal static partial class Utf8SliceRunner
         }
     }
 
-    private sealed class NonBacktrackingThreads
+    private struct NonBacktrackingThreads
     {
-        internal NonBacktrackingThreads(int states, int registers)
+        internal NonBacktrackingThreads(int states, int cells)
         {
-            Pcs = states == 0 ? [] : new int[states];
-            Starts = states == 0 ? [] : new int[states];
-            Registers = checked(states * registers) == 0 ? [] : new int[checked(states * registers)];
+            Pcs = new int[states];
+            Starts = new int[states];
+            Registers = cells == 0 ? [] : new int[cells];
         }
         internal readonly int[] Pcs;
         internal readonly int[] Starts;
@@ -264,16 +268,16 @@ internal static partial class Utf8SliceRunner
         internal int Count;
     }
 
-    private sealed class NonBacktrackingWorkspace
+    private struct NonBacktrackingWorkspace
     {
-        internal NonBacktrackingThreads Current = new(0, 0);
-        internal NonBacktrackingThreads Next = new(0, 0);
+        internal NonBacktrackingThreads Current;
+        internal NonBacktrackingThreads Next;
         internal int RegisterCount;
-        internal int[] Best = [];
-        internal int[] Scratch = [];
-        internal int[] PendingPcs = [];
-        internal int[] PendingRegisters = [];
-        internal bool[] Visited = [];
+        internal int[] Best;
+        internal int[] Scratch;
+        internal int[] PendingPcs;
+        internal int[] PendingRegisters;
+        internal bool[] Visited;
         internal ulong Reserved;
 
         internal Utf8ExecutionLimitKind Initialize(Utf8SliceProgram program, bool recordCaptures, ref Utf8SliceInvocation invocation)
@@ -297,10 +301,10 @@ internal static partial class Utf8SliceRunner
             Reserved = bytes;
             breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            Current = new(states, RegisterCount);
+            Current = new(states, cells);
             breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            Next = new(states, RegisterCount);
+            Next = new(states, cells);
             breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             Best = RegisterCount == 0 ? [] : new int[RegisterCount];
@@ -348,7 +352,8 @@ internal static partial class Utf8SliceRunner
             return Utf8ExecutionLimitKind.None;
         }
 
-        internal Utf8ExecutionLimitKind Seed(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position, ref Utf8SliceInvocation invocation)
+        internal Utf8ExecutionLimitKind Seed(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
+            ref NonBacktrackingThreads output, ref Utf8SliceInvocation invocation)
         {
             for (var offset = 0; offset < Scratch.Length; offset += 512)
             {
@@ -356,12 +361,12 @@ internal static partial class Utf8SliceRunner
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 Scratch.AsSpan(offset, Math.Min(512, Scratch.Length - offset)).Fill(-1);
             }
-            return AddClosure(program, input, 0, position, position, Scratch, Current, ref invocation);
+            return AddClosure(program, input, 0, position, position, Scratch, ref output, ref invocation);
         }
 
         internal Utf8ExecutionLimitKind AddClosure(Utf8SliceProgram program, ReadOnlySpan<byte> input,
             int pc, int position, int start, ReadOnlySpan<int> registers,
-            NonBacktrackingThreads output, ref Utf8SliceInvocation invocation)
+            ref NonBacktrackingThreads output, ref Utf8SliceInvocation invocation)
         {
             var breach = Copy(registers, Scratch, ref invocation);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
