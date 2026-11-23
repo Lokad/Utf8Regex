@@ -47,6 +47,19 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
     }
 
     [Fact]
+    public void FoldedHeadAndTerminalRepeatFitTheSingleOriginWorkLimit()
+    {
+        using var regex = new Utf8Regex(Pattern, Options | RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 4, MaxWorkingBytes = 1, MaxDepth = 1 } });
+        using var source = new CancellationTokenSource();
+
+        Assert.Equal(new Utf8CaptureRange(0, 5), regex.Match("AbC_9-tail"u8, cancellationToken: source.Token));
+        Assert.Equal(new Utf8CaptureRange(0, 9), regex.Match("KeyK9😀"u8, cancellationToken: source.Token));
+        Assert.False(regex.Match("😀Name9"u8, cancellationToken: source.Token).Success);
+        Assert.Equal(new Utf8CaptureRange(5, 10), regex.Match("😀!aK9-last"u8, 5, cancellationToken: source.Token));
+    }
+
+    [Fact]
     public void CultureCapturedDuringConstructionKeepsTurkicAndUnicodeSemantics()
     {
         var saved = CultureInfo.CurrentCulture;

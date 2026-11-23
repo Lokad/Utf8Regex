@@ -472,10 +472,11 @@ internal sealed class Utf8SliceProgram
                 var index = 1;
                 if (groupCount == 0)
                 {
-                    // A prefix of exact ASCII atoms can be verified in the
-                    // same bounded walk as a repeat with one viable endpoint.
+                    // These atoms can share the bounded walk with a repeat
+                    // whose greedy endpoint needs no rewind.
                     while (index < instructions.Length - 1 &&
-                        instructions[index] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 })
+                        instructions[index] is ({ Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } or
+                            { Kind: Utf8SliceInstructionKind.Set, B: 0, C: not 0 }))
                     {
                         Utf8ConstructionScope.ChargeWork(1);
                         index++;
@@ -484,7 +485,8 @@ internal sealed class Utf8SliceProgram
                 if (instructions[index] is { Kind: Utf8SliceInstructionKind.RepeatGreedy } repeat &&
                     (index == 1 || repeat.HasSingleAtomBody) &&
                     (instructions[repeat.A].RepeatExitRejectsShorterEndpoints ||
-                        index == 1 && instructions[repeat.A].RepeatExitAcceptsEmptyTail))
+                        (index == 1 || repeat.RepeatMaximum == long.MaxValue) &&
+                        instructions[repeat.A].RepeatExitAcceptsEmptyTail))
                     instructions[0] = new(first.Kind, first.A, first.B, first.C, index == 1 ? 1 : -1);
             }
             else if (!canMatchEmpty && !hasContiguousAnchor)
