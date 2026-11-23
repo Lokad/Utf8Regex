@@ -8,19 +8,12 @@ internal readonly struct Utf8IlEmitter
     private readonly Utf8DynamicIlBuilder _il;
     private readonly MethodInfo _getSpanLengthMethod;
     private readonly MethodInfo _getSpanItemMethod;
-    private readonly byte _inputArgIndex;
 
     public Utf8IlEmitter(Utf8DynamicIlBuilder il, MethodInfo getSpanLengthMethod, MethodInfo getSpanItemMethod)
-        : this(il, getSpanLengthMethod, getSpanItemMethod, 1)
-    {
-    }
-
-    public Utf8IlEmitter(Utf8DynamicIlBuilder il, MethodInfo getSpanLengthMethod, MethodInfo getSpanItemMethod, byte inputArgIndex)
     {
         _il = il;
         _getSpanLengthMethod = getSpanLengthMethod;
         _getSpanItemMethod = getSpanItemMethod;
-        _inputArgIndex = inputArgIndex;
     }
 
     public Utf8IlLocal DeclareLocal<T>() => _il.DeclareLocal(typeof(T));
@@ -63,7 +56,8 @@ internal readonly struct Utf8IlEmitter
         }
     }
 
-    public void LoadArgAddress(byte index) => _il.Emit(OpCodes.Ldarga_S, index);
+    // Every emitted literal-family delegate takes its subject at argument 1.
+    private void LoadInputAddress() => _il.Emit(OpCodes.Ldarga_S, (byte)1);
 
     public void LoadLocal(Utf8IlLocal local) => _il.Emit(OpCodes.Ldloc, local);
 
@@ -71,7 +65,7 @@ internal readonly struct Utf8IlEmitter
 
     public void LoadInputLength()
     {
-        LoadArgAddress(_inputArgIndex);
+        LoadInputAddress();
         Emit(OpCodes.Call, _getSpanLengthMethod);
     }
 
@@ -79,7 +73,7 @@ internal readonly struct Utf8IlEmitter
 
     public void LoadInputByte(Utf8IlLocal indexLocal, int offset)
     {
-        LoadArgAddress(_inputArgIndex);
+        LoadInputAddress();
         LoadLocal(indexLocal);
         if (offset != 0)
         {
@@ -89,65 +83,6 @@ internal readonly struct Utf8IlEmitter
 
         Emit(OpCodes.Call, _getSpanItemMethod);
         Emit(OpCodes.Ldind_U1);
-    }
-
-    public void AddToLocal(Utf8IlLocal local, int delta)
-    {
-        LoadLocal(local);
-        LdcI4(delta);
-        Emit(OpCodes.Add);
-        StoreLocal(local);
-    }
-
-    public void EmitStoreDifference(Utf8IlLocal targetLocal, Utf8IlLocal leftLocal, Utf8IlLocal rightLocal)
-    {
-        LoadLocal(leftLocal);
-        LoadLocal(rightLocal);
-        Emit(OpCodes.Sub);
-        StoreLocal(targetLocal);
-    }
-
-    public void EmitStoreDifference(Utf8IlLocal targetLocal, Utf8IlLocal leftLocal, int rightConstant)
-    {
-        LoadLocal(leftLocal);
-        LdcI4(rightConstant);
-        Emit(OpCodes.Sub);
-        StoreLocal(targetLocal);
-    }
-
-    public void EmitStoreSum(Utf8IlLocal targetLocal, Utf8IlLocal leftLocal, int rightConstant)
-    {
-        LoadLocal(leftLocal);
-        LdcI4(rightConstant);
-        Emit(OpCodes.Add);
-        StoreLocal(targetLocal);
-    }
-
-    public void EmitClampLocalMinZero(Utf8IlLocal local)
-    {
-        var nonNegativeLabel = DefineLabel();
-        LoadLocal(local);
-        LdcI4(0);
-        Emit(OpCodes.Bge, nonNegativeLabel);
-        LdcI4(0);
-        StoreLocal(local);
-        MarkLabel(nonNegativeLabel);
-    }
-
-    public void EmitLocalLessThanLocalBranch(Utf8IlLocal leftLocal, Utf8IlLocal rightLocal, Utf8IlLabel successLabel, Utf8IlLabel failureLabel)
-    {
-        LoadLocal(leftLocal);
-        LoadLocal(rightLocal);
-        Emit(OpCodes.Blt, successLabel);
-        Emit(OpCodes.Br, failureLabel);
-    }
-
-    public void EmitLocalGreaterThanLocalBranch(Utf8IlLocal leftLocal, Utf8IlLocal rightLocal, Utf8IlLabel successLabel, Utf8IlLabel failureLabel)
-    {
-        LoadLocal(leftLocal);
-        LoadLocal(rightLocal);
-        Emit(OpCodes.Bgt, successLabel);
-        Emit(OpCodes.Br, failureLabel);
     }
 
     public void EmitEnsureAvailable(Utf8IlLocal startLocal, Utf8IlLocal inputLengthLocal, int requiredLength, Utf8IlLabel successLabel, Utf8IlLabel failureLabel)
@@ -240,106 +175,5 @@ internal readonly struct Utf8IlEmitter
         LoadLocal(valueLocal);
         LdcI4(expected);
         Emit(OpCodes.Beq, successLabel);
-    }
-
-    public void EmitEqualityBranch(Utf8IlLocal valueLocal, int expected, Utf8IlLabel successLabel, Utf8IlLabel failureLabel)
-    {
-        LoadLocal(valueLocal);
-        LdcI4(expected);
-        Emit(OpCodes.Beq, successLabel);
-        Emit(OpCodes.Br, failureLabel);
-    }
-
-    public void EmitRangeBranch(Utf8IlLocal valueLocal, int lowerInclusive, int upperInclusive, Utf8IlLabel successLabel)
-    {
-        var doneLabel = DefineLabel();
-        LoadLocal(valueLocal);
-        LdcI4(lowerInclusive);
-        Emit(OpCodes.Blt_Un, doneLabel);
-        LoadLocal(valueLocal);
-        LdcI4(upperInclusive);
-        Emit(OpCodes.Ble_Un, successLabel);
-        MarkLabel(doneLabel);
-    }
-
-    public void EmitAsciiWhitespaceBranch(Utf8IlLocal valueLocal, Utf8IlLabel successLabel, Utf8IlLabel failureLabel)
-    {
-        EmitEqualityBranch(valueLocal, ' ', successLabel);
-        EmitEqualityBranch(valueLocal, '\t', successLabel);
-        EmitEqualityBranch(valueLocal, '\r', successLabel);
-        EmitEqualityBranch(valueLocal, '\n', successLabel);
-        EmitEqualityBranch(valueLocal, 0x0B, successLabel);
-        EmitEqualityBranch(valueLocal, 0x0C, successLabel);
-        Emit(OpCodes.Br, failureLabel);
-    }
-
-    public void EmitAsciiNewlineBranch(Utf8IlLocal valueLocal, Utf8IlLabel successLabel, Utf8IlLabel failureLabel)
-    {
-        EmitEqualityBranch(valueLocal, '\r', successLabel);
-        EmitEqualityBranch(valueLocal, '\n', successLabel);
-        Emit(OpCodes.Br, failureLabel);
-    }
-
-    public void EmitAsciiUpperBranch(Utf8IlLocal valueLocal, Utf8IlLabel? successLabel, Utf8IlLabel failureLabel)
-    {
-        var continueLabel = successLabel ?? DefineLabel();
-
-        LoadLocal(valueLocal);
-        _il.Emit(OpCodes.Ldc_I4_S, (sbyte)'A');
-        Emit(OpCodes.Blt_Un, failureLabel);
-        LoadLocal(valueLocal);
-        _il.Emit(OpCodes.Ldc_I4_S, (sbyte)'Z');
-        Emit(OpCodes.Ble_Un, continueLabel);
-        Emit(OpCodes.Br, failureLabel);
-
-        if (successLabel is null)
-        {
-            MarkLabel(continueLabel);
-        }
-    }
-
-    public void EmitAsciiWordBranch(Utf8IlLocal valueLocal, Utf8IlLabel? successLabel, Utf8IlLabel failureLabel)
-    {
-        var success = successLabel ?? DefineLabel();
-
-        EmitRangeBranch(valueLocal, 'A', 'Z', success);
-        EmitRangeBranch(valueLocal, 'a', 'z', success);
-        EmitRangeBranch(valueLocal, '0', '9', success);
-        EmitEqualityBranch(valueLocal, '_', success);
-        Emit(OpCodes.Br, failureLabel);
-
-        if (successLabel is null)
-        {
-            MarkLabel(success);
-        }
-    }
-
-    public void EmitSmallPositiveSetBranch(ReadOnlySpan<byte> allowed, Utf8IlLocal valueLocal, Utf8IlLabel successLabel, Utf8IlLabel failureLabel)
-    {
-        if (allowed.Length == 0)
-        {
-            Emit(OpCodes.Br, failureLabel);
-            return;
-        }
-
-        for (var i = 0; i < allowed.Length; i++)
-        {
-            EmitEqualityBranch(valueLocal, allowed[i], successLabel);
-        }
-
-        Emit(OpCodes.Br, failureLabel);
-    }
-
-    public void EmitSmallPositiveSetBranch(AsciiCharClass allowed, Utf8IlLocal valueLocal, Utf8IlLabel successLabel, Utf8IlLabel failureLabel)
-    {
-        if (!allowed.Negated)
-        {
-            // Borrow the masks instead of materializing another class byte array.
-            // Preserve the ascending order of GetPositiveMatchBytes.
-            ChargeWork(128);
-            for (var value = 0; value < 128; value++)
-                if (allowed.Contains((byte)value)) EmitEqualityBranch(valueLocal, value, successLabel);
-        }
-        Emit(OpCodes.Br, failureLabel);
     }
 }

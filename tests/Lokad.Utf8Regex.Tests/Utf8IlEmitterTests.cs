@@ -48,55 +48,6 @@ public sealed class Utf8IlEmitterTests
     }
 
     [Fact]
-    public void Utf8IlEmitterCanBranchOnAsciiClassifications()
-    {
-        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_ClassifyAsciiByte", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>), typeof(int));
-        var il = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod);
-        var indexLocal = il.DeclareLocal<int>();
-        var valueLocal = il.DeclareLocal<byte>();
-        var whitespaceLabel = il.DefineLabel();
-        var nonWhitespaceLabel = il.DefineLabel();
-        var upperLabel = il.DefineLabel();
-        var nonUpperLabel = il.DefineLabel();
-        var wordLabel = il.DefineLabel();
-        var otherLabel = il.DefineLabel();
-
-        il.LoadArg(2);
-        il.StoreLocal(indexLocal);
-        il.LoadInputByte(indexLocal);
-        il.StoreLocal(valueLocal);
-        il.EmitAsciiWhitespaceBranch(valueLocal, whitespaceLabel, nonWhitespaceLabel);
-
-        il.MarkLabel(nonWhitespaceLabel);
-        il.EmitAsciiUpperBranch(valueLocal, upperLabel, nonUpperLabel);
-
-        il.MarkLabel(upperLabel);
-        il.LdcI4(2);
-        il.Emit(OpCodes.Ret);
-
-        il.MarkLabel(whitespaceLabel);
-        il.LdcI4(1);
-        il.Emit(OpCodes.Ret);
-
-        il.MarkLabel(nonUpperLabel);
-        il.EmitAsciiWordBranch(valueLocal, wordLabel, otherLabel);
-
-        il.MarkLabel(wordLabel);
-        il.LdcI4(3);
-        il.Emit(OpCodes.Ret);
-
-        il.MarkLabel(otherLabel);
-        il.LdcI4(0);
-        il.Emit(OpCodes.Ret);
-
-        var del = dynamicMethod.CreateDelegate<DummySpanIndexDelegate>();
-        Assert.Equal(1, del.Callback(null, " \t"u8, 0));
-        Assert.Equal(2, del.Callback(null, "Az"u8, 0));
-        Assert.Equal(3, del.Callback(null, "_z"u8, 0));
-        Assert.Equal(0, del.Callback(null, "-z"u8, 0));
-    }
-
-    [Fact]
     public void Utf8IlEmitterCanEnsureAvailableAndCompareLiteral()
     {
         using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_EnsureAvailableLiteral", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>), typeof(int), typeof(int));
@@ -128,28 +79,6 @@ public sealed class Utf8IlEmitterTests
         Assert.Equal(1, del.Callback(null, "zabc"u8, 1, 4));
         Assert.Equal(0, del.Callback(null, "zaxc"u8, 1, 4));
         Assert.Equal(0, del.Callback(null, "za"u8, 1, 2));
-    }
-
-    [Fact]
-    public void Utf8IlEmitterCanAddToLocalAndStoreDifference()
-    {
-        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_AddToLocalDifference", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>), typeof(int), typeof(int));
-        var il = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod);
-        var leftLocal = il.DeclareLocal<int>();
-        var rightLocal = il.DeclareLocal<int>();
-        var diffLocal = il.DeclareLocal<int>();
-
-        il.LoadArg(2);
-        il.StoreLocal(leftLocal);
-        il.LoadArg(3);
-        il.StoreLocal(rightLocal);
-        il.AddToLocal(leftLocal, 5);
-        il.EmitStoreDifference(diffLocal, leftLocal, rightLocal);
-        il.LoadLocal(diffLocal);
-        il.Emit(OpCodes.Ret);
-
-        var del = dynamicMethod.CreateDelegate<DummySpanIndexLengthDelegate>();
-        Assert.Equal(6, del.Callback(null, [] , 4, 3));
     }
 
     [Fact]
@@ -185,97 +114,5 @@ public sealed class Utf8IlEmitterTests
         Assert.Equal(1, del.Callback(null, "abc"u8, 0));
         Assert.Equal(2, del.Callback(null, "za"u8, 0));
         Assert.Equal(0, del.Callback(null, "mx"u8, 0));
-    }
-
-    [Fact]
-    public void Utf8IlEmitterCanClampAndStoreDerivedLocals()
-    {
-        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_ClampAndDerivedLocals", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>), typeof(int));
-        var il = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod);
-        var sourceLocal = il.DeclareLocal<int>();
-        var leftLocal = il.DeclareLocal<int>();
-        var rightLocal = il.DeclareLocal<int>();
-
-        il.LoadArg(2);
-        il.StoreLocal(sourceLocal);
-        il.EmitStoreDifference(leftLocal, sourceLocal, 5);
-        il.EmitClampLocalMinZero(leftLocal);
-        il.EmitStoreSum(rightLocal, leftLocal, 3);
-        il.EmitStoreDifference(sourceLocal, rightLocal, leftLocal);
-        il.LoadLocal(sourceLocal);
-        il.Emit(OpCodes.Ret);
-
-        var del = dynamicMethod.CreateDelegate<DummySpanIndexDelegate>();
-        Assert.Equal(3, del.Callback(null, [] , 2));
-        Assert.Equal(3, del.Callback(null, [] , 9));
-    }
-
-    [Fact]
-    public void Utf8IlEmitterCanBranchOnLocalComparisons()
-    {
-        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_LocalComparisonBranch", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>), typeof(int), typeof(int));
-        var il = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod);
-        var leftLocal = il.DeclareLocal<int>();
-        var rightLocal = il.DeclareLocal<int>();
-        var lessLabel = il.DefineLabel();
-        var greaterLabel = il.DefineLabel();
-        var equalLabel = il.DefineLabel();
-        var finalLabel = il.DefineLabel();
-
-        il.LoadArg(2);
-        il.StoreLocal(leftLocal);
-        il.LoadArg(3);
-        il.StoreLocal(rightLocal);
-        il.EmitLocalLessThanLocalBranch(leftLocal, rightLocal, lessLabel, equalLabel);
-
-        il.MarkLabel(equalLabel);
-        il.EmitLocalGreaterThanLocalBranch(leftLocal, rightLocal, greaterLabel, finalLabel);
-
-        il.MarkLabel(lessLabel);
-        il.LdcI4(-1);
-        il.Emit(OpCodes.Ret);
-
-        il.MarkLabel(greaterLabel);
-        il.LdcI4(1);
-        il.Emit(OpCodes.Ret);
-
-        il.MarkLabel(finalLabel);
-        il.LdcI4(0);
-        il.Emit(OpCodes.Ret);
-
-        var del = dynamicMethod.CreateDelegate<DummySpanIndexLengthDelegate>();
-        Assert.Equal(-1, del.Callback(null, [] , 2, 5));
-        Assert.Equal(1, del.Callback(null, [] , 5, 2));
-        Assert.Equal(0, del.Callback(null, [] , 3, 3));
-    }
-
-    [Fact]
-    public void Utf8IlEmitterCanClassifyAsciiNewlines()
-    {
-        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_NewlineClassification", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>), typeof(int));
-        var il = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod);
-        var indexLocal = il.DeclareLocal<int>();
-        var valueLocal = il.DeclareLocal<byte>();
-        var newlineLabel = il.DefineLabel();
-        var otherLabel = il.DefineLabel();
-
-        il.LoadArg(2);
-        il.StoreLocal(indexLocal);
-        il.LoadInputByte(indexLocal);
-        il.StoreLocal(valueLocal);
-        il.EmitAsciiNewlineBranch(valueLocal, newlineLabel, otherLabel);
-
-        il.MarkLabel(newlineLabel);
-        il.LdcI4(1);
-        il.Emit(OpCodes.Ret);
-
-        il.MarkLabel(otherLabel);
-        il.LdcI4(0);
-        il.Emit(OpCodes.Ret);
-
-        var del = dynamicMethod.CreateDelegate<DummySpanIndexDelegate>();
-        Assert.Equal(1, del.Callback(null, "\r"u8, 0));
-        Assert.Equal(1, del.Callback(null, "\n"u8, 0));
-        Assert.Equal(0, del.Callback(null, " "u8, 0));
     }
 }
