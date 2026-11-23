@@ -293,7 +293,14 @@ internal static class Pcre2SliceDriver
 
             if (delimiter >= 0 && lastStart - position >= 64)
             {
+                var previous = position;
                 position = Utf8SliceRunner.AdvancePastScalar(input, position, reverse: false);
+                var (first, last, _, _, _, _, _) = program.LeadingByteCandidate;
+                // A separator before a plausible start does not need a window seek.
+                if (first >= 0 && position >= 0 &&
+                    (uint)(input[previous] - first) > (uint)(last - first) &&
+                    (uint)(input[position] - first) <= (uint)(last - first))
+                    continue;
                 return FindInDelimiterWindows(program, input, (byte)delimiter, ref position,
                     lastStart, slots, ref workspace, ref invocation);
             }
@@ -355,13 +362,17 @@ internal static class Pcre2SliceDriver
     }
 
     internal static int Count(
-        Utf8SliceProgram program,
+        Pcre2SliceDirectProgram slice,
         in Pcre2CandidateSearchProgram candidates,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
         scoped ref Utf8SliceInvocation invocation)
     {
+        var program = slice.SliceProgram;
+        if (slice.DisjointClassDelimiter >= 0 && input.ByteLength - start.Value - slice.Fallback.MinimumByteLength >= 64)
+            return CountWithDelimiterWindows(slice, input.Bytes, start.Value, ref invocation);
+
         // A non-empty program needs no PCRE2 empty retry. Keep admitted scratch
         // across matches instead of renting/releasing it on every MoveNext.
         if (!program.CanMatchEmpty && !program.RightToLeft)
@@ -380,6 +391,30 @@ internal static class Pcre2SliceDriver
         }
 
         return count;
+    }
+
+    private static int CountWithDelimiterWindows(Pcre2SliceDirectProgram slice, ReadOnlySpan<byte> input, int position,
+        scoped ref Utf8SliceInvocation invocation)
+    {
+        // The delimiter proof requires a nonempty prefix and no capture reads.
+        var slots = new Utf8SliceSlots([], []);
+        var workspace = new Utf8SliceRunner.AttemptWorkspace();
+        var lastStart = input.Length - slice.Fallback.MinimumByteLength;
+        var count = 0;
+        try
+        {
+            while (position <= lastStart)
+            {
+                invocation.AnchorOriginByte = position;
+                var end = FindMatchingEnd(slice.SliceProgram, input, ref position, lastStart,
+                    slice.Fallback.LeadingAsciiByte, slots, ref workspace, ref invocation, slice.DisjointClassDelimiter);
+                if (end < 0) break;
+                count = checked(count + 1);
+                position = end;
+            }
+            return count;
+        }
+        finally { workspace.Release(ref invocation); }
     }
 
     internal static bool TryCountGeneralCategory(Pcre2BacktrackingProgram program, ReadOnlySpan<byte> input,

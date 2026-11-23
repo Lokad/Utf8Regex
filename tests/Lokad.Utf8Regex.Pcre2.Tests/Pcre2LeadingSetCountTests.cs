@@ -190,6 +190,22 @@ public sealed class Pcre2LeadingSetCountTests
     }
 
     [Fact]
+    public void DelimiterWindowsCountNonOverlappingHitsUnderOneWorkLimit()
+    {
+        using var regex = Create("[a-z]+@(?<tail>[a-z]+)", work: 256);
+        using var source = new CancellationTokenSource();
+        var rejected = "😀" + new string('a', 2048) + "@!𐐨";
+        var input = Encoding.UTF8.GetBytes(rejected + "abc@tailx@longer!xy@last!");
+        var first = Encoding.UTF8.GetByteCount(rejected);
+        var slice = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        Assert.Equal((int)'@', slice.DisjointClassDelimiter);
+
+        Assert.Equal(0, regex.Count(input.AsSpan(0, first), 4, cancellationToken: source.Token));
+        Assert.Equal(2, regex.Count(input, 4, cancellationToken: source.Token));
+        Assert.Equal(2, regex.Count(input, first, cancellationToken: source.Token));
+    }
+
+    [Fact]
     public void RequiredLiteralMustOccurInTheRequestedSuffixAndStillNeedsVerification()
     {
         var regex = Create("[a-z]+@([a-z]+)");
