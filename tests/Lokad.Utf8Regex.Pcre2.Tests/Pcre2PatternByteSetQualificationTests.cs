@@ -1,48 +1,33 @@
-using System.Reflection;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Search;
-using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2PatternByteSetQualificationTests
 {
-    private static void Prepare(Pcre2CharacterClass definition)
-    {
-        var method = typeof(Pcre2CharacterClass).GetMethod("PrepareAsciiByteSet",
-            BindingFlags.Instance | BindingFlags.NonPublic) ??
-            typeof(Pcre2CharacterClass).GetMethod("PrepareAsciiSearchValues", BindingFlags.Instance | BindingFlags.NonPublic);
-        Assert.NotNull(method);
-        try { method.Invoke(definition, null); }
-        catch (TargetInvocationException error) when (error.InnerException is { } inner)
-        { System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(inner).Throw(); }
-    }
-    private static PreparedByteSet Set(object program, string property)
-    {
-        var value = program.GetType().GetProperty(property, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(program);
-        return Assert.IsType<PreparedByteSet>(value);
-    }
-
     [Fact]
     public void Pcre2ClassByteSetDenialCannotPublishStateAndRepeatedPreparationBorrowsIt()
     {
         var definition = new Pcre2CharacterClass([], false, new AsciiCharClass(1ul, 1ul << 63));
         using (var owner = new Utf8ConstructionScope(0, 48, ulong.MaxValue, ulong.MaxValue))
         {
-            var parent = owner.Budget.AllocateArray<byte>(1, false);
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Prepare(definition));
+            owner.Budget.AllocateArray<byte>(1, false);
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(definition.PrepareAsciiByteSet);
             Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-            Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-
+            Assert.Null(definition.AsciiByteSet);
+            Assert.Equal(48ul, owner.Budget.ReservedBytes);
+            Assert.Equal(0ul, owner.Budget.Depth);
         }
         using var success = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        Prepare(definition);
-        var set = Set(definition, "AsciiByteSet");
-        var bytes = success.Budget.ReservedBytes; var work = success.Budget.WorkSteps;
-        Prepare(definition);
-        Assert.Same(set, Set(definition, "AsciiByteSet"));
-        Assert.Equal(bytes, success.Budget.ReservedBytes); Assert.Equal(work, success.Budget.WorkSteps);
+        definition.PrepareAsciiByteSet();
+        var set = definition.AsciiByteSet;
+        Assert.NotNull(set);
+        var bytes = success.Budget.ReservedBytes;
+        var work = success.Budget.WorkSteps;
+        definition.PrepareAsciiByteSet();
+        Assert.Same(set, definition.AsciiByteSet);
+        Assert.Equal(bytes, success.Budget.ReservedBytes);
+        Assert.Equal(work, success.Budget.WorkSteps);
         Assert.Equal(1, set.IndexOf(new byte[] { 128, 127, 255 }));
         Assert.Equal(2, set.IndexOfAnyExcept(new byte[] { 0, 127, 128, 255 }));
     }
@@ -52,12 +37,16 @@ public sealed class Pcre2PatternByteSetQualificationTests
     {
         using (var owner = new Utf8ConstructionScope(0, 0, 0, 0))
         {
-            Prepare(Pcre2CharacterClass.Empty);
-            Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.WorkSteps);
+            Pcre2CharacterClass.Empty.PrepareAsciiByteSet();
+            Assert.Null(Pcre2CharacterClass.Empty.AsciiByteSet);
+            Assert.Equal(0ul, owner.Budget.ReservedBytes);
+            Assert.Equal(0ul, owner.Budget.WorkSteps);
             Assert.Equal(0ul, owner.Budget.PeakDepth);
         }
         var definition = new Pcre2CharacterClass([], true, new AsciiCharClass(1ul << 9, 0, true));
-        Prepare(definition); var set = Set(definition, "AsciiByteSet");
+        definition.PrepareAsciiByteSet();
+        var set = definition.AsciiByteSet;
+        Assert.NotNull(set);
         for (var value = 0; value < 256; value++)
         {
             var accepted = value < 128 && value != 9;
@@ -72,7 +61,7 @@ public sealed class Pcre2PatternByteSetQualificationTests
     {
         foreach (var pattern in new[] { "[^x]++x", "[a-z]+x", "(?:ab|cd)+!", "(?:ab|[cd]{2})!" })
         {
-            var regex = new Utf8Pcre2Regex(pattern);
+            using var regex = new Utf8Pcre2Regex(pattern);
             var inputs = new[] { "ab!😀cdcd!x"u8.ToArray(), "😀😀x"u8.ToArray(), "zzzzx"u8.ToArray() };
             for (var index = 0; index < inputs.Length; index++)
             {
@@ -86,8 +75,6 @@ public sealed class Pcre2PatternByteSetQualificationTests
                     Assert.True(match.EndOffsetInBytes > match.StartOffsetInBytes);
                     Assert.True(match.StartOffsetInBytes == 0 || (input[match.StartOffsetInBytes] & 0xc0) != 0x80);
                     Assert.True(match.EndOffsetInBytes == input.Length || (input[match.EndOffsetInBytes] & 0xc0) != 0x80);
-                    _ = System.Text.Encoding.UTF8.GetString(input.AsSpan(match.StartOffsetInBytes,
-                        match.EndOffsetInBytes - match.StartOffsetInBytes));
                 }
                 Assert.Equal(count > 0, regex.IsMatch(input));
                 Assert.Equal(count, regex.Count(input));
