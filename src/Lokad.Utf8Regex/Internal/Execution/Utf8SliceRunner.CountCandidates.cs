@@ -1384,6 +1384,15 @@ internal static partial class Utf8SliceRunner
                             continue;
                         }
                     }
+                    else if (remaining >= 2 && index + 1 < entry.A &&
+                        code[index].Kind == Utf8SliceInstructionKind.CaptureStart &&
+                        code[index + 1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } captured &&
+                        (position >= input.Length || input[position] != captured.A))
+                    {
+                        // The proof ignores the capture itself. Debit both
+                        // visits and reject the arm without entering it.
+                        remaining -= 2;
+                    }
                     else
                     {
                         var end = ProbeBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch);
