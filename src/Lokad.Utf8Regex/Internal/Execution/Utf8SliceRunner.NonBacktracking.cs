@@ -167,6 +167,7 @@ internal static partial class Utf8SliceRunner
             var bestStart = -1;
             var bestEnd = -1;
             var position = fromByte;
+            // Both frontiers have their arrays after successful initialization.
             ref var current = ref workspace.Current;
             ref var next = ref workspace.Next;
             while (true)
@@ -184,9 +185,9 @@ internal static partial class Utf8SliceRunner
                 var hasScalar = TryReadScalar(input, position, false, out var scalar, out var width);
                 for (var thread = 0; thread < current.Count; thread++)
                 {
-                    var pc = current.Pcs[thread];
+                    var pc = current.Pcs![thread];
                     var instruction = program.Instructions[pc];
-                    var start = current.Starts[thread];
+                    var start = current.Starts![thread];
                     if (instruction.Kind == Utf8SliceInstructionKind.Accept)
                     {
                         if (requireNonEmpty && start == position) continue;
