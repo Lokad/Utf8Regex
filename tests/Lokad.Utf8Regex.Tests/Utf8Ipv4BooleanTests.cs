@@ -62,10 +62,10 @@ public sealed class Utf8Ipv4BooleanTests
     }
 
     [Theory]
-    [InlineData("😀11.22.33.44", true)]
-    [InlineData("😀11.22.33.XY", false)]
-    [InlineData("😀. 012.200.033.199", true)]
-    public void ScreenedRequiredByteBoundsTheFirstCandidate(string tail, bool expected)
+    [InlineData("😀11.22.33.44", 1)]
+    [InlineData("😀11.22.33.XY", 0)]
+    [InlineData("😀. 012.200.033.199 34.45.56.67", 2)]
+    public void ScreenedRequiredByteBoundsTheFirstCandidate(string tail, int expectedCount)
     {
         var input = Encoding.UTF8.GetBytes(new string('8', 8192) + tail);
         using var source = new CancellationTokenSource();
@@ -73,7 +73,8 @@ public sealed class Utf8Ipv4BooleanTests
         {
             ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 1, MaxWorkingBytes = 1 }
         });
-        Assert.Equal(expected, regex.IsMatch(input, source.Token));
+        Assert.Equal(expectedCount != 0, regex.IsMatch(input, source.Token));
+        Assert.Equal(expectedCount, regex.Count(input, source.Token));
     }
 
     [Theory]

@@ -563,13 +563,13 @@ public sealed partial class Utf8Regex : IDisposable
                 return count;
             }
         }
-        if (RejectMissingRequiredInput(input, program, ref invocation, out _)) return countedPrefix;
+        if (RejectMissingRequiredInput(input, program, ref invocation, out var screenedLiteral)) return countedPrefix;
         var slots = new Utf8SliceSlots([], []);
         try
         {
             slots = Utf8SliceRunner.RentSlots(GetValueOperationCaptureSlotCount(program), ref invocation);
             var outcome = Utf8SliceRunner.CountFromBytes(program, input, startByte, slots.Starts, slots.Ends,
-                ref invocation, _preparedRegex.SearchPlan);
+                ref invocation, _preparedRegex.SearchPlan, screenedLiteral: screenedLiteral);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
             {
                 throw new InvalidOperationException("Owned slice execution breached the invocation budget.");

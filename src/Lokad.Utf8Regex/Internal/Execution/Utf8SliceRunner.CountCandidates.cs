@@ -1385,6 +1385,21 @@ internal static partial class Utf8SliceRunner
         return default;
     }
 
+    private static int GetFirstPossibleBranchStart(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int fromByte, int screenedLiteral, in Utf8SearchPlan candidatePlan)
+    {
+        var required = program.RequiredBranchLiteral;
+        if (required.Min == 0 ||
+            candidatePlan.RequiredPrefilterSearcher.LiteralSearch.Needle is not [var screenedByte] || screenedByte != required.Value)
+            return fromByte;
+
+        // Every viable start must reach this byte within the proved window.
+        // The prefilter already found its first occurrence.
+        var start = screenedLiteral - required.Max;
+        while ((input[start] & 0xC0) == 0x80) start++;
+        return start;
+    }
+
     private static bool RejectRequiredBranchLiteralSuffix(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int start, ref int rejectedSuffix, ref int proofLimit)
     {

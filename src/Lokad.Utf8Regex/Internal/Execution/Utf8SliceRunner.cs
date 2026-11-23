@@ -804,16 +804,8 @@ internal static partial class Utf8SliceRunner
         // Enable overlapping suffix checks only after a complete proof rejects.
         const int noSuffixCheck = -2;
         var rejectedSuffix = noSuffixCheck;
-        var searchStart = fromByte;
-        if (screenedLiteral - fromByte >= 64 && checkBranchedPrefix &&
-            program.RequiredBranchLiteral is { Min: not 0 } required &&
-            candidatePlan.RequiredPrefilterSearcher.LiteralSearch.Needle is [var screenedByte] && screenedByte == required.Value)
-        {
-            // Every viable start must reach this byte within the proved
-            // window. The prefilter already found its first occurrence.
-            searchStart = screenedLiteral - required.Max;
-            while ((input[searchStart] & 0xC0) == 0x80) searchStart++;
-        }
+        var searchStart = screenedLiteral - fromByte >= 64 && checkBranchedPrefix
+            ? GetFirstPossibleBranchStart(program, input, fromByte, screenedLiteral, candidatePlan) : fromByte;
         for (var position = searchStart; position >= 0; position = AdvancePastScalar(input, position, program.RightToLeft))
         {
             // The required delimiter proves a window of possible starts.
@@ -1124,7 +1116,8 @@ internal static partial class Utf8SliceRunner
         int[] captureEnds,
         ref Utf8SliceInvocation invocation,
         in Utf8SearchPlan candidatePlan = default,
-        in PreparedSearcher branchPrefixes = default)
+        in PreparedSearcher branchPrefixes = default,
+        int screenedLiteral = -1)
     {
         invocation.Budget.ThrowIfCancellationRequested();
         if ((uint)fromByte > (uint)input.Length ||
@@ -1213,6 +1206,8 @@ internal static partial class Utf8SliceRunner
         var includeKelvin = leadingFirst == 'K' && program.LeadingByteAdmitsKelvin;
         var checkBranchedPrefix = leadingFirst is >= 0 and < 128 && program.Instructions[leadingScalarIndex] is
             { Kind: Utf8SliceInstructionKind.Fork } or { IsLiteralChoice: true };
+        if (screenedLiteral - fromByte >= 64 && checkBranchedPrefix)
+            position = GetFirstPossibleBranchStart(program, input, fromByte, screenedLiteral, candidatePlan);
         if (checkBranchedPrefix && input.Length - fromByte >= 256 && program.RequiredUnanchoredFinalByte is { } finalByte)
         {
             // One bounded required-byte search can reject a whole Count before
