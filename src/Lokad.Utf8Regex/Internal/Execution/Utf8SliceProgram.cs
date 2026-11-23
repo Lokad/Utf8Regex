@@ -733,6 +733,7 @@ internal sealed class Utf8SliceProgram
     internal bool CanMatchEmpty { get; }
     internal bool HasUnicodePatternAtoms { get; }
     internal Utf8SliceTerminalRootKind TerminalRoot { get; }
+    // Every capture in this complete root participates and closes in slot order.
     internal bool HasTerminalCaptureRoot => TerminalRoot == Utf8SliceTerminalRootKind.Capture;
     internal bool HasSingleCapturePerGroup { get; }
     internal (int First, byte Last, int Second, byte SecondLast, int InstructionIndex, bool FromBranch, bool SparsePair) LeadingByteCandidate { get; }

@@ -655,14 +655,15 @@ internal struct PythonReScalarMatchState
 
     internal int? GetLastIndex()
     {
-        if (_program.GroupCount == 0) return null;
-        // One participating group is necessarily the last to close. Its
-        // completed slot survives even when no rollback trail was needed.
-        if (_program.GroupCount == 1)
+        var groupCount = _program.GroupCount;
+        if (groupCount == 0) return null;
+        // One participating group or a complete root with fixed closing
+        // order identifies the last group from the completed slot.
+        if (groupCount == 1 || _program.HasTerminalCaptureRoot)
         {
-            if (!_workspace.Initialized || !TryGetCaptureByteRange(1, out _, out _)) return null;
+            if (!_workspace.Initialized || !TryGetCaptureByteRange(groupCount, out _, out _)) return null;
             Checkpoint();
-            return 1;
+            return groupCount;
         }
         // The successful workspace keeps its capture journal until the next
         // advance. Only capture range snapshots observe completion order;

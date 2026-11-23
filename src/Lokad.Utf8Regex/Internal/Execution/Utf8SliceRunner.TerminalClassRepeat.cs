@@ -87,8 +87,7 @@ internal static partial class Utf8SliceRunner
         if (slot != 0)
         {
             // A required excluded literal fixes the first greedy endpoint.
-            // Keep the original two closing entries: detailed Python results
-            // still observe which group closed last.
+            // The root proof also establishes closing order.
             if (prefixLength <= 6 ||
                 code[0] is not { Kind: Utf8SliceInstructionKind.CaptureStart, A: 0 } ||
                 code[1] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 4, B: 0,
@@ -108,7 +107,7 @@ internal static partial class Utf8SliceRunner
     }
 
     private static Utf8SliceMatchOutcome RunTerminalCaptureRoot(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int start, int[] captureStarts, int[] captureEnds, ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation,
+        int start, int[] captureStarts, int[] captureEnds, ref Utf8SliceInvocation invocation,
         bool minimumOnly)
     {
         var code = program.Instructions;
@@ -140,8 +139,8 @@ internal static partial class Utf8SliceRunner
         var slot = program.GroupCount - 1;
         var literalStart = slot == 0 ? 0 : 6;
 
-        // This complete root cannot rewind. Reuse its initialized workspace,
-        // admitted closing journal and the existing bounded repeat algorithm.
+        // This complete root cannot rewind and closes its groups in slot order.
+        // Reuse the existing bounded repeat algorithm.
         // Orchestration uses VM step cadence; RunClassRepeat checks the original
         // deadline per bounded byte block and at each completed repeat. Explicit
         // original-token checks and caller publication checks remain.
@@ -177,10 +176,6 @@ internal static partial class Utf8SliceRunner
             : RunUnboundedAsciiRange(input, captureStart, (byte)lastLow, lastHigh, ref invocation);
         if (last.EndIndex <= captureStart || last.Breach != Utf8ExecutionLimitKind.None)
             return new(false, -1, last.Breach);
-        if (slot != 0 && captureStarts.Length > 1 &&
-            (!stacks.PushTrail(0, captureEnds[0], firstEnd, false, ref invocation) ||
-             !stacks.PushTrail(1, captureEnds[1], last.EndIndex, false, ref invocation)))
-            return new(false, -1, stacks.Breach);
         breach = invocation.TryChargeStep();
         invocation.Budget.ThrowIfCancellationRequested();
         if (breach != Utf8ExecutionLimitKind.None)

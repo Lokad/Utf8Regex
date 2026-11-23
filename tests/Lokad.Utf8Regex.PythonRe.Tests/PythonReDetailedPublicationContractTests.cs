@@ -12,6 +12,7 @@ public sealed class PythonReDetailedPublicationContractTests
     [InlineData("(?P<empty>)(?P<next>😀)?", "😀", 2, 2)]
     [InlineData("(?P<outer>(?P<inner>😀))", "é😀 é😀", 2, 1)]
     [InlineData("(?P<outer>(?P<inner>))", "é😀", 3, 1)]
+    [InlineData("(?P<key>[a-z]+)-(?P<value>[0-9]+)", "é abc-123 x-45", 2, 2)]
     public void DetailedSnapshotsKeepScalarValuesCoordinatesAndOwnership(
         string pattern, string subject, int expectedCount, int firstLastIndex)
     {
@@ -43,9 +44,11 @@ public sealed class PythonReDetailedPublicationContractTests
         }
         var finite = collectedRanges2.ToArray();
         Assert.Equal(expectedCount, finite.Length);
+        Assert.Equal(expectedCount, unlimited.Length);
         Assert.Equal(firstLastIndex, finite[0].LastIndex);
         for (var match = 0; match < finite.Length; match++)
         {
+            Assert.Equal(unlimited[match].LastIndex, finite[match].LastIndex);
             Assert.Equal(unlimited[match].Groups.ToArray(), finite[match].Groups.ToArray());
             foreach (var group in finite[match].Groups)
             {
