@@ -6,6 +6,34 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8NonBacktrackingRowAdmissionTests
 {
+    [Fact]
+    public void OversizedViabilityTableReportsArrayCapacity()
+    {
+        using var regex = new Utf8Regex("a{16384}z|", RegexOptions.NonBacktracking);
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        var input = new byte[8 * 1024 * 1024];
+        var wordsPerRow = (program.Instructions.Length + 63) / 64;
+        Assert.True((input.Length + 1L) * wordsPerRow > Array.MaxLength);
+
+        var error = Assert.Throws<InvalidOperationException>(() => regex.CreateMatchCursor(input).Dispose());
+        Assert.Contains("viability table", error.Message, StringComparison.Ordinal);
+        Assert.Contains("array length", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OversizedThreadRegistersReportArrayCapacity()
+    {
+        using var regex = new Utf8Regex(string.Concat(Enumerable.Repeat("(a)", 16_000)), RegexOptions.NonBacktracking);
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        var registers = 2L * program.GroupCount + program.NonBacktrackingCaptureOpeningCount;
+        Assert.True(registers * program.Instructions.Length > Array.MaxLength);
+
+        var captures = new Utf8CaptureRange[2];
+        var error = Assert.Throws<InvalidOperationException>(() => regex.Match("a"u8, captures: captures));
+        Assert.Contains("capture registers", error.Message, StringComparison.Ordinal);
+        Assert.Contains("array length", error.Message, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(false, false)] [InlineData(false, true)]
     [InlineData(true, false)] [InlineData(true, true)]

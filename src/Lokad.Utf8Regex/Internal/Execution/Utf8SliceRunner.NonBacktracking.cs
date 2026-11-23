@@ -260,7 +260,11 @@ internal static partial class Utf8SliceRunner
             var states = program.Instructions.Length;
             var registers = recordCaptures ? (long)program.GroupCount * 2 + program.NonBacktrackingCaptureOpeningCount : 0;
             if (registers > Array.MaxLength || registers * states > Array.MaxLength)
-                return Utf8ExecutionLimitKind.WorkingBytes;
+            {
+                invocation.Budget.ThrowIfCancellationRequested();
+                invocation.Budget.CheckDeadline();
+                throw new InvalidOperationException("The NonBacktracking capture registers exceed the maximum managed array length.");
+            }
             RegisterCount = (int)registers;
             var cells = checked(states * RegisterCount);
             var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(states) * 5

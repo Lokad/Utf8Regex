@@ -192,7 +192,12 @@ internal sealed class Utf8NonBacktrackingSearchState
         var count = (long)scalars + 1;
         var stride = (int)(((long)program.Instructions.Length + 63) / 64);
         var cells = count * stride;
-        if (count > Array.MaxLength || cells > Array.MaxLength) return Utf8ExecutionLimitKind.WorkingBytes;
+        if (count > Array.MaxLength || cells > Array.MaxLength)
+        {
+            invocation.Budget.ThrowIfCancellationRequested();
+            invocation.Budget.CheckDeadline();
+            throw new InvalidOperationException("The NonBacktracking viability table exceeds the maximum managed array length.");
+        }
         var reservation = checked(Utf8ConstructionBudget.ArrayBytes<int>((int)count)
             + Utf8ConstructionBudget.ArrayBytes<ulong>((int)cells));
         var admission = invocation.TryReserveWorking(reservation);

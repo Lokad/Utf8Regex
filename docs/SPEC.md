@@ -200,6 +200,9 @@ successful result. Search, retries, and direct matches retain bounded work
 and interruption checks. Depth includes logical assertion state even when
 the engine allocates no continuation. Charges vary with the execution route
 and library version. Recheck finite policies when upgrading.
+If NonBacktracking needs a scratch array beyond the runtime's maximum array
+length, it reports the capacity failure as `InvalidOperationException` before
+allocating that array.
 
 With execution controls active, the scalar engine's leading-byte scan
 admits up to 2,048 bytes at a time. Folded starters can include a wider
