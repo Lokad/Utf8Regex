@@ -952,15 +952,29 @@ internal static partial class Utf8SliceRunner
             {
                 var suffix = position + verifiedPrefix.Item2;
                 var code = program.Instructions;
-                if (MatchesAdjacentAsciiHybridClasses(program, code[requiredClassSuffix.First],
-                    code[requiredClassSuffix.Second], input[suffix..]))
+                ref readonly var firstClass = ref code[requiredClassSuffix.First];
+                ref readonly var secondClass = ref code[requiredClassSuffix.Second];
+                var tail = input[suffix..];
+                var width = MatchesAdjacentAsciiHybridClasses(program, firstClass, secondClass, tail) ? 2 : 0;
+                if (width == 0 && tail.Length >= 2 && (tail[0] | tail[1]) >= 128)
+                {
+                    breach = TryMatchAdjacentHybridScalars(program, firstClass, secondClass, tail, ref invocation, out width);
+                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+                    if (width == 0)
+                    {
+                        // The proved delimiter fixes this suffix for the whole window.
+                        position = classWindowEnd;
+                        continue;
+                    }
+                }
+                if (width != 0)
                 {
                     // Two admitted scalars satisfy the minimum and the rest
                     // may be empty. Only the Boolean caller uses this witness.
                     breach = invocation.TryChargeInputStep();
                     invocation.Budget.ThrowIfCancellationRequested();
                     return breach == Utf8ExecutionLimitKind.None
-                        ? new(true, position, suffix + 2, breach)
+                        ? new(true, position, suffix + width, breach)
                         : new(false, -1, -1, breach);
                 }
             }

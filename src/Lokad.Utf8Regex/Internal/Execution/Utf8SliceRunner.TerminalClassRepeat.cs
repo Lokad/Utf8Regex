@@ -1988,6 +1988,23 @@ internal static partial class Utf8SliceRunner
             => ((program.SetMasks[atom.A][value >> 3] & (1 << (value & 7))) != 0) != (atom.B != 0);
     }
 
+    private static Utf8ExecutionLimitKind TryMatchAdjacentHybridScalars(Utf8SliceProgram program,
+        in Utf8SliceInstruction first, in Utf8SliceInstruction second, ReadOnlySpan<byte> input,
+        ref Utf8SliceInvocation invocation, out int width)
+    {
+        // The candidate step admits this check of at most two complete scalars.
+        width = 0;
+        if (!TryReadScalar(input, 0, false, out var scalar, out var firstWidth))
+            return Utf8ExecutionLimitKind.None;
+        var breach = TryMatchScalarClass(program, first, scalar, ref invocation, out var hit);
+        if (breach != Utf8ExecutionLimitKind.None || !hit ||
+            !TryReadScalar(input, firstWidth, false, out scalar, out var secondWidth))
+            return breach;
+        breach = TryMatchScalarClass(program, second, scalar, ref invocation, out hit);
+        if (breach == Utf8ExecutionLimitKind.None && hit) width = firstWidth + secondWidth;
+        return breach;
+    }
+
     private static bool TryRunTerminalHybridMinimum(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int index, int position, ref Utf8SliceInvocation invocation, out (int EndIndex, Utf8ExecutionLimitKind Breach) result)
     {

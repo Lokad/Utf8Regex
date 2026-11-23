@@ -41,6 +41,8 @@ public sealed class Utf8FiniteUriCountTests
     [InlineData("x://a😀", 1)]
     [InlineData("x://ab\u00a0y://cd", 2)]
     [InlineData("x://a\u2003b", 0)]
+    [InlineData("x://a\u2003 y://é😀", 1)]
+    [InlineData("x://😀\u00a0 y://ab", 1)]
     [InlineData("x://ab?\0#\0", 1)]
     public void UriCountsUseCompleteScalarsWithFundedExecution(string text, int expected)
     {
