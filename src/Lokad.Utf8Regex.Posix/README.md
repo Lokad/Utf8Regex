@@ -1,12 +1,24 @@
 # Lokad.Utf8Regex.Posix
 
-The optional POSIX ERE adapter for .NET 10/11 matches Unicode scalars over strict
-UTF-8, with leftmost-longest selection and hierarchical capture priority.
-The adapter is part of the upcoming 0.5.0 release.
-[Supported ERE contract](../../docs/SPEC-POSIX.md)
+A managed implementation of selected POSIX extended regular expressions
+for .NET 10 and 11. It uses leftmost-longest selection and hierarchical
+capture priority. The adapter requires the exact matching Core package.
 
-The adapter depends only on Core. Execution is fully managed and checked,
-without a native or BCL regex fallback.
+## Subject text contract
+
+Pass valid UTF-8 and keep borrowed bytes unchanged during use. Validate
+external bytes as they become text. Matches consume Unicode scalars, and
+start offsets and capture ranges use byte coordinates.
+[Subject and start offsets](../../docs/SPEC-POSIX.md#subject-text-contract)
+
+## Supported scope
+
+`IgnoreCase` uses invariant Unicode 16 simple-lowercase equivalence.
+`Newline` enables LF line anchors and excludes LF from dot and negated
+brackets. The profile excludes locale collation, backreferences and
+lookaround. [Grammar and options](../../docs/SPEC-POSIX.md#input-and-syntax)
+
+## Example
 
 ```csharp
 using Lokad.Utf8Regex;
@@ -18,55 +30,25 @@ var match = regex.Match("aaa"u8, captures: groups);
 // Whole match: [0,3); group 1: [0,2); group 2: [2,3), all byte ranges.
 ```
 
-`IsMatch`, `Match`, `Count` and a disposable memory cursor accept cancellation
-and optional caller-owned working admission. Constructors also accept finite
-work/depth/working/result policies and a timeout through `Utf8RegexPolicy`, shared
-with PythonRe. `Compile(pattern, options, policy, cancellationToken)` adds a separate
-construction token; both creation forms accept construction bounds/deadlines.
-`ProgramMemoryAllowance` admits retained program storage before publication.
-Dispose funded expressions: new calls reject after close, while admitted calls
-and cursors retain funding until they finish. Null working admission inherits
-program funding; an explicit working allowance overrides it. Unfunded disposal
-is a no-op. Values and caller-owned capture
-spans survive later calls/disposal. Keep borrowed cursor input alive and unchanged;
-dispose on early termination to refund workspace and any closed program funding.
-Advance with `cursor.MoveNext(out var match, captures)`; aliases share progress
-and disposal. No finalizer reclaims admission.
+`Match` writes as many slots as fit, starting with slot zero for the whole
+match. Use `IsMatch` for existence and `Count` or `CreateMatchCursor` for
+nonoverlapping matches. Copied ranges remain valid after advancing or
+disposing the cursor. [Selection and captures](../../docs/SPEC-POSIX.md#selection-and-captures)
 
-The default is case-sensitive, with scalar ranges and fixed ASCII named
-classes. `IgnoreCase` uses invariant Unicode 16.0 simple-lowercase equivalence
-without changing longest-match or capture priority. For example, `(a|aa)(a*)`
-on `AAA` captures `AA` then `A`; `(k|kk)` on `KK` selects four original bytes.
-The relation is single-scalar, with no normalization or multi-scalar folds;
-see the [exact relation and class behavior](../../docs/SPEC-POSIX.md#input-and-syntax).
-`Newline` enables LF line anchors and excludes LF from dot/negated
-brackets. Locale collation, backreferences, lookarounds and non-ERE extensions
-are rejected. Matching is resource-metered; worst-case linear time is not promised.
-Result-byte policy does not cap caller-owned destinations; these APIs return
-values and allocate no producer-owned result payload.
+## Controls and lifetimes
 
-Use `tools/bench.ps1 -CommandArgs '--inspect-posix-cases'` for result preflight,
-or `tools/refresh-benchmarks.ps1 -Phase Posix` for the bounded .NET 11 catalog.
-Raw measurements stay under `artifacts/benchmark-refresh/current/`; Markdown
-regenerates offline from `bench/Snapshots/Posix.json`.
-Results and capture destinations use `Utf8CaptureRange`: `Success`,
-`StartOffsetInBytes` and exclusive `EndOffsetInBytes`. They have no UTF-16 fields
-or alignment flags. Publication does not scan the subject for coordinates.
-The refreshed benchmark lanes return equivalent byte-only ranges on both sides.
-The `projection/short-*` and `projection/unicode-prefix-*` IDs identify workloads
-with short matches and Unicode prefixes.
+`Utf8RegexPolicy` sets execution limits and timeouts. `Compile` also accepts
+a construction token. Matching and cursor advances observe the original
+token and deadline. Result limits govern producer-owned storage. Capture
+slots supplied by the caller remain caller-owned.
+[Interruption and admission](../../docs/SPEC-POSIX.md#interruption-and-admission)
 
-## Subject text contract
+Cursor aliases share progress and disposal. Dispose an abandoned cursor to
+release its workspace. Dispose a funded regex when finished. Admitted calls
+and cursors can finish after it closes.
+[Public surface and lifetimes](../../docs/SPEC-POSIX.md#public-surface-and-lifetimes)
 
-Subjects are already-valid UTF-8 text, borrowed unchanged while in use. Validate
-external bytes at the application's text boundary. The adapter has no subject
-validation option/property and does not require malformed-suffix rejection.
-Pattern validation, scalar starts and selection, byte captures, resource admission,
-and original cancellation and deadlines remain active.
-
-The tables use the same trusted UTF-8 guarantee in both lanes. Native PCRE2 NFA
-is an ordered matcher, not a POSIX implementation: ranges/captures must agree
-before a ratio is reported; incompatible selection/history cases stay excluded.
+[Benchmark procedure](../../docs/BENCHMARKS.md)
 
 <!-- BEGIN GENERATED POSIX BENCHMARKS -->
 ## Benchmarks
