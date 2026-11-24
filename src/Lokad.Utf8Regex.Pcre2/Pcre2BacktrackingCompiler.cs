@@ -81,7 +81,7 @@ internal static class Pcre2BacktrackingCompiler
             parser.CaptureDefinitions,
             nameSlots,
             request);
-        var program = lowerer.Lower(root, isMainProgram: true);
+        var program = lowerer.Lower(root);
         construction.Complete();
         return new Pcre2CompiledBacktrackingOutcome(
             root,
@@ -207,9 +207,7 @@ internal static class Pcre2BacktrackingAnalysis
         };
     }
 
-    internal static int GetMaximumScalarLength(IPcre2BacktrackingNode node,
-        IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode>? definitions = null,
-        IReadOnlyDictionary<string, int[]>? names = null, HashSet<int>? active = null)
+    internal static int GetMaximumScalarLength(IPcre2BacktrackingNode node)
     {
         Utf8ConstructionScope.ChargeWork(1);
         return node switch
@@ -223,39 +221,20 @@ internal static class Pcre2BacktrackingAnalysis
             },
             Pcre2SequenceBacktrackingNode sequence => sequence.Children.Aggregate(
                 0,
-                (length, child) => SaturatingAdd(length, GetMaximumScalarLength(child, definitions, names, active))),
-            Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Max(child => GetMaximumScalarLength(child, definitions, names, active)),
-            Pcre2RepeatBacktrackingNode repeat => SaturatingMultiply(GetMaximumScalarLength(repeat.Body, definitions, names, active), repeat.Maximum),
-            Pcre2CaptureBacktrackingNode capture => GetMaximumScalarLength(capture.Body, definitions, names, active),
-            Pcre2BackreferenceBacktrackingNode reference => ReferenceMaximum(reference.Target),
+                static (length, child) => SaturatingAdd(length, GetMaximumScalarLength(child))),
+            Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Max(GetMaximumScalarLength),
+            Pcre2RepeatBacktrackingNode repeat => SaturatingMultiply(GetMaximumScalarLength(repeat.Body), repeat.Maximum),
+            Pcre2CaptureBacktrackingNode capture => GetMaximumScalarLength(capture.Body),
+            Pcre2BackreferenceBacktrackingNode or Pcre2SubroutineCallBacktrackingNode => int.MaxValue,
             Pcre2AssertionBacktrackingNode => 0,
-            Pcre2SubroutineCallBacktrackingNode call => ReferenceMaximum(call.Target),
             Pcre2ConditionalBacktrackingNode conditional => Math.Max(
-                GetMaximumScalarLength(conditional.YesBranch, definitions, names, active),
-                GetMaximumScalarLength(conditional.NoBranch, definitions, names, active)),
-            Pcre2AtomicBacktrackingNode atomic => GetMaximumScalarLength(atomic.Body, definitions, names, active),
+                GetMaximumScalarLength(conditional.YesBranch),
+                GetMaximumScalarLength(conditional.NoBranch)),
+            Pcre2AtomicBacktrackingNode atomic => GetMaximumScalarLength(atomic.Body),
             Pcre2ControlVerbBacktrackingNode => 0,
             Pcre2MatchBoundaryResetBacktrackingNode => 0,
             _ => int.MaxValue,
         };
-        int ReferenceMaximum(Pcre2BackreferenceTarget target)
-        {
-            if (definitions is null) return int.MaxValue;
-            if (target.Kind == Pcre2BackreferenceTargetKind.Named)
-                return names is not null && names.TryGetValue(target.Name, out var slots)
-                    ? slots.Max(CaptureMaximum) : int.MaxValue;
-            return CaptureMaximum(ResolveReferenceSlot(target));
-        }
-        int CaptureMaximum(int slot)
-        {
-            active ??= [];
-            if ((ulong)active.Count >= Pcre2BacktrackingCompiler.MaximumRecursiveDepth)
-                throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionDepth,
-                    Pcre2BacktrackingCompiler.MaximumRecursiveDepth, (ulong)active.Count + 1);
-            if (!definitions!.TryGetValue(slot, out var definition) || !active.Add(slot)) return int.MaxValue;
-            try { return GetMaximumScalarLength(definition.Body, definitions, names, active); }
-            finally { active.Remove(slot); }
-        }
     }
 
     internal static byte? GetLeadingAsciiByte(IPcre2BacktrackingNode node)

@@ -46,9 +46,9 @@ internal sealed class Pcre2BacktrackingLowerer
         _request = request;
     }
 
-    internal Pcre2BacktrackingProgram Lower(IPcre2BacktrackingNode root, bool isMainProgram = false)
+    internal Pcre2BacktrackingProgram Lower(IPcre2BacktrackingNode root, Pcre2AssertionKind? assertionKind = null)
     {
-        EmitNode(root, null, followedByMatchAccept: isMainProgram);
+        EmitNode(root, null, followedByMatchAccept: assertionKind is null);
         _instructions.Add(Pcre2BacktrackingInstruction.CreateAccept());
         if (_hasSubroutineCalls)
         {
@@ -77,6 +77,9 @@ internal sealed class Pcre2BacktrackingLowerer
             }
         }
 
+        var lookbehindBounds = assertionKind is Pcre2AssertionKind.PositiveLookbehind or Pcre2AssertionKind.NegativeLookbehind
+            ? (Pcre2BacktrackingAnalysis.GetMinimumScalarLength(root), Pcre2BacktrackingAnalysis.GetMaximumScalarLength(root))
+            : default;
         return new Pcre2BacktrackingProgram(
             _instructions.Take(),
             _request,
@@ -98,8 +101,7 @@ internal sealed class Pcre2BacktrackingLowerer
             _markNames.Take(),
             _nameEntries,
             Pcre2BacktrackingAnalysis.GetMinimumByteLength(root),
-            Pcre2BacktrackingAnalysis.GetMinimumScalarLength(root),
-            Pcre2BacktrackingAnalysis.GetMaximumScalarLength(root),
+            lookbehindBounds,
             Pcre2BacktrackingAnalysis.GetLeadingAsciiByte(root),
             Pcre2BacktrackingAnalysis.StartsWithExtendedGraphemeCluster(root),
             FindAnchoredFinalAscii(root));
@@ -502,7 +504,7 @@ internal sealed class Pcre2BacktrackingLowerer
                         _nameSlots,
                         _request);
                     var assertionProgramId = _assertionPrograms.Count;
-                    var assertionProgram = assertionLowerer.Lower(assertion.Body);
+                    var assertionProgram = assertionLowerer.Lower(assertion.Body, assertion.AssertionKind);
                     _assertionPrograms.Add(assertionProgram);
                     if (assertionProgram.CaptureReadSlot != 0) _captureReadSlot = -1;
                     _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
@@ -753,7 +755,7 @@ internal sealed class Pcre2BacktrackingLowerer
                 _nameSlots,
                 _request);
             var assertionProgramId = _assertionPrograms.Count;
-            var assertionProgram = assertionLowerer.Lower(assertion.Body);
+            var assertionProgram = assertionLowerer.Lower(assertion.Body, assertion.AssertionKind);
             _assertionPrograms.Add(assertionProgram);
             if (assertionProgram.CaptureReadSlot != 0) _captureReadSlot = -1;
             _hasCaptureWrites |= assertionProgram.HasCaptureWrites;

@@ -1643,8 +1643,7 @@ internal static class Pcre2BacktrackingRunner
 
         nestedOptions |= Pcre2MatchOptions.EndAnchored;
         var earliest = inputIndex;
-        var minimumLength = assertionProgram.MinimumScalarLength;
-        var maximumLength = assertionProgram.MaximumScalarLength;
+        var (minimumLength, maximumLength) = assertionProgram.LookbehindScalarBounds;
         var latest = minimumLength == 0 ? inputIndex : -1;
         for (var scalarCount = 0; scalarCount < maximumLength && earliest != 0; scalarCount++)
         {

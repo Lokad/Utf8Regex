@@ -141,6 +141,19 @@ public sealed class Pcre2AssertionCompilerTests
         Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
     }
 
+    [Theory]
+    [InlineData("xéé😀", 5, 9)]
+    [InlineData("xβ!", 3, 4)]
+    public void ConditionalLookbehindKeepsItsScalarBounds(string text, int start, int end)
+    {
+        using var regex = new Utf8Pcre2Regex("(?(?<=é{1,2})😀|!)");
+        var match = regex.Match(Encoding.UTF8.GetBytes(text), startOffsetInBytes: start,
+            matchOptions: Pcre2MatchOptions.Anchored);
+
+        Assert.True(match.Success);
+        Assert.Equal((start, end), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+    }
+
     [Fact]
     public void PositiveAssertionCapturesFlowToBackreferencesAndCallerSlots()
     {

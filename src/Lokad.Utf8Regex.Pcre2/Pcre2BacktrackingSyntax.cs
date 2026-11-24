@@ -338,8 +338,7 @@ internal sealed class Pcre2BacktrackingProgram
         string[] markNames,
         Pcre2NameEntry[] nameEntries,
         int minimumByteLength,
-        int minimumScalarLength,
-        int maximumScalarLength,
+        (int Minimum, int Maximum) lookbehindScalarBounds,
         byte? leadingAsciiByte,
         bool leadingExtendedGraphemeCluster,
         (Utf8SearchAsciiSet Allowed, bool AllowTrailingLf, bool CanMatchEmpty) anchoredFinalAscii)
@@ -367,8 +366,7 @@ internal sealed class Pcre2BacktrackingProgram
         MarkNames = markNames;
         NameEntries = nameEntries;
         MinimumByteLength = minimumByteLength;
-        MinimumScalarLength = minimumScalarLength;
-        MaximumScalarLength = maximumScalarLength;
+        LookbehindScalarBounds = lookbehindScalarBounds;
         LeadingAsciiByte = leadingAsciiByte;
         LeadingExtendedGraphemeCluster = leadingExtendedGraphemeCluster;
         AnchoredFinalAscii = anchoredFinalAscii;
@@ -464,9 +462,7 @@ internal sealed class Pcre2BacktrackingProgram
     internal int MinimumByteLength { get; }
 
 
-    internal int MinimumScalarLength { get; }
-
-    internal int MaximumScalarLength { get; }
+    internal (int Minimum, int Maximum) LookbehindScalarBounds { get; }
 
     internal byte? LeadingAsciiByte { get; }
 
