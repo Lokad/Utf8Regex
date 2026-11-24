@@ -348,7 +348,7 @@ internal static partial class PythonReTranslator
                 builder.Append(@"\k<g").Append(names[named.Name]).Append('>');
                 return true;
             case PythonReNumericBackreferenceNode numeric:
-                builder.Append('\\').Append(numbers[numeric.GroupNumber]);
+                builder.Append('\\').Append(GetCoreGroupNumber(numbers, numeric.GroupNumber));
                 return true;
             case PythonReGroupNode or PythonReConditionalNode or PythonReQuantifierNode:
                 if (frame.Stage++ != 0) return true;
@@ -392,7 +392,9 @@ internal static partial class PythonReTranslator
         builder.Append("(?(");
         switch (node.Reference.Kind)
         {
-            case PythonReConditionalReferenceKind.GroupNumber: builder.Append(numbers[node.Reference.GroupNumber]); break;
+            case PythonReConditionalReferenceKind.GroupNumber:
+                builder.Append(GetCoreGroupNumber(numbers, node.Reference.GroupNumber));
+                break;
             case PythonReConditionalReferenceKind.GroupName:
                 if (node.Reference.GroupName is not string name) throw new PythonRePatternException("Named conditional reference has no group name.");
                 builder.Append('g').Append(names[name]);
@@ -401,6 +403,9 @@ internal static partial class PythonReTranslator
         }
         builder.Append(')');
     }
+
+    private static int GetCoreGroupNumber(int[] numbers, int pythonNumber) =>
+        numbers.Length == 0 ? pythonNumber : numbers[pythonNumber];
 
     private static void AppendQuantifierSuffix(PythonReQuantifierNode node, ByteBuilder builder, PythonReQuantifierFlavor flavor)
     {

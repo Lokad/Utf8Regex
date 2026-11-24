@@ -48,32 +48,24 @@ internal static partial class PythonReTranslator
         }
         using var arena = Utf8ConstructionArena.Create(construction.Budget);
         using var builder = ByteBuilder.Create(construction.Budget);
-        // Core numbers unnamed groups before named groups; Python numbers by
-        // opening order. This temporary permutation serves text rendering only.
-        // The owned Python scalar program uses Python numbers directly.
-        var coreNumbersByPython = arena.Allocate<int>(checked(parseResult.CaptureGroupCount + 1), false);
-        var namedPythonGroups = arena.Allocate<bool>(coreNumbersByPython.Length, false);
-        foreach (var number in parseResult.NamedGroups.Values)
+        // A mix of named and unnamed captures can change Core's group
+        // numbers. When all captures are of one kind, opening order suffices.
+        int[] coreNumbersByPython = [];
+        var namedGroupCount = parseResult.NamedGroups.Count;
+        if (namedGroupCount != 0 && namedGroupCount < parseResult.CaptureGroupCount)
         {
-            construction.Budget.ChargeWork(1);
-            namedPythonGroups[number] = true;
-        }
-        var nextCoreGroup = 1;
-        for (var pythonGroup = 1; pythonGroup <= parseResult.CaptureGroupCount; pythonGroup++)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (!namedPythonGroups[pythonGroup])
+            coreNumbersByPython = arena.Allocate<int>(checked(parseResult.CaptureGroupCount + 1), false);
+            foreach (var number in parseResult.NamedGroups.Values)
             {
-                coreNumbersByPython[pythonGroup] = nextCoreGroup++;
+                construction.Budget.ChargeWork(1);
+                coreNumbersByPython[number] = -1;
             }
-        }
-
-        for (var pythonGroup = 1; pythonGroup <= parseResult.CaptureGroupCount; pythonGroup++)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (namedPythonGroups[pythonGroup])
+            var nextUnnamed = 1;
+            var nextNamed = parseResult.CaptureGroupCount - namedGroupCount + 1;
+            for (var pythonGroup = 1; pythonGroup <= parseResult.CaptureGroupCount; pythonGroup++)
             {
-                coreNumbersByPython[pythonGroup] = nextCoreGroup++;
+                construction.Budget.ChargeWork(1);
+                coreNumbersByPython[pythonGroup] = coreNumbersByPython[pythonGroup] < 0 ? nextNamed++ : nextUnnamed++;
             }
         }
 
