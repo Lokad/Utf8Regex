@@ -553,6 +553,40 @@ internal static partial class Utf8SliceRunner
             return TryFindFirstAtSingleOrigin(program, input, fromByte, captureStarts, captureEnds, collectHistory,
                 ref workspace, ref invocation, existenceOnly, first, seekBeginning, seekVeryEnd);
 
+        if (remaining is > 0 and <= 32 && !reverse && !program.IgnoreCase && !program.HasContiguousAnchor &&
+            !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
+            first.Kind == Utf8SliceInstructionKind.Fork && remaining >= candidatePlan.MinRequiredLength &&
+            program.LeadingByteCandidate is { First: >= 0 and < 128, InstructionIndex: 0, FromBranch: true } branch &&
+            input[fromByte] < 128 && MayStartAtByte(input[fromByte], branch.First, branch.Last, branch.SparsePair, false) &&
+            !CanSeekExactPrefix(program, candidatePlan))
+        {
+            // Try the existing bounded proof at the first admitted origin.
+            // A rejection advances one ASCII byte before general discovery.
+            if (invocation.Ledger.ReservedBytes != 0)
+            {
+                var admission = invocation.TryReserveWorking(0);
+                if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
+            }
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (MayMatchBranchedAsciiPrefix(program, input, fromByte, 0, out var acceptedEnd, proveMatch: true))
+            {
+                if (acceptedEnd >= 0)
+                {
+                    breach = invocation.TryChargeInputStep();
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    return breach == Utf8ExecutionLimitKind.None
+                        ? new(true, fromByte, acceptedEnd, breach) : new(false, -1, -1, breach);
+                }
+                var attempt = TryMatchAt(program, input, fromByte, [], [], false, false, true,
+                    ref workspace, ref invocation, existenceOnly);
+                if (attempt.Breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, attempt.Breach);
+                if (attempt.IsMatch) return new(true, fromByte, attempt.EndIndex, Utf8ExecutionLimitKind.None);
+            }
+            fromByte++;
+        }
+
         return TryFindFirstByCandidateSearch(program, input, fromByte, captureStarts, captureEnds, collectHistory,
             ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral, seekBeginning, first);
     }
