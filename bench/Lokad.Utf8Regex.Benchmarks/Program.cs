@@ -128,27 +128,7 @@ if (args.Length >= 2 && args[0].Equals("--measure-lokad-script-prefix-case", Str
     return BenchmarkInspectReporter.RunMeasureLokadScriptPrefixCase(args[1], args.Length >= 3 ? args[2] : null);
 }
 
-if (args.Length >= 2 && args[0].Equals("--measure-lokad-script-lexer-primitive-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureLokadScriptLexerPrimitiveCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 2 && args[0].Equals("--measure-lokad-script-url-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureLokadScriptUrlCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 2 && args[0].Equals("--measure-token-finder-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureTokenFinderCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
 if (args.Length >= 2 && args[0].Equals("--measure-line-family-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureLineFamilyCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 2 && args[0].Equals("--measure-literal-finder-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureLineFamilyCase(args[1], args.Length >= 3 ? args[2] : null);
 }
