@@ -1951,29 +1951,32 @@ internal static partial class Utf8SliceRunner
                     }
                     // A fixed ASCII set repeat has one endpoint. Verify its
                     // byte mask below without trying competing repeat lengths.
-                    if (proveMatch && singleAtom && (minimum != entry.RepeatMaximum ||
+                    var maximum = entry.RepeatMaximum;
+                    if (proveMatch && singleAtom && (minimum != maximum ||
                         code[index] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }))
                     {
-                        if (minimum == entry.RepeatMaximum && minimum <= 4 && code[index].IsDecimalDigitSet)
+                        if (maximum <= 4 && code[index].IsDecimalDigitSet &&
+                            (minimum == maximum || entry.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
+                                program.SkipsTerminalRewind(index - 1)))
                         {
-                            // A fixed decimal run has one continuation. Admit
-                            // the same bounded probe before inspecting its bytes.
-                            var count = (int)minimum;
-                            var available = Math.Min(input.Length - position, count);
+                            // Fixed counts and proved greedy runs have one viable endpoint.
+                            var available = Math.Min(input.Length - position, (int)maximum);
                             if (available > remaining) return BranchedPrefixUndecided;
                             remaining -= available;
                             var digits = input.Slice(position, available);
                             var stop = digits.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
-                            if (stop < 0)
+                            if (stop >= 0 && digits[stop] >= 128)
                             {
-                                if (available != count) return BranchedPrefixRejected;
-                                position += count;
+                                var limit = minimum == maximum ? (int)maximum : available;
+                                position = MatchWideDecimalPrefix(input, position + stop,
+                                    Math.Max(0, (int)minimum - stop), limit - stop);
+                                if (position < 0) return BranchedPrefixRejected;
                             }
                             else
                             {
-                                if (digits[stop] < 128) return BranchedPrefixRejected;
-                                position = MatchWideDecimalPrefix(input, position + stop, count - stop, count - stop);
-                                if (position < 0) return BranchedPrefixRejected;
+                                var consumed = stop < 0 ? available : stop;
+                                if (consumed < minimum) return BranchedPrefixRejected;
+                                position += consumed;
                             }
                             index = entry.A + 1;
                             continue;
