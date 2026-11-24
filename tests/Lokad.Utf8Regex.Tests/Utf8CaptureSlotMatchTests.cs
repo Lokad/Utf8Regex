@@ -307,6 +307,25 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.False(regex.Match(input.AsSpan(0, prefix.Length)).Success);
     }
 
+    [Fact]
+    public void OrdinaryOrderedLoopFitsWorkBudgetOnAMediumSubject()
+    {
+        var input = Encoding.UTF8.GetBytes(new string('a', 244) + "x😀!aay");
+        var expected = new Utf8CaptureRange(input.Length - 3, input.Length);
+        using var regex = new Utf8Regex("(?<unit>ab|a)+[yz]", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1024, MaxWorkingBytes = 4096 }
+        });
+        using var source = new CancellationTokenSource();
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
+
+        Assert.True(regex.IsMatch(input, source.Token));
+        Assert.Equal(expected, regex.Match(input, captures: slots, cancellationToken: source.Token));
+        Assert.Equal(expected, slots[0]);
+        Assert.Equal(new Utf8CaptureRange(input.Length - 2, input.Length - 1), slots[1]);
+        Assert.Equal(1, regex.Count(input, source.Token));
+    }
+
     [Theory]
     [InlineData(2046, "")]
     [InlineData(2044, "è")]

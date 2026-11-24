@@ -108,9 +108,12 @@ internal static partial class Utf8SliceRunner
     internal static bool CanSearchOrdinaryOrdered(Utf8SliceProgram program, int remaining,
         in Utf8SearchPlan search, ref Utf8SliceInvocation invocation)
     {
-        if (remaining < 256 || program.NonBacktrackingOrderedClosures.Length == 0) return false;
+        if (remaining < 64 || program.NonBacktrackingOrderedClosures.Length == 0) return false;
         var depth = invocation.Budget.Limits.MaxDepth;
         var preferOrdered = program.RightToLeft || search.Kind == Utf8SearchKind.None;
+        // Counterless loops without a preferred forward search can already
+        // retry overlapping starts on subjects below the general threshold.
+        if (remaining < 256 && (!preferOrdered || program.RepeatCount != 0)) return false;
         // A tighter cap can still admit the scalar path. Keep selective
         // prepared starts when admitting a new depth-limited route.
         if (depth != 0 && (!preferOrdered || depth < (uint)(program.NonBacktrackingOrderedLeaves.Length - 1)))
