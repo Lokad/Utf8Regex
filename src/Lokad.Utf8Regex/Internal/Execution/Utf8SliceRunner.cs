@@ -784,6 +784,8 @@ internal static partial class Utf8SliceRunner
         var reuseDecimalWindow = proveDecimalWindow && leadingClass == 2 && program.Instructions[1].RepeatMinimum == 1;
         var verifyFollowingWindow = reuseDecimalWindow && program.FollowingDecimalContinuation != 0 &&
             !repeatPrefix.Any.HasValue && classAlternatives is null && classLiteral == classDelimiter.Literal;
+        var rewoundDigitsAreWords = verifyFollowingWindow &&
+            first is { B: (int)Utf8SliceWordKind.Unicode, C: 0 };
         if (seekDecimal)
         {
             leading = '0';
@@ -896,7 +898,12 @@ internal static partial class Utf8SliceRunner
                     if (!(verifyFollowingWindow && reuseRewoundDigits) &&
                         !Utf8AsciiBytePredicates.IsDigit(input[position])) continue;
                     var previous = position == 0 ? (byte)0 : input[position - 1];
-                    if (Utf8AsciiBytePredicates.IsWord(previous)) continue;
+                    if (Utf8AsciiBytePredicates.IsWord(previous))
+                    {
+                        // Every interior start still has a decimal word scalar on both sides.
+                        if (rewoundDigitsAreWords && reuseRewoundDigits) position = classWindowEnd;
+                        continue;
+                    }
                     provedAsciiBoundary = previous < 128;
                 }
             }
@@ -921,7 +928,11 @@ internal static partial class Utf8SliceRunner
                     // Rewind already admitted a nonempty decimal run ending at
                     // this excluded delimiter. Confirm any remaining Unicode
                     // boundary and start the proof at the continuation.
-                    if (!provedAsciiBoundary && !MatchesBoundary(program, first, input, position)) continue;
+                    if (!provedAsciiBoundary && !MatchesBoundary(program, first, input, position))
+                    {
+                        if (rewoundDigitsAreWords) position = classWindowEnd;
+                        continue;
+                    }
                     proofPosition = classWindowEnd;
                     proofStart = program.Instructions[1].A + 1;
                     if (followingWindowEnd > 0)
@@ -940,10 +951,9 @@ internal static partial class Utf8SliceRunner
                         program.RequiredBranchLiteral.Min != 0 && input.Length - position <= 64)
                         rejectedSuffix = -1;
                     var remainingDigits = classWindowEnd - position;
-                    // The proved leading boundary excludes the interior of a
-                    // short ASCII digit run. Its delimiter is an excluded byte.
-                    if (reuseDecimalWindow && remainingDigits is > 0 and <= 4 &&
-                        !input.Slice(position, remainingDigits).ContainsAnyExceptInRange((byte)'0', (byte)'9'))
+                    // The leading boundary excludes interior starts in a word run.
+                    if (reuseRewoundDigits && (rewoundDigitsAreWords || remainingDigits <= 4 &&
+                        !input.Slice(position, remainingDigits).ContainsAnyExceptInRange((byte)'0', (byte)'9')))
                     {
                         // The next iteration resumes immediately after this
                         // delimiter. A verified following run with the same

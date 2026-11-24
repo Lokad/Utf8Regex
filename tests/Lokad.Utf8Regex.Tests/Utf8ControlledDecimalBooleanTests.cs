@@ -127,14 +127,17 @@ public sealed class Utf8ControlledDecimalBooleanTests
         Assert.Equal(new Utf8CaptureRange(7, 22), regex.Match(" 1/2x! 1/𝟙/٢٠٢٦!"u8, cancellationToken: source.Token));
     }
 
-    [Fact]
-    public void RejectedShortAsciiDateWindowsSkipInteriorStarts()
+    [Theory]
+    [InlineData("Today is 11/18/201A and tomorrow is 11/19/201A.", 13ul)]
+    [InlineData("x12/34/2026! ", 8ul)]
+    [InlineData("é1٢/18/٢٠٢٦! ", 10ul)]
+    public void RejectedDateWindowsSkipInteriorStarts(string text, ulong work)
     {
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 13, MaxWorkingBytes = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkSteps = work, MaxWorkingBytes = 1 } });
 
-        Assert.False(regex.IsMatch("Today is 11/18/201A and tomorrow is 11/19/201A."u8, source.Token));
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(text), source.Token));
     }
 
     [Fact]
@@ -166,6 +169,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
     [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "11/18/2/2026!", 3, 12)]
     [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "11/18/2/٢٠٢٦!", 3, 16)]
     [InlineData(@"\b\d{1,2}/\d{1,2}-\d{2,4}\b", "11/18-2/3-2026!", 6, 14)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "x1٢/18/٢٠٢٦! 34/56/2026!", 18, 28)]
     [InlineData(@"\b\d{1,2}/\d{1,3}/X\b", "1/X! 2/123/X!", 5, 12)]
     [InlineData(@"\b\d{1,2}/[0-9A-Z]{1,2}/X\b", "1/AB/X!", 0, 6)]
     [InlineData(@"\b\d{1,2}/\d{1,3}1X\b", "1/121X!", 0, 6)]
@@ -199,6 +203,17 @@ public sealed class Utf8ControlledDecimalBooleanTests
         Assert.Equal(start >= 0, limited.IsMatch(input, source.Token));
         Assert.Equal(start >= 0 ? new Utf8CaptureRange(start, end) : default,
             limited.Match(input, cancellationToken: source.Token));
+    }
+
+    [Theory]
+    [InlineData(RegexOptions.None, false)]
+    [InlineData(RegexOptions.ECMAScript, true)]
+    public void DecimalWindowRespectsTheWordRuleForInteriorStarts(RegexOptions options, bool expected)
+    {
+        using var regex = new Utf8Regex(@"\b\p{Nd}{1,2}/\p{Nd}{1,2}/\p{Nd}{2,4}\b",
+            options | RegexOptions.Compiled);
+        var match = regex.Match("x1٢/18/2026!"u8);
+        Assert.Equal(expected ? new Utf8CaptureRange(2, 12) : default, match);
     }
 
     [Fact]
