@@ -161,13 +161,16 @@ internal partial struct PosixWorkspace
                 if (node.MaximumBytes >= 0 && k.End - k.Start > node.MaximumBytes)
                 { _chartFrames.Pop(); _chartResult = false; continue; }
                 if (IsChartAtom(node)) { CompleteChart(frame, MatchChartAtom(node, k, input, ref invocation), 0, ref invocation); continue; }
+                if (node.Kind == ChartKind.Group)
+                {
+                    // Membership is the child's. Replay still visits the group to set its capture.
+                    _chartFrames.ReplaceTop(new(new(node.Left, k.Start, k.End, 0)));
+                    continue;
+                }
                 if (_chartMemo is not null && _chartMemo.TryGetValue(k, out var cached))
                 { _chartFrames.Pop(); _chartResult = cached >= 0; continue; }
                 switch (node.Kind)
                 {
-                    case ChartKind.Group:
-                        _chartFrames.ReplaceTop(frame with { Phase = 1 });
-                        PushChartFrame(new(new(node.Left, k.Start, k.End, 0)), ref invocation); break;
                     case ChartKind.Alternate:
                         _chartFrames.ReplaceTop(frame with { Phase = 2 });
                         PushChartFrame(new(new(node.Left, k.Start, k.End, 0)), ref invocation); break;
@@ -187,7 +190,6 @@ internal partial struct PosixWorkspace
             }
             switch (frame.Phase)
             {
-                case 1: CompleteChart(frame, _chartResult, 0, ref invocation); break;
                 case 2:
                     if (_chartResult) CompleteChart(frame, true, 0, ref invocation);
                     else
