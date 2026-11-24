@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Lokad.Utf8Regex.Internal.Diagnostics;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
@@ -104,16 +105,14 @@ public sealed class PythonReSliceOwnershipTests
     [Fact]
     public void OwnedSliceCountTimeoutThrowsMatchTimeout()
     {
-        // Quadratic miss census: every start unit replays
-        // the (a+)(b+) miss over the remaining suffix, burning
-        // ~0.6 s in Debug, so the 1 ms budget expires inside
-        // the owned slice and surfaces with timeout identity
-        // instead of the raw deadline exception.
-        var input = Utf8(new string((char)97, 2000));
+        var input = Utf8(new string('a', 8192));
         var regex = new Utf8PythonRegex("(a+)(b+)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
+        // Start and entry read a live clock. A later work checkpoint sees expiry.
+        var reads = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++reads >= 3 ? 2 : 0);
         Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input, 0));
     }
 

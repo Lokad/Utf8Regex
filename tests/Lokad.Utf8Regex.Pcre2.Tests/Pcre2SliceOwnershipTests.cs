@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
@@ -365,20 +366,15 @@ public sealed class Pcre2SliceOwnershipTests
     [Fact]
     public void OwnedDetailedTimeoutThrowsTimeoutIdentity()
     {
-        var input = Utf8(new string((char)97, 2000));
         var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
-        var exception = Assert.Throws<Pcre2MatchException>(
-            () =>
-            {
-                ReadOnlyMemory<byte> result7Input = input;
-                using var result7Cursor = regex.CreateMatchCursor(result7Input);
-                result7Cursor.MoveNext(out var result7Result);
-                result7Cursor.Dispose();
-                _ = result7Result;
-            });
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var cursor = regex.CreateMatchCursor("aaabb"u8.ToArray());
+        ticks = 2;
+        var exception = Assert.Throws<Pcre2MatchException>(() => cursor.MoveNext(out _));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
     }
 
@@ -515,12 +511,14 @@ public sealed class Pcre2SliceOwnershipTests
     [Fact]
     public void OwnedEnumerationTimeoutThrowsTimeoutIdentity()
     {
-        var input = Utf8(new string((char)97, 2000));
+        var input = Utf8(new string('a', 8192));
         var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
 
+        var reads = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++reads >= 3 ? 2 : 0);
         try
         {
             var enumerator = regex.EnumerateMatches(input, 0);
@@ -730,11 +728,13 @@ public sealed class Pcre2SliceOwnershipTests
     [Fact]
     public void OwnedReplaceTimeoutThrowsTimeoutIdentity()
     {
-        var input = Utf8(new string((char)97, 2000));
+        var input = Utf8(new string('a', 8192));
         var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
+        var reads = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++reads >= 3 ? 2 : 0);
         var exception = Assert.Throws<Pcre2MatchException>(
             () => System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
@@ -808,11 +808,13 @@ public sealed class Pcre2SliceOwnershipTests
     [Fact]
     public void OwnedCountTimeoutThrowsTimeoutIdentity()
     {
-        var input = Utf8(new string((char)97, 2000));
+        var input = Utf8(new string('a', 8192));
         var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
+        var reads = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++reads >= 3 ? 2 : 0);
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(input, 0));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
     }
