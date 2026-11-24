@@ -1036,7 +1036,8 @@ internal static partial class Utf8SliceRunner
                     continue;
                 if (!MayMatchAdmittedCandidate(program, input, proofPosition, proofStart, out var acceptedEnd, proveMatch, proofLimit))
                 {
-                    if (rejectedSuffix == NoBranchSuffixCheck && proveBranchedMatch &&
+                    // Keep the full proof allowance for a compiled candidate.
+                    if (rejectedSuffix == NoBranchSuffixCheck && proveBranchedMatch && program.EmittedMatch is null &&
                         program.RequiredBranchLiteral.Min != 0 && input.Length - position <= 64)
                         rejectedSuffix = -1;
                     var remainingDigits = classWindowEnd - position;

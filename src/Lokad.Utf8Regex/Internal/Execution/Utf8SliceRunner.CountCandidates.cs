@@ -1660,7 +1660,8 @@ internal static partial class Utf8SliceRunner
         if (MayMatchAdmittedCandidate(program, input, position, instruction, out acceptedEnd, proveMatch, limit))
             return true;
 
-        if (rejectedSuffix == NoBranchSuffixCheck && proveMatch && program.RequiredBranchLiteral.Min != 0 &&
+        if (rejectedSuffix == NoBranchSuffixCheck && proveMatch && program.EmittedMatch is null &&
+            program.RequiredBranchLiteral.Min != 0 &&
             input.Length - position <= 64)
             rejectedSuffix = -1;
         return false;
