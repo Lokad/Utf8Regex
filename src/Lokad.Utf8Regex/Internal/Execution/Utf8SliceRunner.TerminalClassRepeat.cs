@@ -298,6 +298,68 @@ internal static partial class Utf8SliceRunner
             code[positions[4]].Kind == Utf8SliceInstructionKind.Accept && CanRepeatScalarAtom(program, code[atomIndex]);
     }
 
+    internal static bool TryScanLazyAsciiSuffix(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int start, bool existenceOnly, ref Utf8SliceInvocation invocation, out Utf8SliceCountOutcome outcome)
+    {
+        outcome = default;
+        if (program.IsNonBacktracking || program.RightToLeft || program.RepeatCount != 1 ||
+            program.NonBacktrackingOrderedClosures.Length == 0) return false;
+        var code = program.Instructions.AsSpan();
+        var head = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, 0);
+        if (code[head] is not { Kind: Utf8SliceInstructionKind.RepeatLazy, RepeatMinimum: 0, HasSingleAtomBody: true } repeat)
+            return false;
+        var tail = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, repeat.A + 1);
+        if (tail >= code.Length - 1 ||
+            Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, tail + 1) != code.Length - 1 ||
+            !program.TryGetUnfoldedAsciiSet(code[tail], out var ascii, out var asciiOnly) || !asciiOnly)
+            return false;
+        var size = BitOperations.PopCount(ascii.Low) + BitOperations.PopCount(ascii.High);
+        if (size is 0 or > 5) return false;
+
+        // Every suffix hit is reachable with zero iterations. A lazy run
+        // starting earlier must try that hit before it can consume past it.
+        // Count keeps the same match ends. The range API needs the real starts.
+        Span<byte> values = stackalloc byte[5];
+        var written = 0;
+        for (var bits = ascii.Low; bits != 0; bits &= bits - 1)
+            values[written++] = (byte)BitOperations.TrailingZeroCount(bits);
+        for (var bits = ascii.High; bits != 0; bits &= bits - 1)
+            values[written++] = (byte)(64 + BitOperations.TrailingZeroCount(bits));
+
+        var breach = invocation.TryReserveWorking(0);
+        if (breach != Utf8ExecutionLimitKind.None) { outcome = new(0, breach); return true; }
+        var remaining = input[start..];
+        if (invocation.IsUnmetered && invocation.CheckpointHook is null)
+        {
+            outcome = new(Scan(remaining, values[..size], existenceOnly), Utf8ExecutionLimitKind.None);
+            return true;
+        }
+
+        var count = 0;
+        while (!remaining.IsEmpty)
+        {
+            breach = invocation.TryChargeInputStep();
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (breach != Utf8ExecutionLimitKind.None) { outcome = new(count, breach); return true; }
+            // ASCII matches are complete scalars even when the block cuts a
+            // multibyte scalar.
+            var length = Math.Min(2048, remaining.Length);
+            count += Scan(remaining[..length], values[..size], existenceOnly);
+            if (existenceOnly && count != 0) break;
+            remaining = remaining[length..];
+        }
+        breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        outcome = new(count, breach);
+        return true;
+
+        static int Scan(ReadOnlySpan<byte> block, ReadOnlySpan<byte> values, bool existenceOnly)
+        {
+            if (existenceOnly) return block.IndexOfAny(values) >= 0 ? 1 : 0;
+            return values.Length == 2 ? block.Count(values[0]) + block.Count(values[1]) : block.CountAny(values);
+        }
+    }
+
     internal static bool TryCountTerminalScalar(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int start, ref Utf8SliceInvocation invocation, out Utf8SliceCountOutcome outcome)
     {

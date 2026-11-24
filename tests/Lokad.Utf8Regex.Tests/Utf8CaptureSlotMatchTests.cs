@@ -366,6 +366,60 @@ public sealed class Utf8CaptureSlotMatchTests
     }
 
     [Fact]
+    public void LazyAsciiSuffixCountsAcrossBlocksAndKeepsTheOriginalRange()
+    {
+        const string pattern = "(?<prefix>[ab]*?)[1cd]";
+        var text = new string('a', 2047) + "😀aabc1!" + new string('a', 2049) + "d";
+        var input = Encoding.UTF8.GetBytes(text);
+        using var regex = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 8, MaxWorkingBytes = 1 }
+        });
+        using var source = new CancellationTokenSource();
+        Assert.True(regex.IsMatch(input, source.Token));
+        Assert.Equal(3, regex.Count(input, source.Token));
+
+        using var ranges = new Utf8Regex(pattern);
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
+        Assert.Equal(new Utf8CaptureRange(2051, 2055), ranges.Match(input, captures: slots));
+        Assert.Equal(new Utf8CaptureRange(2051, 2054), slots[1]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LazyAsciiSuffixKeepsWorkAndInterruptionChecks(bool existenceOnly)
+    {
+        const string pattern = "[ab]*?[cd]";
+        var input = Encoding.UTF8.GetBytes(new string('a', 1 << 18) + "d");
+        using var denied = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1 }
+        });
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(denied));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
+
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var timed = new Utf8Regex(pattern, policy: new() { MatchTimeout = TimeSpan.FromMilliseconds(10) });
+        using var source = new CancellationTokenSource();
+        var session = Utf8SearchDiagnosticsSession.Start(_ => source.Cancel());
+        try
+        {
+            var canceled = Assert.Throws<OperationCanceledException>(() => Run(timed, source.Token));
+            Assert.Equal(source.Token, canceled.CancellationToken);
+        }
+        finally { session.Complete(); }
+
+        session = Utf8SearchDiagnosticsSession.Start(_ => ticks = 20);
+        try { Assert.Throws<RegexMatchTimeoutException>(() => Run(timed)); }
+        finally { session.Complete(); }
+
+        int Run(Utf8Regex regex, CancellationToken token = default)
+            => existenceOnly ? (regex.IsMatch(input, token) ? 1 : 0) : regex.Count(input, token);
+    }
+
+    [Fact]
     public void OrdinaryOrderedReplayKeepsWorkWithinTheSelectedExtent()
     {
         var input = Encoding.UTF8.GetBytes("😀" + new string('a', 320) + "z!");

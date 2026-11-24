@@ -378,6 +378,12 @@ public sealed partial class Utf8Regex : IDisposable
             !program.RightToLeft &&
             Utf8SliceRunner.CanSearchOrdinaryOrdered(program, input.Length - startByte, search, ref invocation))
         {
+            if (input.Length - startByte >= 256 && Utf8SliceRunner.TryScanLazyAsciiSuffix(program, input,
+                startByte, existenceOnly: true, ref invocation, out var suffix))
+            {
+                if (suffix.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+                return suffix.Count != 0;
+            }
             var breach = Utf8SliceRunner.IsMatchPackedNonBacktracking(program, input, startByte, ref invocation, out var found);
             if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
             return found;
@@ -519,7 +525,9 @@ public sealed partial class Utf8Regex : IDisposable
         }
         // A complete scalar run, including a grouped repeat, can be counted
         // without preparing capture slots or entering candidate search.
-        if (Utf8SliceRunner.TryCountTerminalScalar(program, input, startByte, ref invocation, out var terminal))
+        if (input.Length - startByte >= 256 && Utf8SliceRunner.TryScanLazyAsciiSuffix(program, input,
+                startByte, existenceOnly: false, ref invocation, out var terminal) ||
+            Utf8SliceRunner.TryCountTerminalScalar(program, input, startByte, ref invocation, out terminal))
         {
             if (terminal.Breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Terminal class count breached the invocation budget.");
