@@ -1732,11 +1732,7 @@ internal static partial class Utf8SliceRunner
                         if (entry.A is not ((int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd)) return BranchedPrefixUndecided;
                         if (!MatchesEndAnchor(input, position, entry)) return BranchedPrefixRejected;
                     }
-                    else
-                    {
-                        if (!Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, position, out var boundary)) return BranchedPrefixUndecided;
-                        if (boundary != (entry.A != 0)) return BranchedPrefixRejected;
-                    }
+                    else if (!MatchesBoundary(program, entry, input, position)) return BranchedPrefixRejected;
                     continue;
                 case Utf8SliceInstructionKind.RepeatGreedy:
                 case Utf8SliceInstructionKind.RepeatLazy:

@@ -266,12 +266,17 @@ internal static partial class Utf8SliceRunner
         (uint)position < (uint)input.Length &&
         (instruction.B != 0 || position == input.Length - 1) && input[position] == (byte)'\n';
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool MatchesBoundary(Utf8SliceProgram program, in Utf8SliceInstruction instruction,
         ReadOnlySpan<byte> input, int index)
-    {
-        if (Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, index, out var asciiBoundary))
-            return asciiBoundary == (instruction.A != 0);
+        => Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, index, out var asciiBoundary)
+            ? asciiBoundary == (instruction.A != 0)
+            : MatchesUnicodeBoundary(program, instruction, input, index);
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool MatchesUnicodeBoundary(Utf8SliceProgram program, in Utf8SliceInstruction instruction,
+        ReadOnlySpan<byte> input, int index)
+    {
         // Callers have checked the scalar-aligned position. The VM and its
         // complete boundary root classify the same two complete neighbors.
         var beforeWord = false;
