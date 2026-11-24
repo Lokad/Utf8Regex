@@ -1656,7 +1656,7 @@ internal static partial class Utf8SliceRunner
             acceptedEnd = -1;
             return false;
         }
-        if (MayMatchBranchedAsciiPrefix(program, input, position, instruction, out acceptedEnd, proveMatch, limit))
+        if (MayMatchAdmittedCandidate(program, input, position, instruction, out acceptedEnd, proveMatch, limit))
             return true;
 
         if (rejectedSuffix == NoBranchSuffixCheck && proveMatch && program.RequiredBranchLiteral.Min != 0 &&
@@ -2445,6 +2445,21 @@ internal static partial class Utf8SliceRunner
 
     internal const int BranchedPrefixInstructionLimit = 96;
     private const int SingleOriginPrefixInstructionLimit = 256;
+
+    private static bool MayMatchAdmittedCandidate(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, int index, out int acceptedEnd, bool proveMatch, int instructionLimit = BranchedPrefixInstructionLimit)
+    {
+        // A compiled candidate executes the complete proof for the admitted
+        // suffix. The general probe also handles partial instruction windows.
+        if (program.EmittedMatch is { } emitted && index == 0 && proveMatch &&
+            instructionLimit >= BranchedPrefixInstructionLimit && program.Instructions[0].Kind != Utf8SliceInstructionKind.Anchor)
+        {
+            var end = emitted(input[position..]);
+            acceptedEnd = end < 0 ? -1 : position + end;
+            return end >= 0;
+        }
+        return MayMatchBranchedAsciiPrefix(program, input, position, index, out acceptedEnd, proveMatch, instructionLimit);
+    }
 
     internal static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int position, int index, out int acceptedEnd, bool proveMatch = false,

@@ -4,10 +4,10 @@ using System.Runtime.CompilerServices;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-// Emit a bounded forward program for the existing absolute-beginning proof.
+// Emit a bounded forward program for an origin admitted by the caller.
 // Retry targets are fixed during emission. A repeat with one viable endpoint
 // can leave its offset in a local without changing the offset at a retry.
-internal static class Utf8AnchoredProgramEmitter
+internal static class Utf8BoundedProgramEmitter
 {
     internal delegate int Match(ReadOnlySpan<byte> input);
 
@@ -22,19 +22,24 @@ internal static class Utf8AnchoredProgramEmitter
         var code = program.Instructions;
         if (!RuntimeFeature.IsDynamicCodeSupported || !RuntimeFeature.IsDynamicCodeCompiled ||
             program.RightToLeft || program.IsNonBacktracking ||
-            program.ReadsCaptures || code.Length is < 2 or > MaxInstructions ||
-            code[0] is not { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: not 0 } ||
-            !CanEmit(program, budget)) return null;
+            program.ReadsCaptures || code.Length is < 2 or > MaxInstructions) return null;
 
-        using var method = Utf8DynamicIlBuilder.Create("Utf8Regex_AnchoredProgram", typeof(int),
-            typeof(Utf8AnchoredProgramEmitter), typeof(ReadOnlySpan<byte>));
+        var anchored = code[0] is { Kind: Utf8SliceInstructionKind.Anchor,
+            A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: not 0 };
+        if (!anchored &&
+            program.LeadingByteCandidate is not { FromBranch: true, First: >= 0 and < 128 }) return null;
+        var entry = anchored ? 1 : 0;
+        if (!CanEmit(program, entry, budget)) return null;
+
+        using var method = Utf8DynamicIlBuilder.Create(anchored ? "Utf8Regex_AnchoredProgram" : "Utf8Regex_CandidateProgram",
+            typeof(int), typeof(Utf8BoundedProgramEmitter), typeof(ReadOnlySpan<byte>));
         var il = new Utf8IlEmitter(method, s_spanLength, s_spanItem, inputArgument: 0);
         var length = il.DeclareLocal<int>();
         var value = il.DeclareLocal<int>();
         il.LoadInputLength();
         il.StoreLocal(length);
         var fail = il.DefineLabel();
-        EmitPath(1, null, 0, fail);
+        EmitPath(entry, null, 0, fail);
         il.MarkLabel(fail);
         il.LdcI4(-1);
         il.Emit(OpCodes.Ret);
@@ -237,7 +242,7 @@ internal static class Utf8AnchoredProgramEmitter
         }
     }
 
-    private static bool CanEmit(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+    private static bool CanEmit(Utf8SliceProgram program, int entry, Utf8ConstructionBudget budget)
     {
         var code = program.Instructions;
         budget.ChargeWork((ulong)code.Length);
@@ -245,7 +250,7 @@ internal static class Utf8AnchoredProgramEmitter
         // run on a successful input. Reject before allocating the IL builder.
         Span<int> visits = stackalloc int[code.Length + 1];
         visits[^1] = Unsupported;
-        for (var pc = code.Length - 1; pc > 0; pc--)
+        for (var pc = code.Length - 1; pc >= entry; pc--)
         {
             ref readonly var instruction = ref code[pc];
             var cost = instruction.Kind switch
@@ -268,7 +273,7 @@ internal static class Utf8AnchoredProgramEmitter
             };
             visits[pc] = Math.Min(cost, Unsupported);
         }
-        return visits[1] <= MaxExpandedVisits;
+        return visits[entry] <= MaxExpandedVisits;
 
         static int RepeatVisits(in Utf8SliceInstruction repeat, int continuation)
         {

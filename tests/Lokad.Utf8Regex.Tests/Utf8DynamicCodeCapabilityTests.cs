@@ -20,7 +20,7 @@ public sealed class Utf8DynamicCodeCapabilityTests
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
         var program = Assert.IsType<Utf8SliceProgram>(regex.Inspection.AvailableOwnedSliceProgram);
         Assert.Equal(RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled,
-            program.EmittedAnchoredMatch is not null);
+            program.EmittedMatch is not null);
         var bytes = Encoding.UTF8.GetBytes(text);
         var expected = new Utf8CaptureRange(0, end);
         Assert.True(regex.IsMatch(bytes));
@@ -51,7 +51,7 @@ public sealed class Utf8DynamicCodeCapabilityTests
             RegexOptions.Compiled);
         var program = Assert.IsType<Utf8SliceProgram>(regex.Inspection.AvailableOwnedSliceProgram);
         Assert.Equal(RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled,
-            program.EmittedAnchoredMatch is not null);
+            program.EmittedMatch is not null);
 
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(letters >= 0, regex.IsMatch(input));
@@ -61,6 +61,26 @@ public sealed class Utf8DynamicCodeCapabilityTests
         Assert.Equal(new Utf8CaptureRange(0, input.Length), match.Value);
         if (letters == 0) Assert.Empty(match.GetCaptures(1).ToArray());
         else Assert.Equal(new Utf8CaptureRange(0, letters), Assert.Single(match.GetCaptures(1).ToArray()));
+    }
+
+    [Theory]
+    [InlineData("255", 0, 3, 1)]
+    [InlineData("é😀:00 200 255 099", 7, 9, 4)]
+    [InlineData("2é255", 3, 6, 1)]
+    [InlineData("!1é2😀", -1, -1, 0)]
+    public void EmittedCandidateProgramReturnsAbsoluteByteOffsets(string text, int start, int end, int count)
+    {
+        using var regex = new Utf8Regex(@"(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])", RegexOptions.Compiled);
+        var program = Assert.IsType<Utf8SliceProgram>(regex.Inspection.AvailableOwnedSliceProgram);
+        Assert.Equal(RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled,
+            program.EmittedMatch is not null);
+
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(count > 0, regex.IsMatch(input));
+        Assert.Equal(count, regex.Count(input));
+        var match = regex.Match(input);
+        Assert.Equal(count > 0, match.Success);
+        if (match.Success) Assert.Equal(new Utf8CaptureRange(start, end), match);
     }
 
     [Theory]

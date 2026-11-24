@@ -421,7 +421,7 @@ internal sealed class Utf8SliceProgram
         bool requiresUnicodeWordBoundary,
         bool requiresUnicodeShorthand,
         bool requiresUnicodeCategory,
-        bool isRoot, bool emitAnchoredMatch)
+        bool isRoot, bool emitBoundedMatch)
     {
         Instructions = instructions;
         IsNonBacktracking = isNonBacktracking;
@@ -573,13 +573,13 @@ internal sealed class Utf8SliceProgram
             RequiredFinalAscii = FindRequiredFinalAscii(Utf8ConstructionScope.CurrentBudget, out var unanchoredByte);
             RequiredUnanchoredFinalByte = unanchoredByte;
         }
-        if (emitAnchoredMatch)
-            EmittedAnchoredMatch = Utf8AnchoredProgramEmitter.TryEmit(this, Utf8ConstructionScope.CurrentBudget);
+        if (emitBoundedMatch)
+            EmittedMatch = Utf8BoundedProgramEmitter.TryEmit(this, Utf8ConstructionScope.CurrentBudget);
     }
 
     internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings,
         bool isRoot, (ulong[]? Closures, byte[]? Leaves, uint Conditions) nonBacktrackingOrdered = default,
-        bool emitAnchoredMatch = false)
+        bool emitBoundedMatch = false)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -726,7 +726,7 @@ internal sealed class Utf8SliceProgram
             requiresUnicodeWordBoundary,
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
-            isRoot, emitAnchoredMatch);
+            isRoot, emitBoundedMatch);
         construction.Complete(); return result;
     }
 
@@ -789,7 +789,7 @@ internal sealed class Utf8SliceProgram
     internal (int Min, int Max, byte Literal) LeadingRepeatLiteralWindow { get; }
     internal (int Min, int Max, byte Literal) FollowingDecimalLiteralWindow { get; }
     internal int FollowingDecimalContinuation { get; }
-    internal Utf8AnchoredProgramEmitter.Match? EmittedAnchoredMatch { get; }
+    internal Utf8BoundedProgramEmitter.Match? EmittedMatch { get; }
     private (ulong Mask, int Anchor) TerminalRepeatsWithoutRewind { get; }
     private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) RequiredFinalAscii { get; }
     internal byte? RequiredUnanchoredFinalByte { get; }
@@ -1037,7 +1037,7 @@ internal static class Utf8SliceLowerer
             captureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, caseBehavior, false);
 
     internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool nonBacktracking,
-        bool prepareUnbranchedSearch = false, bool emitAnchoredMatch = false)
+        bool prepareUnbranchedSearch = false, bool emitBoundedMatch = false)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -1081,7 +1081,7 @@ internal static class Utf8SliceLowerer
                 {
                     if (owner.Failed) return null;
                     var program = FinishLowering(owner, frame.Root, frames.Count == 0,
-                        usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, prepareUnbranchedSearch, emitAnchoredMatch);
+                        usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, prepareUnbranchedSearch, emitBoundedMatch);
                     if (program is null) return null;
                     if (frames.Count == 0) { construction.Complete(); return program; }
                     var parent = frames[frames.Count - 1].Owner
@@ -1308,7 +1308,7 @@ internal static class Utf8SliceLowerer
 
     private static Utf8SliceProgram? FinishLowering(Lowering lowerer, Utf8SliceNode root, bool isRoot,
         bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, bool prepareUnbranchedSearch,
-        bool emitAnchoredMatch)
+        bool emitBoundedMatch)
     {
         lowerer.Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Accept, 0, 0, 0, 0));
         var requiresUnicodeWordBoundary = false;
@@ -1437,7 +1437,7 @@ internal static class Utf8SliceLowerer
             isRoot && usesInterpretedLazyLoopSemantics, isRoot && usesLiteralClassBracketSyntax, lowerer.CaseBehavior,
             lowerer.NonBacktracking, lowerer.CaptureOpeningCount,
             epsilonOrder, epsilonAncestors,
-            lowerer.BackreferenceLowerings.Take(), isRoot, ordered, emitAnchoredMatch);
+            lowerer.BackreferenceLowerings.Take(), isRoot, ordered, emitBoundedMatch);
     }
 
     private static void MarkBoundedEndTails(Span<Utf8SliceInstruction> code, bool hasAlternation, Utf8ConstructionBudget budget)

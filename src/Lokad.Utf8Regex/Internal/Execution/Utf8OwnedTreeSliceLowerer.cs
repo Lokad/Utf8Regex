@@ -35,7 +35,7 @@ internal static class Utf8OwnedTreeSliceLowerer
             (options & RegexOptions.Compiled) != 0 && hasCaptureWritingLazyRange,
             tree.UsesLiteralClassBracketSyntax, caseBehavior,
             (options & RegexOptions.NonBacktracking) != 0, prepareUnbranchedSearch: true,
-            emitAnchoredMatch: (options & RegexOptions.Compiled) != 0);
+            emitBoundedMatch: (options & RegexOptions.Compiled) != 0);
         if (program is not null) { arena.Complete(); construction.Complete(); }
         return program;
     }

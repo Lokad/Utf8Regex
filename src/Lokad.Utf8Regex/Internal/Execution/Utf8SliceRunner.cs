@@ -598,7 +598,7 @@ internal static partial class Utf8SliceRunner
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
             invocation.Budget.ThrowIfCancellationRequested();
-            if (MayMatchBranchedAsciiPrefix(program, input, fromByte, 0, out var acceptedEnd, proveMatch: true))
+            if (MayMatchAdmittedCandidate(program, input, fromByte, 0, out var acceptedEnd, proveMatch: true))
             {
                 if (acceptedEnd >= 0)
                 {
@@ -660,7 +660,7 @@ internal static partial class Utf8SliceRunner
             // Unknown instructions still enter the original attempt.
             int acceptedEnd;
             bool possible;
-            if (seekBeginning && fromByte == 0 && program.EmittedAnchoredMatch is { } emitted)
+            if (seekBeginning && fromByte == 0 && program.EmittedMatch is { } emitted)
             {
                 acceptedEnd = emitted(input);
                 possible = acceptedEnd >= 0;
@@ -1034,7 +1034,7 @@ internal static partial class Utf8SliceRunner
                 if (rejectedSuffix != NoBranchSuffixCheck &&
                     RejectRequiredBranchLiteralSuffix(program, input, position, ref rejectedSuffix, ref proofLimit))
                     continue;
-                if (!MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out var acceptedEnd, proveMatch, proofLimit))
+                if (!MayMatchAdmittedCandidate(program, input, proofPosition, proofStart, out var acceptedEnd, proveMatch, proofLimit))
                 {
                     if (rejectedSuffix == NoBranchSuffixCheck && proveBranchedMatch &&
                         program.RequiredBranchLiteral.Min != 0 && input.Length - position <= 64)
