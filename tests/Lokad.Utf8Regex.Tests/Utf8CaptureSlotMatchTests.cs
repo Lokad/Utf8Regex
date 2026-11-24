@@ -326,6 +326,45 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.Equal(1, regex.Count(input, source.Token));
     }
 
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void UnbranchedLazyRepeatDoesNotRescanRejectedStarts(RegexOptions options)
+    {
+        var prefix = new string('a', 320) + "😀!";
+        var input = Encoding.UTF8.GetBytes(prefix + "aaac bbd");
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        using var regex = new Utf8Regex("(?<run>[ab]*?)[cd]", options, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1024, MaxDepth = 32, MaxWorkingBytes = 4096 }
+        });
+        using var source = new CancellationTokenSource();
+        var account = new Account { Maximum = 4096 };
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
+
+        Assert.False(regex.IsMatch(input.AsSpan(0, start), source.Token));
+        Assert.Equal(new Utf8CaptureRange(start, start + 4),
+            regex.Match(input, captures: slots, cancellationToken: source.Token, workingMemoryAllowance: account));
+        Assert.Equal(new Utf8CaptureRange(start, start + 3), slots[1]);
+        Assert.Equal(2, regex.Count(input, source.Token, account));
+        Assert.Equal(0UL, account.Held);
+    }
+
+    [Fact]
+    public void UnbranchedGreedyRepeatKeepsCompleteScalarsAcrossFailedStarts()
+    {
+        var prefix = string.Concat(Enumerable.Repeat("á😀", 160)) + "z!";
+        var input = Encoding.UTF8.GetBytes(prefix + "aa😀ce");
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        using var regex = new Utf8Regex("[aá😀]+[cd][ef]", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1024, MaxDepth = 32, MaxWorkingBytes = 4096 }
+        });
+
+        Assert.Equal(new Utf8CaptureRange(start, input.Length), regex.Match(input));
+        Assert.Equal(1, regex.Count(input));
+    }
+
     [Fact]
     public void OrdinaryOrderedReplayKeepsWorkWithinTheSelectedExtent()
     {

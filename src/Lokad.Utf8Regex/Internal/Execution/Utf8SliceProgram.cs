@@ -1032,7 +1032,7 @@ internal static class Utf8SliceLowerer
         => Lower(root, groupNames, maintainBalance, matchCaseInsensitive, rightToLeft,
             captureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, caseBehavior, false);
 
-    internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool nonBacktracking)
+    internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool nonBacktracking, bool prepareUnbranchedSearch = false)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -1076,7 +1076,7 @@ internal static class Utf8SliceLowerer
                 {
                     if (owner.Failed) return null;
                     var program = FinishLowering(owner, frame.Root, frames.Count == 0,
-                        usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax);
+                        usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, prepareUnbranchedSearch);
                     if (program is null) return null;
                     if (frames.Count == 0) { construction.Complete(); return program; }
                     var parent = frames[frames.Count - 1].Owner
@@ -1302,7 +1302,7 @@ internal static class Utf8SliceLowerer
     }
 
     private static Utf8SliceProgram? FinishLowering(Lowering lowerer, Utf8SliceNode root, bool isRoot,
-        bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
+        bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, bool prepareUnbranchedSearch)
     {
         lowerer.Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Accept, 0, 0, 0, 0));
         var requiresUnicodeWordBoundary = false;
@@ -1413,8 +1413,9 @@ internal static class Utf8SliceLowerer
             Utf8SliceRunner.CanPrepareOrdinaryOrderedSearch(instructions, lowerer.Budget);
         var epsilonOrder = prepareEpsilon
             ? Utf8NonBacktrackingSearchState.BuildEpsilonOrder(instructions, out epsilonAncestors, out ordered)
-            : isRoot && lowerer.RepeatCount != 0 && lowerer.HasAlternation
-                ? Utf8SliceRunner.BuildOrdinaryRepeatClosures(instructions, lowerer.Budget, out epsilonAncestors, out ordered)
+            : isRoot && lowerer.RepeatCount != 0 && (lowerer.HasAlternation || prepareUnbranchedSearch)
+                ? Utf8SliceRunner.BuildOrdinaryRepeatClosures(instructions, lowerer.HasAlternation,
+                    lowerer.Budget, out epsilonAncestors, out ordered)
                 : [];
         return Utf8SliceProgram.Create(
             instructions,

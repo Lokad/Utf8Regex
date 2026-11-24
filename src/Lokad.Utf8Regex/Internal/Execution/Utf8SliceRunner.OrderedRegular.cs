@@ -49,12 +49,12 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    internal static int[] BuildOrdinaryRepeatClosures(ReadOnlySpan<Utf8SliceInstruction> instructions,
+    internal static int[] BuildOrdinaryRepeatClosures(ReadOnlySpan<Utf8SliceInstruction> instructions, bool hasAlternation,
         Utf8ConstructionBudget budget, out ulong[] ancestors, out (ulong[] Closures, byte[] Leaves, uint Conditions) ordered)
     {
         ancestors = [];
         ordered = ([], [], 0);
-        if (instructions.Length > 64) return [];
+        if (instructions.Length > 64 || !hasAlternation && !HasLeadingUnboundedRepeatBeforeClass(instructions, budget)) return [];
 
         // The projected graph keeps the original atom indexes. Only the
         // closures survive, so capture replay still uses the original VM.
@@ -103,6 +103,27 @@ internal static partial class Utf8SliceRunner
         }
         return CanPrepareOrdinaryOrderedSearch(projected, budget)
             ? Utf8NonBacktrackingSearchState.BuildEpsilonOrder(projected, out ancestors, out ordered) : [];
+    }
+
+    private static bool HasLeadingUnboundedRepeatBeforeClass(ReadOnlySpan<Utf8SliceInstruction> code, Utf8ConstructionBudget budget)
+    {
+        if (code.Length < 6) return false;
+        budget.ChargeWork((ulong)code.Length);
+        var head = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, 0);
+        if (head >= code.Length ||
+            code[head] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy,
+                RepeatMaximum: long.MaxValue, RepeatMinimum: <= 1 } repeat || !IsSingleAtomRepeat(code, head, repeat))
+            return false;
+
+        // A class continuation can leave failed starts throughout the run.
+        // Keep the existing greedy ASCII repeat paths.
+        var following = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, repeat.A + 1);
+        return following < code.Length && code[following].Kind is
+            (Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet or
+             Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.Hybrid) &&
+            (repeat.Kind == Utf8SliceInstructionKind.RepeatLazy || code[head + 1] is not
+                ({ Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+                 { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: < 128 }));
     }
 
     internal static bool CanSearchOrdinaryOrdered(Utf8SliceProgram program, int remaining,
