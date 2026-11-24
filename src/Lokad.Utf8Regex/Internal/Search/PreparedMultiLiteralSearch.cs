@@ -28,6 +28,14 @@ internal readonly partial struct PreparedMultiLiteralSearch
 
     public bool HasValue => Kind != PreparedMultiLiteralKind.None;
 
+    // Exact families with an empty branch use the direct portfolio.
+    internal bool HasEmptyLiteral => Kind switch
+    {
+        PreparedMultiLiteralKind.ExactDirect => ExactSearch.SearchData.ShortestLength == 0,
+        PreparedMultiLiteralKind.AsciiIgnoreCase => IgnoreCaseSearch.ShortestLength == 0,
+        _ => false,
+    };
+
     public byte[][] Literals { get; }
 
     public PreparedLiteralSetSearch ExactSearch { get; }

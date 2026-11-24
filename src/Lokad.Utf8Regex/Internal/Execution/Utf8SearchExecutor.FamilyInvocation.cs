@@ -394,7 +394,7 @@ internal static partial class Utf8SearchExecutor
                 {
                     // Forward candidates are UTF-8 lead bytes. Every branch at
                     // this start has the same leading boundary requirement.
-                    breach = TryChargeCandidatePredicate(ref invocation);
+                    breach = invocation.TryChargeBoundedCheck();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     if (!Utf8ScalarWordBoundary.MatchesRequirement(candidateBoundary, input, candidateByte))
                     {
@@ -410,7 +410,7 @@ internal static partial class Utf8SearchExecutor
                     // The charged candidate search also covers up to eight
                     // exact head checks. Matching heads keep branch admission.
                     if (boundedExactHeads && head != literal[0]) continue;
-                    breach = TryChargeCandidatePredicate(ref invocation);
+                    breach = invocation.TryChargeBoundedCheck();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     var candidate = reverse && confirm ? candidateByte + 1 - literal.Length : candidateByte;
                     if (candidate < start || candidate > end - literal.Length) continue;
@@ -444,16 +444,6 @@ internal static partial class Utf8SearchExecutor
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         invocation.Budget.ThrowIfCancellationRequested();
         return Utf8ExecutionLimitKind.None;
-    }
-
-    // A scalar boundary or branch guard costs one VM step. The following
-    // literal comparison, scan block or return checks the deadline directly.
-    // Confirm the deadline before reporting a denial here as well.
-    private static Utf8ExecutionLimitKind TryChargeCandidatePredicate(ref Utf8SliceInvocation invocation)
-    {
-        var breach = invocation.TryChargeStep();
-        if (breach != Utf8ExecutionLimitKind.None) invocation.Budget.CheckDeadline();
-        return breach;
     }
 
     private static int IndexOfShortExactPair(ReadOnlySpan<byte> input, int starts,

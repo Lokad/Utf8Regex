@@ -14,7 +14,7 @@ internal readonly partial struct PreparedSearcher
         ArgumentOutOfRangeException.ThrowIfNegative(start);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(end, input.Length);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.TryChargeBoundedCheck();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         var candidate = -1;
         var length = 1;
@@ -46,15 +46,8 @@ internal readonly partial struct PreparedSearcher
         else if (Kind == PreparedSearcherKind.MultiLiteral)
         {
             var literals = MultiLiteralSearch.Literals;
-            var hasEmpty = false;
-            foreach (var literal in literals)
-            {
-                breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
-                hasEmpty |= literal.Length == 0;
-            }
             var folded = MultiLiteralSearch.Kind == PreparedMultiLiteralKind.AsciiIgnoreCase;
-            if (!hasEmpty)
+            if (!MultiLiteralSearch.HasEmptyLiteral)
                 return Utf8SearchExecutor.TryFindLiteralFamilyCandidate(literals, folded, input, start, end,
                     reverse, ref invocation, out match, out found);
             // Empty search anchors are candidate facts, not global regex matches.

@@ -135,6 +135,15 @@ internal struct Utf8SliceInvocation
         return breach;
     }
 
+    // Small setup and predicate checks use the VM cadence. Their caller
+    // checks the deadline directly before a scan or publication.
+    internal Utf8ExecutionLimitKind TryChargeBoundedCheck()
+    {
+        var breach = TryChargeStep();
+        if (breach != Utf8ExecutionLimitKind.None) Budget.CheckDeadline();
+        return breach;
+    }
+
     // One synchronous invocation owns these mutable counters. Separate calls
     // construct separate owners; this is not a caller-owned/concurrent meter.
     private sealed class SharedInvocationState(Utf8ExecutionBudget budget, Utf8StorageLedger ledger) : IUtf8MemoryAllowance

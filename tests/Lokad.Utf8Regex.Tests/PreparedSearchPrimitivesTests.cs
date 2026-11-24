@@ -984,6 +984,30 @@ public sealed class PreparedSearchPrimitivesTests
         }
     }
 
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(false, 1)]
+    [InlineData(true, 0)]
+    [InlineData(true, 1)]
+    public void PreparedFamilyInvocationKeepsEmptyBranchPriority(bool folded, int emptyOrdinal)
+    {
+        byte[][] literals = new byte[2][];
+        literals[emptyOrdinal] = [];
+        literals[1 - emptyOrdinal] = folded ? "ab"u8.ToArray() : "AB"u8.ToArray();
+        var searcher = new PreparedSearcher(new PreparedMultiLiteralSearch(literals, folded));
+        var invocation = Utf8SliceInvocation.CreateExclusive(new(100, 0, 0), Timeout.InfiniteTimeSpan, default);
+
+        Assert.Equal(Utf8ExecutionLimitKind.None,
+            searcher.TryFindMatch("xABy"u8, 1, 3, false, ref invocation, out var match, out var found));
+        Assert.True(found);
+        Assert.Equal(new PreparedSearchMatch(1, emptyOrdinal == 0 ? 0 : 2, 0), match);
+
+        Assert.Equal(Utf8ExecutionLimitKind.None,
+            searcher.TryFindMatch("xABy"u8, 1, 3, true, ref invocation, out match, out found));
+        Assert.True(found);
+        Assert.Equal(new PreparedSearchMatch(3, 0, emptyOrdinal), match);
+    }
+
     private static PreparedMultiLiteralPackedNibbleSimdPrefilter CreatePackedIgnoreCasePrefilter()
     {
         byte[][] literals =
