@@ -1050,8 +1050,24 @@ internal static partial class Utf8SliceRunner
         }
 
         if (!reuseDelimiter)
+        {
+            if (verifyFollowingWindow && program.Instructions[1].RepeatMaximum is >= 1 and <= 4 and var maximum)
+            {
+                // A short ASCII run needs only the existing block charge. A
+                // possible wider digit at its left edge needs the scalar rewind.
+                var start = windowEnd;
+                var limit = Math.Max(floor, start - (int)maximum);
+                while (start > limit && Utf8AsciiBytePredicates.IsDigit(input[start - 1])) start--;
+                if (start < windowEnd && (start == limit || input[start - 1] < 128))
+                {
+                    var breach = invocation.TryChargeInputStep();
+                    if (breach == Utf8ExecutionLimitKind.None) position = start;
+                    return breach;
+                }
+            }
             return TryRewindClassWhitespace(program, input, floor, leadingClass: 2, gapMaximum: 0, directClassLiteral: true,
                 ref position, ref invocation);
+        }
 
         // The preceding window classified all digits from the floor through this delimiter.
         var rewindBreach = invocation.TryChargeInputStep();
