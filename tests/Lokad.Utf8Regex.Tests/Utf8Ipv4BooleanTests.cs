@@ -56,9 +56,15 @@ public sealed class Utf8Ipv4BooleanTests
             ResourcePolicy = new() { MaxWorkSteps = 24, MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         var bytes = Encoding.UTF8.GetBytes(text);
-        var expected = Regex.IsMatch(text, Pattern);
-        Assert.Equal(expected, ordinary.IsMatch(bytes));
-        Assert.Equal(expected, limited.IsMatch(bytes, source.Token));
+        var expected = Regex.Match(text, Pattern);
+        Assert.Equal(expected.Success, ordinary.IsMatch(bytes));
+        Assert.Equal(expected.Success, limited.IsMatch(bytes, source.Token));
+        foreach (var regex in new[] { ordinary, limited })
+        {
+            var actual = regex.Match(bytes, cancellationToken: source.Token);
+            Assert.Equal(expected.Success, actual.Success);
+            if (expected.Success) Utf8MatchSequence.AssertRange(actual, text, expected.Index, expected.Length);
+        }
     }
 
     [Theory]
