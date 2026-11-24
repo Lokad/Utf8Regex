@@ -195,8 +195,11 @@ limit and requested total. Totals saturate and the first denial remains in
 effect across cursor copies. A denied acquisition never publishes a partial
 successful result. Search, retries, and direct matches retain bounded work
 and interruption checks. Depth includes logical assertion state even when
-the engine allocates no continuation. Charges vary with the execution route
-and library version. Recheck finite policies when upgrading.
+the engine allocates no continuation. Ordinary ordered range search and Count
+can admit the prepared leaf count as their depth bound. Smaller limits can
+still use scalar execution, and any capture replay has its own live depth
+checks within the invocation. Charges vary with the execution route and
+library version. Recheck finite policies when upgrading.
 If NonBacktracking needs a scratch array beyond the runtime's maximum array
 length, it reports the capacity failure as `InvalidOperationException` before
 allocating that array.

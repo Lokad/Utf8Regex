@@ -110,20 +110,22 @@ internal static partial class Utf8SliceRunner
     {
         if (remaining < 256 || program.NonBacktrackingOrderedClosures.Length == 0) return false;
         var depth = invocation.Budget.Limits.MaxDepth;
+        var preferOrdered = program.RightToLeft || search.Kind == Utf8SearchKind.None;
+        // A tighter cap can still admit the scalar path. Keep selective
+        // prepared starts when admitting a new depth-limited route.
+        if (depth != 0 && (!preferOrdered || depth < (uint)(program.NonBacktrackingOrderedLeaves.Length - 1)))
+            return false;
         if (program.RepeatCount == 0)
         {
             // Short complete folded literals have bounded verification and
             // a selective starter that includes the invariant wide alias.
-            return depth == 0 && !(search.Kind == Utf8SearchKind.AsciiFoldedByteLiteral &&
+            return !(search.Kind == Utf8SearchKind.AsciiFoldedByteLiteral &&
                 search.LiteralUtf8 is { Length: > 0 and <= 32 } needle &&
                 program.Instructions.Length == needle.Length + 1 &&
                 program.LeadingByteCandidate is { First: >= 0 and < 128, InstructionIndex: 0 });
         }
 
-        // Keep more selective prepared forward starts. Tight depth limits retain
-        // the scalar path, which can admit less than a complete frontier.
-        return (program.RightToLeft || search.Kind == Utf8SearchKind.None) &&
-            (depth == 0 || depth >= (uint)(program.NonBacktrackingOrderedLeaves.Length - 1));
+        return preferOrdered;
     }
 
     internal static (ulong[] Closures, byte[] Leaves, uint Conditions) BuildOrderedRegularClosures(
@@ -362,7 +364,7 @@ internal static partial class Utf8SliceRunner
         if (seek != Utf8ExecutionLimitKind.None || fromByte < 0) return new(0, seek);
         var reverse = program.RightToLeft;
         var leaves = program.NonBacktrackingOrderedLeaves;
-        if (program.RepeatCount != 0 && !program.IsNonBacktracking)
+        if (!program.IsNonBacktracking && (program.RepeatCount != 0 || invocation.Budget.Limits.MaxDepth != 0))
         {
             var depth = invocation.Budget.TryNoteDepth((uint)(leaves.Length - 1));
             if (depth != Utf8ExecutionLimitKind.None) return new(0, depth);
@@ -674,7 +676,7 @@ internal static partial class Utf8SliceRunner
     {
         const int capacity = 16;
         var leaves = program.NonBacktrackingOrderedLeaves;
-        if (program.RepeatCount != 0 && !program.IsNonBacktracking)
+        if (!program.IsNonBacktracking && (program.RepeatCount != 0 || invocation.Budget.Limits.MaxDepth != 0))
         {
             var depth = invocation.Budget.TryNoteDepth((uint)(leaves.Length - 1));
             if (depth != Utf8ExecutionLimitKind.None) return new(false, -1, -1, depth);

@@ -22,6 +22,35 @@ public sealed class Utf8CoreDepthPolicyTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth, error.ResourceKind);
         Assert.Equal((ulong)cap, error.Limit); Assert.Equal((ulong)cap + 1, error.Requested);
     }
+
+    [Fact]
+    public void SmallOrderedGraphFitsFiniteDepthOnOverlappingStarts()
+    {
+        const string pattern = @"(?<unit>ab|a)+[yz]";
+        var input = Encoding.UTF8.GetBytes(new string('a', 8192) + "😀!aay");
+        var start = input.Length - 3;
+        var limits = new Utf8ResourcePolicy { MaxDepth = 5, MaxWorkSteps = 10_000, MaxWorkingBytes = 4096 };
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant,
+            new() { ResourcePolicy = limits });
+        using var source = new CancellationTokenSource();
+
+        Assert.True(regex.IsMatch(input, source.Token));
+        Assert.Equal(1, regex.Count(input, source.Token));
+        var captures = new Utf8CaptureRange[2];
+        var match = regex.Match(input, captures: captures, cancellationToken: source.Token);
+        Assert.Equal((start, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.Equal(match, captures[0]);
+        Assert.Equal((start + 1, start + 2), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+
+        using var tighter = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant,
+            new() { ResourcePolicy = limits with { MaxDepth = 1 } });
+        var early = Encoding.UTF8.GetBytes("aay!" + new string('a', 8192));
+        var earlyMatch = tighter.Match(early);
+        Assert.Equal((0, 3), (earlyMatch.StartOffsetInBytes, earlyMatch.EndOffsetInBytes));
+        var exhausted = Assert.Throws<Utf8ResourceLimitExceededException>(() => tighter.Match(input));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, exhausted.ResourceKind);
+    }
+
     [Theory]
     [MemberData(nameof(OperationModes), MemberType = typeof(Utf8CoreWorkPolicyTests))]
     public void AllPublicOperationsHaveExactDepthSuccessAndOneUnderDenial(string operation, bool compiled, bool live)
