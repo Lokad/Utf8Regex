@@ -39,6 +39,31 @@ public sealed class Utf8DynamicCodeCapabilityTests
     }
 
     [Theory]
+    [InlineData("a12", 1)]
+    [InlineData("Ab1 2", 2)]
+    [InlineData("aX", 0)]
+    [InlineData("Abc12", -1)]
+    [InlineData("Aé12", -1)]
+    [InlineData("a1  2", -1)]
+    public void EmittedSingleEndpointRepeatKeepsTheOriginalForkOrigin(string text, int letters)
+    {
+        using var regex = new Utf8Regex(@"\A(?:(?<letters>[A-Za-z]{1,2})[0-9] ?[0-9]|[A-Za-z]X)\z",
+            RegexOptions.Compiled);
+        var program = Assert.IsType<Utf8SliceProgram>(regex.Inspection.AvailableOwnedSliceProgram);
+        Assert.Equal(RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled,
+            program.EmittedAnchoredMatch is not null);
+
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(letters >= 0, regex.IsMatch(input));
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.Equal(letters >= 0, cursor.MoveNext(out var match));
+        if (letters < 0) return;
+        Assert.Equal(new Utf8CaptureRange(0, input.Length), match.Value);
+        if (letters == 0) Assert.Empty(match.GetCaptures(1).ToArray());
+        else Assert.Equal(new Utf8CaptureRange(0, letters), Assert.Single(match.GetCaptures(1).ToArray()));
+    }
+
+    [Theory]
     [InlineData("abc|xyz", "é😀 xyz abc", 2)]
     [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", 1)]
     [InlineData("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", "2026-10-26", 1)]
