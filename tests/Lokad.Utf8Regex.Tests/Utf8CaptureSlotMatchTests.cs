@@ -326,6 +326,49 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.Equal(1, regex.Count(input, source.Token));
     }
 
+    [Fact]
+    public void OrdinaryOrderedReplayKeepsWorkWithinTheSelectedExtent()
+    {
+        var input = Encoding.UTF8.GetBytes("😀" + new string('a', 320) + "z!");
+        var expected = new Utf8CaptureRange(4, 5);
+        using var regex = new Utf8Regex("(?:(?<item>[ab][bc]|[ab])+[cd]|(?<winner>[ab]))", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 2048, MaxWorkingBytes = 4096 }
+        });
+        using var source = new CancellationTokenSource();
+        var account = new Account { Maximum = 4096 };
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];
+
+        Assert.Equal(expected, regex.Match(input, 4, slots, source.Token, account));
+        Assert.Equal(expected, slots[0]);
+        Assert.False(slots[1].Success);
+        Assert.Equal(expected, slots[2]);
+        Assert.Equal(0UL, account.Held);
+
+        using var cursor = regex.CreateMatchCursor(input, 4, source.Token, account);
+        Assert.True(cursor.MoveNext(out var result));
+        cursor.Dispose();
+        Assert.Equal(0UL, account.Held);
+        Assert.Equal(expected, result.Value);
+        Assert.True(result.GetCaptures(1).IsEmpty);
+        Assert.Equal(expected, Assert.Single(result.GetCaptures(2).ToArray()));
+    }
+
+    [Theory]
+    [InlineData(@"\b")]
+    [InlineData("$")]
+    public void OrdinaryOrderedReplayKeepsContextAtTheSelectedEnd(string condition)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('a', 320) + "z!");
+        using var regex = new Utf8Regex("(?:(?<run>[ab]+)" + condition + "|(?<winner>[ab]))");
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];
+        var expected = new Utf8CaptureRange(0, 1);
+
+        Assert.Equal(expected, regex.Match(input, captures: slots));
+        Assert.False(slots[1].Success);
+        Assert.Equal(expected, slots[2]);
+    }
+
     [Theory]
     [InlineData(2046, "")]
     [InlineData(2044, "è")]

@@ -524,9 +524,12 @@ internal static partial class Utf8SliceRunner
             var selected = FindOrderedRegularRange(program, input, fromByte, ref invocation);
             if (!selected.Found || captureStarts.Length == 0 && !collectHistory) return selected;
             // Captures never affect discovery for this graph. Run the chosen
-            // start on the original subject to publish ordinary capture history.
+            // start to publish ordinary capture history. With no anchors or
+            // boundaries, a path past the winning end cannot return to it.
+            var replayInput = !reverse && program.NonBacktrackingOrderedConditions == 0
+                ? input[..selected.EndByte] : input;
             var origin = reverse ? selected.EndByte : selected.StartByte;
-            var replay = TryMatchAt(program, input, origin, captureStarts, captureEnds,
+            var replay = TryMatchAt(program, replayInput, origin, captureStarts, captureEnds,
                 collectHistory, false, true, ref workspace, ref invocation);
             return replay.IsMatch
                 ? new(true, Math.Min(origin, replay.EndIndex), Math.Max(origin, replay.EndIndex),
