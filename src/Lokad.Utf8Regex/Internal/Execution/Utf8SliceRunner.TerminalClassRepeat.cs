@@ -122,7 +122,7 @@ internal static partial class Utf8SliceRunner
     }
 
     private static Utf8SliceMatchOutcome RunTerminalCaptureRoot(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int start, int[] captureStarts, int[] captureEnds, ref Utf8SliceInvocation invocation,
+        int start, scoped Span<int> captureStarts, scoped Span<int> captureEnds, ref Utf8SliceInvocation invocation,
         bool minimumOnly)
     {
         var code = program.Instructions;

@@ -145,13 +145,13 @@ internal static partial class Utf8SliceRunner
     // misses. A saved acceptance waits only for its higher-priority threads.
     private static Utf8SliceSearchOutcome RunNonBacktracking(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
-        int[] captureStarts, int[] captureEnds,
+        scoped Span<int> captureStarts, scoped Span<int> captureEnds,
         bool anchored, bool requireNonEmpty, ref Utf8SliceInvocation invocation)
     {
         var workspace = new NonBacktrackingWorkspace();
         var completed = false;
-        Array.Fill(captureStarts, -1);
-        Array.Fill(captureEnds, -1);
+        captureStarts.Fill(-1);
+        captureEnds.Fill(-1);
         try
         {
             var canSeek = !anchored && program.Instructions.Length > 64 &&
@@ -249,8 +249,8 @@ internal static partial class Utf8SliceRunner
             workspace.Release(ref invocation);
             if (!completed)
             {
-                Array.Fill(captureStarts, -1);
-                Array.Fill(captureEnds, -1);
+                captureStarts.Fill(-1);
+                captureEnds.Fill(-1);
             }
         }
     }
@@ -452,7 +452,7 @@ internal static partial class Utf8SliceRunner
             }
         }
 
-        internal Utf8ExecutionLimitKind Project(Utf8SliceProgram program, int[] captureStarts, int[] captureEnds,
+        internal Utf8ExecutionLimitKind Project(Utf8SliceProgram program, scoped Span<int> captureStarts, scoped Span<int> captureEnds,
             ref Utf8SliceInvocation invocation)
         {
             var groupCount = RegisterCount == 0 ? 0 : program.GroupCount;

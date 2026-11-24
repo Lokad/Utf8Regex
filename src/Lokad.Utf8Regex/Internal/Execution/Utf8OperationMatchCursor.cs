@@ -184,7 +184,7 @@ internal ref partial struct Utf8OperationMatchCursor
     private bool MoveNextOwnedSliceBytes(out Utf8CaptureRange range)
     {
         range = default;
-        var slots = new Utf8SliceSlots([], []);
+        var slots = Utf8SliceSlots.Empty;
         try
         {
             // A new MoveNext and result publication are operation boundaries,

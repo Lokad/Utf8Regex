@@ -39,7 +39,7 @@ public sealed partial class Utf8Regex
         // search, capture replay and publication.
         Utf8SliceInvocation.InitializeExclusive(out var invocation, InvocationLimits, MatchTimeout,
             cancellationToken, workingMemoryAllowance);
-        var slots = new Utf8SliceSlots([], []);
+        var slots = Utf8SliceSlots.Empty;
         try
         {
             Utf8SliceBufferWork.Checkpoint(ref invocation);

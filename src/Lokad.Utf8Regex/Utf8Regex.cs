@@ -559,7 +559,7 @@ public sealed partial class Utf8Regex : IDisposable
             }
         }
         if (RejectMissingRequiredInput(input, program, ref invocation, out var screenedLiteral)) return countedPrefix;
-        var slots = new Utf8SliceSlots([], []);
+        var slots = Utf8SliceSlots.Empty;
         try
         {
             slots = Utf8SliceRunner.RentSlots(GetValueOperationCaptureSlotCount(program), ref invocation);

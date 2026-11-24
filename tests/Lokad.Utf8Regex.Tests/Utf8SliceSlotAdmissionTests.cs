@@ -11,9 +11,9 @@ public sealed class Utf8SliceSlotAdmissionTests
     [InlineData(16)]
     [InlineData(65)]
     [InlineData(4096)]
-    public void BothPhysicalSlotArraysShareTheirParentsExactBoundary(int groups)
+    public void CaptureSlotsShareTheirParentsExactBoundary(int groups)
     {
-        var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(groups) * 2);
+        var bytes = Utf8ConstructionBudget.ArrayBytes<int>(checked(groups * 2));
         foreach (var allow in new[] { false, true })
         {
             var limit = 7 + bytes - (allow || groups == 0 ? 0UL : 1UL);
@@ -31,7 +31,7 @@ public sealed class Utf8SliceSlotAdmissionTests
                 Assert.Equal(groups, slots.Starts.Length);
                 Assert.Equal(groups, slots.Ends.Length);
                 Assert.Equal(7 + bytes, invocation.Ledger.ReservedBytes);
-                if (groups > 0) Assert.NotSame(slots.Starts, slots.Ends);
+                Assert.False(slots.Starts.Overlaps(slots.Ends));
                 Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
                 Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
             }

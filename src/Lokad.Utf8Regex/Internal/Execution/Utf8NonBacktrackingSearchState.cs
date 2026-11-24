@@ -267,13 +267,13 @@ internal sealed class Utf8NonBacktrackingSearchState
     }
 
     internal static Utf8SliceSearchOutcome FindFirstWideCapture(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int fromByte, int[] captureStarts, int[] captureEnds, ref Utf8SliceInvocation invocation, int? selectedEnd = null)
+        int fromByte, scoped Span<int> captureStarts, scoped Span<int> captureEnds, ref Utf8SliceInvocation invocation, int? selectedEnd = null)
     {
         var breach = TryCreate(program, input, ref invocation, out var table, fromByte, selectedEnd);
         if (breach != Utf8ExecutionLimitKind.None)
         {
-            Array.Fill(captureStarts, -1);
-            Array.Fill(captureEnds, -1);
+            captureStarts.Fill(-1);
+            captureEnds.Fill(-1);
             return new(false, -1, -1, breach);
         }
         var boundary = 0;
@@ -365,7 +365,7 @@ internal sealed class Utf8NonBacktrackingSearchState
     }
 
     internal static Utf8SliceCountOutcome CountInWindows(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int position, Utf8SliceSlots slots, ref Utf8SliceInvocation invocation)
+        int position, scoped Span<int> captureStarts, scoped Span<int> captureEnds, ref Utf8SliceInvocation invocation)
     {
         Utf8NonBacktrackingSearchState? window = null;
         var boundary = 0;
@@ -374,7 +374,8 @@ internal sealed class Utf8NonBacktrackingSearchState
         {
             while (position >= 0)
             {
-                var found = FindInWindows(program, input, position, slots, ref window, ref boundary, ref invocation);
+                var found = FindInWindows(program, input, position, captureStarts, captureEnds,
+                    ref window, ref boundary, ref invocation);
                 if (!found.Found) return new(count, found.Breach);
                 count++;
                 position = found.StartByte != found.EndByte ? found.EndByte
@@ -388,7 +389,8 @@ internal sealed class Utf8NonBacktrackingSearchState
     }
 
     internal static Utf8SliceSearchOutcome FindInWindows(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int position, Utf8SliceSlots slots, ref Utf8NonBacktrackingSearchState? window, ref int boundary,
+        int position, scoped Span<int> captureStarts, scoped Span<int> captureEnds,
+        ref Utf8NonBacktrackingSearchState? window, ref int boundary,
         ref Utf8SliceInvocation invocation)
     {
         const int windowBytes = 64;
@@ -450,7 +452,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                 window._startLimit = startEnd == input.Length ? window._boundaries.Length :
                     Array.BinarySearch(window._boundaries, boundary, window._boundaries.Length - boundary, startEnd);
             }
-            var found = window.FindFirst(program, ref boundary, slots.Starts, slots.Ends, ref invocation);
+            var found = window.FindFirst(program, ref boundary, captureStarts, captureEnds, ref invocation);
             if (found.Found || found.Breach != Utf8ExecutionLimitKind.None || window._windowEnd == input.Length) return found;
             position = window._windowEnd;
         }
@@ -472,8 +474,8 @@ internal sealed class Utf8NonBacktrackingSearchState
         var maxRows = end - from + 1;
         var openingCount = program.NonBacktrackingCaptureOpeningCount;
         var bytes = (ulong)(maxRows * (sizeof(int) + sizeof(ulong)) + openingCount * sizeof(int));
-        Array.Fill(slots.Starts, -1);
-        Array.Fill(slots.Ends, -1);
+        slots.Starts.Fill(-1);
+        slots.Ends.Fill(-1);
         var breach = invocation.TryReserveWorking(bytes);
         if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
         var completed = false;
@@ -503,8 +505,8 @@ internal sealed class Utf8NonBacktrackingSearchState
             invocation.Ledger.Release(bytes);
             if (!completed)
             {
-                Array.Fill(slots.Starts, -1);
-                Array.Fill(slots.Ends, -1);
+                slots.Starts.Fill(-1);
+                slots.Ends.Fill(-1);
             }
         }
     }
@@ -540,12 +542,12 @@ internal sealed class Utf8NonBacktrackingSearchState
     }
 
     internal Utf8SliceSearchOutcome FindFirst(Utf8SliceProgram program, ref int boundary,
-        int[] captureStarts, int[] captureEnds, ref Utf8SliceInvocation invocation)
+        scoped Span<int> captureStarts, scoped Span<int> captureEnds, ref Utf8SliceInvocation invocation)
     {
         var completed = false;
         ulong reservation = 0;
-        Array.Fill(captureStarts, -1);
-        Array.Fill(captureEnds, -1);
+        captureStarts.Fill(-1);
+        captureEnds.Fill(-1);
         try
         {
             var visited = 0;
@@ -588,14 +590,14 @@ internal sealed class Utf8NonBacktrackingSearchState
             invocation.Ledger.Release(reservation);
             if (!completed)
             {
-                Array.Fill(captureStarts, -1);
-                Array.Fill(captureEnds, -1);
+                captureStarts.Fill(-1);
+                captureEnds.Fill(-1);
             }
         }
     }
 
     private static Utf8SliceSearchOutcome Replay(Utf8SliceProgram program, ReadOnlySpan<int> boundaries,
-        ReadOnlySpan<ulong> viability, int stride, ref int boundary, int[] captureStarts, int[] captureEnds,
+        ReadOnlySpan<ulong> viability, int stride, ref int boundary, scoped Span<int> captureStarts, scoped Span<int> captureEnds,
         Span<int> openings, ref Utf8SliceInvocation invocation)
     {
         var recordCaptures = captureStarts.Length != 0;

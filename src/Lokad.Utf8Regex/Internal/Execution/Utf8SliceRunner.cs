@@ -80,14 +80,16 @@ internal readonly struct Utf8SliceMatchOutcome
 
 internal readonly struct Utf8SliceSlots
 {
-    internal Utf8SliceSlots(int[] starts, int[] ends)
-    {
-        Starts = starts;
-        Ends = ends;
-    }
+    private readonly int[]? _offsets;
 
-    internal int[] Starts { get; }
-    internal int[] Ends { get; }
+    internal Utf8SliceSlots(int[] offsets) => _offsets = offsets;
+
+    internal static Utf8SliceSlots Empty => new(Array.Empty<int>());
+    internal bool IsInitialized => _offsets is not null;
+    internal int Count => OffsetCount / 2;
+    internal int OffsetCount => _offsets?.Length ?? 0;
+    internal Span<int> Starts => _offsets.AsSpan(0, Count);
+    internal Span<int> Ends => _offsets.AsSpan(Count);
 }
 
 internal readonly struct Utf8SliceSearchOutcome
@@ -154,7 +156,7 @@ internal static partial class Utf8SliceRunner
     {
         if (groups == 0)
         {
-            slots = new Utf8SliceSlots(Array.Empty<int>(), Array.Empty<int>());
+            slots = Utf8SliceSlots.Empty;
             return Utf8ExecutionLimitKind.None;
         }
         return TryRentNonemptySlots(groups, ref invocation, out slots);
@@ -163,7 +165,8 @@ internal static partial class Utf8SliceRunner
     private static Utf8ExecutionLimitKind TryRentNonemptySlots(int groups, ref Utf8SliceInvocation invocation, out Utf8SliceSlots slots)
     {
         slots = default;
-        var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(groups) * 2);
+        var offsetCount = checked(groups * 2);
+        var bytes = Utf8ConstructionBudget.ArrayBytes<int>(offsetCount);
         var breach = invocation.TryReserveWorking(bytes);
         if (breach != Utf8ExecutionLimitKind.None)
         {
@@ -174,7 +177,7 @@ internal static partial class Utf8SliceRunner
         {
             // Matching and capture replay install the unset markers before
             // reading the slots. Renting only admits and allocates storage.
-            slots = new Utf8SliceSlots(new int[groups], new int[groups]);
+            slots = new Utf8SliceSlots(new int[offsetCount]);
             return Utf8ExecutionLimitKind.None;
         }
         catch
@@ -186,11 +189,8 @@ internal static partial class Utf8SliceRunner
 
     internal static void ReleaseSlots(Utf8SliceSlots slots, ref Utf8SliceInvocation invocation)
     {
-        if (slots.Starts.Length != 0)
-        {
-            invocation.Ledger.Release(checked(Utf8ConstructionBudget.ArrayBytes<int>(slots.Starts.Length)
-                + Utf8ConstructionBudget.ArrayBytes<int>(slots.Ends.Length)));
-        }
+        if (slots.OffsetCount != 0)
+            invocation.Ledger.Release(Utf8ConstructionBudget.ArrayBytes<int>(slots.OffsetCount));
     }
 
     internal static void ReleaseHistory((int Start, int End)[][]? history, ref Utf8SliceInvocation invocation)
@@ -294,8 +294,8 @@ internal static partial class Utf8SliceRunner
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
         int start,
-        int[] captureStarts,
-        int[] captureEnds,
+        scoped Span<int> captureStarts,
+        scoped Span<int> captureEnds,
         bool startIsScalarBoundary,
         ref Utf8SliceInvocation invocation,
         bool collectHistory = false,
@@ -323,8 +323,8 @@ internal static partial class Utf8SliceRunner
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
         int start,
-        int[] captureStarts,
-        int[] captureEnds,
+        scoped Span<int> captureStarts,
+        scoped Span<int> captureEnds,
         bool collectHistory,
         bool requireNonEmpty,
         bool startIsScalarBoundary,
@@ -350,8 +350,8 @@ internal static partial class Utf8SliceRunner
         {
             // The complete repeat has no mutable VM state. Its metered scalar
             // scan supplies the endpoint, including for a nonempty retry.
-            if (captureStarts.Length != 0) Array.Fill(captureStarts, -1);
-            if (captureEnds.Length != 0) Array.Fill(captureEnds, -1);
+            if (captureStarts.Length != 0) captureStarts.Fill(-1);
+            if (captureEnds.Length != 0) captureEnds.Fill(-1);
             var repeat = RunTerminalClassRepeat(program, input, start, requireNonEmpty, ref invocation, canStopEarly);
             return requireFullInput && repeat.IsMatch && repeat.EndIndex != input.Length
                 ? new(false, -1, repeat.Breach) : repeat;
@@ -368,8 +368,8 @@ internal static partial class Utf8SliceRunner
         var heads = workspace.Heads;
         if (counts.Length != 0) Array.Fill(counts, -1);
         if (positions.Length != 0) Array.Fill(positions, -1);
-        if (captureStarts.Length != 0) Array.Fill(captureStarts, -1);
-        if (captureEnds.Length != 0) Array.Fill(captureEnds, -1);
+        if (captureStarts.Length != 0) captureStarts.Fill(-1);
+        if (captureEnds.Length != 0) captureEnds.Fill(-1);
         if (heads.Length != 0) Array.Fill(heads, -1);
         workspace.Stacks.ResetAttempt();
         var completed = false;
@@ -453,8 +453,8 @@ internal static partial class Utf8SliceRunner
             {
                 // A committed positive assertion still belongs to this attempt;
                 // failure or cancellation must not publish its capture slots.
-                if (captureStarts.Length != 0) Array.Fill(captureStarts, -1);
-                if (captureEnds.Length != 0) Array.Fill(captureEnds, -1);
+                if (captureStarts.Length != 0) captureStarts.Fill(-1);
+                if (captureEnds.Length != 0) captureEnds.Fill(-1);
             }
         }
     }
@@ -463,7 +463,7 @@ internal static partial class Utf8SliceRunner
     // coordinates; no validity pass or subject coordinate map is required.
     internal static Utf8SliceSearchOutcome TryFindFirst(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
-        int[] captureStarts, int[] captureEnds, bool collectHistory,
+        scoped Span<int> captureStarts, scoped Span<int> captureEnds, bool collectHistory,
         ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default,
         bool existenceOnly = false, int screenedLiteral = -1)
     {
@@ -483,7 +483,7 @@ internal static partial class Utf8SliceRunner
     // scratch. The caller releases it; each attempt still resets all VM state.
     internal static Utf8SliceSearchOutcome TryFindFirst(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
-        int[] captureStarts, int[] captureEnds, bool collectHistory,
+        scoped Span<int> captureStarts, scoped Span<int> captureEnds, bool collectHistory,
         ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default,
         bool existenceOnly = false, int screenedLiteral = -1)
     {
@@ -509,8 +509,8 @@ internal static partial class Utf8SliceRunner
                 if (selected.Found)
                     return Utf8NonBacktrackingSearchState.FindFirstWideCapture(program, input, selected.StartByte,
                         captureStarts, captureEnds, ref invocation, selected.EndByte);
-                Array.Fill(captureStarts, -1);
-                Array.Fill(captureEnds, -1);
+                captureStarts.Fill(-1);
+                captureEnds.Fill(-1);
                 return selected;
             }
             return RunNonBacktracking(program, input, fromByte, captureStarts, captureEnds,
@@ -556,7 +556,7 @@ internal static partial class Utf8SliceRunner
 
     private static Utf8SliceSearchOutcome TryFindFirstAtSingleOrigin(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
-        int[] captureStarts, int[] captureEnds, bool collectHistory,
+        scoped Span<int> captureStarts, scoped Span<int> captureEnds, bool collectHistory,
         ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, bool existenceOnly,
         in Utf8SliceInstruction first, bool seekBeginning, bool seekVeryEnd)
     {
@@ -662,7 +662,7 @@ internal static partial class Utf8SliceRunner
     // scanner's search windows, delimiter state or per-candidate proofs.
     private static Utf8SliceSearchOutcome TryFindFirstByCandidateSearch(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
-        int[] captureStarts, int[] captureEnds, bool collectHistory,
+        scoped Span<int> captureStarts, scoped Span<int> captureEnds, bool collectHistory,
         ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan,
         bool existenceOnly, int screenedLiteral, bool seekBeginning, in Utf8SliceInstruction first)
     {
@@ -1170,8 +1170,8 @@ internal static partial class Utf8SliceRunner
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
         int fromByte,
-        int[] captureStarts,
-        int[] captureEnds,
+        scoped Span<int> captureStarts,
+        scoped Span<int> captureEnds,
         ref Utf8SliceInvocation invocation,
         in Utf8SearchPlan candidatePlan = default,
         in PreparedSearcher branchPrefixes = default,
@@ -1189,8 +1189,8 @@ internal static partial class Utf8SliceRunner
             return terminal;
         if (program.IsNonBacktracking)
         {
-            Array.Fill(captureStarts, -1);
-            Array.Fill(captureEnds, -1);
+            captureStarts.Fill(-1);
+            captureEnds.Fill(-1);
             if (TryCountAnchoredLine(program, input, fromByte, ref invocation, out var lineCount))
                 return lineCount;
             // Wide Count uses program-sized scratch on longer subjects.
@@ -1200,7 +1200,7 @@ internal static partial class Utf8SliceRunner
             {
                 if (program.NonBacktrackingOrderedForwardOnly)
                     return Utf8NonBacktrackingSearchState.CountInWindows(program, input, fromByte,
-                        new(captureStarts, captureEnds), ref invocation);
+                        captureStarts, captureEnds, ref invocation);
                 if (captureStarts.Length == 0 && program.NonBacktrackingOrderedClosures.Length != 0 &&
                     CanAdmitOrderedRows(program, ref invocation))
                     return CountOrderedRegular(program, input, fromByte, ref invocation);
@@ -1606,7 +1606,7 @@ internal static partial class Utf8SliceRunner
     }
 
     private static Utf8SliceMatchOutcome RunSegment(
-        ReadOnlySpan<byte> input, int[] captureStarts, int[] captureEnds, int[] balanceHeads,
+        ReadOnlySpan<byte> input, scoped Span<int> captureStarts, scoped Span<int> captureEnds, int[] balanceHeads,
         ref AssertionCursor cursor, bool resumeFailure, bool preserveCaptureTrail,
         ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation, out bool suspended, bool existenceOnly = false,
         int checkedDotTailAt = -1)
@@ -2984,7 +2984,7 @@ internal static partial class Utf8SliceRunner
             return _trailTables[index / TrailChunkCapacity][index % TrailChunkCapacity];
         }
 
-        internal void TruncateTrail(int count, int[] captureStarts, int[] captureEnds, int[] balanceHeads)
+        internal void TruncateTrail(int count, scoped Span<int> captureStarts, scoped Span<int> captureEnds, int[] balanceHeads)
         {
             while (_trailCount > count)
             {
@@ -3238,7 +3238,7 @@ internal static partial class Utf8SliceRunner
 
     private static Utf8SliceMatchOutcome RunBackreference(Utf8SliceProgram program,
         in Utf8SliceInstruction instruction, ReadOnlySpan<byte> input,
-        int[] captureStarts, int[] captureEnds, int inputIndex, ref Utf8SliceInvocation invocation)
+        scoped Span<int> captureStarts, scoped Span<int> captureEnds, int inputIndex, ref Utf8SliceInvocation invocation)
     {
         // ECMAScript permits a defined group that has not completed a capture
         // yet to match an empty reference. Other unmatched references fail.

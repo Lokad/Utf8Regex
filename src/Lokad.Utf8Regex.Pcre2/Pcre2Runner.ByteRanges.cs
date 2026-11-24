@@ -75,7 +75,7 @@ internal static partial class Pcre2Runner
         // The exclusive memory cursor owns this admitted storage across moves,
         // just as Core's memory cursor does. Attempts reset semantic VM state;
         // capacity and its loan survive host waits until EOF/failure/Dispose.
-        if (slots.Starts.Length != program.GroupCount) slots = Pcre2SliceDriver.RentProgramSlots(program, ref invocation);
+        if (slots.Count != program.GroupCount) slots = Pcre2SliceDriver.RentProgramSlots(program, ref invocation);
         int begin, end;
         if (retryNonEmpty)
         {

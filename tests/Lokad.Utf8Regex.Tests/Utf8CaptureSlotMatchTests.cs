@@ -581,9 +581,10 @@ public sealed class Utf8CaptureSlotMatchTests
     [Fact]
     public void CompactReplayMissFitsAWorkingLimitBelowTheCaptureWorkspace()
     {
+        var limit = Utf8ConstructionBudget.ArrayBytes<int>(4) + 64;
         using var regex = new Utf8Regex("(a?b|c)*(dé|😀)[xy]", RegexOptions.NonBacktracking, new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkingBytes = 160 }
+            ResourcePolicy = new() { MaxWorkingBytes = limit }
         });
         var prefix = string.Concat(Enumerable.Repeat("aababc😀z é ", 32));
         var account = new Account();

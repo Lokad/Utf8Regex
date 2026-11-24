@@ -21,7 +21,7 @@ public sealed class PythonReWorkspaceLifetimeTests
         Assert.True(cursor.MoveNext(out cursorRange));
         var retained = cursorRange;
         var positioned = invocation.Ledger.ReservedBytes;
-        Assert.True(positioned > 13 + 2 * Utf8ConstructionBudget.ArrayBytes<int>(program.GroupCount));
+        Assert.True(positioned > 13 + Utf8ConstructionBudget.ArrayBytes<int>(2 * program.GroupCount));
         Assert.True(invocation.Budget.PeakWorkingBytes > positioned); // Publication overlaps scratch.
         for (var index = 1; index < 1000; index++)
         {
@@ -67,7 +67,8 @@ public sealed class PythonReWorkspaceLifetimeTests
     {
         var program = new global::Lokad.Utf8Regex.Utf8Regex("(a)(b)").Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
-        var limit = 13 + 3 * Utf8ConstructionBudget.ArrayBytes<int>(program.GroupCount);
+        var limit = 13 + Utf8ConstructionBudget.ArrayBytes<int>(2 * program.GroupCount)
+            + Utf8ConstructionBudget.ArrayBytes<int>(program.GroupCount);
         var invocation = new Utf8SliceInvocation(new(1000000, 1024, limit), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
         using var cursor = new Utf8PythonMatchCursor("ab"u8.ToArray(), program, 0,

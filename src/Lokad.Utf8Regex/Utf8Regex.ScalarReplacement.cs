@@ -46,7 +46,7 @@ public sealed partial class Utf8Regex
         var expansion = new Utf8SliceTemplateExpansion(replacement, _program.CaptureCatalog);
         var ranges = new Utf8ReplacementRangeLedger();
         var outputLength = (long)input.Length;
-        var slots = new Utf8SliceSlots([], []);
+        var slots = Utf8SliceSlots.Empty;
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         Utf8NonBacktrackingSearchState? batch = null;
         var boundary = 0;

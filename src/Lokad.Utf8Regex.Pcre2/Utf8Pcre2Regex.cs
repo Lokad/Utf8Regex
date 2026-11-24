@@ -325,7 +325,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         try
         {
             var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref budget.WorkingInvocation, out var start);
-            var slots = new Utf8SliceSlots([], []);
+            var slots = Utf8SliceSlots.Empty;
             var workspace = new Utf8SliceRunner.AttemptWorkspace();
             var match = Pcre2Runner.MatchByteRanges(_program, ref subject, start, start, matchOptions,
                 ref budget, ref slots, ref workspace, output);

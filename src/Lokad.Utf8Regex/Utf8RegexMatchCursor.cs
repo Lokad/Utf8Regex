@@ -15,7 +15,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
     private Utf8SliceProgram? _program;
     private Utf8CaptureCatalog? _catalog;
     private Utf8SliceInvocation _invocation;
-    private Utf8SliceSlots _slots = new([], []);
+    private Utf8SliceSlots _slots = Utf8SliceSlots.Empty;
     private Utf8SliceRunner.AttemptWorkspace _workspace = new();
     private Utf8NonBacktrackingSearchState? _nonBacktracking;
     private Utf8FundedStorage.Use? _programUse;
@@ -187,13 +187,13 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             _firstCompactRegular = false;
             var input = _input.Span;
             var selected = Utf8SliceRunner.FindOrderedRegularRange(program, input, _position, ref _invocation);
-            return selected.Found && _slots.Starts.Length != 0
+            return selected.Found && _slots.Count != 0
                 ? Utf8SliceRunner.ReplayOrderedRegularRange(program, input, selected, _slots, ref _invocation)
                 : selected;
         }
 
         if (program.NonBacktrackingOrderedForwardOnly && (_nonBacktracking is null || _nonBacktracking.IsWindow))
-            return Utf8NonBacktrackingSearchState.FindInWindows(program, _input.Span, _position, _slots,
+            return Utf8NonBacktrackingSearchState.FindInWindows(program, _input.Span, _position, _slots.Starts, _slots.Ends,
                 ref _nonBacktracking, ref _boundary, ref _invocation);
 
         // After the first result, use viability unless only a bounded tail
@@ -212,12 +212,14 @@ public sealed class Utf8RegexMatchCursor : IDisposable
     private Utf8RangeMatch Snapshot(Utf8SliceSearchOutcome outcome, bool useCaptureSlots, ref Utf8InvocationResultLedger results)
     {
         var numbers = _catalog!.GroupNumbers;
+        var starts = _slots.Starts;
+        var ends = _slots.Ends;
         var count = 1;
         if (useCaptureSlots)
-            for (var slot = 0; slot < _slots.Ends.Length; slot++)
+            for (var slot = 0; slot < ends.Length; slot++)
             {
                 if ((slot & 255) == 0) Checkpoint();
-                if (_slots.Ends[slot] >= 0) count++;
+                if (ends[slot] >= 0) count++;
             }
         else if (outcome.CaptureHistory is { } history)
             for (var slot = 0; slot < history.Length; slot++)
@@ -234,8 +236,8 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             if ((slot & 255) == 0) Checkpoint();
             if (useCaptureSlots)
             {
-                var end = _slots.Ends[slot - 1];
-                if (end >= 0) captures[written++] = new(_slots.Starts[slot - 1], end);
+                var end = ends[slot - 1];
+                if (end >= 0) captures[written++] = new(starts[slot - 1], end);
             }
             else if (outcome.CaptureHistory is { } groupHistories)
                 foreach (var (start, end) in groupHistories[slot - 1])
@@ -279,7 +281,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         // copied span cursor or result receipt retains them after transfer.
         _status = status;
         _input = default; _regex = null; _program = null; _catalog = null;
-        _slots = new([], []); _workspace = new(); _nonBacktracking = null;
+        _slots = Utf8SliceSlots.Empty; _workspace = new(); _nonBacktracking = null;
         _invocation.Ledger.Release(_invocation.Ledger.ReservedBytes);
         var use = _programUse; _programUse = null; use?.Dispose();
     }

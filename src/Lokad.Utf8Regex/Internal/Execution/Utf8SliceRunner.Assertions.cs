@@ -40,7 +40,7 @@ internal static partial class Utf8SliceRunner
 
     internal static Utf8SliceMatchOutcome RunFrom(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int start,
-        int[] captureStarts, int[] captureEnds,
+        scoped Span<int> captureStarts, scoped Span<int> captureEnds,
         bool collectHistory, bool requireNonEmpty, bool startIsScalarBoundary,
         ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, int? requiredEnd = null)
     {
@@ -347,7 +347,7 @@ internal static partial class Utf8SliceRunner
     }
 
     private static void RestoreAssertion(AssertionContinuation continuation, ref AssertionCursor current,
-        int[] captureStarts, int[] captureEnds, int[] balanceHeads, bool keepCaptures,
+        scoped Span<int> captureStarts, scoped Span<int> captureEnds, int[] balanceHeads, bool keepCaptures,
         ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation)
     {
         try

@@ -206,7 +206,8 @@ backreferences compare scalar equivalents. Both use bounded execution checks.
 
 The engine admits covered storage before acquisition. It covers capture
 and projection arrays, cursor tables, output staging and finalized result
-storage. A shared or temporary allocation may count more than once.
+storage. The scalar runner admits capture starts and ends as one buffer.
+A shared or temporary allocation may count more than once.
 Fixed scalar values, borrowed inputs and programs, caller destinations,
 incidental helpers, standalone getters and host retention fall outside these
 limits. Caps bound modeled capacities rather than process heap or RSS.

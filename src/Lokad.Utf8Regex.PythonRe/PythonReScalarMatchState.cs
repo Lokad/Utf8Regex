@@ -56,7 +56,7 @@ internal struct PythonReScalarMatchState
         _timeoutSource = pattern;
         _timeout = timeout;
         _position = startOffsetInBytes;
-        _slots = new Utf8SliceSlots([], []);
+        _slots = Utf8SliceSlots.Empty;
         try
         {
             // Python re consumes text. The caller supplies valid unchanged UTF-8;
@@ -751,7 +751,7 @@ internal struct PythonReScalarMatchState
         if (_workspace.NeedsRelease) _workspace.Release(ref _invocation);
         _results.Release(ref _invocation);
         Utf8SliceRunner.ReleaseSlots(_slots, ref _invocation);
-        _slots = new Utf8SliceSlots([], []);
+        _slots = Utf8SliceSlots.Empty;
         _finished = true;
     }
 }

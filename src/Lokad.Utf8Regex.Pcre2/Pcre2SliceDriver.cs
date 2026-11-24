@@ -74,12 +74,12 @@ internal ref struct Pcre2SliceGlobalMatchCursor
     {
         Pcre2SliceDriver.CheckInvocation(ref _invocation);
         if (_position < 0 || _position > _lastStart) return false;
-        var ownsSlots = slots.Starts is null;
+        var ownsSlots = !slots.IsInitialized;
         // A whole-match range only needs slots when matching itself reads captures.
         // Capture-aware callers supply their admitted slots.
         if (ownsSlots)
             slots = _program.ReadsCaptures ? Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation) :
-                new Utf8SliceSlots([], []);
+                Utf8SliceSlots.Empty;
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         bool moved;
         try { moved = MoveNextCore(slots, ref workspace); }
@@ -97,7 +97,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         Pcre2SliceDriver.CheckInvocation(ref _invocation);
         var slots = _program.ReadsCaptures
             ? Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation)
-            : new Utf8SliceSlots([], []);
+            : Utf8SliceSlots.Empty;
         // A synchronous Count can hold one admitted workspace until it returns.
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         var count = 0;
@@ -230,7 +230,7 @@ internal static class Pcre2SliceDriver
         var position = Math.Max(start, firstAsciiStart);
         if (position > lastStart) return Pcre2CharacterMatch.NoMatch;
         // Only matching dependencies can observe slots in a whole-value search.
-        var slots = program.ReadsCaptures ? RentProgramSlots(program, ref invocation) : new Utf8SliceSlots([], []);
+        var slots = program.ReadsCaptures ? RentProgramSlots(program, ref invocation) : Utf8SliceSlots.Empty;
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         invocation.AnchorOriginByte = start;
         if (program.CanMatchEmpty || program.HasContiguousAnchor) leadingAsciiByte = null;
@@ -380,7 +380,7 @@ internal static class Pcre2SliceDriver
         scoped ref Utf8SliceInvocation invocation)
     {
         // The delimiter proof requires a nonempty prefix and no capture reads.
-        var slots = new Utf8SliceSlots([], []);
+        var slots = Utf8SliceSlots.Empty;
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         var lastStart = input.Length - slice.Fallback.MinimumByteLength;
         var count = 0;
@@ -439,7 +439,7 @@ internal static class Pcre2SliceDriver
     {
         // Count observes only the endpoints. The shared runner owns the
         // terminal-scalar proof and only capture reads require slots here.
-        var slots = program.ReadsCaptures ? RentProgramSlots(program, ref invocation) : new Utf8SliceSlots([], []);
+        var slots = program.ReadsCaptures ? RentProgramSlots(program, ref invocation) : Utf8SliceSlots.Empty;
         try
         {
             var outcome = Utf8SliceRunner.CountFromBytes(program, input.Bytes, start.Value,
@@ -475,7 +475,7 @@ internal static class Pcre2SliceDriver
         out string? mark)
     {
         var program = slice.SliceProgram;
-        var slots = new Utf8SliceSlots([], []);
+        var slots = Utf8SliceSlots.Empty;
         Pcre2GroupData[]? projected = null;
         groups = [];
         mark = null;
@@ -530,7 +530,7 @@ internal static class Pcre2SliceDriver
     // The shared batch projector handles both layouts without copied slot vectors.
     internal static Pcre2GroupData[] ProjectSliceGroups(
         Utf8SliceProgram program,
-        int matchStart, int matchEnd, int[] captureStarts, int[] captureEnds,
+        int matchStart, int matchEnd, scoped Span<int> captureStarts, scoped Span<int> captureEnds,
         ref Utf8SliceInvocation invocation, Pcre2GroupData[]? groups = null) =>
         Pcre2Runner.PublishSliceCaptures(checked(program.GroupCount + 1),
             matchStart, matchEnd, captureStarts, captureEnds, ref invocation, groups);

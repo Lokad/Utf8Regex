@@ -50,7 +50,7 @@ internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement repl
             return;
         }
         var slot = group - 1;
-        if ((uint)slot >= (uint)slots.Starts.Length) return;
+        if ((uint)slot >= (uint)slots.Count) return;
         var start = slots.Starts[slot];
         var end = slots.Ends[slot];
         if (start < 0 || end < 0) return;
