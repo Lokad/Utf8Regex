@@ -1,10 +1,11 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Benchmarks;
+using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8LiteralCountProbeTests
+public sealed class Utf8LiteralCountTests
 {
     [Theory]
     [InlineData("夏洛克·福尔摩斯")]
@@ -106,12 +107,16 @@ public sealed class Utf8LiteralCountProbeTests
     [InlineData("😀")]
     [InlineData("ab")]
     [InlineData("abé")]
-    public void AvailableProbesAgreeWithPublicCountOnScalarInputsAndBorrowedViews(string literal)
+    public void LiteralKernelsCountWithinBorrowedViews(string literal)
     {
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled,
             RegexOptions.CultureInvariant | RegexOptions.RightToLeft })
         {
-            var regex = new Utf8Regex(Regex.Escape(literal), options: options);
+            using var regex = new Utf8Regex(Regex.Escape(literal), options: options);
+            var search = Assert.IsType<PreparedSubstringSearch>(regex.Inspection.SearchPlan.LiteralSearch);
+            var needle = search.Needle;
+            var hasAnchor = Utf8LiteralCompiledEngineRuntime.TryGetExactUtf8LiteralAnchor(needle,
+                out var anchorIndex, out var anchorByte);
             foreach (var tail in new[] { "", literal[..^1] })
             {
                 // Keep every input a complete scalar, including a supplementary tail.
@@ -122,35 +127,23 @@ public sealed class Utf8LiteralCountProbeTests
                     var storage = new byte[offset + bytes.Length + 32];
                     bytes.CopyTo(storage.AsSpan(offset));
                     var input = storage.AsSpan(offset, bytes.Length);
-                    var expected = regex.Count(input);
-                    Assert.Equal(2, expected);
-                    if (regex.Inspection.DebugTryCountExactUtf8LiteralPreparedSearch(input, out var prepared))
-                        Assert.Equal(expected, prepared);
-                    if (regex.Inspection.DebugTryCountExactUtf8LiteralAnchored(input, out var anchored))
-                        Assert.Equal(expected, anchored);
+                    Assert.Equal(2, regex.Count(input));
+                    Assert.Equal(2, search.Count(input));
+                    if (hasAnchor)
+                        Assert.Equal(2, Utf8LiteralCompiledEngineRuntime.CountExactUtf8LiteralAnchored(
+                            input, needle, anchorIndex, anchorByte));
                 }
             }
         }
     }
 
     [Fact]
-    public void ProbesExerciseTheirProductionKernelsWhenEligible()
+    public void AsciiAnchorCountsExactUtf8Literals()
     {
-        var threeByte = new Utf8Regex("汉字");
-        Assert.True(threeByte.Inspection.DebugTryCountExactUtf8LiteralPreparedSearch("汉字!汉字"u8, out var prepared));
-        Assert.Equal(2, prepared);
-        var anchor = new Utf8Regex("abé");
-        Assert.True(anchor.Inspection.DebugTryCountExactUtf8LiteralAnchored("abé!abé"u8, out var anchored));
-        Assert.Equal(2, anchored);
-    }
-
-    [Fact]
-    public void ProbesDeclineNonliteralRuntimeWithoutRunningAnAlternativeEngine()
-    {
-        var regex = new Utf8Regex("a+");
-        Assert.False(regex.Inspection.DebugTryCountExactUtf8LiteralPreparedSearch("aaa"u8, out var prepared));
-        Assert.False(regex.Inspection.DebugTryCountExactUtf8LiteralAnchored("aaa"u8, out var anchored));
-        Assert.Equal(0, prepared);
-        Assert.Equal(0, anchored);
+        var needle = "abé"u8.ToArray();
+        Assert.True(Utf8LiteralCompiledEngineRuntime.TryGetExactUtf8LiteralAnchor(needle,
+            out var anchorIndex, out var anchorByte));
+        Assert.Equal(2, Utf8LiteralCompiledEngineRuntime.CountExactUtf8LiteralAnchored(
+            "abé!abé"u8, needle, anchorIndex, anchorByte));
     }
 }

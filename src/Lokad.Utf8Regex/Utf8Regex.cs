@@ -649,9 +649,6 @@ public sealed partial class Utf8Regex : IDisposable
             return directMatch;
         }
 
-        if (runtime.SupportsUtf8MatchProbe)
-            return runtime.TryMatchUtf8Probe(input, out var probeMatch) ? probeMatch : default;
-
         return runtime.Match(input, CreateExecutionBudget());
     }
 

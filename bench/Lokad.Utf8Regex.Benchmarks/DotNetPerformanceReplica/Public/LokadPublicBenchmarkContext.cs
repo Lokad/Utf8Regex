@@ -169,15 +169,6 @@ internal sealed class LokadPublicBenchmarkContext
         };
     }
 
-    public int ExecuteUtf8CompiledBoolOnly()
-    {
-        return Operation switch
-        {
-            LokadPublicBenchmarkOperation.IsMatch or LokadPublicBenchmarkOperation.Match => Utf8MatchInspection.IsMatchCompiled(CompiledUtf8Regex, InputBytes) ? 1 : 0,
-            _ => 0,
-        };
-    }
-
     private int Execute(Utf8Regex regex)
     {
         return Operation switch

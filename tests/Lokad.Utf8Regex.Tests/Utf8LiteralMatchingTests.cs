@@ -1,10 +1,10 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Benchmarks;
+using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8LiteralMatchProbeTests
+public sealed class Utf8LiteralMatchingTests
 {
     [Theory]
     [InlineData("ab", "😀ab ab")]
@@ -13,50 +13,50 @@ public sealed class Utf8LiteralMatchProbeTests
     [InlineData("ab", "missing")]
     [InlineData("cat|dog", "dog cat")]
     [InlineData("cat|dog", "😀dog cat")]
+    [InlineData("汉|汉字😀|字", "é汉字😀汉😀字")]
     [InlineData("a|ab", "ab")]
     [InlineData("ab|a", "ab")]
-    public void AvailableMatchProbesPreservePublicRangesAndBranchPriority(string pattern, string text)
+    public void LiteralMatchingPreservesByteRangesAndBranchPriority(string pattern, string text)
     {
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled,
             RegexOptions.CultureInvariant | RegexOptions.RightToLeft })
         {
-            var regex = new Utf8Regex(pattern, options: options);
+            using var regex = new Utf8Regex(pattern, options: options);
+            var oracle = new Regex(pattern, options).Match(text);
+            var expected = oracle.Success
+                ? new Utf8CaptureRange(Encoding.UTF8.GetByteCount(text.AsSpan(0, oracle.Index)),
+                    Encoding.UTF8.GetByteCount(text.AsSpan(0, oracle.Index + oracle.Length)))
+                : default;
+            var runtime = regex.Inspection.CompiledRuntime;
             var bytes = Encoding.UTF8.GetBytes(text);
             foreach (var offset in new[] { 0, 1, 31 })
             {
                 var storage = new byte[offset + bytes.Length + 32];
                 bytes.CopyTo(storage.AsSpan(offset));
                 var input = storage.AsSpan(offset, bytes.Length);
-                var expected = regex.Match(input);
-                if (regex.Inspection.DebugTryMatchExactLiteral(input, out var match))
+                Assert.Equal(expected, regex.Match(input));
+                Assert.Equal(expected.Success, regex.IsMatch(input));
+                if (runtime is not null)
                 {
-                    Assert.Equal(expected.Success, match.Success);
-                    if (match.Success)
-                    {
-                        Assert.Equal((expected.StartOffsetInBytes, expected.EndOffsetInBytes),
-                            (match.StartOffsetInBytes, match.EndOffsetInBytes));
-                    }
+                    Assert.Equal(expected, runtime.Match(input, Utf8ExecutionDeadline.Infinite));
+                    Assert.Equal(expected.Success, runtime.IsMatch(input, Utf8ExecutionDeadline.Infinite));
                 }
-                if (regex.Inspection.DebugTryIsMatchExactLiteral(input, out var exact))
-                    Assert.Equal(expected.Success, exact);
-                if (regex.Inspection.DebugTryIsMatchLiteralFamily(input, out var family))
-                    Assert.Equal(expected.Success, family);
             }
         }
     }
 
     [Fact]
-    public void EligibleProbesRunExistingExactAndFamilyKernels()
+    public void ExactAndFamilyKernelsReturnByteRanges()
     {
-        var exact = new Utf8Regex("é");
-        Assert.True(exact.Inspection.DebugTryIsMatchExactLiteral("😀é"u8, out var found));
-        Assert.True(found);
-        Assert.True(exact.Inspection.DebugTryMatchExactLiteral("😀é"u8, out var match));
-        Assert.Equal(4, match.StartOffsetInBytes);
-        var family = new Utf8Regex("cat|dog");
-        Assert.True(family.Inspection.DebugTryIsMatchLiteralFamily("dog"u8, out found));
-        Assert.True(found);
-        Assert.Equal(new Utf8CaptureRange(0, 3), family.Match("dog"u8));
+        using var exact = new Utf8Regex("é");
+        var exactRuntime = Assert.IsType<Utf8LiteralCompiledEngineRuntime>(exact.Inspection.CompiledRuntime);
+        Assert.Equal(4, exactRuntime.FindFirstLiteralViaSearch("😀é"u8, Utf8ExecutionDeadline.Infinite));
+        Assert.Equal(new Utf8CaptureRange(4, 6),
+            exactRuntime.MatchExactUtf8Literal("😀é"u8, Utf8ExecutionDeadline.Infinite, rightToLeft: false));
+        using var family = new Utf8Regex("cat|dog");
+        var familyRuntime = Assert.IsType<Utf8LiteralCompiledEngineRuntime>(family.Inspection.CompiledRuntime);
+        Assert.True(familyRuntime.IsMatchLiteralFamily("dog"u8, Utf8ExecutionDeadline.Infinite, rightToLeft: false));
+        Assert.Equal(new Utf8CaptureRange(0, 3), familyRuntime.Match("dog"u8, Utf8ExecutionDeadline.Infinite));
     }
 
     [Fact]

@@ -39,7 +39,7 @@ internal static class Utf8MatchInspection
     public static bool DebugTryIsMatchLiteralFamily(
         this Utf8Regex.Utf8RegexInspection inspection, ReadOnlySpan<byte> input, out bool isMatch)
     {
-        var runtime = GetLiteralRuntime(inspection);
+        var runtime = inspection.CompiledRuntime;
         if (runtime is null || runtime._usesRightToLeft ||
             inspection.ExecutionKind is not (NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals))
         {
@@ -53,7 +53,7 @@ internal static class Utf8MatchInspection
     public static bool DebugTryIsMatchExactLiteral(
         this Utf8Regex.Utf8RegexInspection inspection, ReadOnlySpan<byte> input, out bool isMatch)
     {
-        var runtime = GetLiteralRuntime(inspection);
+        var runtime = inspection.CompiledRuntime;
         if (runtime is null || runtime._usesRightToLeft ||
             inspection.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal))
         {
@@ -67,7 +67,7 @@ internal static class Utf8MatchInspection
     public static bool DebugTryMatchExactLiteral(
         this Utf8Regex.Utf8RegexInspection inspection, ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
-        var runtime = GetLiteralRuntime(inspection);
+        var runtime = inspection.CompiledRuntime;
         if (runtime is null || runtime._usesRightToLeft)
         {
             match = default(Utf8CaptureRange);
@@ -81,9 +81,6 @@ internal static class Utf8MatchInspection
         };
         return inspection.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal;
     }
-
-    private static Utf8LiteralCompiledEngineRuntime? GetLiteralRuntime(Utf8Regex.Utf8RegexInspection inspection)
-        => inspection.CompiledRuntime;
 
     // Alternative Count probes belong to benchmark tooling. Production keeps its
     // selected kernels; these probes reuse existing prepared metadata and bodies.
