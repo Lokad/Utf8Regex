@@ -497,27 +497,8 @@ internal sealed class Pcre2BacktrackingLowerer
                     EmitBackreference(backreference);
                     return;
                 case Pcre2AssertionBacktrackingNode assertion:
-                    var assertionLowerer = new Pcre2BacktrackingLowerer(
-                        _captureCount,
-                        _nameEntries,
-                        _captureDefinitions,
-                        _nameSlots,
-                        _request);
-                    var assertionProgramId = _assertionPrograms.Count;
-                    var assertionProgram = assertionLowerer.Lower(assertion.Body, assertion.AssertionKind);
-                    _assertionPrograms.Add(assertionProgram);
-                    if (assertionProgram.CaptureReadSlot != 0) _captureReadSlot = -1;
-                    _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
-                    _usesMatchBoundaryReset |= assertionProgram.UsesMatchBoundaryReset;
-                    _mayReportNonMonotoneMatchOffsets |= ContainsMatchBoundaryReset(assertion.Body);
-                    _mayThrowDeferredLookaroundReset |=
-                        assertionProgram.UsesMatchBoundaryReset && !ContainsMatchBoundaryReset(assertion.Body);
-                    foreach (var markName in assertionProgram.MarkNames)
-                    {
-                        _ = GetMarkNameId(markName);
-                    }
                     _instructions.Add(Pcre2BacktrackingInstruction.CreateAssertion(
-                        assertionProgramId,
+                        LowerAssertion(assertion),
                         assertion.AssertionKind));
                     return;
                 case Pcre2SubroutineCallBacktrackingNode subroutineCall:
@@ -742,35 +723,41 @@ internal sealed class Pcre2BacktrackingLowerer
         _instructions[exitJump] = Pcre2BacktrackingInstruction.CreateJump(exitTarget);
     }
 
+    private int LowerAssertion(Pcre2AssertionBacktrackingNode assertion)
+    {
+        var assertionLowerer = new Pcre2BacktrackingLowerer(
+            _captureCount,
+            _nameEntries,
+            _captureDefinitions,
+            _nameSlots,
+            _request);
+        var assertionProgramId = _assertionPrograms.Count;
+        var assertionProgram = assertionLowerer.Lower(assertion.Body, assertion.AssertionKind);
+        _assertionPrograms.Add(assertionProgram);
+        if (assertionProgram.CaptureReadSlot != 0) _captureReadSlot = -1;
+        _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
+        _usesMatchBoundaryReset |= assertionProgram.UsesMatchBoundaryReset;
+        var containsReset = ContainsMatchBoundaryReset(assertion.Body);
+        _mayReportNonMonotoneMatchOffsets |= containsReset;
+        _mayThrowDeferredLookaroundReset |= assertionProgram.UsesMatchBoundaryReset && !containsReset;
+        foreach (var markName in assertionProgram.MarkNames)
+        {
+            _ = GetMarkNameId(markName);
+        }
+
+        return assertionProgramId;
+    }
+
     private Pcre2BacktrackingCondition CreateCondition(Pcre2ConditionalBacktrackingNode conditional)
     {
         if (conditional.ConditionKind == Pcre2BacktrackingConditionKind.Assertion)
         {
             var assertion = conditional.Assertion ??
                 throw new InvalidOperationException("A PCRE2 assertion condition requires an assertion body.");
-            var assertionLowerer = new Pcre2BacktrackingLowerer(
-                _captureCount,
-                _nameEntries,
-                _captureDefinitions,
-                _nameSlots,
-                _request);
-            var assertionProgramId = _assertionPrograms.Count;
-            var assertionProgram = assertionLowerer.Lower(assertion.Body, assertion.AssertionKind);
-            _assertionPrograms.Add(assertionProgram);
-            if (assertionProgram.CaptureReadSlot != 0) _captureReadSlot = -1;
-            _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
-            _usesMatchBoundaryReset |= assertionProgram.UsesMatchBoundaryReset;
-            _mayReportNonMonotoneMatchOffsets |= ContainsMatchBoundaryReset(assertion.Body);
-            _mayThrowDeferredLookaroundReset |=
-                assertionProgram.UsesMatchBoundaryReset && !ContainsMatchBoundaryReset(assertion.Body);
-            foreach (var markName in assertionProgram.MarkNames)
-            {
-                _ = GetMarkNameId(markName);
-            }
             return new Pcre2BacktrackingCondition(
                 conditional.ConditionKind,
                 [],
-                assertionProgramId,
+                LowerAssertion(assertion),
                 assertion.AssertionKind,
                 0);
         }
