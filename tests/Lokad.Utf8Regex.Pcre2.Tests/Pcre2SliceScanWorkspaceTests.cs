@@ -69,15 +69,17 @@ public sealed class Pcre2SliceScanWorkspaceTests
         var expired = false;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(
             () => expired ? long.MaxValue / 2 : 0);
+        const ulong parentBytes = 7;
         var regex = Create(new() { MatchLimit = failure == 0 ? 64U : 100000U,
-            DepthLimit = 256, HeapLimitInBytes = failure == 1 ? 128UL : 1UL << 20 },
-            failure == 3 ? TimeSpan.FromMilliseconds(1) : Timeout.InfiniteTimeSpan);
+            DepthLimit = 256, HeapLimitInBytes = failure == 1 ? parentBytes : 1UL << 20 },
+            failure == 3 ? TimeSpan.FromMilliseconds(1) : Timeout.InfiniteTimeSpan,
+            failure == 1 ? @"([a-z]+)\1" : "(a+)(b+)");
         var compiled = regex.DebugCompiledProgram;
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(compiled.Operations.Count);
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aa!😀", 128)) + "aaabb");
         var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram,
             Utf8ValidatedInput.BorrowBytes(bytes), new Utf8BytePosition(0), compiled.Request, cancellation.Token);
-        Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(7));
+        Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(parentBytes));
         cursor.WorkingInvocation.CheckpointHook = _ =>
         {
             if (failure == 2) cancellation.Cancel();
@@ -86,8 +88,8 @@ public sealed class Pcre2SliceScanWorkspaceTests
         Exception? error = null;
         try { _ = cursor.MoveNext(); }
         catch (Exception caught) { error = caught; }
-        Assert.Equal(7UL, cursor.WorkingInvocation.Ledger.ReservedBytes);
-        cursor.WorkingInvocation.Ledger.Release(7);
+        Assert.Equal(parentBytes, cursor.WorkingInvocation.Ledger.ReservedBytes);
+        cursor.WorkingInvocation.Ledger.Release(parentBytes);
         if (failure == 2)
             Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
         else
@@ -96,6 +98,20 @@ public sealed class Pcre2SliceScanWorkspaceTests
                 Assert.IsType<Pcre2MatchException>(error).ErrorKind);
         expired = false;
         Assert.Equal(1, new Utf8Pcre2Regex("(a+)(b+)").Count(bytes));
+    }
+
+    [Fact]
+    public void WholeMatchEnumerationFitsWithoutUnreadCaptureSlots()
+    {
+        using var regex = Create(new() { HeapLimitInBytes = 1 });
+        var cursor = regex.EnumerateMatches("😀aa!😀aaabb 😀aab"u8);
+        Assert.True(cursor.MoveNext());
+        var first = cursor.Current;
+        Assert.Equal((11, 16), (first.StartOffsetInBytes, first.EndOffsetInBytes));
+        Assert.True(cursor.MoveNext());
+        Assert.Equal((21, 24), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
+        Assert.False(cursor.MoveNext());
+        Assert.True(first.GetValueBytes().SequenceEqual("aaabb"u8));
     }
 
     [Fact]
@@ -167,8 +183,8 @@ public sealed class Pcre2SliceScanWorkspaceTests
         Assert.False(cursor.MoveNext());
     }
 
-    private static Utf8Pcre2Regex Create(Utf8Pcre2ExecutionLimits limits, TimeSpan? timeout = null)
-        => new("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    private static Utf8Pcre2Regex Create(Utf8Pcre2ExecutionLimits limits, TimeSpan? timeout = null, string pattern = "(a+)(b+)")
+        => new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

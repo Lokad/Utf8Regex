@@ -75,9 +75,11 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         Pcre2SliceDriver.CheckInvocation(ref _invocation);
         if (_position < 0 || _position > _lastStart) return false;
         var ownsSlots = slots.Starts is null;
+        // A whole-match range only needs slots when matching itself reads captures.
+        // Capture-aware callers supply their admitted slots.
         if (ownsSlots)
-            slots = _disjointClassDelimiter >= 0 ? new Utf8SliceSlots([], []) :
-                Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation);
+            slots = _program.ReadsCaptures ? Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation) :
+                new Utf8SliceSlots([], []);
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         bool moved;
         try { moved = MoveNextCore(slots, ref workspace); }
