@@ -25,10 +25,6 @@ internal sealed class Utf8RegexProgram
 
     public Utf8CaptureCatalog CaptureCatalog { get; }
 
-    public static Utf8RegexProgram Compile(
-        string pattern, RegexOptions options, bool prepareRuntime)
-        => Compile(new Utf8ConstructionPattern(pattern), options, prepareRuntime, out _);
-
     internal static Utf8RegexProgram Compile(Utf8ConstructionPattern pattern, RegexOptions options,
         bool prepareRuntime, out Utf8TreeNode? root)
     {

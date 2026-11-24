@@ -52,7 +52,8 @@ public sealed class Utf8ScalarPreparationAdmissionTests
     public void CompiledHintKeepsItsCaptureWritingLazyLoopRouting(bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        var program = Utf8RegexProgram.Compile("(?<x>a){0,2}?b", options, prepareRuntime: true);
+        var program = Utf8RegexProgram.Compile(new Utf8ConstructionPattern("(?<x>a){0,2}?b"),
+            options, prepareRuntime: true, out _);
         Assert.NotNull(program.PreparedRegex.ScalarProgram);
         Assert.Equal(compiled, program.PreparedRegex.ScalarProgram.UsesInterpretedLazyLoopSemantics);
         var regex = new Utf8Regex("(?<x>a){0,2}?b", options: options);
@@ -66,15 +67,16 @@ public sealed class Utf8ScalarPreparationAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void FailedPreparationRestoresParentLoansAndRetainsSpentWork(bool work)
     {
-        var analysis = Utf8FrontEnd.Analyze(new string('a', 4096) + "(?<x>[A-Z]{2})+", RegexOptions.CultureInvariant);
-        var recovery = Utf8FrontEnd.Analyze("", RegexOptions.CultureInvariant);
+        const RegexOptions options = RegexOptions.CultureInvariant;
+        var analysis = Utf8FrontEnd.Analyze(new string('a', 4096) + "(?<x>[A-Z]{2})+", options);
+        var recovery = Utf8FrontEnd.Analyze("", options);
         using var owner = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity,
             work ? Utf8ConstructionScope.DefaultBufferBytes : 32768,
             work ? 32ul : Utf8ConstructionScope.DefaultWorkSteps, Utf8ConstructionScope.DefaultDepth);
         var held = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         var before = owner.Budget.ReservedBytes;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8RegexPreparer.Prepare(analysis));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8RegexPreparer.Prepare(analysis, options));
         Assert.Equal(work ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(before, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Reserved);
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
@@ -82,10 +84,10 @@ public sealed class Utf8ScalarPreparationAdmissionTests
         Assert.True(owner.Budget.PeakBytes <= owner.Budget.MaximumBytes);
         if (work)
             Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8RegexPreparer.Prepare(recovery)).ResourceKind);
+                Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8RegexPreparer.Prepare(recovery, options)).ResourceKind);
         else
         {
-            var prepared = Utf8RegexPreparer.Prepare(recovery);
+            var prepared = Utf8RegexPreparer.Prepare(recovery, options);
             Assert.NotNull(prepared.ScalarProgram);
             Assert.Equal(17, held.Value);
         }

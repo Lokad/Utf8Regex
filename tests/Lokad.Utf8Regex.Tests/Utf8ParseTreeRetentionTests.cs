@@ -36,7 +36,7 @@ public sealed class Utf8ParseTreeRetentionTests
         var analysis = Utf8FrontEnd.Analyze(pattern, options);
         var original = analysis.SemanticRegex;
         Assert.NotNull(original.RuntimeTree);
-        var prepared = Utf8RegexPreparer.Prepare(analysis);
+        var prepared = Utf8RegexPreparer.Prepare(analysis, options);
         var metadata = prepared.SemanticRegex;
         Assert.Same(original.Pattern, metadata.Pattern);
         Assert.Equal(original.Options, metadata.Options);

@@ -2593,15 +2593,14 @@ internal static partial class BenchmarkInspectReporter
     {
         var options = ParseRegexOptions(optionsText);
         using var owner = Utf8ConstructionScope.Enter();
-        var analysis = Utf8FrontEnd.Analyze(pattern, options);
-        var prepared = Utf8RegexPreparer.Prepare(analysis);
+        var prepared = Utf8FrontEnd.Compile(new Utf8ConstructionPattern(pattern), options, options, out var root);
         Console.WriteLine($"Pattern           : {pattern}");
         Console.WriteLine($"Options           : {options}");
         Console.WriteLine($"ExecutionKind     : {prepared.ExecutionKind}");
         Console.WriteLine($"CompiledEngine    : {Utf8CompiledEngineSelector.Select(prepared)}");
         Console.WriteLine($"FallbackReason    : {prepared.FallbackReason ?? "<native>"}");
         Console.WriteLine("RuntimeTree       :");
-        Console.WriteLine(DumpNode(analysis.SemanticRegex.RuntimeTree!.Root));
+        Console.WriteLine(DumpNode(root!));
         return 0;
     }
 

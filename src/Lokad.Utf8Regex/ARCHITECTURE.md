@@ -1,71 +1,33 @@
 # Core compilation architecture
 
-`Lokad.Utf8Regex` compiles each pattern through one directional pipeline:
-
 ```text
-parse -> analyze -> prepare -> immutable prepared regex -> invocation runtime
+parse -> analyze -> prepare -> immutable program -> invoke
 ```
 
-- `Internal/FrontEnd` owns parsing, semantic normalization, feature analysis,
-  and optional optimization classification. Analysis describes the pattern; it
-  neither observes subject bytes nor constructs an invocation runtime.
-- `Internal/Planning` owns inert plans and `Utf8PreparedRegex`, the single
-  immutable handoff from compilation to execution. `Utf8RegexPreparer` creates
-  the owned scalar program, native search/verifier plans and route provenance
-  once. Native instruction preparation is retained only for live consumers.
-  Plan constructors and properties do not execute input or create runtimes.
-- `Internal/Execution` owns subject-byte execution and runtime factories. It
-  consumes prepared artifacts and may create operation-specific runtime state;
-  it does not re-run front-end analyzers to rediscover compile decisions.
+- `Internal/FrontEnd` parses the pattern and derives semantic facts, capture
+  numbering and candidate-search information. It works independently of the
+  subject and its invocation state.
+- `Internal/Planning` lowers the analyzed pattern into `Utf8PreparedRegex`.
+  The handoff carries the scalar program, capture catalog, and prepared
+  literal, search and cursor plans. It borrows the capture catalog and
+  releases the parse tree after compilation.
+- `Internal/Execution` selects an engine from the prepared capabilities.
+  General patterns use the scalar interpreter, including when `Compiled` is
+  requested. The supported `NonBacktracking` subset uses its own ordered
+  program traversal. Eligible literal families can use emitted delegates.
+  Finite execution policies use the checked scalar and search paths.
 
-The semantic tree contains no selected-backend provenance. Route decisions
-belong to `Utf8PreparedRegex`, because they describe lowering rather than regex
-meaning. The owned scalar program supplies general execution, including the
-supported NonBacktracking route; native literal and structural plans accelerate
-their admitted subsets. Internal `FallbackRegex` classification names refer to
-owned execution, not BCL matching. Optional family plans are optimization results,
-not a general regex IR or an integration contract for other regex flavors.
+The matcher consumes caller-valid, unchanged UTF-8 and publishes byte ranges.
+Candidate discovery can narrow a search or prove an endpoint. The invocation
+still owns match order, capture publication, cursor progress, cancellation and
+resource limits. Shared search kernels serve Core and the adapters.
 
-Engine selection reads prepared capabilities. The whole-pattern,
-identifier/window and fixed-token shape emitters have been removed. Their public
-operations use the remaining owned interpreters and search helpers. Literal-family
-emission and the literal search stack remain. General patterns use the owned scalar interpreter,
-including when `Compiled` is requested. A general compiled backend remains future
-work. Invocation budgets and result ownership are separate from prepared programs.
-Programs selecting the general engine retain no specialized runtime or verifier.
-Core and prepared adapter entries dispatch on that selected engine, including
-constrained literals whose lower-level classification still says literal. The
-secondary fallback runtime and its count/match router chain have been removed.
-Shared candidate helpers with facade or adapter consumers remain.
+Preparation admits major buffers and bounded expansion before allocating.
+Optional search preparation can decline an optimization when its allowance is
+insufficient. Retention caches charge conservatively and may count shared
+storage more than once. See the [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits).
 
-The simple-pattern interpreter, scalar byte verifier and standalone deterministic/
-fixed-token programs are removed, together with their plans and cursor modes.
-Bounded finite-literal expansion returns literal alternatives directly. Shared
-structural byte-class search helpers remain for actual structural consumers.
-General-engine VM optimizations remain separate from the retired shape engines.
-
-Search dispositions derive from canonical candidate sources, confirmation and
-projection. Count, first-match and enumeration control their actual exit and
-advancement behavior in execution; duplicate descriptive flags are not stored.
-
-Speculative lowering is semantics-neutral and bounded. Every Cartesian
-literal expansion and finite-repeat expansion reserves checked work and output
-capacity before allocation. When a budget is exhausted, preparation declines
-that optimization and retains the authoritative owned scalar route. Successful
-`TryPrepare` operations return the prepared object that execution will reuse.
-
-Cross-layer imports must be explicit. Do not recreate project-wide internal
-global usings, put executor methods on plan values, construct runtimes from
-plans, or call front-end analyzers from execution. Architecture tests enforce
-these source-level boundaries in addition to semantic and benchmark coverage.
-
-Construction admits major buffers and bounded expansion before allocation.
-Selected prepared/scalar/IL carriers and small runtime/verifier wrappers use
-conservative metadata allowances instead of mirrored transfer descriptors.
-Remaining smaller construction carriers retain their existing factories; real
-algorithmic state vectors remain separate. Retention caches use a conservative bounded
-payload policy; shared storage can be charged again. These modeled limits do not
-bound total CLR/JIT memory or arbitrary host retention. See
-[resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits) for scope and lifetime contracts.
-Benchmark-only candidate-count replay lives in the benchmark project; production
-search helpers remain in the library where public execution consumes them.
+Keep execution independent of front-end analysis. Plans carry prepared data,
+and execution owns runtime construction and subject handling. Use explicit
+cross-layer imports. Source architecture tests check these boundaries, while
+public fixtures check matching, resource and lifetime behavior.

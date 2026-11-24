@@ -1,4 +1,3 @@
-using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Planning;
 using System.Text;
@@ -10,16 +9,6 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class CoreCompilationArchitectureTests
 {
-    [Fact]
-    public void CompilationReusesPreparedInstructionStorage()
-    {
-        var analysis = Utf8FrontEnd.Analyze("ab[0-9]{2}", RegexOptions.CultureInvariant);
-        var prepared = Utf8RegexPreparer.Prepare(analysis);
-
-        Assert.IsType<Utf8RegexAnalysis>(analysis);
-        Assert.IsType<Utf8PreparedRegex>(prepared);
-    }
-
     [Fact]
     [Trait("Category", "SourceOnly")]
     public void PlanningKeepsSubjectExecutionAndAnalyzerOwnershipDirectional()
