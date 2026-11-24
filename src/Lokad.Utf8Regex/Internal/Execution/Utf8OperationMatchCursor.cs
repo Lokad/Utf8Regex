@@ -233,9 +233,9 @@ internal ref partial struct Utf8OperationMatchCursor
         }
     }
 
-    // Anchored ASCII literal prefix enumeration: at most one match at offset 0,
-    // byte-exact on every input.
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal, Utf8ExecutionDeadline budget)
+    // An anchored literal can yield one range at the selected edge.
+    public Utf8OperationMatchCursor(
+        ReadOnlySpan<byte> input, byte[] literal, Utf8ExecutionDeadline budget, Utf8AnchoredLiteralKind familyKind)
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
@@ -251,18 +251,10 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceProgram = null;
         _slicePositionByte = 0;
         _sliceOriginByte = 0;
-        _mode = EnumeratorMode.AnchoredAsciiLiteralPrefix;
-    }
-
-    // Anchored ASCII literal suffix enumeration: at most one match at the input
-    // end (or right before a single trailing line feed for the lax kind).
-    public Utf8OperationMatchCursor(
-        ReadOnlySpan<byte> input, byte[] literal, Utf8ExecutionDeadline budget, Utf8AnchoredLiteralKind familyKind)
-        : this(input, literal, budget)
-    {
         // The mode carries strictness so verification needs no extra fields.
         _mode = familyKind switch
         {
+            Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix => EnumeratorMode.AnchoredAsciiLiteralPrefix,
             Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffixStrictEnd => EnumeratorMode.AnchoredAsciiLiteralSuffixStrictEnd,
             Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix => EnumeratorMode.AnchoredAsciiLiteralSuffix,
             Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix => EnumeratorMode.AnchoredFoldedAsciiLiteralPrefix,

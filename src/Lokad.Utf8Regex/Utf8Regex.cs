@@ -726,53 +726,17 @@ public sealed partial class Utf8Regex : IDisposable
     {
         if (HasFiniteExecutionLimits)
             return OwnedSliceEnumerateMatches(input, _ownedSliceProgram, CancellationToken.None).WithTimeoutMapping(input, this);
-        // Anchored prefixes yield at most one match at byte zero.
-        if (_anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix &&
-            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } anchoredEnumerateLiteral)
+        // The classifier admits complete ASCII case fibers for folded literals.
+        ref readonly var anchored = ref _anchoredLiteral;
+        if (anchored.HasValue)
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(
+                anchored.Kind is Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix
+                    ? Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix
+                    : Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
             return new Utf8ValueMatchEnumerator(
-                new Utf8OperationMatchCursor(input, anchoredEnumerateLiteral, CreateExecutionBudget()))
+                new Utf8OperationMatchCursor(input, anchored.LiteralUtf8, CreateExecutionBudget(), anchored.Kind))
                 .WithTimeoutMapping(input, this);
-        }
-
-        // The anchored suffix cursor handles strict ends and final line feeds.
-        if (_anchoredLiteral.IsExactSuffix &&
-            _anchoredLiteral.LiteralUtf8 is { Length: > 0 })
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
-            return new Utf8ValueMatchEnumerator(
-                new Utf8OperationMatchCursor(input, _anchoredLiteral.LiteralUtf8, CreateExecutionBudget(), _anchoredLiteral.Kind))
-                .WithTimeoutMapping(input, this);
-        }
-
-        // Folded anchored prefixes enumerate the same single anchored hit with
-        // per-byte invariant folding. Kelvin and Turkic divergences fall through to
-        // scalar execution below; all other inputs stay direct.
-        if (_anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix &&
-            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } foldedPrefixLiteral)
-        {
-            if (!ShouldUseKelvinSignFallback(input))
-            {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
-                return new Utf8ValueMatchEnumerator(
-                    new Utf8OperationMatchCursor(input, foldedPrefixLiteral, CreateExecutionBudget(), _anchoredLiteral.Kind))
-                    .WithTimeoutMapping(input, this);
-            }
-        }
-
-        // Folded anchored suffixes enumerate the same single tail hit with per-byte
-        // invariant folding, under the same fence contract as prefixes.
-        if (_anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd &&
-            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } foldedSuffixLiteral)
-        {
-            if (!ShouldUseKelvinSignFallback(input))
-            {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
-                return new Utf8ValueMatchEnumerator(
-                    new Utf8OperationMatchCursor(input, foldedSuffixLiteral, CreateExecutionBudget(), _anchoredLiteral.Kind))
-                    .WithTimeoutMapping(input, this);
-            }
         }
 
         // Exact byte candidates are scalar-aligned. The prepared cursor
@@ -939,16 +903,17 @@ public sealed partial class Utf8Regex : IDisposable
         }
 
 
-        var budget = CreateExecutionBudget();
         // Anchored literals contribute at most one split point.
-        var isAnchoredDirectSplitFamily = _anchoredLiteral.LiteralUtf8 is { Length: > 0 } &&
-            (_anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix ||
-            _anchoredLiteral.IsExactSuffix ||
-            _anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd);
-        if (count > 0 &&
-            (CanUseNativeSplit() || isAnchoredDirectSplitFamily))
+        ref readonly var anchored = ref _anchoredLiteral;
+        if (count > 0 && anchored.HasValue)
         {
-            return CreateSplitEnumeratorViaCompiledEngine(input, count, budget)
+            return new Utf8ValueSplitEnumerator(input,
+                    new Utf8OperationMatchCursor(input, anchored.LiteralUtf8, CreateExecutionBudget(), anchored.Kind), count)
+                .WithTimeoutMapping(this);
+        }
+        if (count > 0 && CanUseNativeSplit())
+        {
+            return Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(_preparedRegex, input, count, CreateExecutionBudget())
                 .WithTimeoutMapping(this);
         }
 

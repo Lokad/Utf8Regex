@@ -35,8 +35,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _budget = invocation.Budget.Deadline;
         _sliceInvocation = invocation;
         _hasAnchoredLiteralInvocation = true;
-        if (kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix)
-            _mode = EnumeratorMode.AnchoredAsciiLiteralPrefix;
     }
 
     // Full-subject anchors retain their original context at a nonzero floor.

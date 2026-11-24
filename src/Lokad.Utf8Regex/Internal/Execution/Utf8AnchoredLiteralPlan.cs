@@ -20,8 +20,6 @@ internal readonly struct Utf8AnchoredLiteralPlan(Utf8AnchoredLiteralKind kind, b
     internal Utf8AnchoredLiteralKind Kind { get; } = kind;
     internal byte[] LiteralUtf8 => _literalUtf8 ?? [];
     internal bool HasValue => Kind != Utf8AnchoredLiteralKind.None;
-    internal bool IsExactSuffix => Kind is Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix or
-        Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffixStrictEnd;
     internal bool IsExact => Kind is Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix or
         Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix or
         Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffixStrictEnd;
