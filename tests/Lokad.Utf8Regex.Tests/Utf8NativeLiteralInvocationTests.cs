@@ -81,7 +81,8 @@ public sealed class Utf8NativeLiteralInvocationTests
     [Theory]
     [InlineData("foo(?=bar)", "xxfoobazfoobar", 8, 11)]
     [InlineData("(?:a|ab)(?=c)", "xabc", 1, 3)]
-    public void CompleteLookaheadDiscoveryKeepsEveryWorkCutoffAndCallerReservation(
+    [InlineData("foo|bär", "zzzz", -1, -1)]
+    public void CompleteLiteralDiscoveryKeepsEveryWorkCutoffAndCallerReservation(
         string pattern, string text, int expectedStart, int expectedEnd)
     {
         var regex = new Utf8Regex(pattern);
@@ -90,7 +91,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(7));
         Assert.True(regex.TryFindNativeLiteralForResult(input, 0, ref baseline, out var found, out var start, out var end));
-        Assert.True(found);
+        Assert.Equal(expectedStart >= 0, found);
         Assert.Equal((expectedStart, expectedEnd), (start, end));
         for (var cap = 1UL; cap < baseline.Budget.Steps; cap++)
         {

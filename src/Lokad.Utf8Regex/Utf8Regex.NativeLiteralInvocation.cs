@@ -47,6 +47,7 @@ public sealed partial class Utf8Regex
 
     // Borrow caller-valid input and the existing invocation. The Core cursor
     // can also confirm its own scalar word boundaries before projecting a range.
+    // The finder checks interruption and admission before returning a hit or miss.
     // Returning false declines the route without searching.
     internal bool TryFindNativeLiteralForResult(ReadOnlySpan<byte> input, int startOffsetInBytes,
         ref Utf8SliceInvocation invocation, out bool found, out int start, out int end, bool forCoreCursor = false)
@@ -61,7 +62,6 @@ public sealed partial class Utf8Regex
             input, startOffsetInBytes, input.Length, false, ref invocation, out var match, out found);
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException($"Native literal result discovery exceeded {breach}.");
-        Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
         if (found)
         {
             start = match.Index;
