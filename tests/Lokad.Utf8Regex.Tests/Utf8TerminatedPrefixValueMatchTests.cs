@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -35,13 +34,8 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
             });
             var expected = new Regex(Pattern, options).Match(text); var bytes = Encoding.UTF8.GetBytes(text);
             byte[] storage = [0xff, .. bytes, 0xff];
-            var diagnostics = Utf8SearchDiagnosticsSession.Start();
-            try
-            {
-                var actual = regex.Match(storage.AsSpan(1, bytes.Length), cancellationToken: token.Token);
-                Assert.Equal(success, actual.Success); Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
-            }
-            finally { diagnostics.Complete(); }
+            var actual = regex.Match(storage.AsSpan(1, bytes.Length), cancellationToken: token.Token);
+            Assert.Equal(success, actual.Success); Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
         }
     }
 

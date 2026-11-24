@@ -35,7 +35,6 @@ public sealed class Utf8ValidatedSimpleCountTests
             });
             var account = new Account();
             account.TryReserve(17);
-            var session = Utf8SearchDiagnosticsSession.Start();
             try
             {
                 var result = mode == 0 ? regex.Count(input) : mode == 1 ? regex.Count(input, token.Token)
@@ -43,7 +42,7 @@ public sealed class Utf8ValidatedSimpleCountTests
                 Assert.Equal(expected, result);
                 Assert.Equal(17UL, account.Used);
             }
-            finally { session.Complete(); account.Release(17); }
+            finally { account.Release(17); }
             Assert.Equal(0UL, account.Used);
         }
     }
@@ -83,7 +82,6 @@ RegexOptions options, bool unicodePrefix)
             });
             var account = new Account();
             account.TryReserve(17);
-            var session = Utf8SearchDiagnosticsSession.Start();
             try
             {
                 Assert.Equal(1, regex.Count(input));
@@ -91,7 +89,7 @@ RegexOptions options, bool unicodePrefix)
                 Assert.Equal(1, regex.Count(input, token.Token, account));
                 Assert.Equal(17UL, account.Used);
             }
-            finally { session.Complete(); account.Release(17); }
+            finally { account.Release(17); }
             Assert.Equal(0UL, account.Used);
         }
     }

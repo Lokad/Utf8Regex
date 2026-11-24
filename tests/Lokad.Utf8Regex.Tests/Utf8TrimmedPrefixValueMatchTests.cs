@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -51,13 +50,8 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
             byte[] storage = [0xff, .. input, 0xff];
             var expected = Scalar(regex, input);
             using var token = new CancellationTokenSource();
-            var session = Utf8SearchDiagnosticsSession.Start();
-            try
-            {
-                Assert.Equal(expected, regex.Match(storage.AsSpan(1, input.Length), cancellationToken: token.Token));
-                Assert.Equal(expected, regex.Match(input));
-            }
-            finally { session.Complete(); }
+            Assert.Equal(expected, regex.Match(storage.AsSpan(1, input.Length), cancellationToken: token.Token));
+            Assert.Equal(expected, regex.Match(input));
         }
     }
 

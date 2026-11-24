@@ -281,13 +281,8 @@ public sealed class Utf8SingleCategoryCountTests
                 MaxWorkSteps = firstNative - 1
             }
         });
-        session = Utf8SearchDiagnosticsSession.Start();
-        try
-        {
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input)).ResourceKind);
-        }
-        finally { session.Complete(); }
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input)).ResourceKind);
     }
 
     [Theory]

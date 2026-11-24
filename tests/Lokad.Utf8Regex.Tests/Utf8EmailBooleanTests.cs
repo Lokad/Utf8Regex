@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -56,13 +55,8 @@ public sealed class Utf8EmailBooleanTests
             });
             var storage = Encoding.UTF8.GetBytes("pad" + text + "tail");
             var input = storage.AsSpan(3, Encoding.UTF8.GetByteCount(text));
-            var session = Utf8SearchDiagnosticsSession.Start();
-            try
-            {
-                Assert.Equal(expected, regex.IsMatch(input, token.Token));
-                Assert.Equal(expected, regex.IsMatch(input));
-            }
-            finally { session.Complete(); }
+            Assert.Equal(expected, regex.IsMatch(input, token.Token));
+            Assert.Equal(expected, regex.IsMatch(input));
         }
     }
 

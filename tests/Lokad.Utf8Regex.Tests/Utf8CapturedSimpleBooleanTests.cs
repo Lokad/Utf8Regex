@@ -48,13 +48,8 @@ public sealed class Utf8CapturedSimpleBooleanTests
             });
             var storage = Encoding.UTF8.GetBytes("pad" + text + "tail");
             var input = storage.AsSpan(3, Encoding.UTF8.GetByteCount(text));
-            var session = Utf8SearchDiagnosticsSession.Start();
-            try
-            {
-                Assert.Equal(expected, regex.IsMatch(input));
-                Assert.Equal(expected, regex.IsMatch(input, token.Token));
-            }
-            finally { session.Complete(); }
+            Assert.Equal(expected, regex.IsMatch(input));
+            Assert.Equal(expected, regex.IsMatch(input, token.Token));
         }
     }
 

@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -50,13 +49,8 @@ public sealed class Utf8NumberPrefixValueMatchTests
                 byte[] storage = [0xff, .. input, 0xff];
                 var expected = Scalar(regex, input); var bcl = oracle.Match(text);
                 Assert.Equal((bcl.Success, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(bcl.Index, bcl.Length))), (expected.Success, (expected.EndOffsetInBytes - expected.StartOffsetInBytes)));
-                var session = Utf8SearchDiagnosticsSession.Start();
-                try
-                {
-                    Assert.Equal(expected, regex.Match(storage.AsSpan(1, input.Length), cancellationToken: token.Token));
-                    Assert.Equal(expected, regex.Match(input));
-                }
-                finally { session.Complete(); }
+                Assert.Equal(expected, regex.Match(storage.AsSpan(1, input.Length), cancellationToken: token.Token));
+                Assert.Equal(expected, regex.Match(input));
             }
         }
     }

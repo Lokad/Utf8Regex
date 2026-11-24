@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -80,13 +79,8 @@ public sealed class Utf8CaptureSnapshotBoundsTests
         });
         var input = Encoding.UTF8.GetBytes("éaaab" + new string('x', 8192) + "😀");
         using var token = new CancellationTokenSource();
-        var session = Utf8SearchDiagnosticsSession.Start();
-        try
-        {
-            var result = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
-            Assert.Equal("aaa"u8.ToArray(), result.GetGroupMemory(regex.GroupNumberFromUtf8Name("run"u8)).ToArray());
-        }
-        finally { session.Complete(); }
+        var result = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
+        Assert.Equal("aaa"u8.ToArray(), result.GetGroupMemory(regex.GroupNumberFromUtf8Name("run"u8)).ToArray());
         var far = new Utf8Regex(@"a(?=(?<far>.*))(?<far>)", options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,

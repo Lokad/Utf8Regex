@@ -49,16 +49,11 @@ public sealed class Utf8QueryValueMatchTests
                 var expected = Utf8MatchSequence.First(control.CreateMatchCursor(input)); var bcl = oracle.Match(text);
                 Utf8MatchSequence.AssertCaptures(bcl, expected, input, text);
                 using var token = new CancellationTokenSource();
-                var session = Utf8SearchDiagnosticsSession.Start();
-                try
-                {
-                    var actual = regex.Match(storage.AsSpan(1, input.Length), cancellationToken: token.Token);
-                    Assert.Equal(expected.Success, actual.Success);
-                    if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
-                        (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
-                    Assert.Equal(actual, regex.Match(input));
-                }
-                finally { session.Complete(); }
+                var actual = regex.Match(storage.AsSpan(1, input.Length), cancellationToken: token.Token);
+                Assert.Equal(expected.Success, actual.Success);
+                if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
+                    (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
+                Assert.Equal(actual, regex.Match(input));
             }
         }
     }

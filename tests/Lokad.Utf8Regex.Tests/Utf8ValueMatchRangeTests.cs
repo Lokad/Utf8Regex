@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -57,14 +56,9 @@ public sealed class Utf8ValueMatchRangeTests
             var expected = new Regex(pattern, mode | RegexOptions.CultureInvariant).Match(text);
             var bytes = Encoding.UTF8.GetBytes(text);
             byte[] storage = [0xFF, .. bytes, 0xFF];
-            var session = Utf8SearchDiagnosticsSession.Start();
-            try
-            {
-                var actual = regex.Match(storage.AsSpan(1, bytes.Length));
-                Assert.Equal(expected.Success, actual.Success);
-                if (actual.Success) AssertRange(actual, text, expected.Index, expected.Length);
-            }
-            finally { session.Complete(); }
+            var actual = regex.Match(storage.AsSpan(1, bytes.Length));
+            Assert.Equal(expected.Success, actual.Success);
+            if (actual.Success) AssertRange(actual, text, expected.Index, expected.Length);
         }
     }
 

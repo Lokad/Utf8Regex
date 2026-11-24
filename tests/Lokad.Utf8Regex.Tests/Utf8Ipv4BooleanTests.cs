@@ -131,13 +131,8 @@ public sealed class Utf8Ipv4BooleanTests
             var buffer = Encoding.UTF8.GetBytes("pad" + text + "tail");
             var input = buffer.AsSpan(3, Encoding.UTF8.GetByteCount(text));
             var expected = Regex.IsMatch(text, Pattern);
-            var session = Utf8SearchDiagnosticsSession.Start();
-            try
-            {
-                Assert.Equal(expected, regex.IsMatch(input, token.Token));
-                Assert.Equal(expected, regex.IsMatch(input));
-            }
-            finally { session.Complete(); }
+            Assert.Equal(expected, regex.IsMatch(input, token.Token));
+            Assert.Equal(expected, regex.IsMatch(input));
         }
     }
 

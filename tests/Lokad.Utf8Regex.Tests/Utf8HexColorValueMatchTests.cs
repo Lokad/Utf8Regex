@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 
@@ -42,15 +41,10 @@ public sealed class Utf8HexColorValueMatchTests
                 Assert.Equal(bcl.Success, expected.Success);
                 Utf8MatchSequence.AssertCaptures(bcl, expected, input, text);
                 using var token = new CancellationTokenSource();
-                var session = Utf8SearchDiagnosticsSession.Start();
-                try
-                {
-                    var actual = regex.Match(storage.AsSpan(1, input.Length), cancellationToken: token.Token);
-                    Assert.Equal(expected.Success, actual.Success);
-                    if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
-                        (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
-                }
-                finally { session.Complete(); }
+                var actual = regex.Match(storage.AsSpan(1, input.Length), cancellationToken: token.Token);
+                Assert.Equal(expected.Success, actual.Success);
+                if (actual.Success) Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)),
+                    (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
             }
         }
     }

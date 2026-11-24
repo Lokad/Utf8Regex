@@ -22,12 +22,7 @@ public sealed class Utf8UntilByteStarCountTests
             ResourcePolicy = Policy
         });
         using var live = new CancellationTokenSource();
-        var diagnostics = Utf8SearchDiagnosticsSession.Start();
-        try
-        {
-            Assert.Equal(Regex.Count(text, @"[^\n]*"), regex.Count(Encoding.UTF8.GetBytes(text), live.Token));
-        }
-        finally { diagnostics.Complete(); }
+        Assert.Equal(Regex.Count(text, @"[^\n]*"), regex.Count(Encoding.UTF8.GetBytes(text), live.Token));
     }
 
     [Theory]

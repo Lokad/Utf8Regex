@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -30,7 +29,6 @@ public sealed class Utf8FundedCountFactsTests
             });
             var account = new Account();
             Assert.True(account.TryReserve(17));
-            var session = Utf8SearchDiagnosticsSession.Start();
             try
             {
                 // RTL reaches this reference before its capture; that existing
@@ -39,7 +37,7 @@ public sealed class Utf8FundedCountFactsTests
                 Assert.Equal(expectedForOptions, regex.Count(input, token.Token, account));
                 Assert.Equal(17UL, account.Used);
             }
-            finally { session.Complete(); account.Release(17); }
+            finally { account.Release(17); }
             Assert.Equal(0UL, account.Used);
         }
     }

@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -37,13 +36,9 @@ public sealed class Utf8ReferenceValueMatchTests
                 "a1b2", "A123:B456", "I14k1", "a1:b2\n", "a1:b2\r\n", "a1::b2", "aa1", "a1!", " a1", "a1\0" })
             {
                 var bytes = Encoding.ASCII.GetBytes(text); byte[] storage = [0xff, .. bytes, 0xff];
-                var expected = oracle.Match(text); var diagnostics = Utf8SearchDiagnosticsSession.Start();
-                try
-                {
-                    var actual = regex.Match(storage.AsSpan(1, bytes.Length), cancellationToken: token.Token);
-                    Assert.Equal((expected.Success, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.Success, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
-                }
-                finally { diagnostics.Complete(); }
+                var expected = oracle.Match(text);
+                var actual = regex.Match(storage.AsSpan(1, bytes.Length), cancellationToken: token.Token);
+                Assert.Equal((expected.Success, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.Success, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
             }
         }
     }

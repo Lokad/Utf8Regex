@@ -97,7 +97,7 @@ public sealed class Utf8InvariantFoldedCountTests
     [Theory]
     [InlineData("kit")] [InlineData(@"\bkit\b")]
     [InlineData("kit|k")] [InlineData("Sherlock Holmes")]
-    public void TrustedFoldedCountsAgreeBeforeAndAfterKelvinFencing(string pattern)
+    public void FoldedCountsAgreeAcrossOffsetsAndKelvinTails(string pattern)
     {
         foreach (var length in new[] { 0, 63, 64, 2047, 2048, 4096 })
         foreach (var tail in new[] { "", " KIT" })
@@ -107,13 +107,6 @@ public sealed class Utf8InvariantFoldedCountTests
             var options = Invariant | RegexOptions.Compiled;
             var expected = new Regex(pattern, options).Count(text);
             Assert.Equal(expected, new Utf8Regex(pattern, options: options).Count(bytes));
-                var trusted = new Utf8Regex(pattern, options: options);
-                var session = Utf8SearchDiagnosticsSession.Start();
-            try
-            {
-                Assert.Equal(expected, trusted.Count(bytes));
-            }
-            finally { session.Complete(); }
         }
     }
 

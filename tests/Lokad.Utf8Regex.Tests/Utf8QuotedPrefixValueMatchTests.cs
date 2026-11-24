@@ -33,16 +33,11 @@ public sealed class Utf8QuotedPrefixValueMatchTests
                 "\"a\\\\b\"tail", "\"a\nb\"tail", "\"a\\\nb\"tail", "\"a\0b\"tail", "\"abc\\", "x\"a\"", "\n\"a\"" })
             {
                 var input = Encoding.ASCII.GetBytes(text); byte[] storage = [0xff, .. input, 0xff];
-                var session = Utf8SearchDiagnosticsSession.Start();
-                try
-                {
-                    var actual = regex.Match(storage.AsSpan(1, input.Length), cancellationToken: live.Token);
-                    var expected = oracle.Match(text);
-                    Assert.Equal(expected.Success, actual.Success);
-                    if (actual.Success) Assert.Equal((0, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
-                    Assert.Equal(actual, regex.Match(input));
-                }
-                finally { session.Complete(); }
+                var actual = regex.Match(storage.AsSpan(1, input.Length), cancellationToken: live.Token);
+                var expected = oracle.Match(text);
+                Assert.Equal(expected.Success, actual.Success);
+                if (actual.Success) Assert.Equal((0, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
+                Assert.Equal(actual, regex.Match(input));
             }
         }
     }

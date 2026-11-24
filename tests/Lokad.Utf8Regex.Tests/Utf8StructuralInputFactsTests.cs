@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -15,22 +14,11 @@ RegexOptions options)
         var regex = new Utf8Regex("Tom.{1,3}river", options: options);
         var input = Encoding.UTF8.GetBytes("é😀 Tom😀river x Tomabriver");
         using var lifetime = new CancellationTokenSource();
-        Assert.True(Observe(() => regex.IsMatch(input, lifetime.Token)));
-        Assert.Equal(2, Observe(() => regex.Count(input)));
-        Assert.Equal(2, Observe(() => regex.Count(input, lifetime.Token)));
-        Assert.Equal((7, 12), Observe(() => Range(regex.Match(input, cancellationToken: lifetime.Token))));
-        Assert.Equal([(7, 12), (22, 10)], Observe(Enumerate));
-
-        T Observe<T>(Func<T> operation)
-        {
-            var session = Utf8SearchDiagnosticsSession.Start();
-            try
-            {
-                var result = operation();
-                return result;
-            }
-            finally { session.Complete(); }
-        }
+        Assert.True(regex.IsMatch(input, lifetime.Token));
+        Assert.Equal(2, regex.Count(input));
+        Assert.Equal(2, regex.Count(input, lifetime.Token));
+        Assert.Equal((7, 12), Range(regex.Match(input, cancellationToken: lifetime.Token)));
+        Assert.Equal([(7, 12), (22, 10)], Enumerate());
 
         (int, int)[] Enumerate()
         {

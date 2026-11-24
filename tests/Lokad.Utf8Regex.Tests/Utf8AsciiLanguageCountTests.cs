@@ -36,13 +36,8 @@ public sealed class Utf8AsciiLanguageCountTests
             {
                 var padded = Encoding.UTF8.GetBytes("pad" + text + "pad");
                 var input = padded.AsSpan(3, Encoding.UTF8.GetByteCount(text));
-                var session = Utf8SearchDiagnosticsSession.Start();
-                try
-                {
-                    Assert.Equal(oracle.Count(text), regex.Count(input));
-                    Assert.Equal(oracle.Count(text), controlled.Count(input));
-                }
-                finally { session.Complete(); }
+                Assert.Equal(oracle.Count(text), regex.Count(input));
+                Assert.Equal(oracle.Count(text), controlled.Count(input));
             }
         }
     }
@@ -76,12 +71,7 @@ public sealed class Utf8AsciiLanguageCountTests
     {
         var regex = new Utf8Regex(Pattern, options: options);
         const string text = "😀00.11.22.25500é255.249.199.000";
-        var session = Utf8SearchDiagnosticsSession.Start();
-        try
-        {
-            Assert.Equal(new Regex(Pattern, options).Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
-        }
-        finally { session.Complete(); }
+        Assert.Equal(new Regex(Pattern, options).Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
     }
 
     [Fact]

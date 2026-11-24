@@ -276,12 +276,7 @@ public sealed class Utf8WordRunCountTests
                 MaxWorkSteps = firstNative - 1
             }
         });
-        session = Utf8SearchDiagnosticsSession.Start();
-        try
-        {
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input));
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-        }
-        finally { session.Complete(); }
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
     }
 }
