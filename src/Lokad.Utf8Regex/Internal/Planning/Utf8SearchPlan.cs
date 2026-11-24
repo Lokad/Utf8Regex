@@ -108,7 +108,7 @@ internal readonly struct Utf8SearchPlan
 
     public byte[][]? AlternateLiteralsUtf8 { get; }
 
-    public PreparedLiteralSetSearch? AlternateLiteralSearch { get; }
+    public readonly PreparedLiteralSetSearch? AlternateLiteralSearch;
 
     public PreparedAsciiIgnoreCaseLiteralSetSearch? AlternateIgnoreCaseLiteralSearch { get; }
 

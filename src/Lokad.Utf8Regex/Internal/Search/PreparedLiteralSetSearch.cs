@@ -15,7 +15,7 @@ internal readonly partial struct PreparedLiteralSetSearch
 {
     private const int MultiLiteralThreshold = 8;
 
-    public AsciiExactLiteralSearchData SearchData { get; }
+    public readonly AsciiExactLiteralSearchData SearchData;
 
     private PreparedLiteralSetUniqueAnchor? UniqueAnchor { get; }
 

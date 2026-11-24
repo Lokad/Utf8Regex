@@ -18,6 +18,9 @@ internal static partial class Utf8SearchExecutor
         out bool found)
     {
         var folded = plan.Kind == Utf8SearchKind.AsciiFoldedByteLiterals;
+        // Borrow the immutable family tables. An absent exact set has empty
+        // search data and cannot contribute a first-byte filter.
+        ref readonly var exactSearch = ref Nullable.GetValueRefOrDefaultRef(in plan.AlternateLiteralSearch);
         // A small exact family can discover complete needles in bounded
         // windows. Only short distinct heads can carry that proof through
         // boundary rejection without hiding another branch at the same start.
@@ -25,14 +28,13 @@ internal static partial class Utf8SearchExecutor
             plan.AlternateLiteralsUtf8 is { Length: >= 3 and <= 8 } literals &&
             (!plan.HasBoundaryRequirements || literals.Length <= 4))
             return TryFindSmallExactFamilyCandidate(literals, input, start, end,
-                ref invocation, out match, out found, plan.AlternateLiteralSearch?.SearchData ?? default,
+                ref invocation, out match, out found, in exactSearch.SearchData,
                 plan.LeadingBoundary, plan.TrailingBoundary);
         PreparedByteSearch? firstByteSearch = null;
         if (folded && plan.AlternateIgnoreCaseLiteralSearch is
             { ShortestLength: > 0 and < int.MaxValue } foldedSearch)
             firstByteSearch = foldedSearch.FirstByteSearch;
-        else if (!folded && plan.AlternateLiteralSearch is
-            { SearchData.ShortestLength: > 0 and < int.MaxValue } exactSearch)
+        else if (!folded && exactSearch.SearchData.ShortestLength is > 0 and < int.MaxValue)
             firstByteSearch = exactSearch.SearchData.FirstByteSearch;
         return TryFindLiteralFamilyCore(plan.AlternateLiteralsUtf8 ?? [], folded, true,
             firstByteSearch, plan.LeadingBoundary, plan.TrailingBoundary, plan.TrailingLiteralUtf8,
@@ -48,32 +50,32 @@ internal static partial class Utf8SearchExecutor
     {
         candidate = -1;
         var literals = plan.AlternateLiteralsUtf8 ?? [];
+        ref readonly var search = ref Nullable.GetValueRefOrDefaultRef(in plan.AlternateLiteralSearch);
         // Preserve the existing pair and small complete-needle searches.
         if (literals.Length <= 8)
         {
             var breach = TryFindLiteralFamilyCandidate(literals, false, input, start, end, false,
-                ref invocation, out var smallMatch, out var smallFound, plan.AlternateLiteralSearch?.SearchData ?? default);
+                ref invocation, out var smallMatch, out var smallFound, in search.SearchData);
             if (breach == Utf8ExecutionLimitKind.None && smallFound) candidate = smallMatch.Index;
             return breach;
         }
         // A short remaining subject bounds the prepared trie's whole walk.
         // Reuse its shared prefixes instead of confirming each expanded needle
         // after every first-byte hit. Only a necessary start escapes to the VM.
-        if ((uint)(end - start) <= 256 && plan.AlternateLiteralSearch is
-            { Strategy: PreparedLiteralSetStrategy.MultiLiteralTrie } trie)
+        if ((uint)(end - start) <= 256 && search.Strategy == PreparedLiteralSetStrategy.MultiLiteralTrie)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(start);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(end, input.Length);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            var relative = trie.IndexOf(input[start..end]);
+            var relative = search.IndexOf(input[start..end]);
             breach = invocation.TryChargeInputStep();
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach == Utf8ExecutionLimitKind.None && relative >= 0) candidate = start + relative;
             return breach;
         }
-        var buckets = plan.AlternateLiteralSearch?.SearchData.Buckets;
+        var buckets = search.SearchData.Buckets;
         if (buckets is { Length: 1 } && buckets[0].PrefixDiscriminator is { HasValue: true } discriminator)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(start);
@@ -120,7 +122,7 @@ internal static partial class Utf8SearchExecutor
             return completion;
         }
         var result = TryFindLiteralFamilyCore(literals, false, false,
-            plan.AlternateLiteralSearch?.SearchData.FirstByteSearch,
+            plan.AlternateLiteralSearch.HasValue ? search.SearchData.FirstByteSearch : null,
             Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None, null,
             input, start, end, false, ref invocation, out var match, out var found);
         if (result == Utf8ExecutionLimitKind.None && found) candidate = match.Index;

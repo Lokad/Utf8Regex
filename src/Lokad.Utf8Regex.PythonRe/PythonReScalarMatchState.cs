@@ -146,8 +146,9 @@ internal struct PythonReScalarMatchState
     // can actually consume. Captured native results still need scalar verification.
     internal static bool CanUseCandidateRegex(Utf8SliceProgram program, Utf8Regex? candidateRegex)
     {
-        var candidatePlan = candidateRegex?.Inspection.SearchPlan ?? default;
-        var nativeResult = program.GroupCount == 0 && candidateRegex?.CanFindNativeLiteralForResult == true;
+        if (candidateRegex is null) return false;
+        ref readonly var candidatePlan = ref candidateRegex.SearchPlan;
+        var nativeResult = program.GroupCount == 0 && candidateRegex.CanFindNativeLiteralForResult;
         return !program.CanMatchEmpty && !program.HasContiguousAnchor && !program.RightToLeft &&
             !program.IgnoreCase && (nativeResult ||
                 candidatePlan.CanGuideFallbackStarts && candidatePlan.Distance == 0 &&
@@ -617,7 +618,7 @@ internal struct PythonReScalarMatchState
             Checkpoint();
             return false;
         }
-        ref readonly var plan = ref candidateRegex.Inspection.PreparedRegex.SearchPlan;
+        ref readonly var plan = ref candidateRegex.SearchPlan;
         if (plan.LiteralSearch is { } literal)
         {
             if (_position < input.Length && input[_position] == literal.Needle[0]) return true;

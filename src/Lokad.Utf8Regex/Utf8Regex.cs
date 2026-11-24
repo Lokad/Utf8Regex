@@ -234,7 +234,7 @@ public sealed partial class Utf8Regex : IDisposable
 
     internal Utf8RegexInspection Inspection => new(this);
 
-    private Utf8SearchPlan SearchPlan => _preparedRegex.SearchPlan;
+    internal ref readonly Utf8SearchPlan SearchPlan => ref _preparedRegex.SearchPlan;
 
     private Utf8StructuralSearchPlan StructuralSearchPlan => _preparedRegex.SearchPlan.StructuralSearchPlan;
 
