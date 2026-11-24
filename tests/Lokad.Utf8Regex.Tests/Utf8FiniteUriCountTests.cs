@@ -118,6 +118,17 @@ public sealed class Utf8FiniteUriCountTests
     }
 
     [Fact]
+    public void InvalidSuffixHeadsStayWithinCountBudget()
+    {
+        const string rejected = "x:///ef x://#é x:// 😀 x:// a ";
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(rejected, 192)) + " x://ab");
+        using var source = new CancellationTokenSource();
+        using var regex = Create(RegexOptions.Compiled, 2_500);
+
+        Assert.Equal(1, regex.Count(input, source.Token));
+    }
+
+    [Fact]
     public void BmpCountsAgreeWithIndependentRegexSemantics()
     {
         const string alphabet = "ab09_:/?#.- é中\u0301\u0903\u00a0\u0085\0";

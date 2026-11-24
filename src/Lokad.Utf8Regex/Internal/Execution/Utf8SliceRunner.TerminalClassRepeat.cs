@@ -2067,26 +2067,29 @@ internal static partial class Utf8SliceRunner
         in Utf8SliceInstruction second, ReadOnlySpan<byte> input, int start)
     {
         // The caller charges this bounded proof and establishes that both runs
-        // are nonempty with exact ASCII masks. The second scalar belongs to one of them.
+        // are nonempty with exact ASCII masks. The first scalar must belong to
+        // the first run, and the second scalar can belong to either run.
         if (input.Length - start < 2) return true;
+        var head = input[start];
+        if (head >= 128) return false;
+        var mask = program.SetMasks[first.A];
+        var negated = first.B != 0;
+        if (!MatchesAsciiHybridClass(mask, negated, head)) return true;
         var value = input[start + 1];
-        if (value >= 128 || input[start] >= 128) return false;
-        var octet = value >> 3;
-        var bit = 1 << (value & 7);
-        var firstMember = (program.SetMasks[first.A][octet] & bit) != 0;
-        var secondMember = (program.SetMasks[second.A][octet] & bit) != 0;
-        return firstMember == (first.B != 0) && secondMember == (second.B != 0);
+        return value < 128 && !MatchesAsciiHybridClass(mask, negated, value) &&
+            !MatchesAsciiHybridClass(program.SetMasks[second.A], second.B != 0, value);
     }
 
     private static bool MatchesAdjacentAsciiHybridClasses(Utf8SliceProgram program, in Utf8SliceInstruction first,
         in Utf8SliceInstruction second, ReadOnlySpan<byte> input)
     {
         if (input.Length < 2 || (input[0] | input[1]) >= 128) return false;
-        return Contains(first, input[0]) && Contains(second, input[1]);
-
-        bool Contains(in Utf8SliceInstruction atom, byte value)
-            => ((program.SetMasks[atom.A][value >> 3] & (1 << (value & 7))) != 0) != (atom.B != 0);
+        return MatchesAsciiHybridClass(program.SetMasks[first.A], first.B != 0, input[0]) &&
+            MatchesAsciiHybridClass(program.SetMasks[second.A], second.B != 0, input[1]);
     }
+
+    private static bool MatchesAsciiHybridClass(byte[] mask, bool negated, byte value)
+        => ((mask[value >> 3] & (1 << (value & 7))) != 0) != negated;
 
     private static Utf8ExecutionLimitKind TryMatchAdjacentHybridScalars(Utf8SliceProgram program,
         in Utf8SliceInstruction first, in Utf8SliceInstruction second, ReadOnlySpan<byte> input,
