@@ -44,6 +44,7 @@ public sealed class Pcre2SliceBackrefTests
     [InlineData("(a|b)+\\1", "abb abb", 0, 2)]
     [InlineData("(x)?b\\1", "bbb", 0, 0)]
     [InlineData("(a)\\1", "aa aa", 3, 1)]
+    [InlineData("(a*)\\1", "😀aa", 4, 2)]
     [InlineData("(ab|a)+\\1z", "ababz ababz", 0, 2)]
     public void OwnedCountMatchesNativeSemantics(
         string pattern, string inputText, int startOffsetInBytes, int expected)

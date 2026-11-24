@@ -53,14 +53,13 @@ public sealed class Pcre2SliceCursorProjectionTests
     [InlineData(0)] [InlineData(5)]
     public void SamePositionEmptyRetryKeepsForwardProjection(int policy)
     {
-        var regex = Create("(?:ab|cd)*?", policy);
+        using var regex = Create("((?:ab|cd)*?)", policy);
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Enumerate);
-        var cursor = regex.EnumerateMatches("éabcd😀ab"u8);
-        var expected = new (int Start, int End, int Utf16Start, int Utf16End)[]
+        var input = "éabcd😀ab"u8;
+        var cursor = regex.EnumerateMatches(input);
+        var expected = new (int Start, int End)[]
         {
-            (0, 0, 0, 0), (2, 2, 1, 1), (2, 4, 1, 3),
-            (4, 4, 3, 3), (4, 6, 3, 5), (6, 6, 5, 5),
-            (10, 10, 7, 7), (10, 12, 7, 9), (12, 12, 9, 9),
+            (0, 0), (2, 2), (2, 4), (4, 4), (4, 6), (6, 6), (10, 10), (10, 12), (12, 12),
         };
         foreach (var range in expected)
         {
@@ -69,6 +68,8 @@ public sealed class Pcre2SliceCursorProjectionTests
             AssertRange(cursor.Current,range.Start,range.End);
         }
         Assert.False(cursor.MoveNext());
+        Assert.Equal(expected.Length, regex.Count(input));
+        Assert.Equal(expected.Length - 1, regex.Count(input, 2));
     }
 
     [Fact]

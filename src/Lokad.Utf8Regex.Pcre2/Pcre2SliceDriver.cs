@@ -376,8 +376,11 @@ internal static class Pcre2SliceDriver
 
         var cursor = new Pcre2SliceGlobalMatchCursor(
             program, invocation, input, start, request);
+        // Empty retries need the same capture reads as ordinary attempts.
+        // Count can omit slots when the program does not read them.
+        Utf8SliceSlots countSlots = program.ReadsCaptures ? default : new([], []);
         var count = 0;
-        while (cursor.MoveNext())
+        while (cursor.MoveNext(countSlots))
         {
             count = checked(count + 1);
         }
