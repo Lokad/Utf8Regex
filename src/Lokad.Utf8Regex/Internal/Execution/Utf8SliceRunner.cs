@@ -2347,20 +2347,34 @@ internal static partial class Utf8SliceRunner
                 case Utf8SliceInstructionKind.CategorySet:
                 case Utf8SliceInstructionKind.Hybrid:
                     {
-                        if (!TryReadScalar(input, inputIndex, program.RightToLeft, out var classScalar, out var classWidth))
+                        var reverse = program.RightToLeft;
+                        var edge = reverse ? inputIndex - 1 : inputIndex;
+                        int classWidth;
+                        bool classHit;
+                        if (instruction is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } &&
+                            (uint)edge < (uint)input.Length && input[edge] is < 128 and var value)
                         {
-                            failed = true;
-                            break;
+                            // Lowering includes the shorthand members in the ASCII mask.
+                            classHit = MatchesAsciiHybridClass(program.SetMasks[instruction.A], instruction.B != 0, value);
+                            classWidth = 1;
                         }
+                        else
+                        {
+                            if (!TryReadScalar(input, inputIndex, reverse, out var classScalar, out classWidth))
+                            {
+                                failed = true;
+                                break;
+                            }
 
-                        var classBreach = TryMatchScalarClass(program, instruction, classScalar,
-                            ref invocation, out var classHit);
-                        if (classBreach != Utf8ExecutionLimitKind.None)
+                            var classBreach = TryMatchScalarClass(program, instruction, classScalar,
+                                ref invocation, out classHit);
+                            if (classBreach != Utf8ExecutionLimitKind.None)
                             { failure = classBreach; goto Failure; }
+                        }
 
                         if (classHit)
                         {
-                            inputIndex += program.RightToLeft ? -classWidth : classWidth;
+                            inputIndex += reverse ? -classWidth : classWidth;
                             programIndex++;
                         }
                         else failed = true;

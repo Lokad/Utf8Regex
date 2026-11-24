@@ -133,6 +133,30 @@ public sealed class Utf8SliceHybridTests
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
+    [Theory]
+    [InlineData("~a3", RegexOptions.None, 1)]
+    [InlineData("~\0!", RegexOptions.None, 1)]
+    [InlineData("~😀٤", RegexOptions.None, 4)]
+    [InlineData("~K3", RegexOptions.None, 0)]
+    [InlineData("\u00a0K!", RegexOptions.None, 3)]
+    [InlineData("\u00a0K!", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0)]
+    public void StandaloneMixedClassesPreserveCaptureWidthsInBothDirections(string text, RegexOptions options, int width)
+    {
+        const string pattern = @"\A[\s~](?<value>[^\sK])[\d!]\z";
+        var input = Encoding.UTF8.GetBytes(text);
+        var start = Encoding.UTF8.GetByteCount(text.AsSpan(0, 1));
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        foreach (var direction in new[] { RegexOptions.None, RegexOptions.RightToLeft })
+        {
+            using var regex = new Utf8Regex(pattern, options | direction);
+            var match = regex.Match(input, captures: captures);
+            Assert.Equal(width != 0, match.Success);
+            Assert.Equal(match.Success, captures[1].Success);
+            if (match.Success)
+                Assert.Equal((start, start + width), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        }
+    }
+
     [Fact]
     public void OwnedCatastrophicHybridIsMatchTimesOut()
     {
