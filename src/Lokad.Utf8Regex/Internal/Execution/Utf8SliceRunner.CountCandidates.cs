@@ -670,6 +670,8 @@ internal static partial class Utf8SliceRunner
         {
             { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } or { Kind: Utf8SliceInstructionKind.Set, C: 0 }
                 => ((program.SetMasks[atom.A][literal >> 3] & (1 << (literal & 7))) != 0) == (atom.B != 0),
+            { Kind: Utf8SliceInstructionKind.CategorySet } when program.GetCompleteAsciiCategoryMask(atom) != 0
+                => !MatchesAsciiHybridClass(program.SetMasks[atom.A], false, literal),
             { Kind: Utf8SliceInstructionKind.Dot } => atom.A == 0 && literal == '\n',
             { Kind: Utf8SliceInstructionKind.Shorthand } =>
                 !Utf8SliceScalarClasses.MatchesShorthand(new Rune(literal), (Utf8SliceShorthand)atom.A),
@@ -705,6 +707,16 @@ internal static partial class Utf8SliceRunner
         // these two single-class nodes keep both offsets within a byte.
         return new((byte)(index - literalIndex), checked((byte)first), checked((byte)second),
             canReuse, canAccept, excludes);
+    }
+
+    internal static bool PrepareRequiredClassPair(Utf8SliceProgram program, ReadOnlySpan<byte> needle,
+        Utf8ConstructionBudget budget)
+    {
+        if (program.IsNonBacktracking || program.IgnoreCase ||
+            program.LeadingClassWindowProof is not { CanAcceptAfterPair: true, ExcludesDelimiter: true } proof ||
+            needle.Length != proof.LiteralLength) return false;
+        budget.ChargeWork((ulong)needle.Length);
+        return LiteralStartsAtInstruction(program, program.LeadingClassDelimiter.LiteralIndex, needle);
     }
 
     private static byte[][]? GetAlignedDelimiterAlternatives(Utf8SliceProgram program, int index,
@@ -1194,6 +1206,22 @@ internal static partial class Utf8SliceRunner
         while (start > limit && Utf8AsciiBytePredicates.IsDigit(input[start - 1])) start--;
         // A possible wider digit at the left edge needs scalar rewind.
         return start == limit || input[start - 1] < 128 ? start : -1;
+    }
+
+    internal static Utf8SliceSearchOutcome FindPreparedClassPair(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, in PreparedSubstringSearch search, int screenedDelimiter, ref Utf8SliceInvocation invocation)
+    {
+        invocation.Budget.ThrowIfCancellationRequested();
+        if ((uint)position > (uint)input.Length || position < input.Length && (input[position] & 0xC0) == 0x80)
+            return new(false, -1, -1, Utf8ExecutionLimitKind.None);
+
+        // Preparation established the same delimiter and complete pair as
+        // candidate discovery. Keep its single-window admission step.
+        var breach = invocation.TryChargeStep();
+        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+        var (literal, leadingClass, _, _, _) = program.LeadingClassDelimiter;
+        return FindAlignedClassPair(program, input, position, leadingClass, (byte)literal, search,
+            program.LeadingClassWindowProof.SuffixAfter(search.Length), screenedDelimiter, ref invocation);
     }
 
     private static Utf8SliceSearchOutcome FindAlignedClassPair(Utf8SliceProgram program, ReadOnlySpan<byte> input,

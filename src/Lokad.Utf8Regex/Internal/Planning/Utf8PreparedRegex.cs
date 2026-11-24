@@ -20,7 +20,7 @@ internal sealed class Utf8PreparedRegex
         Utf8AnchoredLiteralPlan anchoredLiteral, Utf8OperationMatchCursorPlans operationMatchCursorPlans,
         Utf8PreparedSemanticRegex semanticRegex, Utf8RegexFeatures features, string? executionPattern,
         NativeExecutionKind executionKind, Utf8SliceProgram? scalarProgram, byte[]? literalUtf8, string? fallbackReason,
-        bool requiredLiteralProvesMatch)
+        bool requiredLiteralProvesMatch, bool requiredLiteralAlignsClassPair)
     {
         _anchoredLiteral = anchoredLiteral;
         _operationMatchCursorPlans = operationMatchCursorPlans;
@@ -32,6 +32,7 @@ internal sealed class Utf8PreparedRegex
         LiteralUtf8 = literalUtf8;
         FallbackReason = fallbackReason;
         RequiredLiteralProvesMatch = requiredLiteralProvesMatch;
+        RequiredLiteralAlignsClassPair = requiredLiteralAlignsClassPair;
     }
 
     internal static Utf8PreparedRegex Create(
@@ -44,14 +45,22 @@ internal sealed class Utf8PreparedRegex
         scope.Budget.ChargeWork(2);
         ref readonly var search = ref operationMatchCursorPlans.SearchPlan;
         ref readonly var prefilter = ref search.RequiredPrefilterSearcher;
-        var requiredLiteralProvesMatch = scalarProgram is { RightToLeft: false, HasContiguousAnchor: false } &&
+        var requiredLiteralProvesMatch = false;
+        var requiredLiteralAlignsClassPair = false;
+        if (scalarProgram is { RightToLeft: false, HasContiguousAnchor: false } &&
             !features.HasAbsoluteStartAnchor && !search.CanGuideFallbackStarts &&
-            prefilter.Kind == PreparedSearcherKind.ExactLiteral &&
-            Utf8SliceRunner.PrepareRequiredLiteralWitness(scalarProgram, prefilter.LiteralSearch.Needle, scope.Budget);
+            prefilter.Kind == PreparedSearcherKind.ExactLiteral)
+        {
+            var needle = prefilter.LiteralSearch.Needle;
+            requiredLiteralProvesMatch = Utf8SliceRunner.PrepareRequiredLiteralWitness(scalarProgram, needle, scope.Budget);
+            requiredLiteralAlignsClassPair = !requiredLiteralProvesMatch &&
+                Utf8SliceRunner.PrepareRequiredClassPair(scalarProgram, needle, scope.Budget);
+        }
         scope.Budget.ReserveBytes(ObjectBytes);
         var result = new Utf8PreparedRegex(
             anchoredLiteral, operationMatchCursorPlans, semanticRegex, features, executionPattern,
-            executionKind, scalarProgram, literalUtf8, fallbackReason, requiredLiteralProvesMatch);
+            executionKind, scalarProgram, literalUtf8, fallbackReason, requiredLiteralProvesMatch,
+            requiredLiteralAlignsClassPair);
         scope.Complete();
         return result;
     }
@@ -67,6 +76,7 @@ internal sealed class Utf8PreparedRegex
     public bool HasLiteralPlan => ExecutionKind != NativeExecutionKind.FallbackRegex;
 
     internal bool RequiredLiteralProvesMatch { get; }
+    internal bool RequiredLiteralAlignsClassPair { get; }
 
     public Utf8SliceProgram? ScalarProgram { get; }
 
