@@ -8,7 +8,6 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ExactLiteralSetAdmissionTests
 {
     public static IEnumerable<object[]> Families() => Enumerable.Range(0, 17).Select(i => new object[] { i });
-    public static IEnumerable<object[]> Modes() => from family in Enumerable.Range(0, 17) from borrowed in new[] { false, true } select new object[] { family, borrowed };
     public static IEnumerable<object[]> Cutoffs() => from kind in Enumerable.Range(0, 3) from bytes in new[] { false, true } select new object[] { kind, bytes };
     public static IEnumerable<object[]> Depths() => from kind in Enumerable.Range(0, 3) from depth in Enumerable.Range(0, 5) select new object[] { kind, depth };
     private static byte[][] Bytes(params string[] values) => values.Select(Encoding.UTF8.GetBytes).ToArray();
@@ -102,47 +101,47 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     }
 
     [Theory]
-    [MemberData(nameof(Modes))]
-    public void OnlySelectedStrategiesAcquireAnchorsOrTriesAndBorrowedDataIsNotChargedAgain(int family, bool borrowed)
+    [MemberData(nameof(Families))]
+    public void OnlySelectedStrategiesAcquireAnchorsOrTries(int family)
     {
         var values = Family(family);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
-        var data = borrowed ? AsciiSearch.CreateExactLiteralSearchData(values) : default;
-        var search = borrowed ? new PreparedLiteralSetSearch(data) : new PreparedLiteralSetSearch(values);
+        var search = new PreparedLiteralSetSearch(values);
         Assert.Equal(Strategy(values), search.Strategy);
         Assert.Equal(128 + DataLoan(search.SearchData) + ExtraLoan(search), owner.Budget.ReservedBytes);
         if (search.Strategy != PreparedLiteralSetStrategy.UniqueAnchorByte) Assert.Null(Property(search, "UniqueAnchor"));
         if (search.Strategy != PreparedLiteralSetStrategy.MultiLiteralTrie)
         { var trie = Assert.IsType<PreparedMultiLiteralTrieSearch>(Property(search, "MultiLiteral")); Assert.Null(trie.RootMap); }
-        if (borrowed) Assert.Same(data.Buckets, search.SearchData.Buckets);
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
     }
 
     private static byte[][] CutoffFamily(int kind) => Family(kind == 0 ? 5 : kind == 1 ? 7 : 9);
-    private static ulong Prepare(int kind, AsciiExactLiteralSearchData borrowed) => kind == 0
-        ? DataLoan(AsciiSearch.CreateExactLiteralSearchData(CutoffFamily(kind)))
-        : ExtraLoan(new PreparedLiteralSetSearch(borrowed));
+    private static ulong Prepare(int kind, byte[][] values)
+    {
+        if (kind == 0) return DataLoan(AsciiSearch.CreateExactLiteralSearchData(values));
+        var search = new PreparedLiteralSetSearch(values);
+        return DataLoan(search.SearchData) + ExtraLoan(search);
+    }
     [Theory]
     [MemberData(nameof(Cutoffs))]
     public void EveryByteAndWorkCutoffRefundsChildrenAndPreservesFundedParentAndSpentWork(int kind, bool bytes)
     {
-        ulong peak, work, parentLoan = 128, parentWork = 2;
+        var values = CutoffFamily(kind);
+        const ulong parentLoan = 128, parentWork = 2;
+        ulong peak, work;
         using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
-            var data = kind == 0 ? default : AsciiSearch.CreateExactLiteralSearchData(CutoffFamily(kind));
-            parentLoan += funded.Budget.ReservedBytes; parentWork += funded.Budget.WorkSteps;
             _ = funded.Budget.AllocateObject(17, static value => new Box(value));
-            _ = Prepare(kind, data); peak = funded.Budget.PeakBytes - parentLoan; work = funded.Budget.WorkSteps - parentWork;
+            _ = Prepare(kind, values); peak = funded.Budget.PeakBytes - parentLoan; work = funded.Budget.WorkSteps - parentWork;
         }
         var successes = 0;
         for (var allowance = 0ul; allowance <= (bytes ? peak : work); allowance++)
         {
             using var owner = new Utf8ConstructionScope(0, bytes ? parentLoan + allowance : ulong.MaxValue,
                 bytes ? ulong.MaxValue : parentWork + allowance, ulong.MaxValue);
-            var data = kind == 0 ? default : AsciiSearch.CreateExactLiteralSearchData(CutoffFamily(kind));
             var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
-            var loan = 0ul; var error = Record.Exception(() => loan = Prepare(kind, data));
+            var loan = 0ul; var error = Record.Exception(() => loan = Prepare(kind, values));
             if (error is null) { successes++; Assert.Equal(parentLoan + loan, owner.Budget.ReservedBytes); }
             else
             {
@@ -181,26 +180,23 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     {
         using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
         var data = AsciiSearch.CreateExactLiteralSearchData([]); Assert.Empty(data.Buckets); Assert.Empty(data.BucketIndexMap);
-        Assert.Equal(PreparedLiteralSetStrategy.Empty, new PreparedLiteralSetSearch(data).Strategy);
         Assert.Equal(PreparedLiteralSetStrategy.Empty, new PreparedLiteralSetSearch(Array.Empty<byte[]>()).Strategy);
         Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakDepth);
     }
 
-    private static long MeasurePrefixOnly(AsciiExactLiteralSearchData data)
+    [Theory]
+    [InlineData(8)]
+    [InlineData(1024)]
+    public void SharedPrefixSelectionDoesNotBuildUnusedAnchorsOrTriesAsFamilyGrows(int count)
     {
-        using var owner = new Utf8ConstructionScope(0, 0, ulong.MaxValue, 1);
-        var before = GC.GetAllocatedBytesForCurrentThread(); var search = new PreparedLiteralSetSearch(data);
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(PreparedLiteralSetStrategy.SingleBucketPrefix, search.Strategy); Assert.Equal(0ul, owner.Budget.ReservedBytes);
-        return bytes;
-    }
-    [Fact]
-    public void SharedPrefixSelectionDoesNotBuildUnusedAnchorsOrTriesAsFamilyGrows()
-    {
-        var small = AsciiSearch.CreateExactLiteralSearchData(Enumerable.Range(0, 8).Select(i => Encoding.UTF8.GetBytes("prefix" + i)).ToArray());
-        var large = AsciiSearch.CreateExactLiteralSearchData(Enumerable.Range(0, 1024).Select(i => Encoding.UTF8.GetBytes("prefix" + i)).ToArray());
-        _ = MeasurePrefixOnly(small); _ = MeasurePrefixOnly(large);
-        Assert.Equal(MeasurePrefixOnly(small), MeasurePrefixOnly(large));
+        var values = Enumerable.Range(0, count).Select(i => Encoding.UTF8.GetBytes("prefix" + i)).ToArray();
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        var search = new PreparedLiteralSetSearch(values);
+        Assert.Equal(PreparedLiteralSetStrategy.SingleBucketPrefix, search.Strategy);
+        Assert.Null(Property(search, "UniqueAnchor"));
+        var trie = Assert.IsType<PreparedMultiLiteralTrieSearch>(Property(search, "MultiLiteral"));
+        Assert.Null(trie.RootMap);
+        Assert.Equal(DataLoan(search.SearchData), owner.Budget.ReservedBytes);
     }
 
     [Fact]
@@ -212,23 +208,20 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
             var values = Enumerable.Range(0, random.Next(1, 21)).Select(_ => Enumerable.Range(0, random.Next(1, 9))
                 .Select(_ => alphabet[random.Next(alphabet.Length)]).ToArray()).ToArray();
             var subject = values.SelectMany(v => alphabet.Concat(v)).Concat(alphabet).ToArray();
-            var data = AsciiSearch.CreateExactLiteralSearchData(values);
-            foreach (var search in new[] { new PreparedLiteralSetSearch(values), new PreparedLiteralSetSearch(data) })
+            var search = new PreparedLiteralSetSearch(values);
+            var first = -1; var last = -1; var firstLength = 0;
+            for (var start = 0; start < subject.Length; start++)
             {
-                var first = -1; var last = -1; var firstLength = 0;
-                for (var start = 0; start < subject.Length; start++)
-                {
-                    var literal = values.FirstOrDefault(v => subject.AsSpan(start).StartsWith(v));
-                    var found = search.TryGetMatchedLiteralLength(subject, start, out var length);
-                    Assert.Equal(literal is not null, found); Assert.Equal(literal?.Length ?? 0, length);
-                    if (literal is null) continue;
-                    if (first < 0) { first = start; firstLength = literal.Length; }
-                    last = start;
-                }
-                Assert.Equal(first, search.IndexOf(subject)); Assert.Equal(last, search.LastIndexOf(subject));
-                Assert.Equal(first >= 0, search.TryFindFirstMatchWithLength(subject, out var index, out var matched));
-                Assert.Equal(first, index); Assert.Equal(firstLength, matched);
+                var literal = values.FirstOrDefault(v => subject.AsSpan(start).StartsWith(v));
+                var found = search.TryGetMatchedLiteralLength(subject, start, out var length);
+                Assert.Equal(literal is not null, found); Assert.Equal(literal?.Length ?? 0, length);
+                if (literal is null) continue;
+                if (first < 0) { first = start; firstLength = literal.Length; }
+                last = start;
             }
+            Assert.Equal(first, search.IndexOf(subject)); Assert.Equal(last, search.LastIndexOf(subject));
+            Assert.Equal(first >= 0, search.TryFindFirstMatchWithLength(subject, out var index, out var matched));
+            Assert.Equal(first, index); Assert.Equal(firstLength, matched);
         }
     }
 

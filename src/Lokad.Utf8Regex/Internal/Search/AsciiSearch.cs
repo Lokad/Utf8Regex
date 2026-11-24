@@ -169,21 +169,6 @@ internal static partial class AsciiSearch
         };
     }
 
-    public static int IndexOfAnyExact(ReadOnlySpan<byte> input, byte[][] literals)
-    {
-        return IndexOfAnyExact(input, CreateExactLiteralSearchData(literals));
-    }
-
-    public static int IndexOfAnyExact(ReadOnlySpan<byte> input, AsciiExactLiteralSearchData searchData)
-    {
-        return new PreparedLiteralSetSearch(searchData).IndexOf(input);
-    }
-
-    public static bool TryGetMatchedLiteralLength(ReadOnlySpan<byte> input, int index, AsciiExactLiteralSearchData searchData, out int matchedLength)
-    {
-        return new PreparedLiteralSetSearch(searchData).TryGetMatchedLiteralLength(input, index, out matchedLength);
-    }
-
     public static bool MatchesIgnoreCase(ReadOnlySpan<byte> candidate, ReadOnlySpan<byte> literal)
     {
         for (var i = 0; i < literal.Length; i++)
