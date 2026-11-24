@@ -74,6 +74,35 @@ public sealed class Utf8DeferredRepeatStateTests
         Assert.Equal(2, regex.Count("😀abcdcdc ab"u8));
     }
 
+    [Theory]
+    [InlineData(@"\A([A-Za-z]+)\b")]
+    [InlineData(@"\A([A-Za-z]+?)\b")]
+    public void TerminalWordRepeatsSkipImpossibleShorterEndpoints(string pattern)
+    {
+        using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256 }
+        });
+        var prefix = new string('a', 4096);
+        var hit = System.Text.Encoding.UTF8.GetBytes(prefix + "😀");
+        var miss = System.Text.Encoding.UTF8.GetBytes(prefix + "é");
+        var captures = new Utf8CaptureRange[2];
+
+        Assert.Equal(new Utf8CaptureRange(0, prefix.Length), regex.Match(hit, captures: captures));
+        Assert.Equal(new Utf8CaptureRange(0, prefix.Length), captures[1]);
+        Assert.False(regex.IsMatch(miss));
+        Assert.Equal(0, regex.Count(miss));
+    }
+
+    [Fact]
+    public void ARepeatContainingNonwordScalarsCanRewindToTheWordBoundary()
+    {
+        using var regex = new Utf8Regex(@"\A([a.]+)\b");
+        var captures = new Utf8CaptureRange[2];
+        Assert.Equal(new Utf8CaptureRange(0, 1), regex.Match("a.."u8, captures: captures));
+        Assert.Equal(new Utf8CaptureRange(0, 1), captures[1]);
+    }
+
     [Fact]
     public void FusedImportCountNeedsNoLocalWorkingBuffers()
     {

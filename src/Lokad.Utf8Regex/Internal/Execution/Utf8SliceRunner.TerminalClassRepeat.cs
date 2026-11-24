@@ -522,9 +522,11 @@ internal static partial class Utf8SliceRunner
                 budget.ChargeWork(3);
                 if (wordBoundary)
                 {
-                    // Every shorter nonempty decimal run ends between two
+                    // Every shorter nonempty word run ends between two
                     // Unicode word scalars. The boundary cannot succeed there.
-                    if (repeat.RepeatMinimum == 0 || !code[repeatIndex + 1].IsDecimalDigitSet) break;
+                    var asciiWord = asciiOnly && (atom.Low & ~Utf8AsciiBytePredicates.WordSearch.Mask0) == 0 &&
+                        (atom.High & ~Utf8AsciiBytePredicates.WordSearch.Mask1) == 0;
+                    if (repeat.RepeatMinimum == 0 || !instruction.IsDecimalDigitSet && !asciiWord) break;
                     rewindFree |= 1UL << (end - repeatIndex);
                     wordBoundary = false;
                 }
