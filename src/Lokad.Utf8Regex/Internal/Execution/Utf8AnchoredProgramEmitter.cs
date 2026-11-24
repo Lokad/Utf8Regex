@@ -148,23 +148,42 @@ internal static class Utf8AnchoredProgramEmitter
             }
 
             _ = program.TryGetUnfoldedAsciiSet(atom, out var ascii, out _);
-            il.StoreLocal(value);
-            il.LoadLocal(value);
-            il.LdcI4(128);
-            il.Emit(OpCodes.Bge_Un, retry);
-            var lower = il.DefineLabel();
-            var test = il.DefineLabel();
-            il.LoadLocal(value);
-            il.LdcI4(64);
-            il.Emit(OpCodes.Blt_Un, lower);
-            il.LdcI8(ascii.High);
-            il.Emit(OpCodes.Br, test);
-            il.MarkLabel(lower);
-            il.LdcI8(ascii.Low);
-            il.MarkLabel(test);
-            il.LoadLocal(value);
-            il.LdcI4(63);
-            il.Emit(OpCodes.And);
+            if (ascii.Low == 0 || ascii.High == 0)
+            {
+                // One unsigned bound on the relative index covers both the
+                // absent half of ASCII and all non-ASCII bytes.
+                if (ascii.Low == 0)
+                {
+                    il.LdcI4(64);
+                    il.Emit(OpCodes.Sub);
+                }
+                il.StoreLocal(value);
+                il.LoadLocal(value);
+                il.LdcI4(64);
+                il.Emit(OpCodes.Bge_Un, retry);
+                il.LdcI8(ascii.Low | ascii.High);
+                il.LoadLocal(value);
+            }
+            else
+            {
+                il.StoreLocal(value);
+                il.LoadLocal(value);
+                il.LdcI4(128);
+                il.Emit(OpCodes.Bge_Un, retry);
+                var lower = il.DefineLabel();
+                var test = il.DefineLabel();
+                il.LoadLocal(value);
+                il.LdcI4(64);
+                il.Emit(OpCodes.Blt_Un, lower);
+                il.LdcI8(ascii.High);
+                il.Emit(OpCodes.Br, test);
+                il.MarkLabel(lower);
+                il.LdcI8(ascii.Low);
+                il.MarkLabel(test);
+                il.LoadLocal(value);
+                il.LdcI4(63);
+                il.Emit(OpCodes.And);
+            }
             il.Emit(OpCodes.Shr_Un);
             il.LdcI8(1);
             il.Emit(OpCodes.And);

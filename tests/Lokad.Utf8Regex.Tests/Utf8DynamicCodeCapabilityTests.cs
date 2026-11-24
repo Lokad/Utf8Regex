@@ -14,6 +14,7 @@ public sealed class Utf8DynamicCodeCapabilityTests
     [InlineData(@"\A(?<unit>[1A-Za-z]{2})(?:[QX]?[XYZ]|[uV][0-9])$", "a1X\n", 3)]
     [InlineData(@"\A(?<unit>[1A-Za-z]{2})(?:[QX]?[XYZ]|[uV][0-9])$", "a1u4\n", 4)]
     [InlineData(@"\A(?<unit>[1A-Za-z]{2})[QX]??[XYZ]", "a1XX", 3)]
+    [InlineData(@"\A(?<unit>[1A-Za-z]{2})[!07]\z", "A17", 3)]
     public void EmittedAbsoluteProgramKeepsOrderedEndpointsAndCaptures(string pattern, string text, int end)
     {
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
@@ -25,6 +26,9 @@ public sealed class Utf8DynamicCodeCapabilityTests
         Assert.True(regex.IsMatch(bytes));
         Assert.Equal(expected, regex.Match(bytes));
         Assert.False(regex.IsMatch("éaXX"u8));
+        Assert.False(regex.IsMatch("a1é"u8));
+        Assert.False(regex.IsMatch("a1w"u8));
+        Assert.False(regex.IsMatch("a1\u0018"u8));
         var slots = new Utf8CaptureRange[2];
         Assert.Equal(expected, regex.Match(bytes, captures: slots));
         Assert.Equal(new Utf8CaptureRange(0, 2), slots[1]);
