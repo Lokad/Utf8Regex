@@ -733,12 +733,15 @@ internal static class Pcre2BacktrackingRunner
         var initialFrameRents = frames.RentCount;
         var initialRepeatRents = repeatMutations.RentCount;
         var collectsDiagnostics = budget.CollectsDiagnostics;
-        var captureMutations = new Pcre2InvocationStateStack<Pcre2CaptureMutation>(int.MaxValue, collectsDiagnostics);
+        var retainCaptures = captureMaterialization != Pcre2CaptureMaterialization.None || !initialCaptures.IsEmpty;
+        // Smaller finite journals help shallow Boolean reads. Capture output
+        // and inherited capture state can need more writes before growing.
+        var captureMutations = new Pcre2InvocationStateStack<Pcre2CaptureMutation>(int.MaxValue, collectsDiagnostics,
+            initialCapacity: retainCaptures || budget.CanRetainWorkspace ? 16 : 8);
         var subroutineCalls = new Pcre2SubroutineCalls(frameLimit, collectsDiagnostics);
         var atomicCheckpoints = new Pcre2InvocationStateStack<Pcre2AtomicCheckpoint>(frameLimit, collectsDiagnostics);
         var markMutations = new Pcre2InvocationStateStack<Pcre2MarkMutation>(int.MaxValue, collectsDiagnostics);
         var markTrail = new Pcre2InvocationStateStack<Pcre2MarkTrailEntry>(int.MaxValue, collectsDiagnostics);
-        var retainCaptures = captureMaterialization != Pcre2CaptureMaterialization.None || !initialCaptures.IsEmpty;
         var greedyOptionalTail = !isAssertion && matchOptions == Pcre2MatchOptions.None
             ? program.GreedyOptionalTail : int.MaxValue;
         var needsCaptureState = program.CaptureReadSlot != 0 || retainCaptures;
