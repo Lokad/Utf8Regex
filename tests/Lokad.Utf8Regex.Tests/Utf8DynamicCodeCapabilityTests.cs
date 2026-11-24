@@ -80,9 +80,9 @@ public sealed class Utf8DynamicCodeCapabilityTests
         using var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var dynamicCode = RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
-        Assert.Equal(dynamicCode, program.ObservesAbsoluteProofWork);
+        Assert.Equal(dynamicCode, program.ObservesProofWork);
         Assert.Null(program.EmittedMatch);
-        Assert.Null(program.TieredAbsoluteProof);
+        Assert.Null(program.TieredProof);
 
         using var source = new CancellationTokenSource();
         var bytes = "#ab10e3"u8.ToArray();
@@ -90,7 +90,7 @@ public sealed class Utf8DynamicCodeCapabilityTests
         {
             if (!regex.IsMatch(bytes, source.Token)) throw new InvalidOperationException("Expected a match.");
         }
-        Assert.Null(program.TieredAbsoluteProof);
+        Assert.Null(program.TieredProof);
 
         Parallel.For(0, 100_000, i =>
         {
@@ -98,9 +98,9 @@ public sealed class Utf8DynamicCodeCapabilityTests
             if (regex.IsMatch(expected ? bytes : "#aF09B2\n\n"u8) != expected)
                 throw new InvalidOperationException("The shared proof changed the match result.");
         });
-        var tiered = program.TieredAbsoluteProof;
+        var tiered = program.TieredProof;
         Assert.Equal(dynamicCode, tiered is not null);
-        Assert.False(program.ObservesAbsoluteProofWork);
+        Assert.False(program.ObservesProofWork);
         Assert.Equal(new Utf8CaptureRange(0, 4), regex.Match("#aF9\n"u8));
         Assert.Equal(new Utf8CaptureRange(0, 7), regex.Match(bytes));
         Assert.False(regex.IsMatch("Aé3"u8));
@@ -108,17 +108,52 @@ public sealed class Utf8DynamicCodeCapabilityTests
         using var cursor = regex.CreateMatchCursor(bytes);
         Assert.True(cursor.MoveNext(out var match));
         Assert.Equal(new Utf8CaptureRange(1, 7), Assert.Single(match.GetCaptures(1).ToArray()));
-        Assert.Same(tiered, program.TieredAbsoluteProof);
+        Assert.Same(tiered, program.TieredProof);
 
         source.Cancel();
         Assert.Equal(source.Token,
             Assert.Throws<OperationCanceledException>(() => regex.IsMatch(bytes, source.Token)).CancellationToken);
         using var limited = new Utf8Regex(pattern, RegexOptions.IgnoreCase,
             new() { ResourcePolicy = new() { MaxWorkSteps = 5 } });
-        Assert.False(limited.Inspection.AvailableOwnedSliceProgram.ObservesAbsoluteProofWork);
+        Assert.False(limited.Inspection.AvailableOwnedSliceProgram.ObservesProofWork);
         using var controlled = new Utf8Regex(pattern, RegexOptions.IgnoreCase,
             new() { ConstructionPolicy = new() { MaxWorkSteps = 1_000_000 } });
-        Assert.False(controlled.Inspection.AvailableOwnedSliceProgram.ObservesAbsoluteProofWork);
+        Assert.False(controlled.Inspection.AvailableOwnedSliceProgram.ObservesProofWork);
+    }
+
+    [Theory]
+    [InlineData(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])",
+        "012.200.033.199", "012.200.033.1AA", 0)]
+    [InlineData(@"(\d{4}[- ]){3}\d{3,4}", "1234-5678-1234-456", "1234-5678-1234-45X", 3)]
+    public void OrdinaryCandidateProofTiersUpAndKeepsByteRanges(string pattern, string value, string miss, int captures)
+    {
+        using var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        var dynamicCode = RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
+        Assert.Equal(dynamicCode, program.ObservesProofWork);
+        Assert.Null(program.TieredProof);
+
+        var hit = Encoding.UTF8.GetBytes(value);
+        var rejected = Encoding.UTF8.GetBytes(miss);
+        const string prefix = "😀é ";
+        var later = Encoding.UTF8.GetBytes(prefix + miss + " " + value);
+        var start = Encoding.UTF8.GetByteCount(prefix + miss + " ");
+        var expected = new Utf8CaptureRange(start, later.Length);
+        Assert.Equal(expected, regex.Match(later));
+        for (var i = 0; i < 131_072 && program.ObservesProofWork; i++)
+        {
+            if (!regex.IsMatch(hit)) throw new InvalidOperationException("Expected a match.");
+        }
+
+        Assert.Equal(dynamicCode, program.TieredProof is not null);
+        Assert.True(regex.IsMatch(hit));
+        Assert.False(regex.IsMatch(rejected));
+        Assert.Equal(expected, regex.Match(later));
+        Assert.Equal(2, regex.Count(Encoding.UTF8.GetBytes(value + " " + value)));
+        using var cursor = regex.CreateMatchCursor(later);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(expected, match.Value);
+        if (captures != 0) Assert.Equal(captures, match.GetCaptures(1).ToArray().Length);
     }
 
     [Theory]

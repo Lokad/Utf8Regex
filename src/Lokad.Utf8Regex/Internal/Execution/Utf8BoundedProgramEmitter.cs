@@ -19,36 +19,24 @@ internal static class Utf8BoundedProgramEmitter
     private static readonly MethodInfo s_matchDecimalRun = typeof(Utf8SliceRunner).GetMethod(
         nameof(Utf8SliceRunner.MatchBoundedDecimalRun), BindingFlags.Static | BindingFlags.NonPublic)!;
 
-    internal static bool CanTierUpShortAbsoluteProof(Utf8SliceProgram program, Utf8ConstructionBudget budget)
-        => CanEmit(program) && program.Instructions.Length <= MaxUnsplitInstructions &&
-           program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Anchor,
-               A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: 1 } &&
-           CountExpandedVisits(program, 1, program.Instructions.Length, budget) <= MaxExpandedVisits;
-
-    private static bool CanEmit(Utf8SliceProgram program)
-        => RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled &&
-           !program.RightToLeft && !program.IsNonBacktracking && !program.ReadsCaptures &&
-           program.Instructions.Length is >= 2 and <= MaxExpandedVisits;
+    internal static bool CanTierUp(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+    {
+        if (!TryGetEntry(program, out var entry)) return false;
+        if (program.Instructions[0].Kind == Utf8SliceInstructionKind.Anchor)
+            return entry == 1 && program.Instructions[0].D == 1 && program.Instructions.Length <= MaxUnsplitInstructions &&
+                CountExpandedVisits(program, entry, program.Instructions.Length, budget) <= MaxExpandedVisits;
+        Span<int> splits = stackalloc int[MaxExpandedVisits];
+        return TryPlan(program, entry, budget, splits, out _);
+    }
 
     internal static Match? TryEmit(Utf8SliceProgram program, Utf8ConstructionBudget budget)
     {
         var code = program.Instructions;
-        if (!CanEmit(program)) return null;
-
-        var anchored = code[0] is { Kind: Utf8SliceInstructionKind.Anchor,
-            A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: not 0 };
-        if (!anchored && !program.HasShortDecimalHead &&
-            program.LeadingByteCandidate is not { FromBranch: true, First: >= 0 and < 128 }) return null;
-        var entry = anchored ? 1 : 0;
+        if (!TryGetEntry(program, out var entry)) return null;
         Span<int> splits = stackalloc int[MaxExpandedVisits];
-        var splitCount = 0;
-        if (code.Length > MaxUnsplitInstructions ||
-            CountExpandedVisits(program, entry, code.Length, budget) > MaxExpandedVisits)
-        {
-            if (!TrySplitAtDelimiters(program, entry, budget, splits, out splitCount)) return null;
-        }
+        if (!TryPlan(program, entry, budget, splits, out var splitCount)) return null;
 
-        using var method = Utf8DynamicIlBuilder.Create(anchored ? "Utf8Regex_AnchoredProgram" : "Utf8Regex_CandidateProgram",
+        using var method = Utf8DynamicIlBuilder.Create(entry != 0 ? "Utf8Regex_AnchoredProgram" : "Utf8Regex_CandidateProgram",
             typeof(int), typeof(Utf8BoundedProgramEmitter), typeof(ReadOnlySpan<byte>));
         var il = new Utf8IlEmitter(method, s_spanLength, s_spanItem, inputArgument: 0);
         var length = il.DeclareLocal<int>();
@@ -292,6 +280,32 @@ internal static class Utf8BoundedProgramEmitter
             il.Emit(OpCodes.And);
             il.Emit(OpCodes.Brfalse, retry);
         }
+    }
+
+    private static bool TryGetEntry(Utf8SliceProgram program, out int entry)
+    {
+        entry = 0;
+        var code = program.Instructions;
+        if (!RuntimeFeature.IsDynamicCodeSupported || !RuntimeFeature.IsDynamicCodeCompiled ||
+            program.RightToLeft || program.IsNonBacktracking || program.ReadsCaptures ||
+            code.Length is < 2 or > MaxExpandedVisits) return false;
+
+        if (code[0] is { Kind: Utf8SliceInstructionKind.Anchor,
+            A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: not 0 })
+        {
+            entry = 1;
+            return true;
+        }
+        return program.HasShortDecimalHead || program.LeadingByteCandidate is { FromBranch: true, First: >= 0 and < 128 };
+    }
+
+    private static bool TryPlan(Utf8SliceProgram program, int entry, Utf8ConstructionBudget budget,
+        Span<int> splits, out int splitCount)
+    {
+        splitCount = 0;
+        var length = program.Instructions.Length;
+        return length <= MaxUnsplitInstructions && CountExpandedVisits(program, entry, length, budget) <= MaxExpandedVisits ||
+            TrySplitAtDelimiters(program, entry, budget, splits, out splitCount);
     }
 
     private static bool TrySplitAtDelimiters(Utf8SliceProgram program, int entry,

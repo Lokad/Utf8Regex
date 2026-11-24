@@ -114,7 +114,7 @@ public sealed partial class Utf8Regex : IDisposable
                 ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
             _ownedSliceProgram = ownedSliceProgram;
             if (canTierUp && matchTimeout == Regex.InfiniteMatchTimeout && !HasFiniteExecutionLimits)
-                ownedSliceProgram.EnableAbsoluteProofTierUp(construction.Budget);
+                ownedSliceProgram.EnableProofTierUp(construction.Budget);
             if (matchTimeout == Regex.InfiniteMatchTimeout &&
                 _program.CompiledEngineRuntime is { } literalRuntime && HasScalarBoundaryLiteralSearch(ownedSliceProgram))
             {

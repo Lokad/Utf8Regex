@@ -2555,14 +2555,36 @@ internal static partial class Utf8SliceRunner
     private static bool MayMatchAdmittedCandidate(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int position, int index, out int acceptedEnd, bool proveMatch, int instructionLimit = BranchedPrefixInstructionLimit)
     {
+        var interpretedVisits = -1;
+        return MayMatchAdmittedCandidate(program, input, position, index, out acceptedEnd, program.EmittedMatch,
+            ref interpretedVisits, proveMatch, instructionLimit);
+    }
+
+    private static bool MayMatchAdmittedCandidate(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, int index, out int acceptedEnd, Utf8BoundedProgramEmitter.Match? emitted, ref int interpretedVisits,
+        bool proveMatch, int instructionLimit = BranchedPrefixInstructionLimit)
+    {
         // A compiled candidate executes the complete proof for the admitted
         // suffix. The general probe also handles partial instruction windows.
-        if (program.EmittedMatch is { } emitted && index == 0 && proveMatch &&
+        if (index == 0 && proveMatch &&
             instructionLimit >= BranchedPrefixInstructionLimit && program.Instructions[0].Kind != Utf8SliceInstructionKind.Anchor)
         {
-            var end = emitted(input[position..]);
-            acceptedEnd = end < 0 ? -1 : position + end;
-            return end >= 0;
+            if (emitted is not null)
+            {
+                var end = emitted(input[position..]);
+                acceptedEnd = end < 0 ? -1 : position + end;
+                return end >= 0;
+            }
+            if (interpretedVisits >= 0)
+            {
+                var remaining = instructionLimit;
+                var end = ProbeBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch: true);
+                if (end != BranchedPrefixUndecided)
+                    interpretedVisits = Math.Min(Utf8SliceProgram.ProofTierThreshold,
+                        interpretedVisits + instructionLimit - remaining);
+                acceptedEnd = Math.Max(BranchedPrefixUndecided, end);
+                return end != BranchedPrefixRejected;
+            }
         }
         return MayMatchBranchedAsciiPrefix(program, input, position, index, out acceptedEnd, proveMatch, instructionLimit);
     }

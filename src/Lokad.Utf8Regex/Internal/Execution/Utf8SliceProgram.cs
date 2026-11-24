@@ -807,33 +807,33 @@ internal sealed class Utf8SliceProgram
     internal (int Min, int Max, byte Literal) FollowingDecimalLiteralWindow { get; }
     internal (int Index, byte TerminalMin, byte TerminalMax) FollowingDecimalContinuation { get; }
     internal Utf8BoundedProgramEmitter.Match? EmittedMatch { get; }
-    private const int AbsoluteProofTierThreshold = 512 * 1024;
-    private int _absoluteProofVisits = -1; // Disabled or already claimed.
-    internal bool ObservesAbsoluteProofWork => Volatile.Read(ref _absoluteProofVisits) >= 0;
-    private volatile Utf8BoundedProgramEmitter.Match? _tieredAbsoluteProof;
-    internal Utf8BoundedProgramEmitter.Match? TieredAbsoluteProof => _tieredAbsoluteProof;
+    internal const int ProofTierThreshold = 512 * 1024;
+    private int _interpretedProofVisits = -1; // Disabled or already claimed.
+    internal bool ObservesProofWork => Volatile.Read(ref _interpretedProofVisits) >= 0;
+    private volatile Utf8BoundedProgramEmitter.Match? _tieredProof;
+    internal Utf8BoundedProgramEmitter.Match? TieredProof => _tieredProof;
 
-    internal void EnableAbsoluteProofTierUp(Utf8ConstructionBudget budget)
+    internal void EnableProofTierUp(Utf8ConstructionBudget budget)
     {
-        if (Utf8BoundedProgramEmitter.CanTierUpShortAbsoluteProof(this, budget))
-            _absoluteProofVisits = 0;
+        if (Utf8BoundedProgramEmitter.CanTierUp(this, budget))
+            _interpretedProofVisits = 0;
     }
 
-    internal void ObserveAbsoluteProofWork(int visits)
+    internal void ObserveProofWork(int visits)
     {
         int previous, next;
         do
         {
-            previous = Volatile.Read(ref _absoluteProofVisits);
+            previous = Volatile.Read(ref _interpretedProofVisits);
             if (previous < 0) return;
             next = previous + visits;
-            if (next >= AbsoluteProofTierThreshold)
+            if (next >= ProofTierThreshold)
             {
                 // A host callback may be inside another construction owner.
                 if (Utf8ConstructionScope.IsActive) return;
                 next = -1;
             }
-        } while (Interlocked.CompareExchange(ref _absoluteProofVisits, next, previous) != previous);
+        } while (Interlocked.CompareExchange(ref _interpretedProofVisits, next, previous) != previous);
 
         if (next >= 0) return;
         using var construction = Utf8ConstructionScope.Enter();
@@ -841,7 +841,7 @@ internal sealed class Utf8SliceProgram
         {
             var emitted = Utf8BoundedProgramEmitter.TryEmit(this, construction.Budget);
             construction.Complete();
-            _tieredAbsoluteProof = emitted;
+            _tieredProof = emitted;
         }
         catch (Utf8ResourceLimitExceededException)
         {

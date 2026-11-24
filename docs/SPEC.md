@@ -346,7 +346,8 @@ admits each origin and applies invocation limits. Emitted code can verify
 Boolean and whole-range results when no captures are requested. The scalar
 interpreter handles other programs and capture publication.
 An eligible ordinary Core program can also publish one emitted proof after
-repeated complete interpreted checks at the absolute beginning of short inputs.
+repeated complete interpreted checks at the absolute beginning of short inputs
+or at admitted unanchored candidate starts.
 This automatic tier applies to unlimited, unfunded calls without a cancelable
 token, on engines built with default construction controls. Finite policies,
 funding and cooperative interruption retain their existing execution paths.

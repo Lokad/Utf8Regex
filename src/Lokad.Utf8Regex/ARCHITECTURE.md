@@ -17,9 +17,10 @@ parse -> analyze -> prepare -> immutable instructions -> invoke
   A proven delimiter can let ordered alternatives share an emitted
   continuation. The admitted extent can bound a decimal run with a proved
   endpoint. Search applies invocation checks at each admitted origin.
-  Eligible ordinary Core calls accumulate visits from completed short
-  absolute-origin proofs. One caller claims bounded compilation after a
-  proof finishes and publishes the delegate for future eligible calls.
+  Eligible ordinary Core calls accumulate visits from complete short
+  absolute-origin and unanchored candidate proofs. A candidate search
+  contributes its total at the end of the search. One caller claims bounded
+  compilation and publishes the delegate for future eligible calls.
   Funded and interruptible calls retain their original paths.
   The scalar interpreter handles capture output. The supported
   `NonBacktracking` subset uses its own ordered traversal. Eligible literal

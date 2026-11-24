@@ -581,6 +581,17 @@ internal static partial class Utf8SliceRunner
                 ref workspace, ref invocation, countAll: false, existenceOnly, out _);
         }
 
+        var emitted = program.EmittedMatch;
+        var interpretedVisits = -1;
+        if (emitted is null && !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+            first.Kind != Utf8SliceInstructionKind.Anchor &&
+            (program.ObservesProofWork || program.TieredProof is not null) &&
+            invocation.CheckpointHook is null && invocation.IsUnmetered)
+        {
+            emitted = program.TieredProof;
+            if (emitted is null) interpretedVisits = 0;
+        }
+
         if (remaining is > 0 and <= 32 && !reverse && !program.IgnoreCase && !program.HasContiguousAnchor &&
             !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
             first.Kind == Utf8SliceInstructionKind.Fork && remaining >= candidatePlan.MinRequiredLength &&
@@ -598,12 +609,15 @@ internal static partial class Utf8SliceRunner
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
             invocation.Budget.ThrowIfCancellationRequested();
-            if (MayMatchAdmittedCandidate(program, input, fromByte, 0, out var acceptedEnd, proveMatch: true))
+            if (MayMatchAdmittedCandidate(program, input, fromByte, 0, out var acceptedEnd, emitted,
+                ref interpretedVisits, proveMatch: true))
             {
                 if (acceptedEnd >= 0)
                 {
                     breach = invocation.TryChargeInputStep();
                     invocation.Budget.ThrowIfCancellationRequested();
+                    if (interpretedVisits > 0 && breach == Utf8ExecutionLimitKind.None)
+                        program.ObserveProofWork(interpretedVisits);
                     return breach == Utf8ExecutionLimitKind.None
                         ? new(true, fromByte, acceptedEnd, breach) : new(false, -1, -1, breach);
                 }
@@ -615,8 +629,13 @@ internal static partial class Utf8SliceRunner
             fromByte++;
         }
 
-        return TryFindFirstByCandidateSearch(program, input, fromByte, captureStarts, captureEnds, collectHistory,
-            ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral, seekBeginning, first);
+        var outcome = TryFindFirstByCandidateSearch(program, input, fromByte, captureStarts, captureEnds, collectHistory,
+            ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral, seekBeginning, first,
+            emitted, ref interpretedVisits);
+        // Publish once after the admitted search, including a scan of many candidates.
+        if (interpretedVisits > 0 && outcome.Breach == Utf8ExecutionLimitKind.None)
+            program.ObserveProofWork(interpretedVisits);
+        return outcome;
     }
 
     private static Utf8SliceSearchOutcome TryFindFirstAtSingleOrigin(
@@ -664,10 +683,10 @@ internal static partial class Utf8SliceRunner
             var emitted = seekBeginning && fromByte == 0 ? program.EmittedMatch : null;
             var tiered = false;
             if (emitted is null && seekBeginning && fromByte == 0 && proofStart == 1 &&
-                (program.ObservesAbsoluteProofWork || program.TieredAbsoluteProof is not null) &&
+                (program.ObservesProofWork || program.TieredProof is not null) &&
                 invocation.CheckpointHook is null && invocation.IsUnmetered)
             {
-                emitted = program.TieredAbsoluteProof;
+                emitted = program.TieredProof;
                 tiered = emitted is null;
             }
             if (emitted is not null)
@@ -693,7 +712,7 @@ internal static partial class Utf8SliceRunner
                 breach = invocation.TryChargeInputStep();
                 invocation.Budget.ThrowIfCancellationRequested();
                 if (breach == Utf8ExecutionLimitKind.None && visits != 0)
-                    program.ObserveAbsoluteProofWork(visits);
+                    program.ObserveProofWork(visits);
                 return possible && breach == Utf8ExecutionLimitKind.None
                     ? new(true, fromByte, acceptedEnd, breach)
                     : new(false, -1, -1, breach);
@@ -757,7 +776,8 @@ internal static partial class Utf8SliceRunner
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
         scoped Span<int> captureStarts, scoped Span<int> captureEnds, bool collectHistory,
         ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan,
-        bool existenceOnly, int screenedLiteral, bool seekBeginning, in Utf8SliceInstruction first)
+        bool existenceOnly, int screenedLiteral, bool seekBeginning, in Utf8SliceInstruction first,
+        Utf8BoundedProgramEmitter.Match? emitted, ref int interpretedVisits)
     {
         var (leading, leadingLast, second, secondLast, leadingScalarIndex, fromBranch, sparsePair) = program.LeadingByteCandidate;
         var includeKelvin = leading == 'K' && program.LeadingByteAdmitsKelvin;
@@ -1056,10 +1076,11 @@ internal static partial class Utf8SliceRunner
                 if (rejectedSuffix != NoBranchSuffixCheck &&
                     RejectRequiredBranchLiteralSuffix(program, input, position, ref rejectedSuffix, ref proofLimit))
                     continue;
-                if (!MayMatchAdmittedCandidate(program, input, proofPosition, proofStart, out var acceptedEnd, proveMatch, proofLimit))
+                if (!MayMatchAdmittedCandidate(program, input, proofPosition, proofStart, out var acceptedEnd,
+                    emitted, ref interpretedVisits, proveMatch, proofLimit))
                 {
                     // Keep the full proof allowance for a compiled candidate.
-                    if (rejectedSuffix == NoBranchSuffixCheck && proveBranchedMatch && program.EmittedMatch is null &&
+                    if (rejectedSuffix == NoBranchSuffixCheck && proveBranchedMatch && emitted is null &&
                         program.RequiredBranchLiteral.Min != 0 && input.Length - position <= 64)
                         rejectedSuffix = -1;
                     var remainingDigits = classWindowEnd - position;
