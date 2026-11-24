@@ -122,7 +122,8 @@ internal struct Utf8InvocationResultBuffer<T>
     {
         var control = new Utf8InvocationBufferControl(ref invocation);
         Utf8InvocationOutput.Checkpoint(control);
-        Utf8SliceBufferWork.ChargeResultBytes(_items.PendingGrowthBytes, ref invocation);
+        var growthBytes = _items.PendingGrowthBytes;
+        if (growthBytes != 0) Utf8SliceBufferWork.ChargeResultBytes(growthBytes, ref invocation);
         var breach = _items.TryPush(value, control);
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException($"Owned result staging exceeded {breach}.");
