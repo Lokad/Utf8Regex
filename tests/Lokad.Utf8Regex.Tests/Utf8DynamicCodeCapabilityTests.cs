@@ -125,6 +125,7 @@ public sealed class Utf8DynamicCodeCapabilityTests
     [InlineData(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])",
         "012.200.033.199", "012.200.033.1AA", 0)]
     [InlineData(@"(\d{4}[- ]){3}\d{3,4}", "1234-5678-1234-456", "1234-5678-1234-45X", 3)]
+    [InlineData(@"(\d{4}[- ]){3}\d{3,4}", "𝟙2٣4-5678-1234-𝟜5٦", "1234-5678-1234-45X", 3)]
     public void OrdinaryCandidateProofTiersUpAndKeepsByteRanges(string pattern, string value, string miss, int captures)
     {
         using var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
@@ -142,7 +143,7 @@ public sealed class Utf8DynamicCodeCapabilityTests
         Assert.Equal(expected, regex.Match(later));
         for (var i = 0; i < 131_072 && program.ObservesProofWork; i++)
         {
-            if (!regex.IsMatch(hit)) throw new InvalidOperationException("Expected a match.");
+            if (!regex.IsMatch(later)) throw new InvalidOperationException("Expected a later match.");
         }
 
         Assert.Equal(dynamicCode, program.TieredProof is not null);

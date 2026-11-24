@@ -2579,9 +2579,10 @@ internal static partial class Utf8SliceRunner
             {
                 var remaining = instructionLimit;
                 var end = ProbeBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch: true);
-                if (end != BranchedPrefixUndecided)
-                    interpretedVisits = Math.Min(Utf8SliceProgram.ProofTierThreshold,
-                        interpretedVisits + instructionLimit - remaining);
+                // The emitted proof can replace this walk even if the
+                // interpreter leaves its outcome to the general matcher.
+                interpretedVisits = Math.Min(Utf8SliceProgram.ProofTierThreshold,
+                    interpretedVisits + instructionLimit - remaining);
                 acceptedEnd = Math.Max(BranchedPrefixUndecided, end);
                 return end != BranchedPrefixRejected;
             }
