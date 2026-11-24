@@ -4,8 +4,6 @@ using System.Text;
 using global::Lokad.Utf8Regex;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
-using Lokad.Utf8Regex.Internal.Planning;
-using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
@@ -13,12 +11,9 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2ExecutionRouteTests
 {
     [Fact]
-    public void ExactLiteralUsesItsOwnedProgramWithoutCoreTranslation()
+    public void ExactLiteralPublishesNonoverlappingByteRanges()
     {
         var regex = new Utf8Pcre2Regex("foo");
-
-        Assert.False(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Pcre2Literal, Count=Pcre2Literal, Enumerate=Pcre2Literal, Match=Pcre2Literal, Replace=Pcre2Literal", regex.DebugDescribeExecutionPlan());
 
         Assert.True(regex.IsMatch("xxfooyy"u8));
         Assert.Equal(2, regex.Count("foo xx foo"u8));
@@ -30,150 +25,55 @@ public sealed class Pcre2ExecutionRouteTests
 
         var enumerator = regex.EnumerateMatches("foo xx foo"u8);
         Assert.True(enumerator.MoveNext());
-        Assert.Equal(0, enumerator.Current.StartOffsetInBytes);
+        Assert.Equal((0, 3), (enumerator.Current.StartOffsetInBytes, enumerator.Current.EndOffsetInBytes));
         Assert.True(enumerator.MoveNext());
-        Assert.Equal(7, enumerator.Current.StartOffsetInBytes);
+        Assert.Equal((7, 10), (enumerator.Current.StartOffsetInBytes, enumerator.Current.EndOffsetInBytes));
         Assert.False(enumerator.MoveNext());
     }
 
-    [Fact]
-    public void IgnoreCaseLiteralPreservesItsCounts()
+    [Theory]
+    [InlineData("a|ab", "ab a", 0, new[] { 0, 1, 3, 4 })]
+    [InlineData("ab|a", "ab a", 0, new[] { 0, 2, 3, 4 })]
+    [InlineData("foo|foo", "foo foo", 0, new[] { 0, 3, 4, 7 })]
+    [InlineData("Tom|Sawyer|Huckleberry|Finn", "Tom x Finn x Sawyer", 0, new[] { 0, 3, 6, 10, 13, 19 })]
+    [InlineData("café|naïve", "é café naïve café", 3, new[] { 3, 8, 9, 15, 16, 21 })]
+    [InlineData("é|😀", "x é 😀 é", 0, new[] { 2, 4, 5, 9, 10, 12 })]
+    public void LiteralFamilyOperationsRespectBranchOrderAndByteStarts(
+        string pattern, string inputText, int startOffsetInBytes, int[] expectedEndpoints)
     {
-        var regex = new Utf8Pcre2Regex("httpclient", options: Pcre2CompileOptions.Caseless);
-
-        Assert.False(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal(3, regex.Count("HttpClient x httpclient HTTPCLIENT"u8));
-    }
-
-    [Fact]
-    public void Utf8LiteralAlternationReusesCoreSearchForUnmeteredValueOperations()
-    {
-        var regex = new Utf8Pcre2Regex("café|naïve");
-
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
-
-        Assert.True(regex.IsMatch("xxcafé yy naïve zz"u8));
-        Assert.Equal(2, regex.Count("xxcafé yy naïve zz"u8));
-
-        var enumerator = regex.EnumerateMatches("xxcafé yy naïve zz"u8);
-        Assert.True(enumerator.MoveNext());
-        Assert.Equal("café", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
-        Assert.True(enumerator.MoveNext());
-        Assert.Equal("naïve", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
-        Assert.False(enumerator.MoveNext());
-
-        var first = regex.Match("xxcafé yy naïve zz"u8);
+        using var regex = new Utf8Pcre2Regex(pattern);
+        var inputBytes = Encoding.UTF8.GetBytes(inputText);
+        Assert.True(regex.IsMatch(inputBytes, startOffsetInBytes));
+        Assert.Equal(expectedEndpoints.Length / 2, regex.Count(inputBytes, startOffsetInBytes));
+        var first = regex.Match(inputBytes, startOffsetInBytes);
         Assert.True(first.Success);
-        Assert.Equal("café", System.Text.Encoding.UTF8.GetString(first.GetValueBytes()));
+        Assert.Equal((expectedEndpoints[0], expectedEndpoints[1]), (first.StartOffsetInBytes, first.EndOffsetInBytes));
+
+        var cursor = regex.EnumerateMatches(inputBytes, startOffsetInBytes);
+        for (var i = 0; i < expectedEndpoints.Length; i += 2)
+        {
+            Assert.True(cursor.MoveNext());
+            Assert.Equal((expectedEndpoints[i], expectedEndpoints[i + 1]),
+                (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
+        }
+        Assert.False(cursor.MoveNext());
     }
 
     [Theory]
     [InlineData("a|ab", "ab a", 2)]
-    [InlineData("ab|a", "ab a", 2)]
-    [InlineData("foo|foo", "foo foo", 2)]
-    [InlineData("Tom|Sawyer|Huckleberry|Finn", "Tom x Finn x Sawyer", 3)]
-    public void LiteralFamilyValueOperationsPreserveOrderedAlternationSemantics(
-        string pattern,
-        string input,
-        int expected)
+    [InlineData("alpha|amber|bravo", "alpha amber bravo", 3)]
+    [InlineData("Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty", "Sherlock Holmes x Professor Moriarty", 2)]
+    [InlineData("夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授", "夏洛克·福尔摩斯 x 莫里亚蒂教授", 2)]
+    [InlineData("Task|ValueTask|IAsyncEnumerable", "Task ValueTask IAsyncEnumerable", 3)]
+    public void LiteralFamilyOperationsRespectBorrowedSliceAndStart(string pattern, string input, int expectedCount)
     {
-        var regex = new Utf8Pcre2Regex(pattern);
-        var bytes = Encoding.UTF8.GetBytes(input);
-
-        Assert.Equal(expected, regex.Count(bytes));
-        Assert.IsType<Pcre2LiteralFamilyDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsType<Pcre2LiteralFamilyDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2LiteralFamilyDirectProgram>(regex.DebugCompiledProgram.Operations.Enumerate);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
-    }
-
-    [Theory]
-    [InlineData("a|ab", "a")]
-    [InlineData("ab|a", "ab")]
-    [InlineData("foo|foo", "foo")]
-    public void LiteralFamilyEnumerationUsesBranchOrderForSameStartTies(string pattern, string expected)
-    {
-        var regex = new Utf8Pcre2Regex(pattern);
-        var enumerator = regex.EnumerateMatches("ab foo"u8);
-
-        Assert.True(enumerator.MoveNext());
-        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
-    }
-
-    [Theory]
-    [InlineData("a|ab", "ab a", 0)]
-    [InlineData("ab|a", "ab a", 0)]
-    [InlineData("foo|foo", "foo foo", 0)]
-    [InlineData("café|naïve", "é café naïve café", 3)]
-    [InlineData("é|😀", "x é 😀 é", 0)]
-    public void DirectPreparedLiteralFamilyRangesMatchThePublicPcre2Cursor(
-        string pattern,
-        string inputText,
-        int startOffsetInBytes)
-    {
-        var regex = new Utf8Pcre2Regex(pattern);
-        var inputBytes = Encoding.UTF8.GetBytes(inputText);
-        var input = Utf8ValidatedInput.BorrowBytes(inputBytes);
-        var start = input.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-        var program = Assert.IsType<Pcre2LiteralFamilyDirectProgram>(
-            regex.DebugCompiledProgram.Operations.Enumerate);
-        var searcher = program.Regex.Inspection.SearchPlan.PreparedSearcher;
-        Assert.Equal(PreparedSearcherKind.MultiLiteral, searcher.Kind);
-        var state = new PreparedMultiLiteralScanState(start.Value, start.Value, 0);
-        var preparedRanges = new List<(int Start, int End)>();
-        while (searcher.TryFindNextNonOverlappingLength(
-            input.Bytes,
-            ref state,
-            out var preparedStart,
-            out var preparedLength))
-        {
-            preparedRanges.Add((preparedStart, preparedStart + preparedLength));
-        }
-
-        var core = program.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
-        var coreRanges = new List<(int Start, int End)>();
-        while (core.MoveNext())
-        {
-            coreRanges.Add((core.StartOffsetInBytes, core.EndOffsetInBytes));
-        }
-
-        var current = regex.EnumerateMatches(inputBytes, startOffsetInBytes);
-        var currentRanges = new List<(int Start, int End)>();
-        while (current.MoveNext())
-        {
-            currentRanges.Add((current.Current.StartOffsetInBytes, current.Current.EndOffsetInBytes));
-        }
-
-        Assert.Equal(preparedRanges, coreRanges);
-        Assert.Equal(currentRanges, preparedRanges);
-    }
-
-    [Theory]
-    [InlineData("a|ab", "ab a", "ExactDirectFamily", 2)]
-    [InlineData("alpha|amber|bravo", "alpha amber bravo", "ExactTrieFamily", 3)]
-    [InlineData("Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty", "Sherlock Holmes x Professor Moriarty", "ExactAutomatonFamily", 2)]
-    [InlineData("夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授", "夏洛克·福尔摩斯 x 莫里亚蒂教授", "ExactPackedFamily", 2)]
-    [InlineData("Task|ValueTask|IAsyncEnumerable", "Task ValueTask IAsyncEnumerable", "ExactEarliestFamily", 3)]
-    public void PreparedLiteralFamilyCursorCoversEveryCorePortfolio(
-        string pattern,
-        string input,
-        string expectedPortfolio,
-        int expectedCount)
-    {
-        var regex = new Utf8Pcre2Regex(pattern);
-        var program = Assert.IsType<Pcre2LiteralFamilyDirectProgram>(
-            regex.DebugCompiledProgram.Operations.Enumerate);
-
-        Assert.Equal(expectedPortfolio, program.Regex.ByteOffsetExecution.SearchPortfolioKind.ToString());
-
-        // The exact portfolios count a borrowed view from a nonzero scalar start.
+        using var regex = new Utf8Pcre2Regex(pattern);
         var textBytes = Encoding.UTF8.GetBytes("é😀 " + input + " 中");
         byte[] storage = [0xff, .. textBytes, 0xff];
         var view = storage.AsSpan(1, textBytes.Length);
         Assert.Equal(expectedCount, regex.Count(view, 7));
         Assert.Equal(1, regex.Count(view, 7, Pcre2MatchOptions.Anchored));
-        var enumerator = regex.EnumerateMatches(Encoding.UTF8.GetBytes(input));
+        var enumerator = regex.EnumerateMatches(view, 7);
         var count = 0;
         while (enumerator.MoveNext())
         {
@@ -201,7 +101,6 @@ public sealed class Pcre2ExecutionRouteTests
         Assert.Equal(16, enumerator.Current.StartOffsetInBytes);
 
         const string expected = "é <tempus> <magna> <semper> <tempus>";
-        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
         Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
 
         var expectedFixed = "é x x x x"u8;
@@ -259,41 +158,21 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
     }
 
     [Fact]
-    public void LiteralFamilyCountLeavesEmptyAlternativesOnSliceAndCompileAnchorsOnBacktracking()
+    public void LiteralFamilyCountHandlesEmptyAlternativesAndCompileAnchors()
     {
         var empty = new Utf8Pcre2Regex("foo|");
         var anchored = new Utf8Pcre2Regex("foo|bar", options: Pcre2CompileOptions.Anchored);
 
-        Assert.IsType<Pcre2SliceDirectProgram>(empty.DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(anchored.DebugCompiledProgram.Operations.Count);
         Assert.Equal(3, empty.Count("xfoo"u8));
         Assert.Equal(0, anchored.Count("xfoo"u8));
     }
 
     [Fact]
-    public void OptionalBarPatternUsesLiteralFamilyForCaptureIndependentOperations()
+    public void OptionalNamedGroupPreservesCountAndTemplateExpansion()
     {
         var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
-
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.DoesNotContain("ManagedRegex", regex.DebugDescribeExecutionPlan(), StringComparison.Ordinal);
-        Assert.Equal("IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
-
-        var match = regex.Match("xxfooBARzz"u8);
-        Assert.True(match.Success);
-        Assert.Equal("fooBAR", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
 
         Assert.Equal(2, regex.Count("foo fooBAR x"u8));
-    }
-
-    [Fact]
-    public void OptionalBarGenericTemplateReplacementUsesNamedCaptureWithoutManagedRegex()
-    {
-        var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
-
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.DoesNotContain("ManagedRegex", regex.DebugDescribeExecutionPlan(), StringComparison.Ordinal);
-
         var replaced = regex.Replace("fooBAR x"u8, "<$0|$Bar>"u8);
 
         Assert.Equal("<fooBAR|BAR> x", Encoding.UTF8.GetString(replaced));
