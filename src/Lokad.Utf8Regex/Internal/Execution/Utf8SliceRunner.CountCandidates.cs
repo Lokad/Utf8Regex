@@ -1578,6 +1578,16 @@ internal static partial class Utf8SliceRunner
         // An unobserved opening capture does not change the repeat.
         var proofStart = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, 1);
         var index = proofStart;
+        if (code.Length <= 32 && (uint)index < (uint)code.Length &&
+            code[index] is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0 or 2, C: 0 } or
+                           { Kind: Utf8SliceInstructionKind.Set, B: 0 })
+        {
+            budget.ChargeWork((ulong)Math.Min(code.Length - index, 2 + Utf8SliceInstruction.LeadingCaptureMarkerLimit));
+            var afterClass = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, index + 1);
+            if (afterClass < code.Length && code[afterClass] is { Kind: Utf8SliceInstructionKind.RepeatGreedy } captured &&
+                code[captured.A].RepeatExitUnobservedDecimal)
+                return 1;
+        }
         if (index < code.Length && code[index] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: not 0 })
         {
             budget.ChargeWork(1);
@@ -1627,6 +1637,18 @@ internal static partial class Utf8SliceRunner
                     continue;
                 case Utf8SliceInstructionKind.Set:
                     break;
+                case Utf8SliceInstructionKind.CategorySet when proveMatch:
+                    // An explicit ASCII member is sufficient when no class
+                    // program overrides the mask. Other scalars need the VM.
+                    if (position < input.Length && input[position] is < 128 and var ascii &&
+                        entry is { B: 0 or 2, C: 0 } &&
+                        (program.SetMasks[entry.A][ascii >> 3] & (1 << (ascii & 7))) != 0 &&
+                        program.CategorySetMembers[entry.D] is [{ Table.ClassProgram: null }])
+                    {
+                        position++;
+                        continue;
+                    }
+                    return BranchedPrefixUndecided;
                 case Utf8SliceInstructionKind.Accept:
                     return proveMatch ? position : BranchedPrefixUndecided;
                 case Utf8SliceInstructionKind.CaptureStart:
@@ -1738,6 +1760,16 @@ internal static partial class Utf8SliceRunner
                 case Utf8SliceInstructionKind.RepeatLazy:
                     var minimum = entry.RepeatMinimum;
                     var singleAtom = entry.HasSingleAtomBody;
+                    if (!singleAtom && proveMatch && entry.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
+                        code[entry.A].RepeatExitUnobservedDecimal)
+                    {
+                        var end = TryMatchPrefixRepeat(program, input, position, index + 1, in entry, ref remaining,
+                            out var continueProof);
+                        if (!continueProof) return end == BranchedPrefixUnhandledRepeat ? BranchedPrefixUndecided : end;
+                        position = end;
+                        index = entry.A + 1;
+                        continue;
+                    }
                     if (singleAtom && minimum == 0 && entry.RepeatMaximum == 1 && code[index] is var optionalAtom &&
                         optionalAtom is ({ Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } or
                             { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
@@ -1894,7 +1926,8 @@ internal static partial class Utf8SliceRunner
         var continuation = repeat.A + 1;
         var repeatMaximum = repeat.RepeatMaximum;
         if (atom.IsDecimalDigitSet && repeatMaximum == long.MaxValue && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
-            input.Length - position <= Math.Min(32, remaining) && program.SkipsTerminalRewind(atomIndex - 1))
+            input.Length - position <= Math.Min(32, remaining) &&
+            (program.SkipsTerminalRewind(atomIndex - 1) || program.Instructions[repeat.A].RepeatExitUnobservedDecimal))
         {
             // Only a proved greedy endpoint can continue. A wider scalar
             // may still be a decimal digit and needs the original scalar VM.
