@@ -240,6 +240,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
     [InlineData("😀11/18/٢²😀", -1, -1)]
     [InlineData("😀11/18/20٢٦٥!", -1, -1)]
     [InlineData(" 1/𝟙/٢٠٢٦!", 1, 16)]
+    [InlineData(" 𝟙1/18/2026.", 1, 14)]
     public void MixedDecimalRangeUsesBoundedProof(string text, int start, int end)
     {
         using var source = new CancellationTokenSource();

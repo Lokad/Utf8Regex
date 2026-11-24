@@ -1086,54 +1086,73 @@ internal static partial class Utf8SliceRunner
         ReadOnlySpan<byte> input, int position, byte delimiter, int delimiterInstruction,
         in Utf8SliceInstruction boundary, ref Utf8SliceInvocation invocation)
     {
-        var count = 0;
         var workspace = new AttemptWorkspace();
         try
         {
-            while (true)
-            {
-                var breach = TrySeekDecimalLiteralWindow(program, input, delimiter, ref position, ref invocation,
-                    out var windowEnd, verifiedNextDelimiter: -1, verifyFollowingWindow: true, out var followingEnd);
-                if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
-                if (position < 0) return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
-                if (position >= windowEnd)
-                {
-                    position = windowEnd + 1;
-                    continue;
-                }
-
-                breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
-                invocation.Budget.ThrowIfCancellationRequested();
-                var proofPosition = followingEnd > 0 ? followingEnd : windowEnd;
-                var proofStart = followingEnd > 0 ? program.FollowingDecimalContinuation : delimiterInstruction;
-                var proofLimit = followingEnd > 0
-                    ? BranchedPrefixInstructionLimit - program.FollowingDecimalLiteralWindow.Max - 3
-                    : BranchedPrefixInstructionLimit;
-                if (!MatchesBoundary(program, boundary, input, position) ||
-                    !MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out var provedEnd,
-                        proveMatch: true, instructionLimit: proofLimit))
-                {
-                    // No interior start has a word boundary within a decimal run.
-                    position = windowEnd + 1;
-                    continue;
-                }
-
-                var outcome = provedEnd >= 0
-                    ? new Utf8SliceMatchOutcome(true, provedEnd, invocation.TryReserveWorking(0))
-                    : TryMatchAt(program, input, position, [], [], false, false, true, ref workspace, ref invocation);
-                if (outcome.Breach != Utf8ExecutionLimitKind.None) return new(count, outcome.Breach);
-                invocation.Budget.ThrowIfCancellationRequested();
-                if (outcome.IsMatch)
-                {
-                    count++;
-                    position = outcome.EndIndex;
-                    invocation.AnchorOriginByte = position;
-                }
-                else position = windowEnd + 1;
-            }
+            var outcome = ScanAlignedDecimalWindows(program, input, position, delimiter, delimiterInstruction, boundary,
+                ref workspace, ref invocation, countAll: true, existenceOnly: false, out var count);
+            return new(count, outcome.Breach);
         }
         finally { workspace.Release(ref invocation); }
+    }
+
+    private static Utf8SliceSearchOutcome ScanAlignedDecimalWindows(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, byte delimiter, int delimiterInstruction,
+        in Utf8SliceInstruction boundary, ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation,
+        bool countAll, bool existenceOnly, out int count)
+    {
+        count = 0;
+        var nextDelimiter = -1;
+        while (true)
+        {
+            var breach = TrySeekDecimalLiteralWindow(program, input, delimiter, ref position, ref invocation,
+                out var windowEnd, nextDelimiter, verifyFollowingWindow: true, out var followingEnd);
+            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+            if (position < 0)
+                return new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+            nextDelimiter = -1;
+            if (position >= windowEnd)
+            {
+                position = windowEnd + 1;
+                continue;
+            }
+
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (!MatchesBoundary(program, boundary, input, position))
+            {
+                // No interior start has a word boundary within a decimal run.
+                position = windowEnd + 1;
+                continue;
+            }
+
+            var proofPosition = followingEnd > 0 ? followingEnd : windowEnd;
+            var proofStart = followingEnd > 0 ? program.FollowingDecimalContinuation : delimiterInstruction;
+            var proofLimit = followingEnd > 0
+                ? BranchedPrefixInstructionLimit - program.FollowingDecimalLiteralWindow.Max - 3
+                : BranchedPrefixInstructionLimit;
+            if (!MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out var provedEnd,
+                proveMatch: true, instructionLimit: proofLimit))
+            {
+                if (!countAll && followingEnd > 0 && program.FollowingDecimalLiteralWindow.Literal == delimiter)
+                    nextDelimiter = followingEnd - 1;
+                position = windowEnd + 1;
+                continue;
+            }
+
+            var outcome = provedEnd >= 0
+                ? new Utf8SliceMatchOutcome(true, provedEnd,
+                    countAll ? invocation.TryReserveWorking(0) : invocation.TryChargeInputStep())
+                : TryMatchAt(program, input, position, [], [], false, false, true, ref workspace, ref invocation, existenceOnly);
+            if (outcome.Breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, outcome.Breach);
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (!outcome.IsMatch) { position = windowEnd + 1; continue; }
+            if (!countAll) return new(true, position, outcome.EndIndex, Utf8ExecutionLimitKind.None);
+            count++;
+            position = outcome.EndIndex;
+            invocation.AnchorOriginByte = position;
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

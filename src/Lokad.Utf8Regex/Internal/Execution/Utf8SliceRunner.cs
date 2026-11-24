@@ -553,6 +553,23 @@ internal static partial class Utf8SliceRunner
             return TryFindFirstAtSingleOrigin(program, input, fromByte, captureStarts, captureEnds, collectHistory,
                 ref workspace, ref invocation, existenceOnly, first, seekBeginning, seekVeryEnd);
 
+        if (program.FollowingDecimalContinuation != 0 && !reverse && !program.IgnoreCase && !program.HasContiguousAnchor &&
+            !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
+            first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1, B: (int)Utf8SliceWordKind.Unicode, C: 0 } &&
+            screenedLiteral < fromByte && candidatePlan.LiteralUtf8 is [var delimiter] &&
+            !Utf8AsciiBytePredicates.IsDigit(delimiter) &&
+            program.LeadingClassDelimiter is { LeadingClass: 2, LiteralIndex: 5, GapMaximum: 0, Direct: true } window &&
+            window.Literal == delimiter && program.Instructions[1].RepeatMinimum == 1 && program.SkipsTerminalRewind(1))
+        {
+            if (invocation.Ledger.ReservedBytes != 0)
+            {
+                var admission = invocation.TryReserveWorking(0);
+                if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
+            }
+            return ScanAlignedDecimalWindows(program, input, fromByte, delimiter, window.LiteralIndex, first,
+                ref workspace, ref invocation, countAll: false, existenceOnly, out _);
+        }
+
         if (remaining is > 0 and <= 32 && !reverse && !program.IgnoreCase && !program.HasContiguousAnchor &&
             !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
             first.Kind == Utf8SliceInstructionKind.Fork && remaining >= candidatePlan.MinRequiredLength &&
