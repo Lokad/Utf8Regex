@@ -114,6 +114,30 @@ public sealed class Pcre2FundedProgramTests
         Assert.True(owner.IsMatch("aaab"u8, workingMemoryAllowance: working)); Assert.Equal(0UL, working.Used);
     }
 
+    [Fact]
+    public void NullableCountRefundsScratchOnCompletionAndCancellation()
+    {
+        var account = new Account(new Root());
+        Assert.True(account.TryReserve(7));
+        using var regex = new Utf8Pcre2Regex("((?:ab|cd)*?)");
+        using var source = new CancellationTokenSource();
+
+        Assert.Equal(9, regex.Count("éabcd😀ab"u8, workingMemoryAllowance: account));
+        Assert.Equal(7UL, account.Used);
+        Assert.True(account.Peak > 7);
+
+        var cancelOnGrant = account.Attempts + 2;
+        account.AfterGrant = () =>
+        {
+            if (account.Attempts == cancelOnGrant) source.Cancel();
+        };
+        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>
+            regex.Count("éabcd😀ab"u8, cancellationToken: source.Token, workingMemoryAllowance: account)).CancellationToken);
+        Assert.Equal(7UL, account.Used);
+        account.Release(7);
+        Assert.Equal(0UL, account.Used);
+    }
+
     [Theory] [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void NumericDenialsRetainPcre2ErrorVocabulary(int kind)
     {

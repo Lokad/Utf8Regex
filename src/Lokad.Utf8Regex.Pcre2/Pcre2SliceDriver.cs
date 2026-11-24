@@ -9,20 +9,10 @@ using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
-// R02a slice execution for the PCRE2 profile on the shared primary-library
-// runner. Global progression (byte search order, same-position non-empty
-// retry, scalar advance) stays PCRE2-owned; every attempt runs
-// Utf8SliceRunner.TryMatchAt under one cumulative invocation built from the
-// request limits, timeout, and live token. Limit breaches and deadline expiry
-// surface with the established PCRE2 failure vocabulary. Non-None match
-// options decline to the shell backtracking fallback at the dispatch site.
-// R02a lazy slice enumeration for the PCRE2 profile. One cursor owns a
-// cumulative invocation across MoveNext calls (budgets accumulate through
-// lazy enumeration with no reset); every step rents and releases its slots
-// in a finally block, so an abandoned cursor retains no ledger reservations.
-// Global progression mirrors the census driver: PCRE2 same-position
-// non-empty retry on empty matches, scalar advance otherwise, byte steps
-// on misses. One-shot search borrows the same candidate scan.
+// The cursor owns PCRE2 progression and runs each attempt through the shared
+// scalar matcher under one cumulative invocation. Enumeration refunds its
+// scratch at every step so aliases and abandoned cursors hold no working loan.
+// Synchronous Count can reuse its scratch across steps and refund it on return.
 internal ref struct Pcre2SliceGlobalMatchCursor
 {
     private readonly Utf8SliceProgram _program;
@@ -84,11 +74,42 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         if (ownsSlots)
             slots = _disjointClassDelimiter >= 0 ? new Utf8SliceSlots([], []) :
                 Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation);
+        var workspace = new Utf8SliceRunner.AttemptWorkspace();
         bool moved;
-        try { moved = MoveNextCore(slots); }
-        finally { if (ownsSlots) Utf8SliceRunner.ReleaseSlots(slots, ref _invocation); }
+        try { moved = MoveNextCore(slots, ref workspace); }
+        finally
+        {
+            try { workspace.Release(ref _invocation); }
+            finally { if (ownsSlots) Utf8SliceRunner.ReleaseSlots(slots, ref _invocation); }
+        }
         Pcre2SliceDriver.CheckInvocation(ref _invocation);
         return moved;
+    }
+
+    internal int CountRemaining()
+    {
+        Pcre2SliceDriver.CheckInvocation(ref _invocation);
+        var slots = _program.ReadsCaptures
+            ? Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation)
+            : new Utf8SliceSlots([], []);
+        // A synchronous Count can hold one admitted workspace until it returns.
+        var workspace = new Utf8SliceRunner.AttemptWorkspace();
+        var count = 0;
+        try
+        {
+            while (MoveNextCore(slots, ref workspace))
+            {
+                Pcre2SliceDriver.CheckInvocation(ref _invocation);
+                count = checked(count + 1);
+            }
+        }
+        finally
+        {
+            try { workspace.Release(ref _invocation); }
+            finally { Utf8SliceRunner.ReleaseSlots(slots, ref _invocation); }
+        }
+        Pcre2SliceDriver.CheckInvocation(ref _invocation);
+        return count;
     }
 
     internal Pcre2GroupData ProjectCurrent()
@@ -99,13 +120,10 @@ internal ref struct Pcre2SliceGlobalMatchCursor
             Current.EndOffsetInBytes, ref _input, new Pcre2ResultControl(ref _invocation));
     }
 
-    private bool MoveNextCore(Utf8SliceSlots slots)
+    private bool MoveNextCore(Utf8SliceSlots slots, scoped ref Utf8SliceRunner.AttemptWorkspace workspace)
     {
         // Each MoveNext call is one scan: pin \\G to the entry position.
         _invocation.AnchorOriginByte = _position;
-        // Reuse admitted scratch across candidates in this scan. It never
-        // escapes the call, so copied or abandoned cursors retain no workspace.
-        var workspace = new Utf8SliceRunner.AttemptWorkspace();
         try
         {
             var bytes = _input.Bytes;
@@ -152,7 +170,6 @@ internal ref struct Pcre2SliceGlobalMatchCursor
                 "The PCRE2 match deadline expired.",
                 Pcre2ErrorKind.Timeout);
         }
-        finally { workspace.Release(ref _invocation); }
     }
 
 }
@@ -376,16 +393,7 @@ internal static class Pcre2SliceDriver
 
         var cursor = new Pcre2SliceGlobalMatchCursor(
             program, invocation, input, start, request);
-        // Empty retries need the same capture reads as ordinary attempts.
-        // Count can omit slots when the program does not read them.
-        Utf8SliceSlots countSlots = program.ReadsCaptures ? default : new([], []);
-        var count = 0;
-        while (cursor.MoveNext(countSlots))
-        {
-            count = checked(count + 1);
-        }
-
-        return count;
+        return cursor.CountRemaining();
     }
 
     private static int CountWithDelimiterWindows(Pcre2SliceDirectProgram slice, ReadOnlySpan<byte> input, int position,
