@@ -62,10 +62,42 @@ public sealed class Utf8FundedCountFactsTests
         Assert.Equal(0UL, account.Used);
     }
 
-    private sealed class Account : IUtf8MemoryAllowance
+    [Fact]
+    public void CyclicOrderedRangeAndCountUseOnlyTheirRequiredRows()
+    {
+        const string pattern = @"(?:ab|a)+[yz]";
+        const ulong rowBytes = 2 * 9 * sizeof(int);
+        var input = Encoding.UTF8.GetBytes(new string('a', 8192) + "x!aay");
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled, new() { ResourcePolicy = Limits });
+        var funded = new Account(rowBytes + 7);
+        Assert.True(funded.TryReserve(7));
+        var match = regex.Match(input, workingMemoryAllowance: funded);
+        Assert.Equal((8194, 8197), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.Equal(7UL, funded.Used);
+        Assert.Equal(1, regex.Count(input, workingMemoryAllowance: funded));
+        Assert.Equal(7UL, funded.Used);
+        funded.Release(7);
+
+        var tight = new Account(rowBytes - 1);
+        Assert.Equal(rowBytes, Assert.Throws<Utf8MemoryAdmissionException>(
+            () => regex.Match(input, workingMemoryAllowance: tight)).RequestedBytes);
+        Assert.Equal(rowBytes, Assert.Throws<Utf8MemoryAdmissionException>(
+            () => regex.Count(input, workingMemoryAllowance: tight)).RequestedBytes);
+        Assert.Equal(0UL, tight.Used);
+
+        using var scalar = new Utf8Regex(pattern, RegexOptions.Compiled,
+            new() { ResourcePolicy = Limits with { MaxWorkingBytes = 1 } });
+        var early = Encoding.UTF8.GetBytes("aay!" + new string('!', 300));
+        var small = new Account(1);
+        Assert.Equal(3, scalar.Match(early, workingMemoryAllowance: small).EndOffsetInBytes);
+        Assert.Equal(1, scalar.Count(early, workingMemoryAllowance: small));
+        Assert.Equal(0UL, small.Used);
+    }
+
+    private sealed class Account(ulong capacity = 1 << 20) : IUtf8MemoryAllowance
     {
         internal ulong Used;
-        public bool TryReserve(ulong bytes) { if (bytes > (1UL << 20) - Used) return false; Used += bytes; return true; }
+        public bool TryReserve(ulong bytes) { if (bytes > capacity - Used) return false; Used += bytes; return true; }
         public void Release(ulong bytes) { Assert.InRange(bytes, 0UL, Used); Used -= bytes; }
     }
 }

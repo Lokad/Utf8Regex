@@ -345,7 +345,8 @@ internal static partial class Utf8SliceRunner
     private static bool CanAdmitOrderedRows(Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
     {
         ref var ledger = ref invocation.Ledger;
-        if (ledger.HasMemoryAllowance && !program.IsNonBacktracking && program.RepeatCount == 0) return false;
+        if (ledger.HasMemoryAllowance && !program.IsNonBacktracking &&
+            program.RepeatCount == 0 && program.NonBacktrackingOrderedForwardOnly) return false;
         var cap = invocation.Budget.Limits.MaxWorkingBytes;
         if (cap == 0) return true;
         // Both rows are required. The range transition table is optional.
@@ -688,7 +689,10 @@ internal static partial class Utf8SliceRunner
         var total = originBytes + cacheBytes;
         var reverse = program.RightToLeft;
         var remaining = reverse ? fromByte : input.Length - fromByte;
+        // A caller-funded counterless loop needs the two rows only. The
+        // optional cache must not be part of its first storage request.
         var cache = remaining >= 64 &&
+            (program.IsNonBacktracking || program.RepeatCount != 0 || !invocation.Ledger.HasMemoryAllowance) &&
             (limit == 0 || total <= limit && invocation.Ledger.ReservedBytes <= limit - total);
         var reserved = cache ? total : originBytes;
         var breach = invocation.TryReserveWorking(reserved);

@@ -238,6 +238,11 @@ storage requires both. A shared refusal throws `Utf8MemoryAdmissionException`
 and the operation does not retry without funding. Temporary loans refund
 synchronously on completion, failure or interruption.
 
+Small cyclic ordinary graphs can reserve two bounded rows for ordered range
+search and Count through this account. A numeric cap below the row requirement
+keeps the scalar route available. A shared refusal of the selected rows is
+terminal.
+
 Cold `TryReplace` preparation uses the same working allowance and absolute
 deadline as matching and output. Covered key and parser capacity stays funded
 through output, including for an uncached plan. The program account covers
