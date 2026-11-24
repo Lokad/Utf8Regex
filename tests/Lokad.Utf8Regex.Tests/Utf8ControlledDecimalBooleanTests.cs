@@ -140,6 +140,19 @@ public sealed class Utf8ControlledDecimalBooleanTests
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(text), source.Token));
     }
 
+    [Theory]
+    [InlineData("😀١/٢/٢٠٢٦! ３/４/２０２７!", 2, 8ul)]
+    [InlineData("𝟙/𝟚/𝟚𝟘𝟚𝟞! １/２/２０２７!", 2, 7ul)]
+    [InlineData("é١٢/٣٤/٢٠٢٦! 𝟙/𝟚/𝟚𝟘𝟚𝟞x", 0, 32ul)]
+    public void CountCompletesWideDecimalProofsWithinTheWorkLimit(string text, int expected, ulong work)
+    {
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = work, MaxWorkingBytes = 1 } });
+
+        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text), source.Token));
+    }
+
     [Fact]
     public void ShortDecimalWindowReusesACompleteBooleanProof()
     {
@@ -214,6 +227,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
             options | RegexOptions.Compiled);
         var match = regex.Match("x1٢/18/2026!"u8);
         Assert.Equal(expected ? new Utf8CaptureRange(2, 12) : default, match);
+        Assert.Equal(expected ? 1 : 0, regex.Count("x1٢/18/2026!"u8));
     }
 
     [Fact]

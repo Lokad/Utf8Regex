@@ -1541,10 +1541,10 @@ internal static partial class Utf8SliceRunner
                 }
                 // The bounded proof can count a complete ordered endpoint.
                 // An undecided result still enters the scalar matcher.
-                if (proveDecimalMatch && input[position] < 128 &&
+                if (proveDecimalMatch &&
                     !MayMatchBranchedAsciiPrefix(program, input, position, 0, out provedEnd, proveMatch: true))
                 {
-                    position++;
+                    position = AdvancePastScalar(input, position, reverse: false);
                     continue;
                 }
                 var outcome = provedEnd >= 0
