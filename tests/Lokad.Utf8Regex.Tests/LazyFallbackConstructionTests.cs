@@ -191,143 +191,43 @@ public sealed class LazyFallbackConstructionTests
     [InlineData("(a)??b", "xxabxx")]
     [InlineData("(a)??b(c)??", "xxabcxx")]
     [InlineData("(a){0,1}?b", "xxabxx")]
-    public void LazyOptionalCompiledDiscoveryStaysOwned(string pattern, string text)
-    {
-        // Single-maximum lazies (??, {0,1}?) agree on both oracle lanes with
-        // full group detail (probe-mapped, including inner captures), so the
-        // slice serves discovery owned on both lanes with parity and no
-        // fallback construction. Capture-writing finite ranges also stay owned,
-        // following interpreter unwind (see FiniteRangeLazyCompiledDiscoveryUsesStableOwnedUnwind).
-        var input = Encoding.UTF8.GetBytes(text);
-        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
-        {
-            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-
-            var isMatchRegex = new Utf8Regex(pattern, options: options);
-            Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-            Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-
-            var countRegex = new Utf8Regex(pattern, options: options);
-            Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-            Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-
-            var enumRegex = new Utf8Regex(pattern, options: options);
-            var expected = new System.Collections.Generic.List<(int Index, int Length)>();
-            foreach (Match expectedMatch in oracle.Matches(text))
-            {
-                expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length))));
-            }
-
-            var actual = new System.Collections.Generic.List<(int Index, int Length)>();
-            foreach (var valueMatch in enumRegex.EnumerateMatches(input))
-            {
-                actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
-            }
-
-            Assert.Equal(expected.Count, actual.Count);
-            for (var i = 0; i < expected.Count; i++)
-            {
-                Assert.Equal(expected[i].Index, actual[i].Index);
-                Assert.Equal(expected[i].Length, actual[i].Length);
-            }
-
-            Assert.True(enumRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        }
-    }
-
-    [Theory]
     [InlineData("(a{2}?b)", "xxaabxx")]
     [InlineData("(a{2}?b)", "xxabxx")]
     [InlineData("([0-9]){2}?x", "ab12xcd")]
     [InlineData("(a{2,2}?b)", "xxaabxx")]
-    public void ExactCountLazyCompiledDiscoveryStaysOwned(string pattern, string text)
-    {
-        // Exact-count lazies agree on both oracle lanes with full group detail
-        // (probe-mapped, including inner captures, nesting, and backreferences),
-        // so the slice serves discovery owned on both lanes with parity and no
-        // fallback construction.
-        var input = Encoding.UTF8.GetBytes(text);
-        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
-        {
-            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-
-            var isMatchRegex = new Utf8Regex(pattern, options: options);
-            Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-            Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-
-            var countRegex = new Utf8Regex(pattern, options: options);
-            Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-            Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-
-            var enumRegex = new Utf8Regex(pattern, options: options);
-            var expected = new System.Collections.Generic.List<(int Index, int Length)>();
-            foreach (Match expectedMatch in oracle.Matches(text))
-            {
-                expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length))));
-            }
-
-            var actual = new System.Collections.Generic.List<(int Index, int Length)>();
-            foreach (var valueMatch in enumRegex.EnumerateMatches(input))
-            {
-                actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
-            }
-
-            Assert.Equal(expected.Count, actual.Count);
-            for (var i = 0; i < expected.Count; i++)
-            {
-                Assert.Equal(expected[i].Index, actual[i].Index);
-                Assert.Equal(expected[i].Length, actual[i].Length);
-            }
-
-            Assert.True(enumRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        }
-    }
-
-    [Theory]
     [InlineData("(a{1,3}?b)?c", "aabc")]
     [InlineData("(a{1,3}?b)?c", "xyz")]
     [InlineData("([0-9]{1,3}?x)?", "12x")]
     [InlineData("([0-9]{1,3}?x)?", "123")]
-    public void CaptureFreeLazyRangeCompiledDiscoveryStaysOwned(string pattern, string text)
+    [InlineData("a+?b", "xxaaabxx")]
+    public void LazyDiscoveryAgreesAcrossModes(string pattern, string text)
     {
-        // Capture-free lazy ranges agree on both oracle lanes with full group
-        // detail (probe-mapped, including the abandonment-trigger input "123" that
-        // diverges its captured counterpart), so the slice serves discovery owned on
-        // both lanes with parity and no fallback construction.
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
-            var isMatchRegex = new Utf8Regex(pattern, options: options);
+            // Each operation starts from a fresh program.
+            using var isMatchRegex = new Utf8Regex(pattern, options: options);
             Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-            Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+            Assert.NotNull(isMatchRegex.Inspection.PreparedRegex.ScalarProgram);
 
-            var countRegex = new Utf8Regex(pattern, options: options);
-            Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-            Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+            using var countRegex = new Utf8Regex(pattern, options: options);
+            Assert.Equal(oracle.Count(text), countRegex.Count(input));
+            Assert.NotNull(countRegex.Inspection.PreparedRegex.ScalarProgram);
 
-            var enumRegex = new Utf8Regex(pattern, options: options);
-            var expected = new System.Collections.Generic.List<(int Index, int Length)>();
-            foreach (Match expectedMatch in oracle.Matches(text))
+            using var enumRegex = new Utf8Regex(pattern, options: options);
+            var expected = oracle.EnumerateMatches(text);
+            var actual = enumRegex.EnumerateMatches(input);
+            while (expected.MoveNext())
             {
-                expected.Add((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length))));
+                Assert.True(actual.MoveNext());
+                var start = Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Current.Index));
+                var length = Encoding.UTF8.GetByteCount(text.AsSpan(expected.Current.Index, expected.Current.Length));
+                Assert.Equal((start, start + length), (actual.Current.StartOffsetInBytes, actual.Current.EndOffsetInBytes));
             }
-
-            var actual = new System.Collections.Generic.List<(int Index, int Length)>();
-            foreach (var valueMatch in enumRegex.EnumerateMatches(input))
-            {
-                actual.Add((valueMatch.StartOffsetInBytes, (valueMatch.EndOffsetInBytes - valueMatch.StartOffsetInBytes)));
-            }
-
-            Assert.Equal(expected.Count, actual.Count);
-            for (var i = 0; i < expected.Count; i++)
-            {
-                Assert.Equal(expected[i].Index, actual[i].Index);
-                Assert.Equal(expected[i].Length, actual[i].Length);
-            }
-
-            Assert.True(enumRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+            Assert.False(actual.MoveNext());
+            Assert.NotNull(enumRegex.Inspection.PreparedRegex.ScalarProgram);
         }
     }
 
@@ -359,27 +259,6 @@ public sealed class LazyFallbackConstructionTests
             Assert.False(actual.MoveNext());
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
             Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
-        }
-    }
-
-    [Theory]
-    [InlineData("a+?b", "xxaaabxx")]
-    public void LazyPlusCompiledDiscoveryStaysOwned(string pattern, string text)
-    {
-        // Control: unbounded lazy-plus shapes still execute owned discovery on
-        // both lanes and agree with the compiled oracle as well as the interpreter.
-        var input = Encoding.UTF8.GetBytes(text);
-        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
-        {
-            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-
-            var isMatchRegex = new Utf8Regex(pattern, options: options);
-            Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-            Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-
-            var countRegex = new Utf8Regex(pattern, options: options);
-            Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-            Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 

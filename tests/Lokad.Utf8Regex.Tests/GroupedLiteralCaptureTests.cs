@@ -366,10 +366,8 @@ public sealed class GroupedLiteralCaptureTests
 
     public static IEnumerable<object?[]> LazyLoopOrdinaryCases()
     {
-        // Single-maximum lazies (??) serve both lanes through the slice program
-        // (probe-mapped lane agreement), so these rows pin ordinary-lane zero
-        // construction while LazyOptionalCompiledDiscoveryStaysOwned covers
-        // the compiled lane.
+        // These rows check ordinary lazy capture ranges. The discovery matrix
+        // in LazyFallbackConstructionTests covers both compilation modes.
         string[] patterns = ["(a)??(b)??", "(a)?(a)??"];
         string[] texts = ["xabcy", "ab", "b", "xyz"];
         foreach (var pattern in patterns)
