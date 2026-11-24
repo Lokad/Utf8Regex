@@ -13,14 +13,14 @@ parse -> analyze -> prepare -> immutable instructions -> invoke
   releases the parse tree after compilation.
 - `Internal/Execution` selects an engine from the prepared capabilities.
   The scalar interpreter covers general patterns. Core with `Compiled` can
-  emit bounded forward programs for Boolean and whole-range verification.
+  emit bounded forward programs to verify Boolean, whole-range and Count results.
   A proven delimiter can let ordered alternatives share an emitted
   continuation. The admitted extent can bound a decimal run with a proved
   endpoint. Search applies invocation checks at each admitted origin.
   Eligible ordinary Core calls accumulate visits from complete short
   absolute-origin proofs and from unanchored checks admitted to run the
-  entire emitted proof. A candidate search contributes its total at the
-  end of the search, including checks that entered the general matcher.
+  entire emitted proof. Search and Count contribute their totals once per
+  scan, including checks that entered the general matcher.
   Construction admits separate tier state for eligible programs and keeps
   the lowered program fields immutable. One caller claims bounded
   compilation and publishes the delegate for future eligible calls.

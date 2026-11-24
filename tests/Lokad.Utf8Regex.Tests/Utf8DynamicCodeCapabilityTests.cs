@@ -158,6 +158,35 @@ public sealed class Utf8DynamicCodeCapabilityTests
     }
 
     [Theory]
+    [InlineData(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])",
+        "012.200.033.199", "012.200.033.1AA")]
+    [InlineData(@"(\d{4}[- ]){3}\d{3,4}", "𝟙2٣4-5678-1234-𝟜5٦", "1234-5678-1234-45X")]
+    public void OrdinaryCountTiersUpFromItsOwnCandidateWork(string pattern, string value, string miss)
+    {
+        const int expected = 256;
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat($"{miss}!é😀 {value};", expected)));
+        using var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        var dynamicCode = RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
+        Assert.Null(program.TieredProof);
+
+        using var source = new CancellationTokenSource();
+        Assert.Equal(expected, regex.Count(input, source.Token));
+        Assert.Null(program.TieredProof);
+        for (var i = 0; i < 256 && program.ObservesProofWork; i++)
+        {
+            if (regex.Count(input) != expected) throw new InvalidOperationException("The count changed during tier-up.");
+        }
+        Assert.Equal(dynamicCode, program.TieredProof is not null);
+        Assert.Equal(expected, regex.Count(input));
+        Assert.Equal(expected, regex.Count(input, source.Token));
+        Assert.Equal(expected, regex.Count(input.AsSpan(0, input.Length - 1)));
+        source.Cancel();
+        Assert.Equal(source.Token,
+            Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token)).CancellationToken);
+    }
+
+    [Theory]
     [InlineData("a12", 1)]
     [InlineData("Ab1 2", 2)]
     [InlineData("aX", 0)]

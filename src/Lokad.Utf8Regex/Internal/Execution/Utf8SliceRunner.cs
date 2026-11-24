@@ -581,16 +581,8 @@ internal static partial class Utf8SliceRunner
                 ref workspace, ref invocation, countAll: false, existenceOnly, out _);
         }
 
-        var emitted = program.EmittedMatch;
-        var interpretedVisits = -1;
-        if (emitted is null && !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty &&
-            first.Kind != Utf8SliceInstructionKind.Anchor &&
-            (program.ObservesProofWork || program.TieredProof is not null) &&
-            invocation.CheckpointHook is null && invocation.IsUnmetered)
-        {
-            emitted = program.TieredProof;
-            if (emitted is null) interpretedVisits = 0;
-        }
+        var emitted = GetCandidateProof(program, !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+            first.Kind != Utf8SliceInstructionKind.Anchor, ref invocation, out var interpretedVisits);
 
         if (remaining is > 0 and <= 32 && !reverse && !program.IgnoreCase && !program.HasContiguousAnchor &&
             !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
@@ -1488,6 +1480,14 @@ internal static partial class Utf8SliceRunner
             !program.ReadsCaptures && whitespaceLiteral < 0 &&
             (leadingScalarIndex == 0 ||
              Utf8SliceInstruction.SkipLeadingCaptureMarkers(program.Instructions, 0) == leadingScalarIndex);
+        var shortDecimalHead = seekDecimal && program.HasShortDecimalHead && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+            !program.ReadsCaptures && first.Kind != Utf8SliceInstructionKind.Anchor;
+        var emitted = GetCandidateProof(program, proveBranchedMatch || proveDecimalMatch || shortDecimalHead,
+            ref invocation, out var interpretedVisits);
+        // The prepared decimal starter establishes the original candidate.
+        // Keep the existing proof routes for controlled invocations.
+        proveDecimalMatch |= shortDecimalHead && (interpretedVisits >= 0 || emitted is not null &&
+            invocation.CheckpointHook is null && invocation.IsUnmetered);
         var rejectedSuffix = NoBranchSuffixCheck;
         var workspace = new AttemptWorkspace();
         try
@@ -1504,7 +1504,8 @@ internal static partial class Utf8SliceRunner
                             ref invocation, leadingPrefix, sparsePair, includeKelvin);
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0)
-                        return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                        return CompleteCandidateCount(program, count, interpretedVisits,
+                            new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
                     if (seekDecimal && IsNonDecimalWideStart(input, position))
                     {
                         position = AdvancePastScalar(input, position, false);
@@ -1515,7 +1516,8 @@ internal static partial class Utf8SliceRunner
                         (uint)(input[position + 1] - leadingSecond) > (uint)(leadingSecondLast - leadingSecond))) ||
                         (branchWindow.Min != 0 && !HasAsciiByteInWindow(input, position, branchWindow)) ||
                         !checkRepeatChain && !(checkBranchedPrefix ? MayMatchCountBranch(program, input, position,
-                            proveBranchedMatch ? 0 : leadingScalarIndex, proveBranchedMatch, ref rejectedSuffix, out provedEnd) :
+                            proveBranchedMatch ? 0 : leadingScalarIndex, proveBranchedMatch, ref rejectedSuffix, out provedEnd,
+                            emitted, ref interpretedVisits) :
                             MatchesStraightAsciiPrefix(program, input, position + straightPrefixBytes,
                                 straightPrefixStart, 64 - straightPrefixStart))))
                     {
@@ -1667,7 +1669,8 @@ internal static partial class Utf8SliceRunner
                 // The bounded proof can count a complete ordered endpoint.
                 // An undecided result still enters the scalar matcher.
                 if (proveDecimalMatch &&
-                    !MayMatchAdmittedCandidate(program, input, position, 0, out provedEnd, proveMatch: true))
+                    !MayMatchAdmittedCandidate(program, input, position, 0, out provedEnd, emitted,
+                        ref interpretedVisits, proveMatch: true))
                 {
                     position = AdvancePastScalar(input, position, reverse: false);
                     continue;
@@ -1699,7 +1702,7 @@ internal static partial class Utf8SliceRunner
                 position = AdvancePastScalar(input, position, program.RightToLeft);
                 if (position < 0) break;
             }
-            return new Utf8SliceCountOutcome(count, Utf8ExecutionLimitKind.None);
+            return CompleteCandidateCount(program, count, interpretedVisits, Utf8ExecutionLimitKind.None);
         }
 
         finally { workspace.Release(ref invocation); }

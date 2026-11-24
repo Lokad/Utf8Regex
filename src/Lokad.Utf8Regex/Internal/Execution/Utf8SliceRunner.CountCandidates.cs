@@ -1751,7 +1751,8 @@ internal static partial class Utf8SliceRunner
     private const int NoBranchSuffixCheck = -2;
 
     private static bool MayMatchCountBranch(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int position, int instruction, bool proveMatch, ref int rejectedSuffix, out int acceptedEnd)
+        int position, int instruction, bool proveMatch, ref int rejectedSuffix, out int acceptedEnd,
+        Utf8BoundedProgramEmitter.Match? emitted, ref int interpretedVisits)
     {
         var limit = BranchedPrefixInstructionLimit;
         if (rejectedSuffix != NoBranchSuffixCheck &&
@@ -1760,10 +1761,11 @@ internal static partial class Utf8SliceRunner
             acceptedEnd = -1;
             return false;
         }
-        if (MayMatchAdmittedCandidate(program, input, position, instruction, out acceptedEnd, proveMatch, limit))
+        if (MayMatchAdmittedCandidate(program, input, position, instruction, out acceptedEnd, emitted,
+            ref interpretedVisits, proveMatch, limit))
             return true;
 
-        if (rejectedSuffix == NoBranchSuffixCheck && proveMatch && program.EmittedMatch is null &&
+        if (rejectedSuffix == NoBranchSuffixCheck && proveMatch && emitted is null &&
             program.RequiredBranchLiteral.Min != 0 &&
             input.Length - position <= 64)
             rejectedSuffix = -1;
@@ -2552,12 +2554,26 @@ internal static partial class Utf8SliceRunner
     internal const int ShortSingleOriginProofInputLimit = 32;
     private const int SingleOriginPrefixInstructionLimit = 256;
 
-    private static bool MayMatchAdmittedCandidate(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int position, int index, out int acceptedEnd, bool proveMatch, int instructionLimit = BranchedPrefixInstructionLimit)
+    private static Utf8BoundedProgramEmitter.Match? GetCandidateProof(Utf8SliceProgram program, bool allowTier,
+        ref Utf8SliceInvocation invocation, out int interpretedVisits)
     {
-        var interpretedVisits = -1;
-        return MayMatchAdmittedCandidate(program, input, position, index, out acceptedEnd, program.EmittedMatch,
-            ref interpretedVisits, proveMatch, instructionLimit);
+        interpretedVisits = -1;
+        var emitted = program.EmittedMatch;
+        if (emitted is null && allowTier && (program.ObservesProofWork || program.TieredProof is not null) &&
+            invocation.CheckpointHook is null && invocation.IsUnmetered)
+        {
+            emitted = program.TieredProof;
+            if (emitted is null) interpretedVisits = 0;
+        }
+        return emitted;
+    }
+
+    private static Utf8SliceCountOutcome CompleteCandidateCount(Utf8SliceProgram program, int count,
+        int interpretedVisits, Utf8ExecutionLimitKind breach)
+    {
+        if (interpretedVisits > 0 && breach == Utf8ExecutionLimitKind.None)
+            program.ObserveProofWork(interpretedVisits);
+        return new(count, breach);
     }
 
     private static bool MayMatchAdmittedCandidate(Utf8SliceProgram program, ReadOnlySpan<byte> input,
