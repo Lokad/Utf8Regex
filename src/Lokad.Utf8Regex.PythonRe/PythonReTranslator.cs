@@ -30,10 +30,13 @@ internal static partial class PythonReTranslator
     public static PythonReTranslation Translate(PythonReParseResult parseResult, bool renderNativePattern)
     {
         using var construction = Utf8ConstructionScope.Enter();
-        using var widths = Utf8ConstructionMap<PythonReNode, PythonReWidth>.Create(construction.Budget, ReferenceEqualityComparer.Instance);
         Inspect(parseResult.Root, InspectionKind.References, parseResult, null, null);
         // Validate scalar lookbehind widths before emitting native pattern text.
-        Inspect(parseResult.Root, InspectionKind.Lookbehind, parseResult, widths, null);
+        if (parseResult.HasLookbehind)
+        {
+            using var widths = Utf8ConstructionMap<PythonReNode, PythonReWidth>.Create(construction.Budget, ReferenceEqualityComparer.Instance);
+            Inspect(parseResult.Root, InspectionKind.Lookbehind, parseResult, widths, null);
+        }
 
         // References and scalar lookbehind widths are validated even when no
         // operation can use the optional Core program. Its text rendering and
