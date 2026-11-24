@@ -17,11 +17,6 @@ public sealed partial class Utf8PythonRegex
          _utf8Regex?.CanFindNativeLiteralForResult == true &&
          _utf8Regex.Inspection.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal);
 
-    // Optional Core owns the equivalent prepared exact family, while the caller's
-    // invocation supplies every limit. Other controlled bulk paths remain scalar.
-    private bool HasPreparedExactLiteralFamily =>
-        _utf8Regex?.Inspection.ExecutionKind is NativeExecutionKind.ExactUtf8Literals;
-
     private Utf8PythonValueMatch MatchLiteralRepeatFullValue(ReadOnlySpan<byte> input,
         int startOffsetInBytes, CancellationToken cancellationToken)
     {

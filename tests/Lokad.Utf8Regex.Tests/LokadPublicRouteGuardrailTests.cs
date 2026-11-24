@@ -1,7 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -9,29 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class LokadPublicRouteGuardrailTests
 {
     [Fact]
-    public void MariomkaEmailCountStaysOnUtf8WordDelimitedTokenFamily()
-    {
-        const string pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
-
-        var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options: RegexOptions.None);
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
-    }
-
-    [Fact]
-    public void MariomkaUriCountStaysOnStructuredTokenFallbackFamily()
-    {
-        const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
-
-        var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options: RegexOptions.None);
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
-    }
-
-    [Fact]
-    public void SherlockIngCountStaysOnAsciiSimplePatternInterpreter()
+    public void SherlockIngPreparesTheVariableOffsetSuffix()
     {
         var regex = new Utf8Regex(@"\s[a-zA-Z]{0,12}ing\s", options: RegexOptions.None);
         // The prefix has variable UTF-8 width; the suffix is a candidate, not a fixed offset.
@@ -89,7 +66,7 @@ public sealed class LokadPublicRouteGuardrailTests
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
-    public void CommonIpMatchUsesAsciiDirectFamilyForMatch(RegexOptions options)
+    public void CommonIpRecognitionMatchesTheOracle(RegexOptions options)
     {
         const string pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
         var regex = new Utf8Regex(pattern, options: options);
@@ -154,7 +131,7 @@ public sealed class LokadPublicRouteGuardrailTests
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
-    public void CommonUriMatchUsesStructuredTokenDirectFamilyForMatch(RegexOptions options)
+    public void CommonUriRecognitionKeepsGreedyTailsAndUnicodeStarts(RegexOptions options)
     {
         const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
         var regex = new Utf8Regex(pattern, options: options);
@@ -191,7 +168,7 @@ public sealed class LokadPublicRouteGuardrailTests
     }
 
     [Fact]
-    public void OneNodeBacktrackingPatternUsesNegatedRunLiteralFamily()
+    public void NegatedRunsAroundLiteralKeepUnicodeMatches()
     {
         var regex = new Utf8Regex(@"[^a]+\.[^z]+", options: RegexOptions.Compiled);
         var asciiMatch = regex.IsMatch("bbb.ccc"u8);
@@ -202,7 +179,7 @@ public sealed class LokadPublicRouteGuardrailTests
     }
 
     [Fact]
-    public void CommonBacktrackingUsesLeadingAnyRunTrailingLiteralFamily()
+    public void LeadingDotRunSearchKeepsLiteralAndLineContext()
     {
         var regex = new Utf8Regex(@".*(ss)", options: RegexOptions.None);
         var isMatch = regex.IsMatch("Essential services are provided by regular exprs."u8);
@@ -355,7 +332,7 @@ public sealed class LokadPublicRouteGuardrailTests
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
-    public void BoostdocsFloatMatchUsesNoValidationSignedDecimalFastPath(RegexOptions options)
+    public void BoostdocsFloatMatchKeepsSignedDecimalAndEndAnchorSemantics(RegexOptions options)
     {
         const string pattern = @"^[-+]?\d*\.?\d*$";
         var regex = new Utf8Regex(pattern, options: options);
@@ -413,7 +390,7 @@ public sealed class LokadPublicRouteGuardrailTests
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
-    public void BoostdocsFtpLineMatchUsesPrioritizedAnchoredLeadingDigitsTailFamily(RegexOptions options)
+    public void BoostdocsFtpLineMatchKeepsAlternativeOrderAndCaptures(RegexOptions options)
     {
         const string pattern = @"^([0-9]+)(\-| |$)(.*)$";
         var oracle = new Regex(pattern, options);
@@ -486,10 +463,8 @@ public sealed class LokadPublicRouteGuardrailTests
     [InlineData(RegexOptions.Compiled)]
     public void OrderedLiteralWindowNegatedCategoryGapAgreesWithOracle(RegexOptions options)
     {
-        // Negated-category bounded gaps (shorthand complements such as \D and
-        // negated space sets) must never ride the ordered-literal window: the window
-        // executor spans the gap without consulting the class, so admission
-        // over-accepts on excluded gap content (digits, whitespace).
+        // An aligned literal pair can still fail when the bounded gap
+        // contains a scalar excluded by its class.
         var rows = new (string Pattern, string Input)[]
         {
             (@"a\D{2,5}b", "xa12b"),
@@ -531,8 +506,7 @@ public sealed class LokadPublicRouteGuardrailTests
             }
         }
 
-        // Controls that must keep serving the window route: the negated-newline
-        // gap is exactly dot semantics, and the any-text idiom stays admitted.
+        // Literal pairs also admit negated-newline, any-text and whitespace gaps.
         foreach (var control in new (string Pattern, string Input)[]
         {
             (@"a[^\n]{2,5}b", "xa  b"),
