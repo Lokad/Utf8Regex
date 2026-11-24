@@ -133,6 +133,21 @@ public sealed class Utf8ControlledDecimalBooleanTests
         Assert.Equal(new Utf8CaptureRange(start, input.Length), regex.Match(input, cancellationToken: source.Token));
     }
 
+    [Fact]
+    public void DecimalWindowsSkipDelimitersWithNoLeadingDecimalWithinWorkLimit()
+    {
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 24, MaxWorkingBytes = 1 } });
+        var prefix = string.Concat(Enumerable.Repeat("x/11/2.x ", 8)) + " ";
+        const string date = "1/18/2026";
+        var input = Encoding.UTF8.GetBytes(prefix + date + ".");
+
+        Assert.True(regex.IsMatch(input, source.Token));
+        Assert.Equal(new Utf8CaptureRange(prefix.Length, prefix.Length + date.Length),
+            regex.Match(input, cancellationToken: source.Token));
+    }
+
     [Theory]
     [InlineData("Today is 11/18/201A and tomorrow is 11/19/201A.", 13ul)]
     [InlineData("x12/34/2026! ", 8ul)]
