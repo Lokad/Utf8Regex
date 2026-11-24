@@ -1082,6 +1082,60 @@ internal static partial class Utf8SliceRunner
         return rewindBreach;
     }
 
+    private static Utf8SliceCountOutcome CountAlignedDecimalWindows(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, byte delimiter, int delimiterInstruction,
+        in Utf8SliceInstruction boundary, ref Utf8SliceInvocation invocation)
+    {
+        var count = 0;
+        var workspace = new AttemptWorkspace();
+        try
+        {
+            while (true)
+            {
+                var breach = TrySeekDecimalLiteralWindow(program, input, delimiter, ref position, ref invocation,
+                    out var windowEnd, verifiedNextDelimiter: -1, verifyFollowingWindow: true, out var followingEnd);
+                if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+                if (position < 0) return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                if (position >= windowEnd)
+                {
+                    position = windowEnd + 1;
+                    continue;
+                }
+
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+                invocation.Budget.ThrowIfCancellationRequested();
+                var proofPosition = followingEnd > 0 ? followingEnd : windowEnd;
+                var proofStart = followingEnd > 0 ? program.FollowingDecimalContinuation : delimiterInstruction;
+                var proofLimit = followingEnd > 0
+                    ? BranchedPrefixInstructionLimit - program.FollowingDecimalLiteralWindow.Max - 3
+                    : BranchedPrefixInstructionLimit;
+                if (!MatchesBoundary(program, boundary, input, position) ||
+                    !MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out var provedEnd,
+                        proveMatch: true, instructionLimit: proofLimit))
+                {
+                    // No interior start has a word boundary within a decimal run.
+                    position = windowEnd + 1;
+                    continue;
+                }
+
+                var outcome = provedEnd >= 0
+                    ? new Utf8SliceMatchOutcome(true, provedEnd, invocation.TryReserveWorking(0))
+                    : TryMatchAt(program, input, position, [], [], false, false, true, ref workspace, ref invocation);
+                if (outcome.Breach != Utf8ExecutionLimitKind.None) return new(count, outcome.Breach);
+                invocation.Budget.ThrowIfCancellationRequested();
+                if (outcome.IsMatch)
+                {
+                    count++;
+                    position = outcome.EndIndex;
+                    invocation.AnchorOriginByte = position;
+                }
+                else position = windowEnd + 1;
+            }
+        }
+        finally { workspace.Release(ref invocation); }
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int FindShortAsciiDecimalStart(ReadOnlySpan<byte> input, int floor, int end, int maximum)
     {

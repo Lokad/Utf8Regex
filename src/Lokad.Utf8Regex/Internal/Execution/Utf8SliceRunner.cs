@@ -1326,12 +1326,14 @@ internal static partial class Utf8SliceRunner
             classSearch = prefixSearch;
             whitespaceLiteral = prefixSearch.Needle[0];
         }
-        var seekDecimalWindow = literalImmediatelyAfterRepeat && directClassLiteral && whitespaceGapMaximum == 0 &&
-            leadingClass == 2 && classSearch is null or { Length: 1 } &&
-            !Utf8AsciiBytePredicates.IsDigit((byte)whitespaceLiteral) && captureStarts.Length == 0 && !program.ReadsCaptures &&
+        if (literalImmediatelyAfterRepeat && directClassLiteral && whitespaceGapMaximum == 0 && leadingFirst < 0 &&
+            leadingClass == 2 && (classSearch is null or { Length: 1 }) && verifiedClassLiteralLength == 0 &&
+            !Utf8AsciiBytePredicates.IsDigit((byte)whitespaceLiteral) && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
             first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1, B: (int)Utf8SliceWordKind.Unicode, C: 0 } &&
             program.FollowingDecimalContinuation != 0 && program.Instructions[1].RepeatMinimum == 1 &&
-            program.SkipsTerminalRewind(1);
+            program.SkipsTerminalRewind(1))
+            return CountAlignedDecimalWindows(program, input, position, (byte)whitespaceLiteral,
+                whitespaceLiteralIndex, first, ref invocation);
         // Keep the existing literal and delimiter searches. A required decimal
         // starter can also skip unrelated bytes on a long forward search.
         if (whitespaceLiteral >= 0 && leadingFirst >= 128) leadingFirst = -1;
@@ -1393,7 +1395,6 @@ internal static partial class Utf8SliceRunner
                 repeatMinimum = (int)repeat.RepeatMinimum;
         }
         var whitespaceWindowEnd = -1;
-        var decimalFollowingEnd = 0;
         // Only a proof from the actual candidate can supply a whole match.
         // A delimiter window can still move that start before verification.
         var proveBranchedMatch = checkBranchedPrefix && captureStarts.Length == 0 &&
@@ -1446,15 +1447,7 @@ internal static partial class Utf8SliceRunner
                 }
                 while (whitespaceLiteral >= 0 && position > whitespaceWindowEnd)
                 {
-                    if (seekDecimalWindow)
-                    {
-                        var seekBreach = TrySeekDecimalLiteralWindow(program, input, (byte)whitespaceLiteral,
-                            ref position, ref invocation, out whitespaceWindowEnd, verifiedNextDelimiter: -1,
-                            verifyFollowingWindow: true, out decimalFollowingEnd);
-                        if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
-                        if (position >= 0 && position == whitespaceWindowEnd) position++;
-                    }
-                    else if (leadingClass >= 0 || repeatPrefix.Any.HasValue)
+                    if (leadingClass >= 0 || repeatPrefix.Any.HasValue)
                     {
                         var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                             (byte)whitespaceLiteral, classSearch, whitespaceGapMaximum, directClassLiteral,
@@ -1586,23 +1579,7 @@ internal static partial class Utf8SliceRunner
                 }
                 // The bounded proof can count a complete ordered endpoint.
                 // An undecided result still enters the scalar matcher.
-                if (seekDecimalWindow)
-                {
-                    var proofPosition = decimalFollowingEnd > 0 ? decimalFollowingEnd : whitespaceWindowEnd;
-                    var proofStart = decimalFollowingEnd > 0 ? program.FollowingDecimalContinuation : whitespaceLiteralIndex;
-                    var proofLimit = decimalFollowingEnd > 0
-                        ? BranchedPrefixInstructionLimit - program.FollowingDecimalLiteralWindow.Max - 3
-                        : BranchedPrefixInstructionLimit;
-                    if (!MatchesBoundary(program, first, input, position) ||
-                        !MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out provedEnd,
-                            proveMatch: true, instructionLimit: proofLimit))
-                    {
-                        // An interior start cannot have a word boundary inside the same decimal run.
-                        position = whitespaceWindowEnd + 1;
-                        continue;
-                    }
-                }
-                else if (proveDecimalMatch &&
+                if (proveDecimalMatch &&
                     !MayMatchBranchedAsciiPrefix(program, input, position, 0, out provedEnd, proveMatch: true))
                 {
                     position = AdvancePastScalar(input, position, reverse: false);
@@ -1631,7 +1608,7 @@ internal static partial class Utf8SliceRunner
                 else if (program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
                     first.A == (int)Utf8SliceAnchorKind.Contiguous)
                     break;
-                if (!outcome.IsMatch && (singleWindowAttempt || seekDecimalWindow)) position = whitespaceWindowEnd;
+                if (!outcome.IsMatch && singleWindowAttempt) position = whitespaceWindowEnd;
                 position = AdvancePastScalar(input, position, program.RightToLeft);
                 if (position < 0) break;
             }
