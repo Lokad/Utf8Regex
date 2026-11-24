@@ -9,7 +9,7 @@ internal static class Utf8NativeExecutionAnalyzer
     private readonly record struct ScanFrame(Utf8TreeNode Node, int NextChild, bool Entered);
 
     public static bool TryAnalyze(
-        Utf8SemanticRegex semanticRegex, string? executionPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex)
+        Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, string? executionPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex)
     {
         if (semanticRegex.RuntimeTree is { UsesIgnoreCase: true } foldedTree &&
             Utf8SliceCaseEquivalences.GetBehavior(foldedTree.Culture, executionOptions) != Utf8ScalarCaseBehavior.Invariant)
@@ -19,7 +19,10 @@ internal static class Utf8NativeExecutionAnalyzer
             analyzedRegex = default;
             return false;
         }
-        if (semanticRegex.RuntimeTree is { } tree && ContainsImpossibleAtom(tree.Root))
+        var (hasImpossibleAtom, supportsFiniteLiteral) = semanticRegex.RuntimeTree is { } tree
+            ? ScanLiteralEligibility(tree.Root)
+            : default;
+        if (hasImpossibleAtom)
         {
             // Native byte plans must never encode an impossible literal as
             // U+FFFD. The owned scalar lowerer emits failure for these atoms,
@@ -27,12 +30,12 @@ internal static class Utf8NativeExecutionAnalyzer
             analyzedRegex = default;
             return false;
         }
-        if (TryAnalyzeLiteralTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
+        if (TryAnalyzeLiteralTree(semanticRegex, features, executionPattern, executionOptions, out analyzedRegex))
         {
             return true;
         }
 
-        if (TryAnalyzeFiniteLiteralTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
+        if (supportsFiniteLiteral && TryAnalyzeFiniteLiteralTree(semanticRegex, features, executionPattern, executionOptions, out analyzedRegex))
         {
             return true;
         }
@@ -41,8 +44,9 @@ internal static class Utf8NativeExecutionAnalyzer
         return false;
     }
 
-    private static bool ContainsImpossibleAtom(Utf8TreeNode root)
+    internal static (bool HasImpossibleAtom, bool SupportsFiniteLiteral) ScanLiteralEligibility(Utf8TreeNode root)
     {
+        var supportsFiniteLiteral = root.Kind == Utf8TreeNodeKind.Capture && root.ChildCount == 1;
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
         using var frames = Utf8ConstructionFrames<ScanFrame>.Create(budget, new(root, 0, false));
@@ -57,10 +61,10 @@ internal static class Utf8NativeExecutionAnalyzer
                 // Authoritative failure atoms must never be encoded as U+FFFD
                 // by a native shortcut. Pattern UTF-16 text is interoperability
                 // input; every decoded literal must represent a complete scalar.
-                if (node.Kind == Utf8TreeNodeKind.Nothing) return true;
+                if (node.Kind == Utf8TreeNodeKind.Nothing) return (true, false);
                 if (node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy)
                 {
-                    if (char.IsSurrogate(node.Ch)) return true;
+                    if (char.IsSurrogate(node.Ch)) return (true, false);
                 }
                 else if (node.Kind == Utf8TreeNodeKind.Multi && node.Str is { } text)
                 {
@@ -68,10 +72,14 @@ internal static class Utf8NativeExecutionAnalyzer
                     {
                         budget.ChargeWork(1);
                         if (System.Text.Rune.DecodeFromUtf16(text.AsSpan(offset), out _, out var width) != System.Buffers.OperationStatus.Done)
-                            return true;
+                            return (true, false);
                         offset += width;
                     }
                 }
+                // Check the body before opening an expansion arena. Even when it
+                // cannot be expanded, visit the rest for impossible scalar atoms.
+                if (supportsFiniteLiteral && index != 0)
+                    supportsFiniteLiteral = SupportsFiniteLiteralNode(node);
                 frame = frame with { Entered = true, NextChild = node.ChildCount };
             }
             // Preserve the original last-child-first early-exit order, while
@@ -80,11 +88,11 @@ internal static class Utf8NativeExecutionAnalyzer
             frames[index] = frame with { NextChild = frame.NextChild - 1 };
             frames.Push(new(node.Child(frame.NextChild - 1), 0, false));
         }
-        return false;
+        return (false, supportsFiniteLiteral);
     }
 
     private static bool TryAnalyzeLiteralTree(
-        Utf8SemanticRegex semanticRegex, string? executionPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex)
+        Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, string? executionPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget; owner.EnterDepth();
@@ -98,7 +106,7 @@ internal static class Utf8NativeExecutionAnalyzer
 
             if (executionPattern is not null && IsPlainLiteral(executionPattern) && IsNativeLiteralExecutionPattern(executionPattern, executionOptions))
             {
-                var accepted = TryCreateLiteralAnalyzedRegex(semanticRegex, executionPattern, executionOptions, out analyzedRegex);
+                var accepted = TryCreateLiteralAnalyzedRegex(semanticRegex, features, executionPattern, executionOptions, out analyzedRegex);
                 if (accepted) construction.Complete();
                 return accepted;
             }
@@ -106,7 +114,7 @@ internal static class Utf8NativeExecutionAnalyzer
             if (executionPattern is null && semanticRegex.RuntimeTree is { Root.ChildCount: 1 } nativeTree &&
                 TryGetNativeLiteralBranch(nativeTree.Root.Child(0), executionOptions, out var nativeLiteral))
             {
-                var accepted = TryCreateLiteralAnalyzedRegex(semanticRegex, nativeLiteral, executionOptions, out analyzedRegex);
+                var accepted = TryCreateLiteralAnalyzedRegex(semanticRegex, features, nativeLiteral, executionOptions, out analyzedRegex);
                 if (accepted) construction.Complete();
                 return accepted;
             }
@@ -119,7 +127,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 semanticRegex.RuntimeTree is { Root.ChildCount: 1 } literalTree &&
                 TryGetLiteralBranchUtf8(literalTree.Root.Child(0), out var wrappedLiteral))
             {
-                var accepted = TryCreateLiteralAnalyzedRegex(semanticRegex, wrappedLiteral, executionOptions, out analyzedRegex);
+                var accepted = TryCreateLiteralAnalyzedRegex(semanticRegex, features, wrappedLiteral, executionOptions, out analyzedRegex);
                 if (accepted) construction.Complete();
                 return accepted;
             }
@@ -128,6 +136,7 @@ internal static class Utf8NativeExecutionAnalyzer
             {
                 var accepted = TryCreateLiteralAnalyzedRegex(
                     semanticRegex,
+                    features,
                     boundaryLiteral,
                     executionOptions,
                     out analyzedRegex,
@@ -140,14 +149,14 @@ internal static class Utf8NativeExecutionAnalyzer
             if ((executionOptions & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase)) == 0 &&
                 TryExtractLiteralWithPositiveLiteralLookaheadTree(semanticRegex, out var lookaheadLiteral, out var trailingLiteralUtf8))
             {
-                var accepted = TryCreateLiteralAnalyzedRegex(semanticRegex, lookaheadLiteral, executionOptions, out analyzedRegex, trailingLiteralUtf8: trailingLiteralUtf8);
+                var accepted = TryCreateLiteralAnalyzedRegex(semanticRegex, features, lookaheadLiteral, executionOptions, out analyzedRegex, trailingLiteralUtf8: trailingLiteralUtf8);
                 if (accepted) construction.Complete();
                 return accepted;
             }
 
             if (executionPattern is not null && TryExtractSingleCapturedLiteralPattern(executionPattern, out var capturedLiteral))
             {
-                var accepted = TryCreateLiteralAnalyzedRegex(semanticRegex, capturedLiteral, executionOptions, out analyzedRegex);
+                var accepted = TryCreateLiteralAnalyzedRegex(semanticRegex, features, capturedLiteral, executionOptions, out analyzedRegex);
                 if (accepted) construction.Complete();
                 return accepted;
             }
@@ -158,7 +167,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 analyzedRegex = Utf8RegexAnalysis.Create(
                     semanticRegex,
                     executionPattern,
-                    Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
+                    features,
                     Utf8SearchFacts.Create(
                         lookaheadAlternationSearchKind,
                         new Utf8SearchFactData
@@ -179,7 +188,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 analyzedRegex = Utf8RegexAnalysis.Create(
                     semanticRegex,
                     executionPattern,
-                    Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
+                    features,
                     Utf8SearchFacts.Create(
                         Utf8SearchKind.AsciiFoldedByteLiterals,
                         new Utf8SearchFactData
@@ -218,7 +227,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 analyzedRegex = Utf8RegexAnalysis.Create(
                     semanticRegex,
                     executionPattern,
-                    Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
+                    features,
                     Utf8SearchFacts.Create(
                         searchKind,
                         new Utf8SearchFactData
@@ -257,7 +266,9 @@ internal static class Utf8NativeExecutionAnalyzer
         return false;
     }
 
-    private static bool TryCreateLiteralAnalyzedRegex(Utf8SemanticRegex semanticRegex, byte[] literalUtf8, RegexOptions options, out Utf8RegexAnalysis analyzedRegex, byte[]? trailingLiteralUtf8 = null)
+    private static bool TryCreateLiteralAnalyzedRegex(
+        Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, byte[] literalUtf8, RegexOptions options,
+        out Utf8RegexAnalysis analyzedRegex, byte[]? trailingLiteralUtf8 = null)
     {
         var ascii = IsPlainAsciiLiteral(literalUtf8);
         var folded = (options & RegexOptions.IgnoreCase) != 0;
@@ -265,8 +276,7 @@ internal static class Utf8NativeExecutionAnalyzer
         var kind = folded ? NativeExecutionKind.AsciiLiteralIgnoreCase :
             ascii ? NativeExecutionKind.ExactAsciiLiteral : NativeExecutionKind.ExactUtf8Literal;
         analyzedRegex = Utf8RegexAnalysis.CreateLiteral(semanticRegex, semanticRegex.ExecutionPattern,
-            Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
-            Utf8FrontEndSearchAnalyzer.AnalyzeLiteral(literalUtf8, kind, trailingLiteralUtf8 ?? [],
+            features, Utf8FrontEndSearchAnalyzer.AnalyzeLiteral(literalUtf8, kind, trailingLiteralUtf8 ?? [],
                 Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None), kind, literalUtf8);
         return true;
     }
@@ -280,40 +290,10 @@ internal static class Utf8NativeExecutionAnalyzer
     }
 
     private static bool TryCreateLiteralAnalyzedRegex(
-        Utf8SemanticRegex semanticRegex, string literalPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex) =>
-        TryCreateLiteralAnalyzedRegex(
-            semanticRegex,
-            literalPattern,
-            executionOptions,
-            out analyzedRegex,
-            [],
-            Utf8BoundaryRequirement.None,
-            Utf8BoundaryRequirement.None);
-
-    private static bool TryCreateLiteralAnalyzedRegex(
-        Utf8SemanticRegex semanticRegex, string literalPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex, byte[] trailingLiteralUtf8) =>
-        TryCreateLiteralAnalyzedRegex(
-            semanticRegex,
-            literalPattern,
-            executionOptions,
-            out analyzedRegex,
-            trailingLiteralUtf8,
-            Utf8BoundaryRequirement.None,
-            Utf8BoundaryRequirement.None);
-
-    private static bool TryCreateLiteralAnalyzedRegex(
-        Utf8SemanticRegex semanticRegex, string literalPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex, Utf8BoundaryRequirement leadingBoundary, Utf8BoundaryRequirement trailingBoundary) =>
-        TryCreateLiteralAnalyzedRegex(
-            semanticRegex,
-            literalPattern,
-            executionOptions,
-            out analyzedRegex,
-            [],
-            leadingBoundary,
-            trailingBoundary);
-
-    private static bool TryCreateLiteralAnalyzedRegex(
-        Utf8SemanticRegex semanticRegex, string literalPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex, byte[] trailingLiteralUtf8, Utf8BoundaryRequirement leadingBoundary, Utf8BoundaryRequirement trailingBoundary)
+        Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, string literalPattern, RegexOptions executionOptions,
+        out Utf8RegexAnalysis analyzedRegex, byte[]? trailingLiteralUtf8 = null,
+        Utf8BoundaryRequirement leadingBoundary = Utf8BoundaryRequirement.None,
+        Utf8BoundaryRequirement trailingBoundary = Utf8BoundaryRequirement.None)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget; owner.EnterDepth();
@@ -336,8 +316,8 @@ internal static class Utf8NativeExecutionAnalyzer
             analyzedRegex = Utf8RegexAnalysis.CreateLiteral(
                 semanticRegex,
                 literalPattern,
-                Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
-                Utf8FrontEndSearchAnalyzer.AnalyzeLiteral(literalUtf8, executionKind, trailingLiteralUtf8, leadingBoundary, trailingBoundary),
+                features,
+                Utf8FrontEndSearchAnalyzer.AnalyzeLiteral(literalUtf8, executionKind, trailingLiteralUtf8 ?? [], leadingBoundary, trailingBoundary),
                 executionKind,
                 literalUtf8);
             construction.Complete();
@@ -347,28 +327,13 @@ internal static class Utf8NativeExecutionAnalyzer
     }
 
     private static bool TryAnalyzeFiniteLiteralTree(
-        Utf8SemanticRegex semanticRegex, string? executionPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex)
+        Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, string? executionPattern, RegexOptions executionOptions, out Utf8RegexAnalysis analyzedRegex)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget; owner.EnterDepth();
         try
         {
             if (!SupportsNativeOptions(executionOptions) || executionPattern is not null && IsPlainLiteral(executionPattern))
-            {
-                analyzedRegex = default;
-                return false;
-            }
-
-            if (semanticRegex.RuntimeTree?.Root is not { } root ||
-                root.Kind != Utf8TreeNodeKind.Capture ||
-                root.ChildCount != 1)
-            {
-                analyzedRegex = default;
-                return false;
-            }
-
-            var body = root.Child(0);
-            if (!IsSupportedFiniteLiteralNode(body))
             {
                 analyzedRegex = default;
                 return false;
@@ -388,7 +353,7 @@ internal static class Utf8NativeExecutionAnalyzer
                     var kind = folded ? NativeExecutionKind.AsciiLiteralIgnoreCase :
                         plainAscii ? NativeExecutionKind.ExactAsciiLiteral : NativeExecutionKind.ExactUtf8Literal;
                     analyzedRegex = Utf8RegexAnalysis.CreateLiteral(semanticRegex, text,
-                        Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
+                        features,
                         Utf8FrontEndSearchAnalyzer.AnalyzeLiteral(bytes, kind), kind, bytes);
                     owner.ReleaseArray(literalBranches, false);
                     construction.Complete(); return true;
@@ -416,7 +381,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 analyzedRegex = Utf8RegexAnalysis.Create(
                     semanticRegex,
                     executionPattern,
-                    Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
+                    features,
                     Utf8SearchFacts.Create(
                         ignoreCase ? Utf8SearchKind.AsciiFoldedByteLiterals : Utf8SearchKind.ExactAsciiLiterals,
                         new Utf8SearchFactData
@@ -434,57 +399,18 @@ internal static class Utf8NativeExecutionAnalyzer
         finally { owner.LeaveDepth(); }
     }
 
-    private static bool IsSupportedFiniteLiteralNode(Utf8TreeNode node)
+    private static bool SupportsFiniteLiteralNode(Utf8TreeNode node) => node.Kind switch
     {
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(budget, new(node, 0, false));
-        while (frames.Count != 0)
-        {
-            budget.ChargeWork(1);
-            var index = frames.Count - 1;
-            var frame = frames[index];
-            node = frame.Node;
-            if (!frame.Entered)
-            {
-                frame = frame with { Entered = true };
-                switch (node.Kind)
-                {
-                    case Utf8TreeNodeKind.Capture:
-                        if (node.N != -1) return false;
-                        goto case Utf8TreeNodeKind.Group;
-                    case Utf8TreeNodeKind.Group:
-                        if (node.ChildCount != 1) return false;
-                        break;
-                    case Utf8TreeNodeKind.Concatenate:
-                    case Utf8TreeNodeKind.Alternate:
-                    case Utf8TreeNodeKind.One:
-                    case Utf8TreeNodeKind.Multi:
-                    case Utf8TreeNodeKind.Empty:
-                        break;
-                    case Utf8TreeNodeKind.Set:
-                        if (node.ScalarClass is not { } scalarClass || scalarClass.Data.Length < 3 ||
-                            scalarClass.Data.Length != 3L + scalarClass.Data[1] + scalarClass.Data[2]) return false;
-                        break;
-                    case Utf8TreeNodeKind.Oneloop:
-                    case Utf8TreeNodeKind.Setloop:
-                        if (node.M < 0 || node.N < node.M || node.N == int.MaxValue) return false;
-                        break;
-                    case Utf8TreeNodeKind.Loop:
-                        if (node.M < 0 || node.N < node.M || node.N == int.MaxValue || node.ChildCount != 1) return false;
-                        break;
-                    default:
-                        return false;
-                }
-            }
-            var childCount = node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate or Utf8TreeNodeKind.Loop
-                ? node.ChildCount : 0;
-            if (frame.NextChild == childCount) { frames.Pop(); continue; }
-            frames[index] = frame with { NextChild = frame.NextChild + 1 };
-            frames.Push(new(node.Child(frame.NextChild), 0, false));
-        }
-        return true;
-    }
+        Utf8TreeNodeKind.Capture => node.N == -1 && node.ChildCount == 1,
+        Utf8TreeNodeKind.Group => node.ChildCount == 1,
+        Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate or
+        Utf8TreeNodeKind.One or Utf8TreeNodeKind.Multi or Utf8TreeNodeKind.Empty => true,
+        Utf8TreeNodeKind.Set => node.ScalarClass is { } scalarClass && scalarClass.Data.Length >= 3 &&
+            scalarClass.Data.Length == 3L + scalarClass.Data[1] + scalarClass.Data[2],
+        Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Setloop => node.M >= 0 && node.N >= node.M && node.N < int.MaxValue,
+        Utf8TreeNodeKind.Loop => node.ChildCount == 1 && node.M >= 0 && node.N >= node.M && node.N < int.MaxValue,
+        _ => false,
+    };
 
     private static bool SupportsNativeOptions(RegexOptions options)
     {

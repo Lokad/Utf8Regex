@@ -13,7 +13,7 @@ internal static class Utf8FrontEndAnalyzer
         // unsupported-options reason describes native-plan eligibility here.
         if ((executionOptions & RegexOptions.NonBacktracking) != 0 &&
             Lokad.Utf8Regex.Internal.Execution.Utf8SliceParser.IsNonBacktrackingFlatGraph(semanticRegex.RuntimeTree) &&
-            Utf8NativeExecutionAnalyzer.TryAnalyze(semanticRegex, executionPattern, executionOptions, out var nativeNonBacktracking) &&
+            Utf8NativeExecutionAnalyzer.TryAnalyze(semanticRegex, features, executionPattern, executionOptions, out var nativeNonBacktracking) &&
             (semanticRegex.RuntimeTree is { UsesIgnoreCase: true } || (executionOptions & RegexOptions.IgnoreCase) != 0) ==
                 ((executionOptions & RegexOptions.IgnoreCase) != 0))
         {
@@ -30,7 +30,7 @@ internal static class Utf8FrontEndAnalyzer
                 unsupportedOptions);
         }
 
-        if (Utf8NativeExecutionAnalyzer.TryAnalyze(semanticRegex, executionPattern, executionOptions, out var analyzedRegex))
+        if (Utf8NativeExecutionAnalyzer.TryAnalyze(semanticRegex, features, executionPattern, executionOptions, out var analyzedRegex))
         {
             return analyzedRegex;
         }

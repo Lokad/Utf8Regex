@@ -55,6 +55,14 @@ public sealed class Utf8NativeEncodingPreparationTests
     {
         var root = input.Root;
         var options = RegexOptions.CultureInvariant;
+        if (route == 11)
+        {
+            Assert.True(Utf8NativeExecutionAnalyzer.TryAnalyze(input.Semantic, default, "é😀", options, out var analysis));
+            Assert.NotNull(analysis.LiteralUtf8);
+            Assert.Equal("é😀", Encoding.UTF8.GetString(analysis.LiteralUtf8));
+            return;
+        }
+
         var name = route switch
         {
             0 => "TryExtractSingleCapturedLiteralPattern", 1 => "TryExtractPlainAsciiLiteralAlternationPattern",
@@ -62,7 +70,7 @@ public sealed class Utf8NativeEncodingPreparationTests
             4 => "TryUnwrapLiteralAlternation", 5 => "TryGetLiteralBranchUtf8",
             6 => "TryUnwrapLiteralAlternationWithBoundaries", 7 => "TryExtractBoundaryWrappedLiteral",
             8 => "TryExtractUtf8LiteralAlternationTree", 9 => "TryExtractLiteralWithPositiveLiteralLookaheadTree",
-            10 => "TryExtractLiteralAlternationWithPositiveLiteralLookaheadTree", _ => "TryAnalyzeLiteralTree",
+            _ => "TryExtractLiteralAlternationWithPositiveLiteralLookaheadTree",
         };
         object?[] args = route switch
         {
@@ -70,8 +78,7 @@ public sealed class Utf8NativeEncodingPreparationTests
             4 or 5 => [root, null], 6 or 7 => [root, null, null, null],
             8 => [input.Semantic, null, null, null],
             9 => [input.Semantic, null, null],
-            10 => [input.Semantic, options, null, null, null, null],
-            _ => [input.Semantic, "é😀", options, null],
+            _ => [input.Semantic, options, null, null, null, null],
         };
         Assert.True(Assert.IsType<bool>(Call(name, args)));
         switch (route)
@@ -87,9 +94,6 @@ public sealed class Utf8NativeEncodingPreparationTests
             case 8: Assert.Equal(new[] { "a", "😀" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.UTF8.GetString)); break;
             case 9: Assert.Equal("é😀"u8.ToArray(), args[1]); Assert.Equal("x", Encoding.UTF8.GetString(Assert.IsType<byte[]>(args[2]))); break;
             case 10: Assert.Equal(new[] { "a", "😀" }, Assert.IsType<byte[][]>(args[2]).Select(Encoding.UTF8.GetString)); break;
-            default:
-                var analysis = Assert.IsType<Utf8RegexAnalysis>(args[3]); Assert.NotNull(analysis.LiteralUtf8);
-                Assert.Equal("é😀", Encoding.UTF8.GetString(analysis.LiteralUtf8)); break;
         }
     }
     public static IEnumerable<object[]> RootDenials()
@@ -160,16 +164,21 @@ public sealed class Utf8NativeEncodingPreparationTests
             1 => [Node(Utf8TreeNodeKind.Alternate, One('a'), empty), null],
             2 => [Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Boundary), alternate, empty), null, null, null],
             3 => [Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Boundary), One('a'), empty), null, null, null],
-            4 => ["(a*)", null],
-            _ => [Semantic(Node(Utf8TreeNodeKind.Alternate, One('a'), Text("😀")), "a|😀", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase),
-                "a|😀", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null],
+            _ => ["(a*)", null],
         };
         var name = route switch { 0 => "TryExtractLiteralPrefixWithPositiveLiteralLookahead", 1 => "TryUnwrapLiteralAlternation",
             2 => "TryUnwrapLiteralAlternationWithBoundaries", 3 => "TryExtractBoundaryWrappedLiteral",
-            4 => "TryExtractSingleCapturedLiteralPattern", _ => "TryAnalyzeLiteralTree" };
+            _ => "TryExtractSingleCapturedLiteralPattern" };
+        const RegexOptions folded = RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
+        Utf8SemanticRegex? nonAscii = route == 5
+            ? Semantic(Node(Utf8TreeNodeKind.Alternate, One('a'), Text("😀")), "a|😀", folded)
+            : null;
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-        Assert.False(Assert.IsType<bool>(Call(name, args)));
+        if (nonAscii is { } semantic)
+            Assert.False(Utf8NativeExecutionAnalyzer.TryAnalyze(semantic, default, "a|😀", folded, out _));
+        else
+            Assert.False(Assert.IsType<bool>(Call(name, args)));
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
