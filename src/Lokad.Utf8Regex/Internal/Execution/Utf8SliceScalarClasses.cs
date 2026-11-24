@@ -19,7 +19,7 @@ internal static class Utf8SliceScalarClasses
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
     ];
 
-    private const int WordCategories =
+    internal const uint WordCategories =
         (1 << (int)UnicodeCategory.UppercaseLetter) |
         (1 << (int)UnicodeCategory.LowercaseLetter) |
         (1 << (int)UnicodeCategory.TitlecaseLetter) |
@@ -33,7 +33,7 @@ internal static class Utf8SliceScalarClasses
     {
         if (ecma)
             return scalar.Value is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_' or 0x0130;
-        return (WordCategories & (1 << (int)Rune.GetUnicodeCategory(scalar))) != 0 ||
+        return (WordCategories & (1u << (int)Rune.GetUnicodeCategory(scalar))) != 0 ||
             includeJoiners && scalar.Value is 0x200C or 0x200D;
     }
 

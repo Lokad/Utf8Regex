@@ -94,13 +94,38 @@ public sealed class Utf8DeferredRepeatStateTests
         Assert.Equal(0, regex.Count(miss));
     }
 
-    [Fact]
-    public void ARepeatContainingNonwordScalarsCanRewindToTheWordBoundary()
+    [Theory]
+    [InlineData(@"\A(\w+)\b", "\u200c")]
+    [InlineData(@"\A(\p{L}+?)\b", "\u0301")]
+    public void TerminalWordCategoryRepeatsRespectTheBoundaryOnWideInput(string pattern, string wordSuffix)
     {
-        using var regex = new Utf8Regex(@"\A([a.]+)\b");
+        using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 6000 }
+        });
+        var prefix = string.Concat(Enumerable.Repeat("éa", 2048));
+        var hit = System.Text.Encoding.UTF8.GetBytes(prefix + "😀");
+        var miss = System.Text.Encoding.UTF8.GetBytes(prefix + wordSuffix);
+        var end = System.Text.Encoding.UTF8.GetByteCount(prefix);
         var captures = new Utf8CaptureRange[2];
-        Assert.Equal(new Utf8CaptureRange(0, 1), regex.Match("a.."u8, captures: captures));
-        Assert.Equal(new Utf8CaptureRange(0, 1), captures[1]);
+
+        Assert.Equal(new Utf8CaptureRange(0, end), regex.Match(hit, captures: captures));
+        Assert.Equal(new Utf8CaptureRange(0, end), captures[1]);
+        Assert.False(regex.IsMatch(miss));
+        Assert.Equal(0, regex.Count(miss));
+    }
+
+    [Theory]
+    [InlineData(@"\A([a.]+)\b", "a..", 1)]
+    [InlineData(@"\A([\w.]+)\b", "é..", 2)]
+    [InlineData(@"\A(\p{M}+)\b", "\u0301\u0903.", 2)]
+    public void ARepeatContainingNonwordScalarsCanRewindToTheWordBoundary(string pattern, string text, int end)
+    {
+        using var regex = new Utf8Regex(pattern);
+        var captures = new Utf8CaptureRange[2];
+        var input = System.Text.Encoding.UTF8.GetBytes(text);
+        Assert.Equal(new Utf8CaptureRange(0, end), regex.Match(input, captures: captures));
+        Assert.Equal(new Utf8CaptureRange(0, end), captures[1]);
     }
 
     [Fact]

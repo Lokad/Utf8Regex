@@ -524,9 +524,11 @@ internal static partial class Utf8SliceRunner
                 {
                     // Every shorter nonempty word run ends between two
                     // Unicode word scalars. The boundary cannot succeed there.
-                    var asciiWord = asciiOnly && (atom.Low & ~Utf8AsciiBytePredicates.WordSearch.Mask0) == 0 &&
+                    var asciiWord = (atom.Low & ~Utf8AsciiBytePredicates.WordSearch.Mask0) == 0 &&
                         (atom.High & ~Utf8AsciiBytePredicates.WordSearch.Mask1) == 0;
-                    if (repeat.RepeatMinimum == 0 || !instruction.IsDecimalDigitSet && !asciiWord) break;
+                    var categories = asciiOnly ? 0 : program.GetCompleteAsciiCategoryMask(instruction);
+                    var wordScalars = asciiOnly || categories != 0 && (categories & ~Utf8SliceScalarClasses.WordCategories) == 0;
+                    if (repeat.RepeatMinimum == 0 || !asciiWord || !wordScalars) break;
                     rewindFree |= 1UL << (end - repeatIndex);
                     wordBoundary = false;
                 }
