@@ -9,6 +9,26 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8AdjacentSetRepeatTests
 {
     [Theory]
+    [InlineData("AF", true)]
+    [InlineData("AG", false)]
+    [InlineData("Aé", false)]
+    [InlineData("A", false)]
+    public void AdjacentAsciiProofRespectsTheSecondVisit(string text, bool expected)
+    {
+        using var regex = new Utf8Regex("[A-F][A-F]", RegexOptions.Compiled);
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        var input = Encoding.UTF8.GetBytes(text);
+
+        Assert.True(Utf8SliceRunner.MayMatchBranchedAsciiPrefix(program, input, 0, 0,
+            out var partial, proveMatch: true, instructionLimit: 1));
+        Assert.Equal(-1, partial);
+        Assert.Equal(expected, Utf8SliceRunner.MayMatchBranchedAsciiPrefix(program, input, 0, 0,
+            out var end, proveMatch: true, instructionLimit: 3));
+        Assert.Equal(expected ? 2 : -1, end);
+        Assert.Equal(expected, regex.IsMatch(input));
+    }
+
+    [Theory]
     [InlineData(@"\Aitem\s+[0-9]+\z", "item   12345")]
     [InlineData(@"\Aitem(\s+)[0-9]+\z", "item\u2003\u3000 12345")]
     [InlineData(@"(\s+)[0-9]", "π😀  7 xx \u20032")]

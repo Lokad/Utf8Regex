@@ -201,6 +201,7 @@ internal readonly struct Utf8SliceInstruction
     internal const int RepeatExitBeforeTerminalDotFlag = 4;
     internal const int RepeatExitUnobservedDecimalFlag = 8;
     internal const int LeadingCaptureMarkerLimit = 31;
+    internal const int AsciiIntervalPairFlag = 1 << 16;
 
     internal Utf8SliceInstruction(Utf8SliceInstructionKind kind, int a, int b, int c, int d,
         bool isLiteralChoice = false, bool isDecimalDigitSet = false)
@@ -235,7 +236,8 @@ internal readonly struct Utf8SliceInstruction
     // Wide regular capture markers can record where a consecutive marker run ends.
     internal int C { get; }
     // For a positive unfolded Set, the low byte is the first ASCII byte
-    // and the high byte is the interval width. Zero means no exact interval.
+    // and the next byte is the interval width. Zero means no exact interval.
+    // Bit 16 certifies that the following instruction tests the same interval.
     // A Literal at a fork entry can carry the destination after two equal
     // first literals fail the bounded prefix proof.
     // With negative Fork C, D can hold the packed captured prefix plus one.
@@ -246,7 +248,8 @@ internal readonly struct Utf8SliceInstruction
     internal int D { get; }
 
     internal int AsciiIntervalStart => D & 255;
-    internal int AsciiIntervalWidth => D >> 8;
+    internal int AsciiIntervalWidth => (D >> 8) & 255;
+    internal bool HasAdjacentAsciiInterval => (D & AsciiIntervalPairFlag) != 0;
     internal bool MatchesAsciiInterval(int value)
         => (uint)(value - AsciiIntervalStart) < (uint)AsciiIntervalWidth;
 
@@ -601,6 +604,14 @@ internal sealed class Utf8SliceProgram
                 Utf8SliceRunner.MarkExcludedLoopStart(instructions, setMasks, pc, budget);
             else if (instruction.Kind == Utf8SliceInstructionKind.Fork && !rightToLeft && !isNonBacktracking)
                 Utf8SliceRunner.PrepareAsciiFork(instructions, setMasks, pc, budget);
+            else if (instruction is { Kind: Utf8SliceInstructionKind.Set, D: > 0 } &&
+                !rightToLeft && !isNonBacktracking && pc + 1 < instructions.Length)
+            {
+                budget.ChargeWork(1);
+                if (instructions[pc + 1] is { Kind: Utf8SliceInstructionKind.Set } follower && follower.D == instruction.D)
+                    instructions[pc] = new(instruction.Kind, instruction.A, instruction.B, instruction.C,
+                        instruction.D | Utf8SliceInstruction.AsciiIntervalPairFlag, instruction.IsLiteralChoice);
+            }
             readsCaptures |= instruction.Kind is Utf8SliceInstructionKind.Backref or Utf8SliceInstructionKind.TestGroup or
                 Utf8SliceInstructionKind.BalanceStart or Utf8SliceInstructionKind.BalancePop;
             if (instruction.Kind == Utf8SliceInstructionKind.CaptureStart) captureIsOpen = true;

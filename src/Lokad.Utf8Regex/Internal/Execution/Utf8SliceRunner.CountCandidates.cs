@@ -1799,6 +1799,14 @@ internal static partial class Utf8SliceRunner
                     if ((uint)position >= (uint)input.Length || !entry.MatchesAsciiInterval(input[position]))
                         return BranchedPrefixRejected;
                     position++;
+                    if (entry.HasAdjacentAsciiInterval && remaining != 0)
+                    {
+                        remaining--;
+                        if (position == input.Length || !entry.MatchesAsciiInterval(input[position]))
+                            return BranchedPrefixRejected;
+                        position++;
+                        index++;
+                    }
                     continue;
                 case Utf8SliceInstructionKind.Set:
                     break;
