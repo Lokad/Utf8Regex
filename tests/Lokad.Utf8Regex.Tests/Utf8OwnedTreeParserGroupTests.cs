@@ -323,18 +323,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
         Assert.NotNull(actual);
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, options: (RegexOptions)options);
-        var copiedNames9 = new string[product.CaptureGroupCount + 1];
-        for (var captureSlot9 = 0; captureSlot9 < copiedNames9.Length; captureSlot9++)
-        {
-            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
-                product.TryCopyGroupNameUtf8(captureSlot9, [], out var nameLength9));
-            var nameBytes9 = new byte[nameLength9];
-            Assert.Equal(System.Buffers.OperationStatus.Done,
-                product.TryCopyGroupNameUtf8(captureSlot9, nameBytes9, out var written9));
-            Assert.Equal(nameLength9, written9);
-            copiedNames9[captureSlot9] = System.Text.Encoding.UTF8.GetString(nameBytes9);
-        }
-        Assert.Equal(oracle.GetGroupNames(), copiedNames9);
+        Assert.Equal(oracle.GetGroupNames(), Utf8GroupNames.Read(product));
         Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, product.CaptureGroupCount + 1).Select(product.GroupNumberFromCaptureSlot).ToArray());
         foreach (var inputText in inputs)
         {
@@ -378,18 +367,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
         Assert.NotNull(actual);
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, options: (RegexOptions)options);
-        var copiedNames10 = new string[product.CaptureGroupCount + 1];
-        for (var captureSlot10 = 0; captureSlot10 < copiedNames10.Length; captureSlot10++)
-        {
-            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
-                product.TryCopyGroupNameUtf8(captureSlot10, [], out var nameLength10));
-            var nameBytes10 = new byte[nameLength10];
-            Assert.Equal(System.Buffers.OperationStatus.Done,
-                product.TryCopyGroupNameUtf8(captureSlot10, nameBytes10, out var written10));
-            Assert.Equal(nameLength10, written10);
-            copiedNames10[captureSlot10] = System.Text.Encoding.UTF8.GetString(nameBytes10);
-        }
-        Assert.Equal(oracle.GetGroupNames(), copiedNames10);
+        Assert.Equal(oracle.GetGroupNames(), Utf8GroupNames.Read(product));
         Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, product.CaptureGroupCount + 1).Select(product.GroupNumberFromCaptureSlot).ToArray());
         Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
         foreach (var inputText in inputs)

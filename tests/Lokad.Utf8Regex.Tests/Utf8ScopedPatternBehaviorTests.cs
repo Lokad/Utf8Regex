@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -28,15 +27,7 @@ public sealed class Utf8ScopedPatternBehaviorTests
 
         Assert.Equal(oracle.GetGroupNumbers(),
             Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot));
-        var names = oracle.GetGroupNames();
-        for (var slot = 0; slot < names.Length; slot++)
-        {
-            var expected = Encoding.UTF8.GetBytes(names[slot]);
-            var actual = new byte[expected.Length];
-            Assert.Equal(OperationStatus.Done, regex.TryCopyGroupNameUtf8(slot, actual, out var written));
-            Assert.Equal(expected.Length, written);
-            Assert.Equal(expected, actual);
-        }
+        Assert.Equal(oracle.GetGroupNames(), Utf8GroupNames.Read(regex));
 
         void CheckInput(string input)
         {

@@ -52,18 +52,7 @@ public sealed class Utf8LoweringDepthTests
         var pattern = new string('(', 500) + "(?<word>abc)" + new string(')', 500);
         var utf8 = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var runtime = new Regex(pattern, RegexOptions.CultureInvariant);
-        var copiedNames3 = new string[utf8.CaptureGroupCount + 1];
-        for (var captureSlot3 = 0; captureSlot3 < copiedNames3.Length; captureSlot3++)
-        {
-            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
-                utf8.TryCopyGroupNameUtf8(captureSlot3, [], out var nameLength3));
-            var nameBytes3 = new byte[nameLength3];
-            Assert.Equal(System.Buffers.OperationStatus.Done,
-                utf8.TryCopyGroupNameUtf8(captureSlot3, nameBytes3, out var written3));
-            Assert.Equal(nameLength3, written3);
-            copiedNames3[captureSlot3] = System.Text.Encoding.UTF8.GetString(nameBytes3);
-        }
-        Assert.Equal(runtime.GetGroupNames(), copiedNames3);
+        Assert.Equal(runtime.GetGroupNames(), Utf8GroupNames.Read(utf8));
         Assert.Equal(runtime.GetGroupNumbers(), Enumerable.Range(0, utf8.CaptureGroupCount + 1).Select(utf8.GroupNumberFromCaptureSlot).ToArray());
         Assert.Equal(runtime.GroupNumberFromName("word"), utf8.GroupNumberFromUtf8Name("word"u8));
         Assert.True(utf8.IsMatch(Encoding.UTF8.GetBytes("xxabcxx")));

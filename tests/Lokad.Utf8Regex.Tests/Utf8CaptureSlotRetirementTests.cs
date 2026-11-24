@@ -35,18 +35,7 @@ public sealed class Utf8CaptureSlotRetirementTests
         var oracle = new Regex(pattern, options & ~RegexOptions.Compiled);
         var regex = new Utf8Regex(pattern, options: options);
         Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
-        var copiedNames2 = new string[regex.CaptureGroupCount + 1];
-        for (var captureSlot2 = 0; captureSlot2 < copiedNames2.Length; captureSlot2++)
-        {
-            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
-                regex.TryCopyGroupNameUtf8(captureSlot2, [], out var nameLength2));
-            var nameBytes2 = new byte[nameLength2];
-            Assert.Equal(System.Buffers.OperationStatus.Done,
-                regex.TryCopyGroupNameUtf8(captureSlot2, nameBytes2, out var written2));
-            Assert.Equal(nameLength2, written2);
-            copiedNames2[captureSlot2] = System.Text.Encoding.UTF8.GetString(nameBytes2);
-        }
-        Assert.Equal(oracle.GetGroupNames(), copiedNames2);
+        Assert.Equal(oracle.GetGroupNames(), Utf8GroupNames.Read(regex));
         foreach (var name in oracle.GetGroupNames()) Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(name)));
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle, [text]);
         var input = Encoding.UTF8.GetBytes(text);

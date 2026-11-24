@@ -106,18 +106,7 @@ public sealed class Utf8SliceSparseGroupTests
         oracle = Utf8ScalarCaptureFixture.Project(oracle);
         var numbers = oracle.GetGroupNumbers();
         Assert.Equal(numbers, Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
-        var copiedNames24 = new string[regex.CaptureGroupCount + 1];
-        for (var captureSlot24 = 0; captureSlot24 < copiedNames24.Length; captureSlot24++)
-        {
-            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
-                regex.TryCopyGroupNameUtf8(captureSlot24, [], out var nameLength24));
-            var nameBytes24 = new byte[nameLength24];
-            Assert.Equal(System.Buffers.OperationStatus.Done,
-                regex.TryCopyGroupNameUtf8(captureSlot24, nameBytes24, out var written24));
-            Assert.Equal(nameLength24, written24);
-            copiedNames24[captureSlot24] = System.Text.Encoding.UTF8.GetString(nameBytes24);
-        }
-        Assert.Equal(oracle.GetGroupNames(), copiedNames24);
+        Assert.Equal(oracle.GetGroupNames(), Utf8GroupNames.Read(regex));
         foreach (var name in oracle.GetGroupNames().Concat(new[] { "00", "01", "05", "012", "1", "x", "12", "missing" }))
             Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(name)));
         using var source = new CancellationTokenSource();

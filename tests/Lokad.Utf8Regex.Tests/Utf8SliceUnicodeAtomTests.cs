@@ -134,18 +134,7 @@ public sealed class Utf8SliceUnicodeAtomTests
         }
         Assert.Equal(metadata.GetGroupNames(), oracle.GetGroupNames());
         Assert.Equal(metadata.GetGroupNumbers(), oracle.GetGroupNumbers());
-        var copiedNames25 = new string[regex.CaptureGroupCount + 1];
-        for (var captureSlot25 = 0; captureSlot25 < copiedNames25.Length; captureSlot25++)
-        {
-            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
-                regex.TryCopyGroupNameUtf8(captureSlot25, [], out var nameLength25));
-            var nameBytes25 = new byte[nameLength25];
-            Assert.Equal(System.Buffers.OperationStatus.Done,
-                regex.TryCopyGroupNameUtf8(captureSlot25, nameBytes25, out var written25));
-            Assert.Equal(nameLength25, written25);
-            copiedNames25[captureSlot25] = System.Text.Encoding.UTF8.GetString(nameBytes25);
-        }
-        Assert.Equal(metadata.GetGroupNames(), copiedNames25);
+        Assert.Equal(metadata.GetGroupNames(), Utf8GroupNames.Read(regex));
         Assert.Equal(metadata.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         AssertOwned(regex);
     }

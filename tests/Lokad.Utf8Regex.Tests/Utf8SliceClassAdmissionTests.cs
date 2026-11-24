@@ -107,18 +107,7 @@ public sealed class Utf8SliceClassAdmissionTests
         var regex = new Utf8Regex(pattern, options: options);
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, options));
         Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
-        var copiedNames18 = new string[regex.CaptureGroupCount + 1];
-        for (var captureSlot18 = 0; captureSlot18 < copiedNames18.Length; captureSlot18++)
-        {
-            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
-                regex.TryCopyGroupNameUtf8(captureSlot18, [], out var nameLength18));
-            var nameBytes18 = new byte[nameLength18];
-            Assert.Equal(System.Buffers.OperationStatus.Done,
-                regex.TryCopyGroupNameUtf8(captureSlot18, nameBytes18, out var written18));
-            Assert.Equal(nameLength18, written18);
-            copiedNames18[captureSlot18] = System.Text.Encoding.UTF8.GetString(nameBytes18);
-        }
-        Assert.Equal(oracle.GetGroupNames(), copiedNames18);
+        Assert.Equal(oracle.GetGroupNames(), Utf8GroupNames.Read(regex));
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
         Assert.Equal(oracle.Count(text), regex.Count(input));
         var expected = oracle.EnumerateMatches(text);

@@ -82,18 +82,7 @@ public sealed class Utf8SliceNamedTests
     {
         var regex = new Utf8Regex("(?<b>a)(c)+", options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
-        var copiedNames23 = new string[regex.CaptureGroupCount + 1];
-        for (var captureSlot23 = 0; captureSlot23 < copiedNames23.Length; captureSlot23++)
-        {
-            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
-                regex.TryCopyGroupNameUtf8(captureSlot23, [], out var nameLength23));
-            var nameBytes23 = new byte[nameLength23];
-            Assert.Equal(System.Buffers.OperationStatus.Done,
-                regex.TryCopyGroupNameUtf8(captureSlot23, nameBytes23, out var written23));
-            Assert.Equal(nameLength23, written23);
-            copiedNames23[captureSlot23] = System.Text.Encoding.UTF8.GetString(nameBytes23);
-        }
-        Assert.Equal(new[] { "0", "1", "b" }, copiedNames23);
+        Assert.Equal(new[] { "0", "1", "b" }, Utf8GroupNames.Read(regex));
         Assert.Equal(new[] { 0, 1, 2 }, Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         Assert.Equal(1, regex.GroupNumberFromUtf8Name("1"u8));
         Assert.Equal(2, regex.GroupNumberFromUtf8Name("b"u8));

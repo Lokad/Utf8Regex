@@ -18,29 +18,7 @@ public sealed class Utf8NativeCompilationTests
         Array.Fill(source, (byte)0xff);
         Assert.Equal(pattern, native.Pattern);
         Assert.Equal(Enumerable.Range(0, text.CaptureGroupCount + 1).Select(text.GroupNumberFromCaptureSlot).ToArray(), Enumerable.Range(0, native.CaptureGroupCount + 1).Select(native.GroupNumberFromCaptureSlot).ToArray());
-        var copiedNames4 = new string[text.CaptureGroupCount + 1];
-        for (var captureSlot4 = 0; captureSlot4 < copiedNames4.Length; captureSlot4++)
-        {
-            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
-                text.TryCopyGroupNameUtf8(captureSlot4, [], out var nameLength4));
-            var nameBytes4 = new byte[nameLength4];
-            Assert.Equal(System.Buffers.OperationStatus.Done,
-                text.TryCopyGroupNameUtf8(captureSlot4, nameBytes4, out var written4));
-            Assert.Equal(nameLength4, written4);
-            copiedNames4[captureSlot4] = System.Text.Encoding.UTF8.GetString(nameBytes4);
-        }
-        var copiedNames5 = new string[native.CaptureGroupCount + 1];
-        for (var captureSlot5 = 0; captureSlot5 < copiedNames5.Length; captureSlot5++)
-        {
-            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
-                native.TryCopyGroupNameUtf8(captureSlot5, [], out var nameLength5));
-            var nameBytes5 = new byte[nameLength5];
-            Assert.Equal(System.Buffers.OperationStatus.Done,
-                native.TryCopyGroupNameUtf8(captureSlot5, nameBytes5, out var written5));
-            Assert.Equal(nameLength5, written5);
-            copiedNames5[captureSlot5] = System.Text.Encoding.UTF8.GetString(nameBytes5);
-        }
-        Assert.Equal(copiedNames4, copiedNames5);
+        Assert.Equal(Utf8GroupNames.Read(text), Utf8GroupNames.Read(native));
         string[] subjects = ["", "a", "abc", "aaaa", "ababc", "é😀😀b", "é😀é😀", "éê😀🙏",
             "xé😀aabc", "a\0é\u0301😀", "é \v \u00a0 😀😀", "\nabc\n", "KkKéÉ", "🙏😀x"];
         foreach (var subject in subjects)

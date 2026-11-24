@@ -89,18 +89,7 @@ internal static class Utf8AsciiScalarOperationAssertions
         if (requireSlice) Assert.True(metadataRegex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Equal(metadata.GetGroupNames(), oracle.GetGroupNames());
         Assert.Equal(metadata.GetGroupNumbers(), oracle.GetGroupNumbers());
-        var copiedNames1 = new string[metadataRegex.CaptureGroupCount + 1];
-        for (var captureSlot1 = 0; captureSlot1 < copiedNames1.Length; captureSlot1++)
-        {
-            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
-                metadataRegex.TryCopyGroupNameUtf8(captureSlot1, [], out var nameLength1));
-            var nameBytes1 = new byte[nameLength1];
-            Assert.Equal(System.Buffers.OperationStatus.Done,
-                metadataRegex.TryCopyGroupNameUtf8(captureSlot1, nameBytes1, out var written1));
-            Assert.Equal(nameLength1, written1);
-            copiedNames1[captureSlot1] = System.Text.Encoding.UTF8.GetString(nameBytes1);
-        }
-        Assert.Equal(metadata.GetGroupNames(), copiedNames1);
+        Assert.Equal(metadata.GetGroupNames(), Utf8GroupNames.Read(metadataRegex));
         Assert.Equal(metadata.GetGroupNumbers(), Enumerable.Range(0, metadataRegex.CaptureGroupCount + 1).Select(metadataRegex.GroupNumberFromCaptureSlot).ToArray());
         Owned(metadataRegex);
 

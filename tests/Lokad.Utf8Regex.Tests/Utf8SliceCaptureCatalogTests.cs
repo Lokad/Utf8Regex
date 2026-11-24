@@ -27,18 +27,7 @@ public sealed class Utf8SliceCaptureCatalogTests
             var regex = new Utf8Regex(pattern, options: options);
             foreach (var name in new[] { "", "0", "00", "1", "01", "2", "12", "012", "x", "é", "missing", "-1", " 1", "2147483648" })
                 Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(name)));
-            var copiedNames17 = new string[regex.CaptureGroupCount + 1];
-            for (var captureSlot17 = 0; captureSlot17 < copiedNames17.Length; captureSlot17++)
-            {
-                Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
-                    regex.TryCopyGroupNameUtf8(captureSlot17, [], out var nameLength17));
-                var nameBytes17 = new byte[nameLength17];
-                Assert.Equal(System.Buffers.OperationStatus.Done,
-                    regex.TryCopyGroupNameUtf8(captureSlot17, nameBytes17, out var written17));
-                Assert.Equal(nameLength17, written17);
-                copiedNames17[captureSlot17] = System.Text.Encoding.UTF8.GetString(nameBytes17);
-            }
-            var names = copiedNames17;
+            var names = Utf8GroupNames.Read(regex);
             var numbers = Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray();
             Assert.Equal(oracle.GetGroupNames(), names);
             Assert.Equal(oracle.GetGroupNumbers(), numbers);
