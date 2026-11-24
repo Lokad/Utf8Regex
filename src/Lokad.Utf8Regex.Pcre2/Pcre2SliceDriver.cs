@@ -243,12 +243,25 @@ internal static class Pcre2SliceDriver
         int lastStart, byte? leadingAsciiByte, Utf8SliceSlots slots, scoped ref Utf8SliceRunner.AttemptWorkspace workspace,
         scoped ref Utf8SliceInvocation invocation, int delimiter = -1)
     {
+        var seekLineStart = leadingAsciiByte is { } head && program.Instructions[0] is
+            { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning, B: 1, C: var literal } &&
+            literal == head + 1;
         while (position <= lastStart)
         {
             if (leadingAsciiByte is { } leading && position < input.Length &&
-                input[position] != leading && !SeekLeadingAsciiByte(
-                    lastStart < input.Length ? input[..(lastStart + 1)] : input, leading, ref position, ref invocation))
-                return -1;
+                (input[position] != leading || seekLineStart && position != 0 && input[position - 1] != (byte)'\n'))
+            {
+                var candidates = lastStart < input.Length ? input[..(lastStart + 1)] : input;
+                if (seekLineStart)
+                {
+                    // The mandatory LF anchor and exact first byte bound discovery only.
+                    // The verifier still sees the complete subject and the original origin.
+                    ThrowIfSliceBreached(Utf8SliceRunner.TrySeekBeginning(program, candidates, ref position, ref invocation));
+                    if (position < 0) return -1;
+                }
+                else if (!SeekLeadingAsciiByte(candidates, leading, ref position, ref invocation))
+                    return -1;
+            }
             var outcome = Utf8SliceRunner.TryMatchAt(program, input, position, slots.Starts, slots.Ends,
                 false, false, IsScalarAligned(input, position), ref workspace, ref invocation);
             ThrowIfSliceBreached(outcome.Breach);

@@ -79,6 +79,23 @@ public sealed class Pcre2MultilineSearchTests
     }
 
     [Fact]
+    public void ExactLinePrefixSkipsInteriorDecoysAndFindsPairAcrossScanBlocks()
+    {
+        using var regex = new Utf8Pcre2Regex("^ERROR: .+$", options: Pcre2CompileOptions.Multiline,
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 128 } });
+        using var live = new CancellationTokenSource();
+        var decoys = "😀 " + string.Concat(Enumerable.Repeat("DEBUG: ERROR: decoy ", 90));
+        var prefix = decoys + new string('x', 2047 - Encoding.UTF8.GetByteCount(decoys)) + "\n";
+        var input = Encoding.UTF8.GetBytes(prefix + "ERROR: é😀");
+
+        var matches = regex.EnumerateMatches(input, cancellationToken: live.Token);
+        Assert.True(matches.MoveNext());
+        Assert.Equal(2048, matches.Current.StartOffsetInBytes);
+        Assert.Equal(input.Length, matches.Current.EndOffsetInBytes);
+        Assert.False(matches.MoveNext());
+    }
+
+    [Fact]
     public void ExactLinePrefixMatchesBclAcrossAsciiOffsets()
     {
         var direct = new Utf8Pcre2Regex("^ERROR: .+$", options: Pcre2CompileOptions.Multiline);
