@@ -156,20 +156,34 @@ internal static partial class Utf8SearchExecutor
         ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
         var confirmBoundaries = leadingBoundary != Utf8BoundaryRequirement.None ||
             trailingBoundary != Utf8BoundaryRequirement.None;
-        var longest = 0;
-        foreach (var literal in literals)
+        var longest = prepared.LongestLength;
+        if (longest is > 0 and <= 1024)
         {
+            // The immutable length bound is prepared once. Charge a single
+            // entry check before reading the subject window.
             if (!confirmBoundaries)
             {
                 var eligibility = invocation.TryChargeInputStep();
                 if (eligibility != Utf8ExecutionLimitKind.None) return eligibility;
             }
-            if (literal.Length is 0 or > 1024)
+        }
+        else
+        {
+            longest = 0;
+            foreach (var literal in literals)
             {
-                longest = 0;
-                break;
+                if (!confirmBoundaries)
+                {
+                    var eligibility = invocation.TryChargeInputStep();
+                    if (eligibility != Utf8ExecutionLimitKind.None) return eligibility;
+                }
+                if (literal.Length is 0 or > 1024)
+                {
+                    longest = 0;
+                    break;
+                }
+                longest = Math.Max(longest, literal.Length);
             }
-            longest = Math.Max(longest, literal.Length);
         }
         // One bucket per original needle proves distinct heads. For raw
         // candidates, one shared prefix can screen all needles together.

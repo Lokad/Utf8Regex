@@ -535,12 +535,20 @@ internal static partial class AsciiSearch
 
 internal readonly struct AsciiExactLiteralSearchData
 {
-    public AsciiExactLiteralSearchData(PreparedByteSearch firstByteSearch, AsciiExactLiteralBucket[] buckets, int[] bucketIndexMap, int shortestLength)
-    { FirstByteSearch = firstByteSearch; Buckets = buckets; BucketIndexMap = bucketIndexMap; ShortestLength = shortestLength; }
+    public AsciiExactLiteralSearchData(PreparedByteSearch firstByteSearch, AsciiExactLiteralBucket[] buckets,
+        int[] bucketIndexMap, int shortestLength, int longestLength)
+    {
+        FirstByteSearch = firstByteSearch;
+        Buckets = buckets;
+        BucketIndexMap = bucketIndexMap;
+        ShortestLength = shortestLength;
+        LongestLength = longestLength;
+    }
     public PreparedByteSearch FirstByteSearch { get; }
     public AsciiExactLiteralBucket[] Buckets { get; }
     public int[] BucketIndexMap { get; }
     public int ShortestLength { get; }
+    public int LongestLength { get; }
 }
 
 internal readonly struct AsciiExactLiteralBucket

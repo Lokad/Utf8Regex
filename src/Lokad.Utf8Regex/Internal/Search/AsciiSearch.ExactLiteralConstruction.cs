@@ -9,18 +9,20 @@ internal static partial class AsciiSearch
     // equality. It has no consumer for prefix copies or second-byte membership.
     internal static AsciiExactLiteralSearchData CreateExactLiteralSearchData(byte[][] literals, bool fullMetadata)
     {
-        if (literals.Length == 0) return new(PreparedByteSearch.FromOwnedValues([], null), [], [], int.MaxValue);
+        if (literals.Length == 0) return new(PreparedByteSearch.FromOwnedValues([], null), [], [], int.MaxValue, 0);
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
         budget.EnterDepth();
         try
         {
             var shortest = int.MaxValue;
+            var longest = 0;
             foreach (var literal in literals)
             {
                 budget.ChargeWork(1);
                 shortest = Math.Min(shortest, literal.Length);
                 if (shortest == 0) break;
+                longest = Math.Max(longest, literal.Length);
             }
             if (shortest == 0)
             {
@@ -32,7 +34,7 @@ internal static partial class AsciiSearch
                 budget.ChargeWork(257);
                 Array.Fill(emptyMap, -1);
                 emptyMap[0] = 0;
-                var empty = new AsciiExactLiteralSearchData(PreparedByteSearch.FromOwnedValues([], null), emptyBuckets, emptyMap, 0);
+                var empty = new AsciiExactLiteralSearchData(PreparedByteSearch.FromOwnedValues([], null), emptyBuckets, emptyMap, 0, 0);
                 scope.Complete();
                 return empty;
             }
@@ -84,7 +86,7 @@ internal static partial class AsciiSearch
             var map = budget.AllocateArray<int>(256, false);
             budget.ChargeWork(256);
             indexByByte.CopyTo(map);
-            var result = new AsciiExactLiteralSearchData(PreparedByteSearch.Create(firstBytes[..distinct]), buckets, map, shortest);
+            var result = new AsciiExactLiteralSearchData(PreparedByteSearch.Create(firstBytes[..distinct]), buckets, map, shortest, longest);
             scope.Complete();
             return result;
         }
