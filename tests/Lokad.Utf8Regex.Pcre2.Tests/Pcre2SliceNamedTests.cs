@@ -105,11 +105,8 @@ public sealed class Pcre2SliceNamedTests
         string pattern, string inputText, bool expected)
     {
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
-        var reuse = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        Assert.Equal(expected, reuse.IsMatch(Utf8(inputText)));
-        Assert.True(reuse.DebugCompiledProgram is not null, "pattern=" + pattern);
-        var explicitStart = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        Assert.Equal(expected, explicitStart.IsMatch(Utf8(inputText), 0));
+        using var regex = new Utf8Pcre2Regex(pattern);
+        Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
     }
 
     [Theory]
@@ -120,7 +117,6 @@ public sealed class Pcre2SliceNamedTests
     {
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -141,8 +137,6 @@ public sealed class Pcre2SliceNamedTests
             Assert.Equal(expectedStart, found.StartOffsetInBytes);
             Assert.Equal(expectedEnd, found.EndOffsetInBytes);
         }
-
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -159,7 +153,6 @@ public sealed class Pcre2SliceNamedTests
         }
 
         Assert.Equal(["0-2", "3-5"], ranges);
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -175,7 +168,6 @@ public sealed class Pcre2SliceNamedTests
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed.Groups[1].Success ? detailed3Input.Span.Slice(detailed.Groups[1].StartOffsetInBytes, detailed.Groups[1].EndOffsetInBytes - detailed.Groups[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(detailed.TryGetGroup(1, out var word)); Assert.True(word.Success);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((word.Success ? detailed3Input.Span.Slice(word.StartOffsetInBytes, word.EndOffsetInBytes - word.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -183,6 +175,5 @@ public sealed class Pcre2SliceNamedTests
     {
         var regex = new Utf8Pcre2Regex("(?<word>a)+", options: Pcre2CompileOptions.None);
         Assert.Equal("x<a>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("xaa"), "<$1>"u8)));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

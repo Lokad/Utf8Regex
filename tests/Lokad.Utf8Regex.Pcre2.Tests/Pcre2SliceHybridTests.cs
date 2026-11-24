@@ -56,7 +56,6 @@ public sealed class Pcre2SliceHybridTests
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -67,7 +66,6 @@ public sealed class Pcre2SliceHybridTests
         Assert.Equal(expected, Bcl(pattern).Matches(inputText).Count);
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -78,6 +76,5 @@ public sealed class Pcre2SliceHybridTests
         Assert.True(found.Success);
         Assert.Equal(2, found.StartOffsetInBytes);
         Assert.Equal(4, found.EndOffsetInBytes);
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

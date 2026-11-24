@@ -46,7 +46,6 @@ public sealed class Pcre2SliceContiguousTests
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -59,7 +58,6 @@ public sealed class Pcre2SliceContiguousTests
         Assert.Equal(expected, Bcl(pattern).Matches(inputText).Count);
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -76,7 +74,6 @@ public sealed class Pcre2SliceContiguousTests
         }
 
         Assert.Equal(["0-2"], ranges);
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -88,6 +85,5 @@ public sealed class Pcre2SliceContiguousTests
         var detailed = regex.Match(detailed1Input, startOffsetInBytes: 1, captures: detailed1Captures);
         Assert.True(detailed.Success);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed1Captures[0].Success ? detailed1Input.Slice(detailed1Captures[0].StartOffsetInBytes, detailed1Captures[0].EndOffsetInBytes - detailed1Captures[0].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

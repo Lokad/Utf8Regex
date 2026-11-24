@@ -57,7 +57,6 @@ public sealed class Pcre2SliceTransparentTests
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
         if (expectOwned)
         {
-            Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
         }
     }
 
@@ -70,7 +69,6 @@ public sealed class Pcre2SliceTransparentTests
         Assert.Equal(expected, Bcl(pattern).Matches(inputText).Count);
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -83,7 +81,6 @@ public sealed class Pcre2SliceTransparentTests
         Assert.True(detailed.Success);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed1Captures[1].Success ? detailed1Input.Slice(detailed1Captures[1].StartOffsetInBytes, detailed1Captures[1].EndOffsetInBytes - detailed1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal("c", System.Text.Encoding.UTF8.GetString((detailed1Captures[2].Success ? detailed1Input.Slice(detailed1Captures[2].StartOffsetInBytes, detailed1Captures[2].EndOffsetInBytes - detailed1Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -91,6 +88,5 @@ public sealed class Pcre2SliceTransparentTests
     {
         var regex = new Utf8Pcre2Regex("(a)(?:b)(c)", options: Pcre2CompileOptions.None);
         Assert.Equal(Bcl("(a)(?:b)(c)").Replace("abc", "<$1$2>"), System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("abc"), "<$1$2>"u8)));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

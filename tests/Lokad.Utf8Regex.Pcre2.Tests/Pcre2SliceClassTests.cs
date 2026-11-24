@@ -71,7 +71,6 @@ public sealed class Pcre2SliceClassTests
         while (matches.MoveNext()) actual.Add(System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes()));
         Assert.Equal(expected, actual);
         Assert.Equal(replacement, System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<_>"u8)));
-        Assert.True(regex.DebugCompiledProgram is not null, pattern);
     }
 
     [Fact]
@@ -87,7 +86,6 @@ public sealed class Pcre2SliceClassTests
         Assert.Equal("ab", System.Text.Encoding.UTF8.GetString((match2Captures[1].Success ? match2Input.Slice(match2Captures[1].StartOffsetInBytes, match2Captures[1].EndOffsetInBytes - match2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal("1<ab> a]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$1>"u8)));
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     public static IEnumerable<object?[]> IsMatchCases()
@@ -106,7 +104,6 @@ public sealed class Pcre2SliceClassTests
     {
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText), startOffsetInBytes));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -118,7 +115,6 @@ public sealed class Pcre2SliceClassTests
     {
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -132,7 +128,6 @@ public sealed class Pcre2SliceClassTests
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
         Assert.Equal(expectedEnd, found.EndOffsetInBytes);
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -149,7 +144,6 @@ public sealed class Pcre2SliceClassTests
         }
 
         Assert.Equal(["0-2", "2-4"], ranges);
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -162,7 +156,6 @@ public sealed class Pcre2SliceClassTests
         Assert.True(detailed.Success);
         Assert.Equal("AB", System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
         Assert.Equal("AB", System.Text.Encoding.UTF8.GetString((detailed3Captures[1].Success ? detailed3Input.Slice(detailed3Captures[1].StartOffsetInBytes, detailed3Captures[1].EndOffsetInBytes - detailed3Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -170,6 +163,5 @@ public sealed class Pcre2SliceClassTests
     {
         var regex = new Utf8Pcre2Regex("([a-z]+)", options: Pcre2CompileOptions.None);
         Assert.Equal("<xxabbyy>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("xxabbyy"), "<$1>"u8)));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

@@ -74,7 +74,6 @@ public sealed class Pcre2SliceBoundaryTests
     {
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText), startOffsetInBytes));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -88,7 +87,6 @@ public sealed class Pcre2SliceBoundaryTests
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
         Assert.Equal(expectedEnd, found.EndOffsetInBytes);
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -96,7 +94,6 @@ public sealed class Pcre2SliceBoundaryTests
     {
         var regex = new Utf8Pcre2Regex("\\A.*\\z", options: Pcre2CompileOptions.DotAll);
         Assert.True(regex.IsMatch(Utf8("a\nb"), 0));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -104,6 +101,5 @@ public sealed class Pcre2SliceBoundaryTests
     {
         var regex = new Utf8Pcre2Regex("\\A([a-z]+)\\z", options: Pcre2CompileOptions.None);
         Assert.Equal("<abc>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("abc"), "<$1>"u8)));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

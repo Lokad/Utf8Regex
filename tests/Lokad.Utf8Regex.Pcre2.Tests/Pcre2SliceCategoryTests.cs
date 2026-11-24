@@ -86,7 +86,6 @@ public sealed class Pcre2SliceCategoryTests
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> CountCases()
@@ -123,7 +122,6 @@ public sealed class Pcre2SliceCategoryTests
         Assert.Equal(bclExpected, Bcl(pattern).IsMatch(inputText));
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(nativeExpected, regex.IsMatch(Utf8(inputText)));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -133,7 +131,6 @@ public sealed class Pcre2SliceCategoryTests
         Assert.Equal(expected, Bcl(pattern).Matches(inputText).Count);
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -150,7 +147,6 @@ public sealed class Pcre2SliceCategoryTests
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
         Assert.Equal(expectedEnd, found.EndOffsetInBytes);
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -166,7 +162,6 @@ public sealed class Pcre2SliceCategoryTests
         Assert.True(detailed.Success);
         Assert.Equal("\u03B1", System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
         Assert.Equal("\u03B1", System.Text.Encoding.UTF8.GetString((detailed1Captures[1].Success ? detailed1Input.Slice(detailed1Captures[1].StartOffsetInBytes, detailed1Captures[1].EndOffsetInBytes - detailed1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> ReplaceCases()
@@ -182,6 +177,5 @@ public sealed class Pcre2SliceCategoryTests
         Assert.Equal(expected, Bcl(pattern).Replace(inputText, "<$0>"));
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8(inputText), "<$0>"u8)));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 }

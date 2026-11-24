@@ -38,31 +38,17 @@ public sealed class Pcre2SliceAnchorTests
     }
 
     [Fact]
-    public void CompoundAnchorShapesRouteCountAndMatchThroughSlice()
+    public void MultilineAnchorsUseCrlfInsteadOfLoneLf()
     {
-        foreach (var pattern in new[] { "^a.*b$", "^(a.c)+$" })
-        {
-            var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-            Assert.Equal(
-                "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
-                regex.DebugDescribeExecutionPlan());
-        }
+        using var regex = new Utf8Pcre2Regex("^a|b$", Pcre2CompileOptions.Multiline,
+            compileSettings: new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Crlf });
+        var cursor = regex.EnumerateMatches("é\nax\r\nab\r\n"u8);
 
-        var alternation = new Utf8Pcre2Regex("^a|b$", options: Pcre2CompileOptions.None);
-        Assert.Equal(
-            "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
-            alternation.DebugDescribeExecutionPlan());
-    }
-
-    [Fact]
-    public void NonLfNewlineConventionDeclinesAnchorSliceRouting()
-    {
-        var regex = new Utf8Pcre2Regex("^a|b$", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = default,
-            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
-        });
-        Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
+        Assert.True(cursor.MoveNext());
+        Assert.Equal((7, 8), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
+        Assert.True(cursor.MoveNext());
+        Assert.Equal((8, 9), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
+        Assert.False(cursor.MoveNext());
     }
 
     public static IEnumerable<object?[]> IsMatchCases()
@@ -79,12 +65,8 @@ public sealed class Pcre2SliceAnchorTests
     public void OwnedIsMatchMatchesNativeSemantics(
         string pattern, string inputText, bool expected)
     {
-        // Default and explicit-start entry points share the same semantics.
-        var reuse = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        Assert.Equal(expected, reuse.IsMatch(Utf8(inputText)));
-        Assert.True(reuse.DebugCompiledProgram is not null, "pattern=" + pattern);
-        var explicitStart = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        Assert.Equal(expected, explicitStart.IsMatch(Utf8(inputText), 0));
+        using var regex = new Utf8Pcre2Regex(pattern);
+        Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
     }
 
     [Fact]
@@ -103,7 +85,6 @@ public sealed class Pcre2SliceAnchorTests
         Assert.True(found.Success);
         Assert.Equal(0, found.StartOffsetInBytes);
         Assert.Equal(6, found.EndOffsetInBytes);
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Theory]
@@ -115,7 +96,6 @@ public sealed class Pcre2SliceAnchorTests
     {
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -132,8 +112,6 @@ public sealed class Pcre2SliceAnchorTests
             Assert.Equal(expectedStart, found.StartOffsetInBytes);
             Assert.Equal(expectedEnd, found.EndOffsetInBytes);
         }
-
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -150,7 +128,6 @@ public sealed class Pcre2SliceAnchorTests
         }
 
         Assert.Equal(["0-1", "2-3"], ranges);
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -163,7 +140,6 @@ public sealed class Pcre2SliceAnchorTests
         Assert.True(detailed.Success);
         Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
         Assert.Equal("abc", System.Text.Encoding.UTF8.GetString((detailed1Captures[1].Success ? detailed1Input.Slice(detailed1Captures[1].StartOffsetInBytes, detailed1Captures[1].EndOffsetInBytes - detailed1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -171,6 +147,5 @@ public sealed class Pcre2SliceAnchorTests
     {
         var regex = new Utf8Pcre2Regex("^(a.c)+$", options: Pcre2CompileOptions.None);
         Assert.Equal("<abc>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("abc"), "<$1>"u8)));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

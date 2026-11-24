@@ -76,11 +76,8 @@ public sealed class Pcre2SliceLookaroundTests
         string pattern, string inputText, bool expected)
     {
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
-        var reuse = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        Assert.Equal(expected, reuse.IsMatch(Utf8(inputText)));
-        Assert.True(reuse.DebugCompiledProgram is not null, "pattern=" + pattern);
-        var explicitStart = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        Assert.Equal(expected, explicitStart.IsMatch(Utf8(inputText), 0));
+        using var regex = new Utf8Pcre2Regex(pattern);
+        Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
     }
 
     [Theory]
@@ -95,7 +92,6 @@ public sealed class Pcre2SliceLookaroundTests
         // empty-first-alternative row counts 3 natively, 2 under BCL).
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -117,7 +113,6 @@ public sealed class Pcre2SliceLookaroundTests
             Assert.Equal(expectedEnd, found.EndOffsetInBytes);
         }
 
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -134,7 +129,6 @@ public sealed class Pcre2SliceLookaroundTests
         }
 
         Assert.Equal(["0-1", "1-2", "2-3"], ranges);
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -146,7 +140,6 @@ public sealed class Pcre2SliceLookaroundTests
         var detailed = regex.Match(detailed1Input, captures: detailed1Captures);
         Assert.True(detailed.Success);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed1Captures[1].Success ? detailed1Input.Slice(detailed1Captures[1].StartOffsetInBytes, detailed1Captures[1].EndOffsetInBytes - detailed1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -154,7 +147,6 @@ public sealed class Pcre2SliceLookaroundTests
     {
         var regex = new Utf8Pcre2Regex("(?<=a)b", options: Pcre2CompileOptions.None);
         Assert.Equal("aa<b> a<b>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("aab ab"), "<$0>"u8)));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]

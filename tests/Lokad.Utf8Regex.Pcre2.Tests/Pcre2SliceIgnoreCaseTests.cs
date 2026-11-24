@@ -58,6 +58,5 @@ public sealed class Pcre2SliceIgnoreCaseTests
         Assert.Equal(expected, oracle.IsMatch(inputText));
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Caseless);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 }

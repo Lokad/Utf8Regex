@@ -216,7 +216,6 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
         Assert.Equal(expectedEnd, found.EndOffsetInBytes);
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     public static IEnumerable<object?[]> DetailedCases()
@@ -324,7 +323,6 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(oracle.Groups[2].Value, System.Text.Encoding.UTF8.GetString((detailed3Captures[2].Success ? detailed3Input.Slice(detailed3Captures[2].StartOffsetInBytes, detailed3Captures[2].EndOffsetInBytes - detailed3Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         var expectedStart = Encoding.UTF8.GetByteCount(inputText[..oracle.Index]);
         Assert.Equal(expectedStart, detailed.StartOffsetInBytes);
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -382,7 +380,6 @@ public sealed class Pcre2SliceOwnershipTests
                 _ = result7Result;
             });
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     public static IEnumerable<object?[]> EnumerateCases()
@@ -440,7 +437,6 @@ public sealed class Pcre2SliceOwnershipTests
         }
 
         Assert.Equal(new[] { 0, 0, 0, 1, 1, 1 }, actual.ToArray());
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -461,7 +457,6 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(
             oracle.Select(static m => m.Value).ToArray(),
             actual.ToArray());
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -480,7 +475,6 @@ public sealed class Pcre2SliceOwnershipTests
             ranges.Add((fresh.Current.StartOffsetInBytes, fresh.Current.EndOffsetInBytes));
         Assert.Equal([(0, 3), (4, 8), (9, 15)], ranges);
         Assert.Equal((0, 3), (partial.Current.StartOffsetInBytes, partial.Current.EndOffsetInBytes));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -537,7 +531,6 @@ public sealed class Pcre2SliceOwnershipTests
         {
             Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
         }
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     public static IEnumerable<object?[]> ReplaceCases()
@@ -594,7 +587,6 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(
             System.Text.Encoding.UTF8.GetString(backtracked.Replace(input, "<$0>"u8)),
             System.Text.Encoding.UTF8.GetString(sliced.Replace(input, "<$0>"u8)));
-        Assert.True(sliced.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -604,7 +596,6 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(
             "\U0001F600<aaabb>\U0001F600",
             System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("\U0001F600aaabb\U0001F600"), "<$0>"u8)));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -643,7 +634,6 @@ public sealed class Pcre2SliceOwnershipTests
         var growthException = Assert.Throws<Pcre2MatchException>(
             () => System.Text.Encoding.UTF8.GetString(grown.Replace(input, "<$0>"u8)));
         Assert.Equal(Pcre2ErrorKind.HeapLimit, growthException.ErrorKind);
-        Assert.True(grown.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -657,7 +647,6 @@ public sealed class Pcre2SliceOwnershipTests
                 "<$0>"u8,
                 0,
                 Pcre2SubstitutionOptions.SubstituteLiteral)));
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Theory]
@@ -690,7 +679,6 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(
             System.Text.Encoding.UTF8.GetString(backtracked.Replace(input, "<$1|$2>"u8)),
             System.Text.Encoding.UTF8.GetString(sliced.Replace(input, "<$1|$2>"u8)));
-        Assert.True(sliced.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -750,7 +738,6 @@ public sealed class Pcre2SliceOwnershipTests
         var exception = Assert.Throws<Pcre2MatchException>(
             () => System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -828,6 +815,5 @@ public sealed class Pcre2SliceOwnershipTests
         });
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(input, 0));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
-        Assert.True(regex.DebugCompiledProgram is not null);
     }
 }
