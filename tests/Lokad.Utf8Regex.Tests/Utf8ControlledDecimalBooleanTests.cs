@@ -185,11 +185,11 @@ public sealed class Utf8ControlledDecimalBooleanTests
     [InlineData("😀11/18/2019😀", true)]
     [InlineData("😀11/18/2019é", false)]
     [InlineData("😀11/18/2019\u200d", false)]
-    public void VerifiedDecimalRangeChecksWideBoundaryWithoutVmScratch(string text, bool expected)
+    public void VerifiedDecimalRangeChecksWideBoundaryWithinProofAllowance(string text, bool expected)
     {
         using var source = new CancellationTokenSource();
         using var limited = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 32, MaxWorkingBytes = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkSteps = 12, MaxWorkingBytes = 1 } });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, limited.IsMatch(input, source.Token));
         Assert.Equal(expected ? new Utf8CaptureRange(4, 14) : default,
