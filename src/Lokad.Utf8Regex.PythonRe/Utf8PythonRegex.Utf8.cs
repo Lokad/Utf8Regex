@@ -151,7 +151,7 @@ public sealed partial class Utf8PythonRegex
         resultBytes = [];
         replacementCount = 0;
         retained = null;
-        if (_canMatchEmpty || count < 0 || startOffsetInBytes != 0 ||
+        if (count < 0 || startOffsetInBytes != 0 ||
             !_canUseZeroOffsetUtf8ValueFastPath || _utf8Regex is null ||
             !plan.TryGetLiteralUtf8(out var literalBytes)) return false;
 

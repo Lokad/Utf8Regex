@@ -31,7 +31,6 @@ public sealed partial class Utf8PythonRegex
     private readonly Utf8Regex? _utf8Regex;
     private readonly KeyValuePair<byte[], int>[] _nameEntriesUtf8;
     private readonly IReadOnlyDictionary<string, int> _namedGroups;
-    private readonly bool _canMatchEmpty;
     private readonly bool _canUseUtf8IterationFastPath;
     private readonly bool _canUseZeroOffsetUtf8SearchValueFastPath;
     private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
@@ -84,12 +83,12 @@ public sealed partial class Utf8PythonRegex
             EffectiveOptions = (parseResult.Options & PythonReCompileOptions.Ascii) != 0
                 ? parseResult.Options
                 : parseResult.Options | PythonReCompileOptions.Unicode;
-            _canMatchEmpty = PythonReTranslator.CanMatchEmpty(parseResult.Root, parseResult);
-            _canUseUtf8IterationFastPath = PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
             var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
+            _canUseUtf8IterationFastPath = isExactLiteral || PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
             // Nullable iteration always uses the Python scalar program. Only the
-            // exact empty literal has a separate Core value-operation consumer.
-            var prepareCore = !_canMatchEmpty || isExactLiteral;
+            // exact empty literal has a separate Core value-operation consumer,
+            // so exact literals need no width walk before preparing Core.
+            var prepareCore = isExactLiteral || !PythonReTranslator.CanMatchEmpty(parseResult.Root, parseResult);
             var translation = PythonReTranslator.Translate(parseResult, prepareCore);
             _scalarProgram = PythonReScalarCompiler.Compile(parseResult);
 
@@ -138,7 +137,7 @@ public sealed partial class Utf8PythonRegex
                 _utf8Regex?.Inspection.ExecutionKind is
                     NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal;
             _canUseZeroOffsetUtf8ValueFastPath =
-                _canUseZeroOffsetUtf8SearchValueFastPath &&
+                _canUseZeroOffsetUtf8SearchValueFastPath && !_scalarProgram.CanMatchEmpty &&
                 _utf8Regex?.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral;
             _replacementPlanCache = Utf8BoundedPreparationCache<byte[], PythonReReplacementPlan>.CreateRetained(ReplacementPlanCacheCapacity, PythonReReplacementKeyComparer.Instance);
 
