@@ -557,7 +557,20 @@ internal sealed class Utf8SliceProgram
             FollowingDecimalLiteralWindow = Utf8SliceRunner.GetShortRepeatLiteralWindow(this, delimiter.LiteralIndex + 2);
             if (FollowingDecimalLiteralWindow is { Min: > 0, Literal: var next } &&
                 !Utf8AsciiBytePredicates.IsDigit(next) && instructions[delimiter.LiteralIndex + 2].IsDecimalDigitSet)
-                FollowingDecimalContinuation = delimiter.LiteralIndex + 6;
+            {
+                var index = delimiter.LiteralIndex + 6;
+                Utf8ConstructionScope.CurrentBudget.ChargeWork(3);
+                if (instructions.Length - index == 6 &&
+                    instructions[index] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true,
+                        RepeatMinimum: > 0 and var minimum, RepeatMaximum: <= 4 and var maximum } &&
+                    instructions[index + 1].IsDecimalDigitSet &&
+                    instructions[index + 4] is { Kind: Utf8SliceInstructionKind.Boundary,
+                        A: 1, B: (int)Utf8SliceWordKind.Unicode, C: 0 } &&
+                    instructions[index + 5].Kind == Utf8SliceInstructionKind.Accept)
+                    FollowingDecimalContinuation = (index, (byte)minimum, (byte)maximum);
+                else
+                    FollowingDecimalContinuation = (index, 0, 0);
+            }
         }
         if (isNonBacktracking && instructions.Length > 64)
             NonBacktrackingWideMasks = Utf8SliceRunner.PrepareWideRegularMasks(this, Utf8ConstructionScope.CurrentBudget);
@@ -788,7 +801,7 @@ internal sealed class Utf8SliceProgram
     internal bool LeadingScalarIsDecimal { get; }
     internal (int Min, int Max, byte Literal) LeadingRepeatLiteralWindow { get; }
     internal (int Min, int Max, byte Literal) FollowingDecimalLiteralWindow { get; }
-    internal int FollowingDecimalContinuation { get; }
+    internal (int Index, byte TerminalMin, byte TerminalMax) FollowingDecimalContinuation { get; }
     internal Utf8BoundedProgramEmitter.Match? EmittedMatch { get; }
     private (ulong Mask, int Anchor) TerminalRepeatsWithoutRewind { get; }
     private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) RequiredFinalAscii { get; }

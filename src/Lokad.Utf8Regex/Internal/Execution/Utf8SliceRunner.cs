@@ -564,7 +564,7 @@ internal static partial class Utf8SliceRunner
             return TryFindFirstAtSingleOrigin(program, input, fromByte, captureStarts, captureEnds, collectHistory,
                 ref workspace, ref invocation, existenceOnly, first, seekBeginning, seekVeryEnd);
 
-        if (program.FollowingDecimalContinuation != 0 && !reverse && !program.IgnoreCase && !program.HasContiguousAnchor &&
+        if (program.FollowingDecimalContinuation.Index != 0 && !reverse && !program.IgnoreCase && !program.HasContiguousAnchor &&
             !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
             first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1, B: (int)Utf8SliceWordKind.Unicode, C: 0 } &&
             screenedLiteral < fromByte && candidatePlan.LiteralUtf8 is [var delimiter] &&
@@ -861,7 +861,7 @@ internal static partial class Utf8SliceRunner
                 { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0, RepeatMaximum: <= 4 };
         var proveDecimalWindow = canProveValue && followingWindow.Min != 0 && program.SkipsTerminalRewind(1);
         var reuseDecimalWindow = proveDecimalWindow && leadingClass == 2 && program.Instructions[1].RepeatMinimum == 1;
-        var verifyFollowingWindow = reuseDecimalWindow && program.FollowingDecimalContinuation != 0 &&
+        var verifyFollowingWindow = reuseDecimalWindow && program.FollowingDecimalContinuation.Index != 0 &&
             !repeatPrefix.Any.HasValue && classAlternatives is null && classLiteral == classDelimiter.Literal;
         var rewoundDigitsAreWords = verifyFollowingWindow &&
             first is { B: (int)Utf8SliceWordKind.Unicode, C: 0 };
@@ -1027,7 +1027,7 @@ internal static partial class Utf8SliceRunner
                     if (followingWindowEnd > 0)
                     {
                         proofPosition = followingWindowEnd;
-                        proofStart = program.FollowingDecimalContinuation;
+                        proofStart = program.FollowingDecimalContinuation.Index;
                         proofLimit -= followingWindow.Max + 3;
                     }
                 }
@@ -1404,7 +1404,7 @@ internal static partial class Utf8SliceRunner
             leadingClass == 2 && (classSearch is null or { Length: 1 }) && verifiedClassLiteralLength == 0 &&
             !Utf8AsciiBytePredicates.IsDigit((byte)whitespaceLiteral) && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
             first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1, B: (int)Utf8SliceWordKind.Unicode, C: 0 } &&
-            program.FollowingDecimalContinuation != 0 && program.Instructions[1].RepeatMinimum == 1 &&
+            program.FollowingDecimalContinuation.Index != 0 && program.Instructions[1].RepeatMinimum == 1 &&
             program.SkipsTerminalRewind(1))
             return CountAlignedDecimalWindows(program, input, position, (byte)whitespaceLiteral,
                 whitespaceLiteralIndex, first, ref invocation);

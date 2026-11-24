@@ -1103,6 +1103,7 @@ internal static partial class Utf8SliceRunner
     {
         count = 0;
         var nextDelimiter = -1;
+        var continuation = program.FollowingDecimalContinuation;
         while (true)
         {
             var breach = TrySeekDecimalLiteralWindow(program, input, delimiter, ref position, ref invocation,
@@ -1128,12 +1129,17 @@ internal static partial class Utf8SliceRunner
             }
 
             var proofPosition = followingEnd > 0 ? followingEnd : windowEnd;
-            var proofStart = followingEnd > 0 ? program.FollowingDecimalContinuation : delimiterInstruction;
+            var proofStart = followingEnd > 0 ? continuation.Index : delimiterInstruction;
             var proofLimit = followingEnd > 0
                 ? BranchedPrefixInstructionLimit - program.FollowingDecimalLiteralWindow.Max - 3
                 : BranchedPrefixInstructionLimit;
-            if (!MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out var provedEnd,
-                proveMatch: true, instructionLimit: proofLimit))
+            int provedEnd;
+            var possible = followingEnd > 0 && continuation.TerminalMax != 0
+                ? (provedEnd = MatchTerminalDecimalBoundary(input, followingEnd,
+                    continuation.TerminalMin, continuation.TerminalMax)) >= 0
+                : MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out provedEnd,
+                    proveMatch: true, instructionLimit: proofLimit);
+            if (!possible)
             {
                 if (!countAll && followingEnd > 0 && program.FollowingDecimalLiteralWindow.Literal == delimiter)
                     nextDelimiter = followingEnd - 1;
@@ -1153,6 +1159,29 @@ internal static partial class Utf8SliceRunner
             position = outcome.EndIndex;
             invocation.AnchorOriginByte = position;
         }
+    }
+
+    private static int MatchTerminalDecimalBoundary(ReadOnlySpan<byte> input, int start, int minimum, int maximum)
+    {
+        // The admitted continuation has at most four digits and one boundary.
+        var digits = input.Slice(start, Math.Min(maximum, input.Length - start));
+        var stop = digits.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+        var count = stop < 0 ? digits.Length : stop;
+        var end = start + count;
+        if (stop >= 0 && digits[stop] >= 128)
+        {
+            end = MatchWideDecimalPrefix(input, end, Math.Max(0, minimum - count), maximum - count);
+            if (end < 0) return end;
+        }
+        else if (count < minimum) return BranchedPrefixRejected;
+
+        // The required digit before the boundary is a Unicode word scalar.
+        if (end == input.Length) return end;
+        var next = input[end];
+        var word = next < 128 ? Utf8AsciiBytePredicates.IsWord(next)
+            : TryReadScalar(input, end, false, out var scalar, out _) &&
+              Utf8SliceScalarClasses.IsWord(scalar, includeJoiners: true, ecma: false);
+        return word ? BranchedPrefixRejected : end;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
