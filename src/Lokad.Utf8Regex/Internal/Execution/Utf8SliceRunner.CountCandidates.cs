@@ -1057,12 +1057,17 @@ internal static partial class Utf8SliceRunner
         }
         var floor = position;
         var earliest = -1;
+        // Two mandatory suffix atoms require at least two bytes. Limit only
+        // delimiter discovery so the class checks still see the whole input.
+        var searchEnd = requiredSuffix.Second != 0 ? Math.Max(0, input.Length - 2) : input.Length;
         Utf8ExecutionLimitKind breach;
         while (true)
         {
             if (screenedDelimiter >= floor)
             {
                 position = screenedDelimiter;
+                if (requiredSuffix.Second != 0 && position > searchEnd - search.GetValueOrDefault().Length)
+                    position = -1;
                 breach = Utf8ExecutionLimitKind.None;
             }
             else if (delimiterAlternatives is not null)
@@ -1073,8 +1078,9 @@ internal static partial class Utf8SliceRunner
             }
             else if (search is { } prepared && (prepared.Length > 1 || !direct))
             {
-                var lastStart = input.Length - prepared.Length;
-                while (true)
+                var lastStart = searchEnd - prepared.Length;
+                breach = Utf8ExecutionLimitKind.None;
+                while (position <= lastStart)
                 {
                     breach = Utf8SearchExecutor.TryFindLiteralCandidate(prepared, input, position, lastStart,
                         false, ref invocation, out position);
@@ -1094,9 +1100,10 @@ internal static partial class Utf8SliceRunner
                     if (position == lastStart) { position = -1; break; }
                     position++;
                 }
+                if (position > lastStart) position = -1;
             }
             else
-                breach = TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
+                breach = TrySeekAsciiCandidate(input[..searchEnd], ref position, literal, literal, ref invocation);
             windowEnd = position;
             if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
             if (requiredSuffix.Second == 0 || search is not { } aligned) break;
