@@ -1015,6 +1015,18 @@ internal static partial class Utf8SliceRunner
         Utf8SliceNode.CategorySetMember[][] categories, int repeatIndex, Utf8ConstructionBudget budget)
     {
         var repeat = code[repeatIndex];
+        if (repeat is { HasSingleAtomBody: true, RepeatMinimum: 0, RepeatMaximum: 1 } &&
+            code[repeatIndex + 1] is ({ Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+                { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }))
+        {
+            var delimiter = FindOptionalAsciiDelimiter(code, repeat.A + 1, setMasks, budget);
+            if (delimiter != 0)
+            {
+                var optionalExit = code[repeat.A];
+                code[repeat.A] = new(optionalExit.Kind, optionalExit.A, optionalExit.B,
+                    optionalExit.C | (delimiter << 4), optionalExit.D);
+            }
+        }
         if (repeat.Kind == Utf8SliceInstructionKind.RepeatLazy)
         {
             if (repeat.HasSingleAtomBody && repeat.A < code.Length - 1 &&
@@ -1165,6 +1177,26 @@ internal static partial class Utf8SliceRunner
                 { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
                 PrepareInlineRepeatAssertion(code, repeatIndex, budget);
         }
+    }
+
+    private static int FindOptionalAsciiDelimiter(ReadOnlySpan<Utf8SliceInstruction> code, int continuation,
+        byte[][] setMasks, Utf8ConstructionBudget budget)
+    {
+        for (var offset = 1; offset <= 4 && continuation + offset < code.Length; offset++)
+        {
+            budget.ChargeWork(2);
+            var before = code[continuation + offset - 1];
+            if (before is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }) break;
+            if (code[continuation + offset] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } literal)
+            {
+                // The short path requires the delimiter where the long path
+                // must consume this last class. The paths cannot both match.
+                var value = literal.A;
+                return (setMasks[before.A][value >> 3] & (1 << (value & 7))) == 0
+                    ? (offset << 8) | value : 0;
+            }
+        }
+        return 0;
     }
 
     private static Utf8SearchAsciiSet ReadAsciiSet(ReadOnlySpan<byte> mask)

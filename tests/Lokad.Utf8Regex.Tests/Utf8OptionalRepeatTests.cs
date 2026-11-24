@@ -50,6 +50,26 @@ public sealed class Utf8OptionalRepeatTests
     }
 
     [Theory]
+    [InlineData(@"\A[01]?[0-9][0-9]\.", "01.é", 3)]
+    [InlineData(@"\A[01]??[0-9][0-9]\.", "012.é", 4)]
+    [InlineData(@"\A[01]?[0-9][0-9]\.", "01", 0)]
+    [InlineData(@"\A[01]?[0-9][0-9]0", "0100", 4)]
+    [InlineData(@"\A[01]??[0-9][0-9]0", "0100", 3)]
+    public void RequiredAsciiDelimiterPreservesTheOrderedOptionalWidth(string pattern, string text, int end)
+    {
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 32, MaxWorkingBytes = 1 }
+        });
+        using var source = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(end != 0, regex.IsMatch(input, source.Token));
+        var match = regex.Match(input, cancellationToken: source.Token);
+        Assert.Equal(end != 0, match.Success);
+        if (match.Success) Assert.Equal(new Utf8CaptureRange(0, end), match);
+    }
+
+    [Theory]
     [InlineData(@"\A(a?)a\z", "a", "", 1)]
     [InlineData(@"\A(\n??)$", "\n", "", 0)]
     [InlineData(@"\A(\n??)\z", "\n", "\n", 1)]

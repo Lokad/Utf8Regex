@@ -255,6 +255,8 @@ internal readonly struct Utf8SliceInstruction
     internal bool RepeatExitAcceptsEmptyTail => (C & RepeatExitAcceptsEmptyTailFlag) != 0;
     internal bool RepeatExitBeforeTerminalDot => (C & RepeatExitBeforeTerminalDotFlag) != 0;
     internal bool RepeatExitUnobservedDecimal => (C & RepeatExitUnobservedDecimalFlag) != 0;
+    // The remaining bits can pack an optional's required ASCII delimiter and its offset.
+    internal int RepeatExitOptionalAsciiDelimiter => C >> 4;
 
     // A RepeatExit can pack up to three required ASCII starters for rewind.
     internal int RepeatExitRewindStarts => D;

@@ -1979,6 +1979,17 @@ internal static partial class Utf8SliceRunner
                             position++;
                             continue;
                         }
+                        if (proveMatch && code[entry.A].RepeatExitOptionalAsciiDelimiter is > 0 and var delimiter)
+                        {
+                            if (remaining == 0) return BranchedPrefixUndecided;
+                            remaining--;
+                            var offset = delimiter >> 8;
+                            if (offset >= input.Length - position) return BranchedPrefixRejected;
+                            // The byte at the short delimiter offset selects
+                            // the only viable width. The tail still verifies it.
+                            if (input[position + offset] != (delimiter & 255)) position++;
+                            continue;
+                        }
                         var lazy = proveMatch && entry.Kind == Utf8SliceInstructionKind.RepeatLazy;
                         var preferred = lazy ? position : position + 1;
                         var end = ProbeBranchedAsciiPrefix(program, input, preferred, index, ref remaining, proveMatch);
