@@ -424,7 +424,8 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                     start,
                     _program.Request,
                     leadingAsciiByte,
-                    slice.DisjointClassDelimiter));
+                    slice.DisjointClassDelimiter,
+                    slice.Fallback.MinimumByteLength));
         }
 
         if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Pcre2Slice)
@@ -1107,7 +1108,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         Pcre2ReplacementPreparation? prepared)
     {
         var cursor = new Pcre2SliceGlobalMatchCursor(slice.SliceProgram, invocation, validated, start, _program.Request,
-            disjointClassDelimiter: slice.DisjointClassDelimiter);
+            disjointClassDelimiter: slice.DisjointClassDelimiter, minimumByteLength: slice.Fallback.MinimumByteLength);
         var slots = Pcre2SliceDriver.RentProgramSlots(slice.SliceProgram, ref cursor.WorkingInvocation);
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var writer = default(Pcre2ReplacementTemplateWriter);

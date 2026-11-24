@@ -25,6 +25,19 @@ public sealed class Pcre2SliceAnchorTests
     }
 
     [Fact]
+    public void ImpossibleFinalStartNeedsOnlyEnumerationAdmission()
+    {
+        using var regex = new Utf8Pcre2Regex("^ERROR: .+$", Pcre2CompileOptions.Multiline, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1 }
+        });
+        using var source = new CancellationTokenSource();
+        var cursor = regex.EnumerateMatches("😀\nERROR: "u8, 5, cancellationToken: source.Token);
+
+        Assert.False(cursor.MoveNext());
+    }
+
+    [Fact]
     public void CompoundAnchorShapesRouteCountAndMatchThroughSlice()
     {
         foreach (var pattern in new[] { "^a.*b$", "^(a.c)+$" })

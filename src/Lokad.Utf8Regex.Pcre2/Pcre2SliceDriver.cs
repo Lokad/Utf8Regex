@@ -20,6 +20,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
     private readonly Pcre2CompileRequest _request;
     private Utf8SliceInvocation _invocation;
     private int _position;
+    private readonly int _lastStart;
     private bool _retryPending;
     private readonly byte? _leadingAsciiByte;
     private readonly int _disjointClassDelimiter;
@@ -43,13 +44,16 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         Utf8BytePosition start,
         Pcre2CompileRequest request,
         byte? leadingAsciiByte = null,
-        int disjointClassDelimiter = -1)
+        int disjointClassDelimiter = -1,
+        int minimumByteLength = 0)
     {
         _program = program;
         _input = input;
         _request = request;
         _invocation = invocation;
         _position = start.Value;
+        var minimum = program.CanMatchEmpty ? 0 : Math.Max(minimumByteLength, leadingAsciiByte.HasValue ? 1 : 0);
+        _lastStart = input.ByteLength - minimum;
         _retryPending = false;
         _leadingAsciiByte = leadingAsciiByte;
         _disjointClassDelimiter = disjointClassDelimiter;
@@ -69,7 +73,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
     internal bool MoveNext(Utf8SliceSlots slots = default)
     {
         Pcre2SliceDriver.CheckInvocation(ref _invocation);
-        if (_position < 0) return false;
+        if (_position < 0 || _position > _lastStart) return false;
         var ownsSlots = slots.Starts is null;
         if (ownsSlots)
             slots = _disjointClassDelimiter >= 0 ? new Utf8SliceSlots([], []) :
@@ -151,8 +155,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
                 _position = advanced.Value;
             }
 
-            var lastStart = _leadingAsciiByte.HasValue ? bytes.Length - 1 : bytes.Length;
-            var end = Pcre2SliceDriver.FindMatchingEnd(_program, bytes, ref _position, lastStart, _leadingAsciiByte, slots,
+            var end = Pcre2SliceDriver.FindMatchingEnd(_program, bytes, ref _position, _lastStart, _leadingAsciiByte, slots,
                 ref workspace, ref _invocation, _disjointClassDelimiter);
             if (end < 0)
             {
