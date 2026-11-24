@@ -54,13 +54,14 @@ public sealed class Pcre2SliceLeadingByteTests
     [InlineData(2048)]
     [InlineData(2049)]
     [InlineData(4096)]
-    public void MissingLeadingByteAdmitsBoundedScansEvenWithoutPublicLimits(int candidateCount)
+    public void MissingLeadingByteAdmitsBoundedScansWithLiveTokenOrWorkLimit(int candidateCount)
     {
         var regex = new Utf8Pcre2Regex(Pattern);
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
         var minimum = direct.Fallback.MinimumByteLength;
         var input = Encoding.UTF8.GetBytes(new string('x', candidateCount + minimum - 1));
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
+        using var live = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, live.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         Assert.False(Pcre2SliceDriver.FindFirst(direct.SliceProgram, input, 0, minimum, ref invocation, direct.Fallback.LeadingAsciiByte).Success);
         Assert.Equal((ulong)(candidateCount + 2047) / 2048, invocation.Budget.Steps);

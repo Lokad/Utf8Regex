@@ -138,7 +138,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
                 _retryPending = false;
                 var retry = Utf8SliceRunner.TryMatchAt(
                     _program, bytes, _position, slots.Starts, slots.Ends,
-                    false, true, Pcre2SliceDriver.IsScalarAligned(bytes, _position),
+                    false, true, startIsScalarBoundary: true,
                     ref workspace, ref _invocation);
                 Pcre2SliceDriver.ThrowIfSliceBreached(retry.Breach);
                 if (retry.IsMatch)
@@ -184,14 +184,6 @@ internal static class Pcre2SliceDriver
     // Count borrows immutable empty inputs when it has no prepared search.
     private static readonly Utf8SearchPlan s_emptyCountSearchPlan = default;
     private static readonly PreparedSearcher s_emptyCountBranchPrefixes = default;
-
-    // Attempt-origin alignment for absolute-origin assertions (`^`): the end
-    // of input is always aligned, and any byte below it is aligned unless it
-    // opens a UTF-8 continuation byte.
-    internal static bool IsScalarAligned(ReadOnlySpan<byte> bytes, int position)
-    {
-        return (uint)position >= (uint)bytes.Length || (bytes[position] & 0xC0) != 0x80;
-    }
 
     // These admitted searches prove a necessary byte/literal absent, never a
     // match present. Share the proof and original authority across scalar public
@@ -274,18 +266,17 @@ internal static class Pcre2SliceDriver
                 (input[position] != leading || seekLineStart && position != 0 && input[position - 1] != (byte)'\n'))
             {
                 var candidates = lastStart < input.Length ? input[..(lastStart + 1)] : input;
-                if (seekLineStart)
-                {
-                    // The mandatory LF anchor and exact first byte bound discovery only.
-                    // The verifier still sees the complete subject and the original origin.
-                    ThrowIfSliceBreached(Utf8SliceRunner.TrySeekBeginning(program, candidates, ref position, ref invocation));
-                    if (position < 0) return -1;
-                }
-                else if (!SeekLeadingAsciiByte(candidates, leading, ref position, ref invocation))
-                    return -1;
+                // The scanner sees only viable starts. The verifier still
+                // sees the full subject and the original invocation.
+                var breach = seekLineStart
+                    ? Utf8SliceRunner.TrySeekBeginning(program, candidates, ref position, ref invocation)
+                    : Utf8SliceRunner.TrySeekAsciiCandidate(candidates, ref position, leading, leading, ref invocation);
+                ThrowIfSliceBreached(breach);
+                if (position < 0) return -1;
             }
+            // The shared scalar matcher checks the candidate's byte boundary.
             var outcome = Utf8SliceRunner.TryMatchAt(program, input, position, slots.Starts, slots.Ends,
-                false, false, IsScalarAligned(input, position), ref workspace, ref invocation);
+                false, false, startIsScalarBoundary: true, ref workspace, ref invocation);
             ThrowIfSliceBreached(outcome.Breach);
             if (outcome.IsMatch) return outcome.EndIndex;
 
@@ -354,22 +345,6 @@ internal static class Pcre2SliceDriver
             position = windowEnd + 1;
         }
         return -1;
-    }
-
-    private static bool SeekLeadingAsciiByte(ReadOnlySpan<byte> bytes, byte leading, ref int position,
-        scoped ref Utf8SliceInvocation invocation)
-    {
-        // This compiler proof is a necessary first byte. Every bounded scan
-        // spends work under the original invocation before reading its block.
-        while (position < bytes.Length)
-        {
-            ThrowIfSliceBreached(invocation.TryChargeInputStep());
-            var length = Math.Min(2048, bytes.Length - position);
-            var found = bytes.Slice(position, length).IndexOf(leading);
-            if (found >= 0) { position += found; return true; }
-            position += length;
-        }
-        return false;
     }
 
     internal static int Count(

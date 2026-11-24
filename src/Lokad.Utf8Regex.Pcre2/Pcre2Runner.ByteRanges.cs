@@ -82,7 +82,7 @@ internal static partial class Pcre2Runner
             // PCRE2 retries an empty match anchored at the same position,
             // admitting only a nonempty result under the original origin.
             var retry = Utf8SliceRunner.TryMatchAt(program, input.Bytes, start.Value, slots.Starts, slots.Ends,
-                false, true, Pcre2SliceDriver.IsScalarAligned(input.Bytes, start.Value), ref workspace, ref invocation);
+                false, true, startIsScalarBoundary: true, ref workspace, ref invocation);
             Pcre2SliceDriver.ThrowIfSliceBreached(retry.Breach);
             if (!retry.IsMatch) return default;
             begin = start.Value; end = retry.EndIndex;
