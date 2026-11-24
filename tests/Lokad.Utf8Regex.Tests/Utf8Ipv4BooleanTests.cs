@@ -44,6 +44,7 @@ public sealed class Utf8Ipv4BooleanTests
     [Theory]
     [InlineData("2345.200.033.1AA")]
     [InlineData("2345.200.033.199")]
+    [InlineData("012.200.033.19X")]
     [InlineData("256.200.033.199")]
     [InlineData("12..23.34.45.56")]
     [InlineData("😀2345.200.033.1AA 23.34.45.56")]

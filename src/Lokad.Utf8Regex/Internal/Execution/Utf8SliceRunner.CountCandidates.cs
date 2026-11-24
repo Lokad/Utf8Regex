@@ -2115,8 +2115,28 @@ internal static partial class Utf8SliceRunner
                         }
                         var lazy = proveMatch && entry.Kind == Utf8SliceInstructionKind.RepeatLazy;
                         var preferred = lazy ? position : position + 1;
-                        var end = ProbeBranchedAsciiPrefix(program, input, preferred, index, ref remaining, proveMatch);
-                        if (end != BranchedPrefixRejected) return end;
+                        if (proveMatch && remaining >= 3 && input.Length - preferred >= 2 && code.Length - index >= 3 &&
+                            code[index] is { Kind: Utf8SliceInstructionKind.Set, HasAdjacentAsciiInterval: true } terminalPair &&
+                            code[index + 2].Kind == Utf8SliceInstructionKind.Accept)
+                        {
+                            // A terminal pair needs only its two visits and Accept.
+                            // Keep the ordinary retry when the preferred endpoint fails.
+                            remaining--;
+                            if (terminalPair.MatchesAsciiInterval(input[preferred]))
+                            {
+                                remaining--;
+                                if (terminalPair.MatchesAsciiInterval(input[preferred + 1]))
+                                {
+                                    remaining--;
+                                    return preferred + 2;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var end = ProbeBranchedAsciiPrefix(program, input, preferred, index, ref remaining, proveMatch);
+                            if (end != BranchedPrefixRejected) return end;
+                        }
                         if (lazy) position++;
                         continue;
                     }
