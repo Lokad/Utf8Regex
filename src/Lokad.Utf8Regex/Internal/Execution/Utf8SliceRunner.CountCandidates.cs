@@ -1767,11 +1767,13 @@ internal static partial class Utf8SliceRunner
                         }
                         if (value >= 128 && optionalAtom.Kind == Utf8SliceInstructionKind.Hybrid)
                             return BranchedPrefixUndecided;
-                        var optionalFirst = GetUnfoldedAsciiRange(optionalAtom, out var optionalLast);
-                        if (optionalFirst >= 0
-                            ? (uint)(value - optionalFirst) > (uint)(optionalLast - optionalFirst)
-                            : value >= 128 || (program.SetMasks[optionalAtom.A][value >> 3] & (1 << (value & 7))) == 0)
-                            continue;
+                        var matchesOptional = optionalAtom.Kind switch
+                        {
+                            Utf8SliceInstructionKind.Literal => value == optionalAtom.A,
+                            Utf8SliceInstructionKind.Set when optionalAtom.D != 0 => optionalAtom.MatchesAsciiInterval(value),
+                            _ => value < 128 && (program.SetMasks[optionalAtom.A][value >> 3] & (1 << (value & 7))) != 0,
+                        };
+                        if (!matchesOptional) continue;
                         if (proveMatch && program.SkipsTerminalRewind(repeatIndex))
                         {
                             position++;
