@@ -2758,7 +2758,7 @@ internal sealed class Pcre2ExecutionDiagnosticsCollector
         WorkspacePoolGrowths);
 }
 
-internal struct Pcre2ResourceBudget
+internal struct Pcre2ResourceBudget : IUtf8InvocationBufferControl
 {
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2ResourceBudget>();
 
@@ -2904,6 +2904,28 @@ internal struct Pcre2ResourceBudget
         {
             throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
         }
+    }
+
+    bool IUtf8InvocationBufferControl.CanRetainWorkspace => CanRetainWorkspace;
+
+    Utf8ExecutionLimitKind IUtf8InvocationBufferControl.TryReserveWorking(ulong bytes)
+    {
+        ReserveWorking(bytes);
+        return Utf8ExecutionLimitKind.None;
+    }
+
+    void IUtf8InvocationBufferControl.ReleaseWorking(ulong bytes) => ReleaseWorking(bytes);
+
+    Utf8ExecutionLimitKind IUtf8InvocationBufferControl.TryChargeWorkspaceStep()
+    {
+        ChargeWorkspaceStep();
+        return Utf8ExecutionLimitKind.None;
+    }
+
+    Utf8ExecutionLimitKind IUtf8InvocationBufferControl.TryChargeResultBytes(ulong bytes)
+    {
+        Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeResultBytes(bytes));
+        return Utf8ExecutionLimitKind.None;
     }
 
     internal void RecordResultProjection()

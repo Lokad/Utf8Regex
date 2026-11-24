@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Pcre2;
@@ -42,37 +41,17 @@ internal ref struct Pcre2InvocationStateStack<T> where T : struct
     [MethodImpl(MethodImplOptions.NoInlining)]
     private T[] Grow(ref Pcre2ResourceBudget budget)
     {
-        var old = _items;
-        var capacity = old is null ? Math.Min(_initialCapacity, _maximumCount)
-            : Math.Min(old.Length <= Array.MaxLength / 2 ? old.Length * 2 : Array.MaxLength, _maximumCount);
-        if (capacity <= _count) budget.ThrowWorkingLimit();
-        var bytes = Utf8ConstructionBudget.ArrayBytes<T>(capacity);
-        budget.ReserveWorking(bytes);
-        var adopted = false;
+        var capacity = _items is null ? Math.Min(_initialCapacity, _maximumCount)
+            : Math.Min(_items.Length <= Array.MaxLength / 2 ? _items.Length * 2 : Array.MaxLength, _maximumCount);
+        var rented = false;
         try
         {
-            budget.ChargeWorkspaceStep();
-            var grown = Utf8ExactStatePool<T>.Rent(capacity, budget.CanRetainWorkspace);
-            if (_trackRents) _rentCount++;
-            try
-            {
-                for (var offset = 0; offset < _count;)
-                {
-                    budget.ChargeWorkspaceStep();
-                    var count = Math.Min(2048, _count - offset);
-                    if (old is not null) old.AsSpan(offset, count).CopyTo(grown.AsSpan(offset, count));
-                    offset += count;
-                }
-                _items = grown;
-                budget.ReleaseWorking(_reservedBytes);
-                _reservedBytes = bytes;
-                adopted = true;
-                if (old is not null) Utf8ExactStatePool<T>.Return(old, budget.CanRetainWorkspace);
-                return grown;
-            }
-            finally { if (!adopted) Utf8ExactStatePool<T>.Return(grown, budget.CanRetainWorkspace); }
+            if (Utf8InvocationStateBuffer<T>.TryGrow(ref _items, _count, capacity, ref _reservedBytes,
+                ref budget, out rented) != Utf8ExecutionLimitKind.None)
+                budget.ThrowWorkingLimit();
+            return GetItems();
         }
-        finally { if (!adopted) budget.ReleaseWorking(bytes); }
+        finally { if (_trackRents && rented) _rentCount++; }
     }
 
     internal T Pop()

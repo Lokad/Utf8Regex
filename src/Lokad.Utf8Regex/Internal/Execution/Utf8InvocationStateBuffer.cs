@@ -41,43 +41,53 @@ internal struct Utf8InvocationStateBuffer<T>
     {
         if (_items is null || _count == _items.Length)
         {
-            var old = _items;
-            var capacity = GrowthCapacity;
-            if (capacity <= _count) return Utf8ExecutionLimitKind.WorkingBytes;
-            var bytes = Utf8ConstructionBudget.ArrayBytes<T>(capacity);
-            var reservationBreach = control.TryReserveWorking(bytes);
-            if (reservationBreach != Utf8ExecutionLimitKind.None) return reservationBreach;
-            var adopted = false;
-            try
-            {
-                var breach = control.TryChargeWorkspaceStep();
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
-                var grown = Utf8ExactStatePool<T>.Rent(capacity, control.CanRetainWorkspace);
-                try
-                {
-                    for (var offset = 0; offset < _count;)
-                    {
-                        breach = control.TryChargeWorkspaceStep();
-                        if (breach != Utf8ExecutionLimitKind.None) return breach;
-                        var count = Math.Min(2048, _count - offset);
-                        if (old is not null) old.AsSpan(offset, count).CopyTo(grown.AsSpan(offset, count));
-                        offset += count;
-                    }
-                    _items = grown;
-                    control.ReleaseWorking(_reservedBytes);
-                    _reservedBytes = bytes;
-                    adopted = true;
-                    if (old is not null) Utf8ExactStatePool<T>.Return(old, control.CanRetainWorkspace);
-                }
-                finally { if (!adopted) Utf8ExactStatePool<T>.Return(grown, control.CanRetainWorkspace); }
-            }
-            finally
-            {
-                if (!adopted) control.ReleaseWorking(bytes);
-            }
+            var breach = TryGrow(ref _items, _count, GrowthCapacity, ref _reservedBytes, ref control, out _);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
         }
         GetItems()[_count++] = value;
         return Utf8ExecutionLimitKind.None;
+    }
+
+    // PCRE2-INTEGRATION-POINT: VM stacks share the old/new overlap admission
+    // and transfer, with their existing checkpoints and exception mapping.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static Utf8ExecutionLimitKind TryGrow<TControl>(ref T[]? items, int count, int capacity,
+        ref ulong reservedBytes, scoped ref TControl control, out bool rented)
+        where TControl : IUtf8InvocationBufferControl, allows ref struct
+    {
+        rented = false;
+        if (capacity <= count) return Utf8ExecutionLimitKind.WorkingBytes;
+        var old = items;
+        var bytes = Utf8ConstructionBudget.ArrayBytes<T>(capacity);
+        var breach = control.TryReserveWorking(bytes);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        var adopted = false;
+        try
+        {
+            breach = control.TryChargeWorkspaceStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var grown = Utf8ExactStatePool<T>.Rent(capacity, control.CanRetainWorkspace);
+            rented = true;
+            try
+            {
+                for (var offset = 0; offset < count;)
+                {
+                    breach = control.TryChargeWorkspaceStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                    var block = Math.Min(2048, count - offset);
+                    old.AsSpan(offset, block).CopyTo(grown.AsSpan(offset, block));
+                    offset += block;
+                }
+                items = grown;
+                control.ReleaseWorking(reservedBytes);
+                reservedBytes = bytes;
+                adopted = true;
+                if (old is not null) Utf8ExactStatePool<T>.Return(old, control.CanRetainWorkspace);
+                return Utf8ExecutionLimitKind.None;
+            }
+            finally { if (!adopted) Utf8ExactStatePool<T>.Return(grown, control.CanRetainWorkspace); }
+        }
+        finally { if (!adopted) control.ReleaseWorking(bytes); }
     }
 
     internal void Pop()
