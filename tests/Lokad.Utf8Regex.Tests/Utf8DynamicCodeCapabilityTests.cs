@@ -39,6 +39,41 @@ public sealed class Utf8DynamicCodeCapabilityTests
     }
 
     [Theory]
+    [InlineData("#Ab10E3", 7)]
+    [InlineData("aF09B2\n", 6)]
+    [InlineData("#aF9\n", 4)]
+    [InlineData("FF0", 3)]
+    [InlineData("A123", -1)]
+    [InlineData("aF09B2\n\n", -1)]
+    [InlineData("Aé3", -1)]
+    [InlineData("ａf9", -1)]
+    [InlineData("a𝟙3", -1)]
+    public void EmittedFoldedFixedRepeatsKeepOrderedEndpointsAndCaptures(string text, int end)
+    {
+        using var regex = new Utf8Regex("^#?([a-f0-9]{6}|[a-f0-9]{3})$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var program = Assert.IsType<Utf8SliceProgram>(regex.Inspection.AvailableOwnedSliceProgram);
+        Assert.Equal(RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled,
+            program.EmittedMatch is not null);
+
+        var input = Encoding.UTF8.GetBytes(text);
+        var success = end >= 0;
+        Assert.Equal(success, regex.IsMatch(input));
+        Assert.Equal(success ? 1 : 0, regex.Count(input));
+        var match = regex.Match(input);
+        Assert.Equal(success, match.Success);
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.Equal(success, cursor.MoveNext(out var retained));
+        if (!success) return;
+
+        var expected = new Utf8CaptureRange(0, end);
+        Assert.Equal(expected, match);
+        Assert.Equal(expected, retained.Value);
+        Assert.Equal(new Utf8CaptureRange(input[0] == '#' ? 1 : 0, end),
+            Assert.Single(retained.GetCaptures(1).ToArray()));
+    }
+
+    [Theory]
     [InlineData("a12", 1)]
     [InlineData("Ab1 2", 2)]
     [InlineData("aX", 0)]

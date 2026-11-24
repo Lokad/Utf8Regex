@@ -349,9 +349,11 @@ internal static class Utf8BoundedProgramEmitter
                     instruction.HasSingleAtomBody && instruction.A + 1 < end && code[pc + 1].IsDecimalDigitSet &&
                     CanEmitDecimalRepeat(program, pc, instruction, shortOrigin)
                     => 1 + EmittedRepeatMaximum(instruction) + visits[instruction.A + 1],
+                // Fixed repeats add byte checks without duplicating the continuation.
                 Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy when
-                    instruction.HasSingleAtomBody && instruction.RepeatMaximum <= 4 && instruction.A + 1 < end &&
-                    IsAsciiAtom(program, code[pc + 1])
+                    instruction.HasSingleAtomBody && instruction.A + 1 < end &&
+                    (instruction.RepeatMaximum <= 4 || instruction.RepeatMinimum == instruction.RepeatMaximum &&
+                        instruction.RepeatMaximum <= MaxExpandedVisits) && IsAsciiAtom(program, code[pc + 1])
                     => CanSkipRepeatRetries(program, pc, instruction)
                         ? 1 + (int)instruction.RepeatMaximum + visits[instruction.A + 1]
                         : RepeatVisits(instruction, visits[instruction.A + 1]),
