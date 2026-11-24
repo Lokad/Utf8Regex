@@ -134,6 +134,7 @@ internal static partial class Utf8SliceRunner
 
         var floor = position;
         var suffix = floor;
+        ref readonly var first = ref code[0];
         while (true)
         {
             var breach = TrySeekLeadingByte(input, ref suffix, follower[0], follower[0], false, ref invocation, follower);
@@ -156,7 +157,8 @@ internal static partial class Utf8SliceRunner
                     var beforeRun = input[floor..edge];
                     foreach (var prefix in prefixes)
                     {
-                        if (!beforeRun.EndsWith(prefix)) continue;
+                        if (!beforeRun.EndsWith(prefix) || first.Kind == Utf8SliceInstructionKind.Boundary &&
+                            !MatchesBoundary(program, first, input, edge - prefix.Length)) continue;
                         // Later followers cannot rewind through this nonspace
                         // byte. Even their longest prefix cannot start earlier
                         // than this floor. Verify in the original forward order.

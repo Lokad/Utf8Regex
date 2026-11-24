@@ -76,7 +76,7 @@ public sealed class Utf8ScalarCountPrefixTests
     public void ExactFamilyFollowerSkipsDecoysWithinFiniteWorkAllowance()
     {
         const string pattern = @"\b(?:public|private|internal)\s+class\b";
-        var decoys = "// " + string.Concat(Enumerable.Repeat("public static | internal record | ", 128)) +
+        var decoys = "// épublic class | " + string.Concat(Enumerable.Repeat("public static | internal record | ", 128)) +
             string.Concat(Enumerable.Repeat("sealed class | ", 8));
         using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
