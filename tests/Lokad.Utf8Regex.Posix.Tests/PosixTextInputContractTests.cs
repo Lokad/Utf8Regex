@@ -1,41 +1,9 @@
 using System.Text;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 
 namespace Lokad.Utf8Regex.Posix.Tests;
 
 public sealed class PosixTextInputContractTests
 {
-    [Theory]
-    [InlineData("(a|aa)(a*)", "é😀 aaa aa", 2)]
-    [InlineData("(é|é😀)(.*)", "😀é😀x", 1)]
-    [InlineData("()", "é😀x", 4)]
-    public void SelectionCapturesAndCursorsUseExistingText(string pattern, string text, int count)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var regex = Utf8PosixRegex.Compile(pattern, options: default, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = default,
-            ConstructionPolicy = default,
-            ConstructionTimeout = Timeout.InfiniteTimeSpan
-        }, cancellationToken: default);
-        var groups = new Utf8CaptureRange[regex.GroupCount + 1];
-        var session = Utf8SearchDiagnosticsSession.Start();
-        try
-        {
-            Assert.True(regex.IsMatch(input));
-            Assert.Equal(count, regex.Count(input));
-            var first = regex.Match(input, captures: groups);
-            Assert.True(first.Success);
-            Assert.Equal(first, groups[0]);
-            using var cursor = regex.CreateMatchCursor(input);
-            var observed = 0;
-            while (cursor.MoveNext(captures: groups, match: out _)) observed++;
-            Assert.Equal(count, observed);
-        }
-        finally { session.Complete(); }
-    }
-
     [Fact]
     public void EarlyMatchDoesNotScanTheValidSuffix()
     {

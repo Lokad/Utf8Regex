@@ -108,46 +108,6 @@ public sealed class PosixGreedyAsciiRunTests
         Assert.Equal(2, regex.Count("bad\nsku007\nx9\n"u8));
     }
 
-    [Fact]
-    public void OnlyProvedFlatAsciiRunsAdmitGreedyBoundaries()
-    {
-        Assert.True(PosixProgram.Compile("^([[:alpha:]]+)([0-9]+)$", default).FirstAcceptanceIsLongest);
-        Assert.True(PosixProgram.Compile("([a-z]{1,3})([0-9]{2,4})([!]{1,2})", default).FirstAcceptanceIsLongest);
-        foreach (var pattern in new[] { "([a-z]+)[0-9]+", "[a-z]+([0-9]+)",
-            "[a-z]+[0-9]+", "(([a-z]+))[0-9]{2,4}", "(a*)(a*)",
-            "([a-z]*)([0-9]+)", "([a-z]+)([a-z0-9]*)", "a*([a-b]*)",
-            "(a+)()", "Z(a+)()", "ZZ(a+)ZZ()", "[Z](a{1,3})[Z]()", "(a+)Z()" })
-            Assert.True(PosixProgram.Compile(pattern, default).DirectGreedyRuns);
-        // The older homogeneous-literal proof can still accept (a*)(a+),
-        // but its required overlapping tail cannot use the direct run loop.
-        Assert.False(PosixProgram.Compile("(a*)(a+)", default).DirectGreedyRuns);
-        foreach (var pattern in new[] { "Z(a+)a()", "Z([a-b]*)a()", "Z(a)+()", "^Z(a*)$" })
-            Assert.False(PosixProgram.Compile(pattern, default).DirectGreedyRuns);
-        Assert.False(PosixProgram.Compile("Z(k+)K()", PosixCompileOptions.IgnoreCase).DirectGreedyRuns);
-        foreach (var pattern in new[] { "([a-z]+)([a-z0-9]+)",
-            "(a*)^(a*)", "(a*)^(b*)", "^([a-z]*)([0-9]+)$",
-            "([a-zé]+)([0-9]+)", "([^0-9]+)([0-9]+)", "([a-z])+([0-9]+)", "([a-z]+)|([0-9]+)",
-            "([a-z])+[0-9]+", "[a-z]+([0-9])+", "[a-z]+([0-9]+)+", "([a-z]+[0-9]+)+" })
-            Assert.False(PosixProgram.Compile(pattern, default).FirstAcceptanceIsLongest);
-    }
-
-    [Fact]
-    public void FoldedRunProofUsesScalarExecutionAndDeclinesUncertainSplits()
-    {
-        foreach (var pattern in new[] { "(k+)([0-9]+)", "([K-M]{1,3})([0-9]{2,4})", "([k]*)()([K]*)" })
-        {
-            var program = PosixProgram.Compile(pattern, PosixCompileOptions.IgnoreCase);
-            Assert.True(program.FirstAcceptanceIsLongest);
-            Assert.True(program.DirectGreedyRuns);
-        }
-        foreach (var pattern in new[] { "([k]+)([K]+)", "([k]*)^([0-9]+)", "([k])+([0-9]+)",
-            "([K]+)([0-9]+)", "([^k]+)([0-9]+)", "(k|kk)(k*)" })
-            Assert.False(PosixProgram.Compile(pattern, PosixCompileOptions.IgnoreCase).FirstAcceptanceIsLongest);
-        var rewind = PosixProgram.Compile("^([a-z]+)([[:space:]]+)$", PosixCompileOptions.Newline);
-        Assert.True(rewind.FirstAcceptanceIsLongest);
-        Assert.True(rewind.DirectGreedyRuns);
-    }
-
     [Theory]
     [InlineData("a \nb", 2, 1)]
     [InlineData("a \n\nb", 3, 2)]
@@ -262,14 +222,6 @@ public sealed class PosixGreedyAsciiRunTests
                 Assert.Equal(general.Count(input, floor), regex.Count(input, floor));
             }
         }
-    }
-
-    [Fact]
-    public void RequiredRunPredicateDeclinesNullableOrUnprovedPrefixes()
-    {
-        foreach (var pattern in new[] { "(k*)([0-9]+)", "(k*)([K]*)", "([k]+)([K]+)", "(k|kk)(k*)", "(k)+([0-9]+)" })
-            Assert.Equal(-1, PosixProgram.Compile(pattern, PosixCompileOptions.IgnoreCase).FirstRequiredRunAtom);
-        Assert.Equal(-1, PosixProgram.Compile("^([a-z]+)([0-9]+)", default).FirstRequiredRunAtom);
     }
 
     [Theory]

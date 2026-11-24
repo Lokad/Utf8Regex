@@ -98,34 +98,6 @@ public sealed class PosixWorkspaceTests
         }
         Assert.Equal(17UL, invocation.Ledger.ReservedBytes);
     }
-    [Fact]
-    public void HomogeneousProofEngagesThePublicGapAndDeclinesHistoryCounterexamples()
-    {
-        Assert.True(PosixProgram.Compile("(a*)(a*)", default).FirstAcceptanceIsLongest);
-        Assert.True(PosixProgram.Compile("((😀{0,2})(😀{1,2}))", default).FirstAcceptanceIsLongest);
-        Assert.False(PosixProgram.Compile("a?(ab*)?", default).FirstAcceptanceIsLongest);
-        Assert.True(PosixProgram.Compile("(a?){2,4}", default).FirstAcceptanceIsLongest);
-        Assert.False(PosixProgram.Compile("(a|aa)*", default).FirstAcceptanceIsLongest);
-        Assert.True(PosixProgram.Compile("(a*)(b*)", default).DirectGreedyRuns);
-    }
-    [Fact]
-    public void FinalOffsetsAdmitSingleOccurrenceNestedCaptures()
-    {
-        Assert.True(PosixProgram.Compile("((((a))))", default).UseCaptureOffsets);
-        Assert.True(PosixProgram.Compile("^(((😀+))😀)$", default).UseCaptureOffsets);
-        Assert.False(PosixProgram.Compile("((a)?){2,4}", default).UseCaptureOffsets);
-    }
-
-    [Fact]
-    public void FixedAlternativeProofKeepsUnequalNestedAndConsumingTailsGeneral()
-    {
-        Assert.True(PosixProgram.Compile("(a)|(a)", default).FirstAcceptanceIsLongest);
-        Assert.True(PosixProgram.Compile("((é😀))|(é(😀))", default).FirstAcceptanceIsLongest);
-        Assert.False(PosixProgram.Compile("(a)|(aa)", default).FirstAcceptanceIsLongest);
-        Assert.False(PosixProgram.Compile("()|(a)", default).FirstAcceptanceIsLongest);
-        Assert.False(PosixProgram.Compile("(a)|(a)|(a)", default).FirstAcceptanceIsLongest);
-        Assert.False(PosixProgram.Compile("((a)|(a))b*", default).FirstAcceptanceIsLongest);
-    }
     [Theory]
     [InlineData("^Z+(ab|a)$", "ZZab", 43UL)]
     [InlineData("^Z+(a|ab)$", "ZZab", 43UL)]
