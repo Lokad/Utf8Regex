@@ -139,13 +139,11 @@ public sealed partial class Utf8PythonRegex
             {
                 cursor.AddResult(ref parts, new Utf8PythonCaptureRange
                 { Success = true, StartOffsetInBytes = last, EndOffsetInBytes = cursor.StartOffsetInBytes });
+                // Staging each capture already charges work and checks interruption.
                 for (var number = 1; number <= CaptureGroupCount; number++)
-                {
                     cursor.AddResult(ref parts, cursor.TryGetCaptureByteRange(number, out var start, out var end)
                         ? new Utf8PythonCaptureRange { Number = number, Success = true, StartOffsetInBytes = start, EndOffsetInBytes = end }
                         : new Utf8PythonCaptureRange { Number = number });
-                    cursor.Checkpoint();
-                }
                 last = cursor.EndOffsetInBytes;
                 splits++;
             }
