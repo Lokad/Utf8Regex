@@ -15,7 +15,8 @@ parse -> analyze -> prepare -> immutable program -> invoke
   The scalar interpreter covers general patterns. Core with `Compiled` can
   emit bounded forward programs for Boolean and whole-range verification.
   A proven delimiter can let ordered alternatives share an emitted
-  continuation. Search applies invocation checks at each admitted origin.
+  continuation. The admitted extent can bound a decimal run with a proved
+  endpoint. Search applies invocation checks at each admitted origin.
   The scalar interpreter handles capture output. The supported
   `NonBacktracking` subset uses its own ordered traversal. Eligible literal
   families also use emitted delegates.

@@ -643,7 +643,7 @@ internal static partial class Utf8SliceRunner
         var proofLimit = BranchedPrefixInstructionLimit;
         if (!seekVeryEnd && !collectHistory && captureStarts.Length == 0)
         {
-            if (first.D == 1 && input.Length - fromByte <= 32)
+            if (first.D == 1 && input.Length - fromByte <= ShortSingleOriginProofInputLimit)
                 proofStart = 1;
             else if (first.D < 0 && input.Length <= SingleOriginPrefixInstructionLimit)
             {

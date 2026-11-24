@@ -101,7 +101,7 @@ internal static class Utf8BoundedProgramEmitter
                         case Utf8SliceInstructionKind.RepeatGreedy:
                         case Utf8SliceInstructionKind.RepeatLazy:
                             var min = (int)instruction.RepeatMinimum;
-                            var max = (int)instruction.RepeatMaximum;
+                            var max = EmittedRepeatMaximum(instruction);
                             if (code[pc].IsDecimalDigitSet)
                             {
                                 var end = il.DeclareLocal<int>();
@@ -119,7 +119,7 @@ internal static class Utf8BoundedProgramEmitter
                                 pc = instruction.A + 1;
                                 break;
                             }
-                            if (min != max && code[instruction.A].RepeatExitRejectsShorterEndpoints)
+                            if (min != max && CanSkipRepeatRetries(program, pc - 1, instruction))
                             {
                                 origin = EmitSingleEndpointRun(code[pc], origin, offset, min, max, retry);
                                 offset = 0;
@@ -323,6 +323,8 @@ internal static class Utf8BoundedProgramEmitter
     private static int CountExpandedVisits(Utf8SliceProgram program, int entry, int end, Utf8ConstructionBudget budget)
     {
         var code = program.Instructions;
+        var shortOrigin = code[0] is { Kind: Utf8SliceInstructionKind.Anchor,
+            A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: 1 };
         budget.ChargeWork((ulong)(end - entry));
         // Count every expanded continuation, including retries that never
         // run on a successful input. Reject before allocating the IL builder.
@@ -344,15 +346,15 @@ internal static class Utf8BoundedProgramEmitter
                 Utf8SliceInstructionKind.Fork when instruction.B == 0 && instruction.A > pc && instruction.A < end
                     => 1 + visits[pc + 1] + visits[instruction.A],
                 Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy when
-                    instruction.HasSingleAtomBody && instruction.RepeatMaximum <= 4 && instruction.A + 1 < end &&
-                    code[pc + 1].IsDecimalDigitSet && (instruction.RepeatMinimum == instruction.RepeatMaximum ||
-                        instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy && instruction.RepeatMinimum > 0 &&
-                        (code[instruction.A + 1].Kind == Utf8SliceInstructionKind.Accept || program.SkipsTerminalRewind(pc)))
-                    => 1 + (int)instruction.RepeatMaximum + visits[instruction.A + 1],
+                    instruction.HasSingleAtomBody && instruction.A + 1 < end && code[pc + 1].IsDecimalDigitSet &&
+                    CanEmitDecimalRepeat(program, pc, instruction, shortOrigin)
+                    => 1 + EmittedRepeatMaximum(instruction) + visits[instruction.A + 1],
                 Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy when
                     instruction.HasSingleAtomBody && instruction.RepeatMaximum <= 4 && instruction.A + 1 < end &&
                     IsAsciiAtom(program, code[pc + 1])
-                    => RepeatVisits(instruction, visits[instruction.A + 1]),
+                    => CanSkipRepeatRetries(program, pc, instruction)
+                        ? 1 + (int)instruction.RepeatMaximum + visits[instruction.A + 1]
+                        : RepeatVisits(instruction, visits[instruction.A + 1]),
                 _ => Unsupported
             };
             visits[pc] = Math.Min(cost, Unsupported);
@@ -367,6 +369,31 @@ internal static class Utf8BoundedProgramEmitter
             return 1 + choices * continuation + choices * (min + max) / 2;
         }
     }
+
+    private static int EmittedRepeatMaximum(in Utf8SliceInstruction repeat)
+        => repeat.RepeatMaximum == long.MaxValue
+            ? Utf8SliceRunner.ShortSingleOriginProofInputLimit
+            : (int)repeat.RepeatMaximum;
+
+    private static bool CanEmitDecimalRepeat(Utf8SliceProgram program, int pc, in Utf8SliceInstruction repeat,
+        bool shortOrigin)
+    {
+        if (repeat.RepeatMaximum == long.MaxValue)
+        {
+            // This entry only receives extents within the single-origin
+            // allowance. A longer subject still uses the original matcher.
+            return shortOrigin && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
+                repeat.RepeatMinimum <= Utf8SliceRunner.ShortSingleOriginProofInputLimit &&
+                program.SkipsTerminalRewind(pc);
+        }
+        return repeat.RepeatMaximum <= 4 && (repeat.RepeatMinimum == repeat.RepeatMaximum ||
+            repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy && repeat.RepeatMinimum > 0 &&
+            (program.Instructions[repeat.A + 1].Kind == Utf8SliceInstructionKind.Accept || program.SkipsTerminalRewind(pc)));
+    }
+
+    private static bool CanSkipRepeatRetries(Utf8SliceProgram program, int pc, in Utf8SliceInstruction repeat)
+        => program.Instructions[repeat.A].RepeatExitRejectsShorterEndpoints ||
+           repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy && program.SkipsTerminalRewind(pc);
 
     private static bool IsAsciiAtom(Utf8SliceProgram program, in Utf8SliceInstruction instruction)
         => instruction.Kind is Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set &&

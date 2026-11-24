@@ -133,6 +133,30 @@ public sealed class Utf8DynamicCodeCapabilityTests
         }, match.GetCaptures(1).ToArray());
     }
 
+    [Fact]
+    public void EmittedUnboundedDecimalRunsRespectTheShortExtent()
+    {
+        using var regex = new Utf8Regex(@"^[-+]?\d*\.?\d*$", RegexOptions.Compiled);
+        var program = Assert.IsType<Utf8SliceProgram>(regex.Inspection.AvailableOwnedSliceProgram);
+        Assert.Equal(RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled,
+            program.EmittedMatch is not null);
+
+        Assert.Equal(new Utf8CaptureRange(0, 0), regex.Match(""u8));
+        Assert.Equal(new Utf8CaptureRange(0, 1), regex.Match("+"u8));
+        Assert.Equal(new Utf8CaptureRange(0, 2), regex.Match("+."u8));
+        Assert.Equal(new Utf8CaptureRange(0, 8), regex.Match("-3.14159\n"u8));
+        Assert.Equal(new Utf8CaptureRange(0, 7), regex.Match("𝟛.١\n"u8));
+        Assert.False(regex.IsMatch("+.1.2"u8));
+        Assert.False(regex.IsMatch("٠.²"u8));
+
+        foreach (var length in new[] { 31, 32, 33, 512 })
+        {
+            var digits = new string('1', length);
+            Assert.Equal(new Utf8CaptureRange(0, length), regex.Match(Encoding.UTF8.GetBytes(digits + "\n")));
+            Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(digits + "x")));
+        }
+    }
+
     [Theory]
     [InlineData("abc|xyz", "é😀 xyz abc", 2)]
     [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", 1)]

@@ -2477,6 +2477,7 @@ internal static partial class Utf8SliceRunner
             Utf8SliceScalarClasses.MatchesMask(scalar, mask, true, behavior) ? width : 0;
 
     internal const int BranchedPrefixInstructionLimit = 96;
+    internal const int ShortSingleOriginProofInputLimit = 32;
     private const int SingleOriginPrefixInstructionLimit = 256;
 
     private static bool MayMatchAdmittedCandidate(Utf8SliceProgram program, ReadOnlySpan<byte> input,
