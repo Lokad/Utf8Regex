@@ -1845,7 +1845,8 @@ internal static partial class Utf8SliceRunner
         var count = 0;
         var unboundedAsciiSet = unbounded && atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 };
         byte asciiLast = 0;
-        var asciiFirst = unboundedAsciiSet ? GetUnfoldedAsciiRange(atom, out asciiLast) : -1;
+        var asciiFirst = unboundedAsciiSet || unbounded && atom.Kind == Utf8SliceInstructionKind.Literal
+            ? GetUnfoldedAsciiRange(atom, out asciiLast) : -1;
         if (asciiFirst >= 0)
         {
             var ascii = RunUnboundedAsciiRange(input, start, (byte)asciiFirst, asciiLast, ref invocation, checkExitDeadline);

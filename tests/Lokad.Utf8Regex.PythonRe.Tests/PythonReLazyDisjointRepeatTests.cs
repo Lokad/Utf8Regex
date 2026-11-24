@@ -84,7 +84,8 @@ public sealed class PythonReLazyDisjointRepeatTests
     [InlineData(true)]
     public void OriginalInterruptionDuringTheRepeatDoesNotPoisonTheNextCall(bool expire)
     {
-        var input = Encoding.UTF8.GetBytes(new string('a', 8192) + "b");
+        // Leave enough input for the cutoff to occur inside a block scan.
+        var input = Encoding.UTF8.GetBytes(new string('a', 1 << 19) + "b");
         const ulong cutoff = 128;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
