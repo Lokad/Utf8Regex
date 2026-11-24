@@ -20,12 +20,6 @@ internal partial struct PosixWorkspace
         Check(_chartFrames.TryPush(frame, ref invocation), ref invocation);
     }
 
-    private void ReplaceChartFrame(ChartFrame frame, ref Utf8SliceInvocation invocation)
-    {
-        _chartFrames.Pop();
-        PushChartFrame(frame, ref invocation);
-    }
-
     private void StoreChart(ChartKey key, int decision, ref Utf8SliceInvocation invocation)
     {
         if (_chartMemo is null || _chartMemo.Count == _chartCapacity)
@@ -125,7 +119,7 @@ internal partial struct PosixWorkspace
         var floor = right.MaximumBytes < 0 ? key.Start : Math.Max(key.Start, key.End - right.MaximumBytes);
         if (middle < floor || middle > key.End) { CompleteChart(frame, false, 0, ref invocation); return; }
         frame = frame with { Phase = 4, Middle = middle, Single = single };
-        ReplaceChartFrame(frame, ref invocation);
+        _chartFrames.ReplaceTop(frame);
         PushChartFrame(new(IsChartAtom(right) ? new(node.Right, middle, key.End, 0) : new(node.Left, key.Start, middle, 0)), ref invocation);
     }
 
@@ -137,7 +131,7 @@ internal partial struct PosixWorkspace
         var floor = right.MaximumBytes < 0 ? frame.Key.Start : Math.Max(frame.Key.Start, frame.Key.End - right.MaximumBytes);
         if (middle < floor) { CompleteChart(frame, false, 0, ref invocation); return; }
         frame = frame with { Phase = 4, Middle = middle };
-        ReplaceChartFrame(frame, ref invocation);
+        _chartFrames.ReplaceTop(frame);
         PushChartFrame(new(IsChartAtom(right) ? new(node.Right, middle, frame.Key.End, 0) : new(node.Left, frame.Key.Start, middle, 0)), ref invocation);
     }
 
@@ -147,7 +141,7 @@ internal partial struct PosixWorkspace
         if (middle == frame.Key.Start && frame.Key.Count >= node.A) middle = -1;
         if (middle < frame.Key.Start) { CompleteChart(frame, false, 0, ref invocation); return; }
         frame = frame with { Phase = 6, Middle = middle };
-        ReplaceChartFrame(frame, ref invocation);
+        _chartFrames.ReplaceTop(frame);
         PushChartFrame(new(new(node.Left, frame.Key.Start, middle, 0)), ref invocation);
     }
 
@@ -172,10 +166,10 @@ internal partial struct PosixWorkspace
                 switch (node.Kind)
                 {
                     case ChartKind.Group:
-                        ReplaceChartFrame(frame with { Phase = 1 }, ref invocation);
+                        _chartFrames.ReplaceTop(frame with { Phase = 1 });
                         PushChartFrame(new(new(node.Left, k.Start, k.End, 0)), ref invocation); break;
                     case ChartKind.Alternate:
-                        ReplaceChartFrame(frame with { Phase = 2 }, ref invocation);
+                        _chartFrames.ReplaceTop(frame with { Phase = 2 });
                         PushChartFrame(new(new(node.Left, k.Start, k.End, 0)), ref invocation); break;
                     case ChartKind.Concat: BeginChartSplit(frame, node, input, ref invocation); break;
                     case ChartKind.Repeat:
@@ -198,7 +192,7 @@ internal partial struct PosixWorkspace
                     if (_chartResult) CompleteChart(frame, true, 0, ref invocation);
                     else
                     {
-                        ReplaceChartFrame(frame with { Phase = 3 }, ref invocation);
+                        _chartFrames.ReplaceTop(frame with { Phase = 3 });
                         PushChartFrame(new(new(node.Right, k.Start, k.End, 0)), ref invocation);
                     }
                     break;
@@ -207,7 +201,7 @@ internal partial struct PosixWorkspace
                     if (!_chartResult) NextChartSplit(frame, node, input, ref invocation);
                     else
                     {
-                        ReplaceChartFrame(frame with { Phase = 5 }, ref invocation);
+                        _chartFrames.ReplaceTop(frame with { Phase = 5 });
                         PushChartFrame(new(IsChartAtom(_program.Chart[node.Right]) ? new(node.Left, k.Start, frame.Middle, 0) : new(node.Right, frame.Middle, k.End, 0)), ref invocation);
                     }
                     break;
@@ -219,7 +213,7 @@ internal partial struct PosixWorkspace
                     if (!_chartResult) BeginChartRepeat(frame, node, PreviousChartBoundary(input, frame.Middle), ref invocation);
                     else
                     {
-                        ReplaceChartFrame(frame with { Phase = 7 }, ref invocation);
+                        _chartFrames.ReplaceTop(frame with { Phase = 7 });
                         PushChartFrame(new(new(k.Node, frame.Middle, k.End, node.B < 0 ? Math.Min(k.Count + 1, node.A + 1) : k.Count + 1)), ref invocation);
                     }
                     break;

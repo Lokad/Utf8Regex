@@ -97,6 +97,12 @@ internal struct Utf8InvocationStateBuffer<T>
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) GetItems()[_count] = default!;
     }
 
+    internal void ReplaceTop(T value)
+    {
+        if (_count == 0) throw new InvalidOperationException("The invocation state buffer is empty.");
+        GetItems()[_count - 1] = value;
+    }
+
     // Callers retain their bounded interruption checkpoints around each chunk.
     // Value-only records need no per-item write; borrowed references still clear.
     internal void Pop(int count)
