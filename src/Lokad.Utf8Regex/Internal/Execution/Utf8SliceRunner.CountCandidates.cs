@@ -1556,11 +1556,12 @@ internal static partial class Utf8SliceRunner
         return FindRequiredAsciiWindow(program, start, Math.Min(start + 32, code.Length), out _);
     }
 
-    internal static (int Instruction, byte Min, byte Max, byte Value) PrepareRequiredBranchLiteral(Utf8SliceProgram program)
+    internal static (int Instruction, byte Min, byte Max, byte Value) PrepareRequiredBranchLiteral(
+        Utf8SliceProgram program, int start = 0)
     {
-        var end = Math.Min(32, program.Instructions.Length);
-        Utf8ConstructionScope.ChargeWork((ulong)end);
-        var window = FindRequiredAsciiWindow(program, 0, end, out var instruction);
+        var end = Math.Min(start + 32, program.Instructions.Length);
+        Utf8ConstructionScope.ChargeWork((ulong)(end - start));
+        var window = FindRequiredAsciiWindow(program, start, end, out var instruction);
         if (window.Min == 0 || program.Instructions[instruction] is not
             { Kind: Utf8SliceInstructionKind.Literal, A: >= 0 and < 128 and var value, B: 0 })
             return default;

@@ -84,6 +84,28 @@ public sealed class Utf8DynamicCodeCapabilityTests
     }
 
     [Theory]
+    [InlineData("012.200.033.199", 0, 15)]
+    [InlineData("é😀:3256.33.44.0559", 9, 21)]
+    [InlineData("2é:01.02.03.04", 4, 15)]
+    [InlineData("012.200.033.1AA", -1, -1)]
+    [InlineData("25é.01.02.03", -1, -1)]
+    public void EmittedDelimitedAlternativesKeepCandidateOrder(string text, int start, int end)
+    {
+        const string octet = "(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
+        using var regex = new Utf8Regex(@"(?:" + octet + @"\.){3}" + octet, RegexOptions.Compiled);
+        var program = Assert.IsType<Utf8SliceProgram>(regex.Inspection.AvailableOwnedSliceProgram);
+        Assert.Equal(RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled,
+            program.EmittedMatch is not null);
+
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(start >= 0, regex.IsMatch(input));
+        Assert.Equal(start < 0 ? 0 : 1, regex.Count(input));
+        var match = regex.Match(input);
+        Assert.Equal(start >= 0, match.Success);
+        if (match.Success) Assert.Equal(new Utf8CaptureRange(start, end), match);
+    }
+
+    [Theory]
     [InlineData("abc|xyz", "é😀 xyz abc", 2)]
     [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", 1)]
     [InlineData("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", "2026-10-26", 1)]

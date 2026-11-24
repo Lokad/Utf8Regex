@@ -11,7 +11,7 @@ internal static class Utf8BoundedProgramEmitter
 {
     internal delegate int Match(ReadOnlySpan<byte> input);
 
-    private const int MaxInstructions = 64;
+    private const int MaxUnsplitInstructions = 64;
     private const int MaxExpandedVisits = Utf8SliceRunner.BranchedPrefixInstructionLimit;
     private const int Unsupported = MaxExpandedVisits + 1;
     private static readonly MethodInfo s_spanLength = typeof(ReadOnlySpan<byte>).GetProperty(nameof(ReadOnlySpan<byte>.Length))!.GetMethod!;
@@ -22,14 +22,20 @@ internal static class Utf8BoundedProgramEmitter
         var code = program.Instructions;
         if (!RuntimeFeature.IsDynamicCodeSupported || !RuntimeFeature.IsDynamicCodeCompiled ||
             program.RightToLeft || program.IsNonBacktracking ||
-            program.ReadsCaptures || code.Length is < 2 or > MaxInstructions) return null;
+            program.ReadsCaptures || code.Length is < 2 or > MaxExpandedVisits) return null;
 
         var anchored = code[0] is { Kind: Utf8SliceInstructionKind.Anchor,
             A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: not 0 };
         if (!anchored &&
             program.LeadingByteCandidate is not { FromBranch: true, First: >= 0 and < 128 }) return null;
         var entry = anchored ? 1 : 0;
-        if (!CanEmit(program, entry, budget)) return null;
+        Span<int> splits = stackalloc int[MaxExpandedVisits];
+        var splitCount = 0;
+        if (code.Length > MaxUnsplitInstructions ||
+            CountExpandedVisits(program, entry, code.Length, budget) > MaxExpandedVisits)
+        {
+            if (!TrySplitAtDelimiters(program, entry, budget, splits, out splitCount)) return null;
+        }
 
         using var method = Utf8DynamicIlBuilder.Create(anchored ? "Utf8Regex_AnchoredProgram" : "Utf8Regex_CandidateProgram",
             typeof(int), typeof(Utf8BoundedProgramEmitter), typeof(ReadOnlySpan<byte>));
@@ -39,13 +45,24 @@ internal static class Utf8BoundedProgramEmitter
         il.LoadInputLength();
         il.StoreLocal(length);
         var fail = il.DefineLabel();
-        EmitPath(entry, null, 0, fail);
+        Utf8IlLocal? start = null;
+        foreach (var split in splits[..splitCount])
+        {
+            var next = il.DefineLabel();
+            var end = il.DeclareLocal<int>();
+            EmitPath(entry, start, 0, fail, (split, end, next));
+            il.MarkLabel(next);
+            entry = split;
+            start = end;
+        }
+        EmitPath(entry, start, 0, fail);
         il.MarkLabel(fail);
         il.LdcI4(-1);
         il.Emit(OpCodes.Ret);
         return method.CreateDelegate<Match>().Callback;
 
-        void EmitPath(int pc, Utf8IlLocal? origin, int offset, Utf8IlLabel retry)
+        void EmitPath(int pc, Utf8IlLocal? origin, int offset, Utf8IlLabel retry,
+            (int Index, Utf8IlLocal Position, Utf8IlLabel Label) continuation = default)
         {
             budget.EnterDepth();
             try
@@ -53,6 +70,13 @@ internal static class Utf8BoundedProgramEmitter
                 while (true)
                 {
                     budget.ChargeWork(1);
+                    if (continuation.Index != 0 && continuation.Index == pc)
+                    {
+                        LoadPosition(origin, offset);
+                        il.StoreLocal(continuation.Position);
+                        il.Emit(OpCodes.Br, continuation.Label);
+                        return;
+                    }
                     ref readonly var instruction = ref code[pc++];
                     switch (instruction.Kind)
                     {
@@ -68,7 +92,7 @@ internal static class Utf8BoundedProgramEmitter
                             break;
                         case Utf8SliceInstructionKind.Fork:
                             var second = il.DefineLabel();
-                            EmitPath(pc, origin, offset, second);
+                            EmitPath(pc, origin, offset, second, continuation);
                             il.MarkLabel(second);
                             pc = instruction.A;
                             break;
@@ -89,7 +113,7 @@ internal static class Utf8BoundedProgramEmitter
                                 var next = il.DefineLabel();
                                 var width = lazy ? min + attempt : max - attempt;
                                 EmitRun(code[pc], origin, offset, width, next);
-                                EmitPath(instruction.A + 1, origin, offset + width, next);
+                                EmitPath(instruction.A + 1, origin, offset + width, next, continuation);
                                 il.MarkLabel(next);
                             }
                             var last = lazy ? max : min;
@@ -242,15 +266,50 @@ internal static class Utf8BoundedProgramEmitter
         }
     }
 
-    private static bool CanEmit(Utf8SliceProgram program, int entry, Utf8ConstructionBudget budget)
+    private static bool TrySplitAtDelimiters(Utf8SliceProgram program, int entry,
+        Utf8ConstructionBudget budget, Span<int> splits, out int count)
     {
         var code = program.Instructions;
-        budget.ChargeWork((ulong)code.Length);
+        var total = 0;
+        count = 0;
+        while (code[entry] is { Kind: Utf8SliceInstructionKind.Fork, B: 0 })
+        {
+            var literal = entry == 0 && program.RequiredBranchLiteral.Min != 0
+                ? program.RequiredBranchLiteral
+                : Utf8SliceRunner.PrepareRequiredBranchLiteral(program, entry);
+            if (literal.Min == 0) break;
+            // All arms reach the same required literal. If no earlier atom
+            // can consume it, a segment can end only at its first occurrence.
+            // A failure in the next segment does not need to retry these arms.
+            var consumesDelimiter = false;
+            for (var pc = entry; pc < literal.Instruction; pc++)
+            {
+                budget.ChargeWork(1);
+                if (program.TryGetUnfoldedAsciiSet(code[pc], out var bytes, out _) && bytes.Contains(literal.Value))
+                {
+                    consumesDelimiter = true;
+                    break;
+                }
+            }
+            if (consumesDelimiter) break;
+            var end = literal.Instruction + 1;
+            total += CountExpandedVisits(program, entry, end, budget);
+            if (total > MaxExpandedVisits) return false;
+            splits[count++] = end;
+            entry = end;
+        }
+        return count != 0 && total + CountExpandedVisits(program, entry, code.Length, budget) <= MaxExpandedVisits;
+    }
+
+    private static int CountExpandedVisits(Utf8SliceProgram program, int entry, int end, Utf8ConstructionBudget budget)
+    {
+        var code = program.Instructions;
+        budget.ChargeWork((ulong)(end - entry));
         // Count every expanded continuation, including retries that never
         // run on a successful input. Reject before allocating the IL builder.
-        Span<int> visits = stackalloc int[code.Length + 1];
-        visits[^1] = Unsupported;
-        for (var pc = code.Length - 1; pc >= entry; pc--)
+        Span<int> visits = stackalloc int[end + 1];
+        visits[end] = end == code.Length ? Unsupported : 1;
+        for (var pc = end - 1; pc >= entry; pc--)
         {
             ref readonly var instruction = ref code[pc];
             var cost = instruction.Kind switch
@@ -261,19 +320,19 @@ internal static class Utf8BoundedProgramEmitter
                     => 1 + visits[pc + 1],
                 Utf8SliceInstructionKind.Anchor when instruction is { B: 0, A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd }
                     => 1 + visits[pc + 1],
-                Utf8SliceInstructionKind.Jump when instruction.B == 0 && instruction.A > pc && instruction.A < code.Length
+                Utf8SliceInstructionKind.Jump when instruction.B == 0 && instruction.A > pc && instruction.A < end
                     => 1 + visits[instruction.A],
-                Utf8SliceInstructionKind.Fork when instruction.B == 0 && instruction.A > pc && instruction.A < code.Length
+                Utf8SliceInstructionKind.Fork when instruction.B == 0 && instruction.A > pc && instruction.A < end
                     => 1 + visits[pc + 1] + visits[instruction.A],
                 Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy when
-                    instruction.HasSingleAtomBody && instruction.RepeatMaximum <= 4 &&
+                    instruction.HasSingleAtomBody && instruction.RepeatMaximum <= 4 && instruction.A + 1 < end &&
                     IsAsciiAtom(program, code[pc + 1])
                     => RepeatVisits(instruction, visits[instruction.A + 1]),
                 _ => Unsupported
             };
             visits[pc] = Math.Min(cost, Unsupported);
         }
-        return visits[entry] <= MaxExpandedVisits;
+        return visits[entry];
 
         static int RepeatVisits(in Utf8SliceInstruction repeat, int continuation)
         {
