@@ -124,6 +124,23 @@ public sealed class Pcre2AssertionCompilerTests
         Assert.Equal(9, match.EndOffsetInBytes);
     }
 
+    [Theory]
+    [InlineData("(?<=é{4097}|é{4098})x", false)]
+    [InlineData("(?<!é{4097}|é{4098})x", true)]
+    public void LongLookbehindRetreatObservesTheWorkLimit(string pattern, bool expected)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('é', 4096) + "x");
+        var start = input.Length - 1;
+        using var ordinary = new Utf8Pcre2Regex(pattern);
+        Assert.Equal(expected, ordinary.IsMatch(input, startOffsetInBytes: start, matchOptions: Pcre2MatchOptions.Anchored));
+
+        using var limited = new Utf8Pcre2Regex(pattern,
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 32 } });
+        var failure = Assert.Throws<Pcre2MatchException>(() => limited.IsMatch(input, startOffsetInBytes: start,
+            matchOptions: Pcre2MatchOptions.Anchored));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
+    }
+
     [Fact]
     public void PositiveAssertionCapturesFlowToBackreferencesAndCallerSlots()
     {

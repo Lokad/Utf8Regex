@@ -1643,23 +1643,15 @@ internal static class Pcre2BacktrackingRunner
 
         nestedOptions |= Pcre2MatchOptions.EndAnchored;
         var earliest = inputIndex;
+        var minimumLength = assertionProgram.MinimumScalarLength;
         var maximumLength = assertionProgram.MaximumScalarLength;
-        for (var scalarCount = 0; scalarCount < maximumLength &&
-             TryRetreatScalar(input, earliest, out var previous); scalarCount++)
+        var latest = minimumLength == 0 ? inputIndex : -1;
+        for (var scalarCount = 0; scalarCount < maximumLength && earliest != 0; scalarCount++)
         {
-            earliest = previous;
-        }
-
-        var latest = inputIndex;
-        for (var scalarCount = 0; scalarCount < assertionProgram.MinimumScalarLength; scalarCount++)
-        {
-            if (!TryRetreatScalar(input, latest, out latest))
-            {
-                captures = [];
-                mark = null;
-                reportedStartOffsetInBytes = -1;
-                return isNegative;
-            }
+            // The assertion step admits the first group of scalar retreats.
+            if (scalarCount != 0 && (scalarCount & 63) == 0) budget.ChargeWorkspaceStep();
+            if (!TryRetreatScalar(input, earliest, out earliest)) break;
+            if (scalarCount + 1 == minimumLength) latest = earliest;
         }
 
         var candidate = earliest;

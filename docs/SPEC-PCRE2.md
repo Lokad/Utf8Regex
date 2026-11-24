@@ -192,6 +192,11 @@ Work and storage requirements vary by version and pattern. Borrowed input,
 caller destinations, host retention and metadata queries fall outside
 numeric execution limits. [Shared resource rules](SPEC.md#cancellation-deadlines-and-resource-limits)
 
+The backtracking matcher finds lookbehind candidates with a single reverse
+scalar walk. The assertion step covers the first 64 scalar retreats. Each
+additional block charges work and checks the original token and deadline
+before scanning. Verifying candidate starts has its own work charges.
+
 `(*ACCEPT)` closes open captures at the current call depth. Wide scans of
 capture slots use bounded work and interruption checkpoints, including
 duplicate-name backreferences and capture conditions.
