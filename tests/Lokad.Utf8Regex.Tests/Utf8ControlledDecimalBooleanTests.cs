@@ -149,11 +149,11 @@ public sealed class Utf8ControlledDecimalBooleanTests
     }
 
     [Fact]
-    public void CountRewindsShortDecimalWindowsWithinTheWorkLimit()
+    public void CountReusesShortDecimalWindowsWithinTheWorkLimit()
     {
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 700, MaxWorkingBytes = 1 << 20 } });
+            new() { ResourcePolicy = new() { MaxWorkSteps = 80, MaxWorkingBytes = 1 << 20 } });
         var prefix = string.Concat(Enumerable.Repeat("x/11/2.x ", 32));
         var input = Encoding.UTF8.GetBytes(prefix + " 1/18/2026.");
 
