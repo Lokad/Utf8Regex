@@ -658,8 +658,16 @@ internal static partial class Utf8SliceRunner
         {
             // The admitted short witness starts after the confirmed anchor.
             // Unknown instructions still enter the original attempt.
-            var possible = MayMatchBranchedAsciiPrefix(program, input, fromByte, proofStart, out var acceptedEnd,
-                proveMatch: true, instructionLimit: proofLimit);
+            int acceptedEnd;
+            bool possible;
+            if (seekBeginning && fromByte == 0 && program.EmittedAnchoredMatch is { } emitted)
+            {
+                acceptedEnd = emitted(input);
+                possible = acceptedEnd >= 0;
+            }
+            else
+                possible = MayMatchBranchedAsciiPrefix(program, input, fromByte, proofStart, out acceptedEnd,
+                    proveMatch: true, instructionLimit: proofLimit);
             if (!possible || acceptedEnd >= 0)
             {
                 // The proof acquires no storage. Any enclosing loan was

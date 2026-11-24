@@ -2443,7 +2443,7 @@ internal static partial class Utf8SliceRunner
         => TryReadScalar(input, position, false, out var scalar, out var width) &&
             Utf8SliceScalarClasses.MatchesMask(scalar, mask, true, behavior) ? width : 0;
 
-    private const int BranchedPrefixInstructionLimit = 96;
+    internal const int BranchedPrefixInstructionLimit = 96;
     private const int SingleOriginPrefixInstructionLimit = 256;
 
     internal static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,

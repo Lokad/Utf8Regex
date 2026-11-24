@@ -12,10 +12,12 @@ parse -> analyze -> prepare -> immutable program -> invoke
   literal, search and cursor plans. It borrows the capture catalog and
   releases the parse tree after compilation.
 - `Internal/Execution` selects an engine from the prepared capabilities.
-  General patterns use the scalar interpreter, including when `Compiled` is
-  requested. The supported `NonBacktracking` subset uses its own ordered
-  program traversal. Eligible literal families can use emitted delegates.
-  Finite execution policies use the checked scalar and search paths.
+  The scalar interpreter covers general patterns. Core with `Compiled` can
+  emit a bounded forward absolute-anchor program for Boolean and whole-range
+  verification. The existing single-origin verifier applies invocation
+  checks and handles capture output. The supported `NonBacktracking` subset
+  uses its own ordered traversal. Eligible literal families also use emitted
+  delegates.
 
 The matcher consumes caller-valid, unchanged UTF-8 and publishes byte ranges.
 Candidate discovery can narrow a search or prove an endpoint. The invocation

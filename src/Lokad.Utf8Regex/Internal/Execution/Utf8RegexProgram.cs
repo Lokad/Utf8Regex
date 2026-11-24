@@ -36,9 +36,8 @@ internal sealed class Utf8RegexProgram
             var effectiveOptions = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
             var preparedRegex = Utf8FrontEnd.Compile(pattern, effectiveOptions, options, out root);
             var compiledEngineKind = Utf8CompiledEngineSelector.Select(preparedRegex);
-            // General patterns execute the scalar program. Fixed numeric policies
-            // also keep scalar/search payloads without an unmetered runtime.
-            // Only literal engines prepare emitted delegates.
+            // The scalar program owns any compiled anchored verifier. Fixed
+            // numeric policies can use it without a separate literal runtime.
             var compiledEngineRuntime = prepareRuntime && compiledEngineKind != Utf8CompiledEngineKind.FallbackRegex
                 ? Utf8LiteralCompiledEngineRuntime.Create(compiledEngineKind, preparedRegex, (options & RegexOptions.RightToLeft) != 0) : null;
             // Successful owned parsing always finishes capture numbering before

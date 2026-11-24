@@ -195,6 +195,13 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
     }
     internal void Emit(OpCode opcode, byte value) => Emit(opcode, (int)value);
     internal void Emit(OpCode opcode, sbyte value) => Emit(opcode, (int)value);
+    internal void EmitInt64(long value)
+    {
+        Span<byte> operand = stackalloc byte[8];
+        BinaryPrimitives.WriteInt64LittleEndian(operand, value);
+        Write(OpCodes.Ldc_I8, operand, -1, -1, -1);
+    }
+
     internal void Emit(OpCode opcode, Utf8IlLocal local)
     {
         Check(local);
@@ -253,7 +260,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
         var pops = opcode == OpCodes.Ret ? (_returns ? 1 : 0) : StackCount(opcode.StackBehaviourPop, methodPops);
         var pushes = StackCount(opcode.StackBehaviourPush, methodPushes);
         var size = opcode.Size + operand.Length;
-        Span<byte> bytes = stackalloc byte[6];
+        Span<byte> bytes = stackalloc byte[sizeof(ushort) + sizeof(long)];
         var value = unchecked((ushort)opcode.Value);
         if (opcode.Size == 2) { bytes[0] = (byte)(value >> 8); bytes[1] = (byte)value; }
         else bytes[0] = (byte)value;

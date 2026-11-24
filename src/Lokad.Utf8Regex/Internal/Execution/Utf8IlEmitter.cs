@@ -8,12 +8,15 @@ internal readonly struct Utf8IlEmitter
     private readonly Utf8DynamicIlBuilder _il;
     private readonly MethodInfo _getSpanLengthMethod;
     private readonly MethodInfo _getSpanItemMethod;
+    private readonly byte _inputArgument;
 
-    public Utf8IlEmitter(Utf8DynamicIlBuilder il, MethodInfo getSpanLengthMethod, MethodInfo getSpanItemMethod)
+    public Utf8IlEmitter(Utf8DynamicIlBuilder il, MethodInfo getSpanLengthMethod, MethodInfo getSpanItemMethod,
+        byte inputArgument = 1)
     {
         _il = il;
         _getSpanLengthMethod = getSpanLengthMethod;
         _getSpanItemMethod = getSpanItemMethod;
+        _inputArgument = inputArgument;
     }
 
     public Utf8IlLocal DeclareLocal<T>() => _il.DeclareLocal(typeof(T));
@@ -56,8 +59,7 @@ internal readonly struct Utf8IlEmitter
         }
     }
 
-    // Every emitted literal-family delegate takes its subject at argument 1.
-    private void LoadInputAddress() => _il.Emit(OpCodes.Ldarga_S, (byte)1);
+    private void LoadInputAddress() => _il.Emit(OpCodes.Ldarga_S, _inputArgument);
 
     public void LoadLocal(Utf8IlLocal local) => _il.Emit(OpCodes.Ldloc, local);
 
@@ -70,6 +72,16 @@ internal readonly struct Utf8IlEmitter
     }
 
     public void LoadInputByte(Utf8IlLocal indexLocal) => LoadInputByte(indexLocal, 0);
+
+    internal void LoadInputByte(int index)
+    {
+        LoadInputAddress();
+        LdcI4(index);
+        Emit(OpCodes.Call, _getSpanItemMethod);
+        Emit(OpCodes.Ldind_U1);
+    }
+
+    internal void LdcI8(ulong value) => _il.EmitInt64(unchecked((long)value));
 
     public void LoadInputByte(Utf8IlLocal indexLocal, int offset)
     {

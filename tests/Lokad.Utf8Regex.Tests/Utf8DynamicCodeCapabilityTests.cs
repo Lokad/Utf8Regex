@@ -11,6 +11,30 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8DynamicCodeCapabilityTests
 {
     [Theory]
+    [InlineData(@"\A(?<unit>[1A-Za-z]{2})(?:[QX]?[XYZ]|[uV][0-9])$", "a1X\n", 3)]
+    [InlineData(@"\A(?<unit>[1A-Za-z]{2})(?:[QX]?[XYZ]|[uV][0-9])$", "a1u4\n", 4)]
+    [InlineData(@"\A(?<unit>[1A-Za-z]{2})[QX]??[XYZ]", "a1XX", 3)]
+    public void EmittedAbsoluteProgramKeepsOrderedEndpointsAndCaptures(string pattern, string text, int end)
+    {
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var program = Assert.IsType<Utf8SliceProgram>(regex.Inspection.AvailableOwnedSliceProgram);
+        Assert.Equal(RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled,
+            program.EmittedAnchoredMatch is not null);
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var expected = new Utf8CaptureRange(0, end);
+        Assert.True(regex.IsMatch(bytes));
+        Assert.Equal(expected, regex.Match(bytes));
+        Assert.False(regex.IsMatch("éaXX"u8));
+        var slots = new Utf8CaptureRange[2];
+        Assert.Equal(expected, regex.Match(bytes, captures: slots));
+        Assert.Equal(new Utf8CaptureRange(0, 2), slots[1]);
+        using var cursor = regex.CreateMatchCursor(bytes);
+        Assert.True(cursor.MoveNext(out var retained));
+        Assert.Equal(expected, retained.Value);
+        Assert.Equal(slots[1], Assert.Single(retained.GetCaptures(1).ToArray()));
+    }
+
+    [Theory]
     [InlineData("abc|xyz", "é😀 xyz abc", 2)]
     [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", 1)]
     [InlineData("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", "2026-10-26", 1)]

@@ -340,8 +340,13 @@ profile scopes.
 Managed code performs parsing, preparation and execution. An immutable program
 drives each invocation. Shipped matching and result publication are owned by the
 library and use managed bounds checks. Actual `Unsafe.SizeOf<T>()` is permitted.
-`Compiled` affects strategy only. General patterns use the scalar interpreter.
-Eligible literal families can use emitted code when dynamic code is enabled.
+`Compiled` affects strategy only. When dynamic code is available, Core emits
+IL at construction for eligible bounded, forward absolute-anchor programs.
+These programs can verify Boolean and whole-range results without capture
+output. The scalar interpreter handles other programs and capture publication.
+The CLR can JIT the emitted method on first use. Construction admits the
+emitter's managed storage and bounded expansion. Native JIT storage is outside
+the construction byte limit. Eligible literal families also use emitted code.
 NativeAOT and trimming remain outside qualification.
 
 Byte search uses the same scalar semantics, including options, captures, branch
