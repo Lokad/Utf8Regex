@@ -1200,9 +1200,22 @@ internal static class Pcre2CharacterRunner
 
             case Pcre2CharacterTokenKind.Any:
             case Pcre2CharacterTokenKind.AnyNotNewline:
+                if ((uint)index >= (uint)input.Length)
+                    return false;
+
+                var ignoreNewline = token.Kind == Pcre2CharacterTokenKind.Any &&
+                    (token.Options & Pcre2CharacterOptions.DotAll) != 0;
+                var newline = request.Settings.Newline;
+                if (input[index] is < 128 and var ascii &&
+                    (ignoreNewline || newline is Pcre2NewlineConvention.Default or Pcre2NewlineConvention.Lf))
+                {
+                    if (!ignoreNewline && ascii == '\n') return false;
+                    nextIndex++;
+                    return true;
+                }
+
                 if (!Pcre2CharacterSemantics.TryDecodeScalar(input, index, out var scalar, out var width) ||
-                    (token.Kind == Pcre2CharacterTokenKind.AnyNotNewline || (token.Options & Pcre2CharacterOptions.DotAll) == 0) &&
-                    Pcre2CharacterSemantics.GetNewlineWidth(input, index, request.Settings.Newline, scalar, width) != 0)
+                    !ignoreNewline && Pcre2CharacterSemantics.GetNewlineWidth(input, index, newline, scalar, width) != 0)
                 {
                     return false;
                 }
