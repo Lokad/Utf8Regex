@@ -816,8 +816,7 @@ internal static partial class Utf8SliceRunner
         var classWindowEnd = -1;
         var followingWindowEnd = 0;
         // Enable overlapping suffix checks only after a complete proof rejects.
-        const int noSuffixCheck = -2;
-        var rejectedSuffix = noSuffixCheck;
+        var rejectedSuffix = NoBranchSuffixCheck;
         var searchStart = screenedLiteral - fromByte >= 64 && checkBranchedPrefix
             ? GetFirstPossibleBranchStart(program, input, fromByte, screenedLiteral, candidatePlan) : fromByte;
         if (existenceOnly && seekLiteral && wideInput && program.Assertions.Length == 0 &&
@@ -959,12 +958,12 @@ internal static partial class Utf8SliceRunner
                         proofLimit -= followingWindow.Max + 3;
                     }
                 }
-                if (rejectedSuffix != noSuffixCheck &&
+                if (rejectedSuffix != NoBranchSuffixCheck &&
                     RejectRequiredBranchLiteralSuffix(program, input, position, ref rejectedSuffix, ref proofLimit))
                     continue;
                 if (!MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out var acceptedEnd, proveMatch, proofLimit))
                 {
-                    if (rejectedSuffix == noSuffixCheck && proveBranchedMatch &&
+                    if (rejectedSuffix == NoBranchSuffixCheck && proveBranchedMatch &&
                         program.RequiredBranchLiteral.Min != 0 && input.Length - position <= 64)
                         rejectedSuffix = -1;
                     var remainingDigits = classWindowEnd - position;
@@ -1389,6 +1388,7 @@ internal static partial class Utf8SliceRunner
             !program.ReadsCaptures && whitespaceLiteral < 0 &&
             (leadingScalarIndex == 0 ||
              Utf8SliceInstruction.SkipLeadingCaptureMarkers(program.Instructions, 0) == leadingScalarIndex);
+        var rejectedSuffix = NoBranchSuffixCheck;
         var workspace = new AttemptWorkspace();
         try
         {
@@ -1414,9 +1414,8 @@ internal static partial class Utf8SliceRunner
                         (leadingPrefix.IsEmpty && leadingSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                         (uint)(input[position + 1] - leadingSecond) > (uint)(leadingSecondLast - leadingSecond))) ||
                         (branchWindow.Min != 0 && !HasAsciiByteInWindow(input, position, branchWindow)) ||
-                        !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position,
-                            proveBranchedMatch ? 0 : leadingScalarIndex,
-                            out provedEnd, proveBranchedMatch) :
+                        !checkRepeatChain && !(checkBranchedPrefix ? MayMatchCountBranch(program, input, position,
+                            proveBranchedMatch ? 0 : leadingScalarIndex, proveBranchedMatch, ref rejectedSuffix, out provedEnd) :
                             MatchesStraightAsciiPrefix(program, input, position + straightPrefixBytes,
                                 straightPrefixStart, 64 - straightPrefixStart))))
                     {
@@ -1583,6 +1582,7 @@ internal static partial class Utf8SliceRunner
                 if (outcome.IsMatch)
                 {
                     count++;
+                    rejectedSuffix = NoBranchSuffixCheck;
                     invocation.AnchorOriginByte = outcome.EndIndex;
                     if (outcome.EndIndex != position)
                     {

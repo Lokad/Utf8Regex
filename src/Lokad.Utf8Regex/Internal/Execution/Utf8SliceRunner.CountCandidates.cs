@@ -1555,6 +1555,27 @@ internal static partial class Utf8SliceRunner
         return start;
     }
 
+    private const int NoBranchSuffixCheck = -2;
+
+    private static bool MayMatchCountBranch(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, int instruction, bool proveMatch, ref int rejectedSuffix, out int acceptedEnd)
+    {
+        var limit = BranchedPrefixInstructionLimit;
+        if (rejectedSuffix != NoBranchSuffixCheck &&
+            RejectRequiredBranchLiteralSuffix(program, input, position, ref rejectedSuffix, ref limit))
+        {
+            acceptedEnd = -1;
+            return false;
+        }
+        if (MayMatchBranchedAsciiPrefix(program, input, position, instruction, out acceptedEnd, proveMatch, limit))
+            return true;
+
+        if (rejectedSuffix == NoBranchSuffixCheck && proveMatch && program.RequiredBranchLiteral.Min != 0 &&
+            input.Length - position <= 64)
+            rejectedSuffix = -1;
+        return false;
+    }
+
     private static bool RejectRequiredBranchLiteralSuffix(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int start, ref int rejectedSuffix, ref int proofLimit)
     {

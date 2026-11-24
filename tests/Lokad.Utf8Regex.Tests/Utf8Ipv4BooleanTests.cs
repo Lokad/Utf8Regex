@@ -57,6 +57,7 @@ public sealed class Utf8Ipv4BooleanTests
         });
         var bytes = Encoding.UTF8.GetBytes(text);
         var expected = Regex.Match(text, Pattern);
+        var expectedCount = Regex.Count(text, Pattern);
         Assert.Equal(expected.Success, ordinary.IsMatch(bytes));
         Assert.Equal(expected.Success, limited.IsMatch(bytes, source.Token));
         foreach (var regex in new[] { ordinary, limited })
@@ -64,6 +65,7 @@ public sealed class Utf8Ipv4BooleanTests
             var actual = regex.Match(bytes, cancellationToken: source.Token);
             Assert.Equal(expected.Success, actual.Success);
             if (expected.Success) Utf8MatchSequence.AssertRange(actual, text, expected.Index, expected.Length);
+            Assert.Equal(expectedCount, regex.Count(bytes, source.Token));
         }
     }
 
