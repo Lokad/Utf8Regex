@@ -26,7 +26,7 @@ internal ref struct PythonReScalarMatchCursor
     internal ulong TransferResultsSince(ulong marker) => _state.TransferResultsSince(marker);
     internal Utf8PythonRetainedSubnResult RetainSubstitution(Utf8PythonSubnUtf8Result result) => _state.RetainSubstitution(result);
     internal void AddResult<T>(ref Utf8InvocationResultBuffer<T> buffer, T value) => _state.AddResult(ref buffer, value);
-    internal T[] CompleteResults<T>(ref Utf8InvocationResultBuffer<T> buffer) => _state.CompleteResults(ref buffer);
+    internal T[] CompleteResults<T>(ref Utf8InvocationResultBuffer<T> buffer, T finalValue) => _state.CompleteResults(ref buffer, finalValue);
     internal void ReleaseResults<T>(ref Utf8InvocationResultBuffer<T> buffer) => _state.ReleaseResults(ref buffer);
     internal void Checkpoint() => _state.Checkpoint();
     internal bool MoveNext() => _state.MoveNext(_input);

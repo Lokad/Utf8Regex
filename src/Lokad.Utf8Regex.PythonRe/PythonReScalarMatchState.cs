@@ -189,8 +189,16 @@ internal struct PythonReScalarMatchState
         buffer.Add(value, ref _invocation);
     }
 
-    internal T[] CompleteResults<T>(ref Utf8InvocationResultBuffer<T> buffer)
+    internal T[] CompleteResults<T>(ref Utf8InvocationResultBuffer<T> buffer, T finalValue)
     {
+        if (buffer.Count == 0)
+        {
+            var result = AllocateResultArray<T>(1);
+            result[0] = finalValue;
+            return result;
+        }
+
+        buffer.Add(finalValue, ref _invocation);
         return buffer.ToArray(ref _results, ref _invocation);
     }
 

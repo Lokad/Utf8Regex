@@ -88,7 +88,8 @@ literal template bytes and matched scalar-aligned captures.
 a negative value performs none. A range numbered zero represents an ordinary
 segment. Positive numbers represent captured separators, including absent
 groups with `Success = false`. Output is admitted according to actual ranges.
-With no separator, the result contains one range for the selected suffix.
+When no split occurs, the result contains one range for the selected suffix.
+Admission for that range covers its result array directly.
 
 ## Grammar and parsing
 

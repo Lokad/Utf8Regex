@@ -147,9 +147,8 @@ public sealed partial class Utf8PythonRegex
                 last = cursor.EndOffsetInBytes;
                 splits++;
             }
-            cursor.AddResult(ref parts, new Utf8PythonCaptureRange
+            var completed = cursor.CompleteResults(ref parts, new Utf8PythonCaptureRange
             { Success = true, StartOffsetInBytes = last, EndOffsetInBytes = input.Length });
-            var completed = cursor.CompleteResults(ref parts);
             cursor.Checkpoint();
             return completed;
         }

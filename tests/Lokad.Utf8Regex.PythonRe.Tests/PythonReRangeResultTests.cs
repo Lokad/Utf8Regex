@@ -95,6 +95,25 @@ public sealed class PythonReRangeResultTests
     }
 
     [Fact]
+    public void UnsplitSuffixAdmitsOnlyItsResultArray()
+    {
+        var bytes = Utf8ConstructionBudget.ArrayBytes<Utf8PythonCaptureRange>(1);
+        using var regex = new Utf8PythonRegex("[,;]", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = bytes, MaxResultBytes = bytes }
+        });
+        var missing = Assert.Single(regex.SplitRanges("xxé😀"u8, startOffsetInBytes: 2));
+        var skipped = Assert.Single(regex.SplitRanges("xxé,😀"u8, maxSplit: -1, startOffsetInBytes: 2));
+
+        Assert.True(missing.Success);
+        Assert.Equal((0, 2, 8), (missing.Number, missing.StartOffsetInBytes, missing.EndOffsetInBytes));
+        Assert.True(skipped.Success);
+        Assert.Equal((0, 2, 9), (skipped.Number, skipped.StartOffsetInBytes, skipped.EndOffsetInBytes));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.SplitRanges("é,😀"u8));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, failure.ResourceKind);
+    }
+
+    [Fact]
     public void DiscardingHalfAMillionRangesKeepsActiveCapacityBounded()
     {
         var regex = new Utf8PythonRegex("(.)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
