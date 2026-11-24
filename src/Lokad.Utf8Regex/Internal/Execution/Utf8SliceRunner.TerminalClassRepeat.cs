@@ -1015,6 +1015,22 @@ internal static partial class Utf8SliceRunner
         Utf8SliceNode.CategorySetMember[][] categories, int repeatIndex, Utf8ConstructionBudget budget)
     {
         var repeat = code[repeatIndex];
+        if (repeat.Kind == Utf8SliceInstructionKind.RepeatLazy)
+        {
+            if (repeat.HasSingleAtomBody && repeat.A < code.Length - 1 &&
+                code[repeatIndex + 1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } body &&
+                code[repeat.A + 1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } nextLiteral &&
+                body.A != nextLiteral.A)
+            {
+                // Every shorter endpoint would offer the repeat byte to the
+                // different following literal. Only the longest run is viable.
+                budget.ChargeWork(2);
+                var lazyExit = code[repeat.A];
+                code[repeat.A] = new(lazyExit.Kind, lazyExit.A, lazyExit.B,
+                    lazyExit.C | Utf8SliceInstruction.RepeatExitRejectsShorterFlag, lazyExit.D);
+            }
+            return;
+        }
         if (!repeat.HasSingleAtomBody)
         {
             if (repeat is { RepeatMinimum: 1, RepeatMaximum: long.MaxValue } &&

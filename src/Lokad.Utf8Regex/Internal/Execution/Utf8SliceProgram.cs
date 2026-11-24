@@ -592,7 +592,7 @@ internal sealed class Utf8SliceProgram
             {
                 // Record the final repeat layout once for runtime verification.
                 instructions[pc] = instruction with { HasSingleAtomBody = Utf8SliceRunner.IsSingleAtomRepeat(instructions, pc, instruction) };
-                if (instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy && !rightToLeft && !isNonBacktracking)
+                if (!rightToLeft && !isNonBacktracking)
                     Utf8SliceRunner.PrepareScalarRepeatContinuation(instructions, setMasks, categorySetMembers, pc, budget);
             }
             else if (instruction.Kind == Utf8SliceInstructionKind.Jump && !rightToLeft && !isNonBacktracking)
