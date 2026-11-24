@@ -1841,7 +1841,10 @@ internal static partial class Utf8SliceRunner
         var asciiNegated = hybrid && atom.B != 0;
         ReadOnlySpan<byte> exactAsciiMask = unbounded && (hybrid || atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 })
             ? program.SetMasks[atom.A] : [];
-        var asciiWord = !hybrid && !exactAsciiMask.IsEmpty && IsAsciiWordMask(exactAsciiMask);
+        var wordCategory = unbounded && atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
+            input.Length - start >= 32 && (BinaryPrimitives.ReadUInt32LittleEndian(input[start..]) & 0x80808080u) == 0 &&
+            IsAsciiWordMask(program.SetMasks[atom.A]) && program.GetCompleteAsciiCategoryMask(atom) != 0;
+        var asciiWord = wordCategory || !hybrid && !exactAsciiMask.IsEmpty && IsAsciiWordMask(exactAsciiMask);
         if (unbounded && (unboundedAsciiSet || hybrid || asciiWord))
         {
             var blockSize = asciiWord ? 2048 : 64;
@@ -1860,22 +1863,30 @@ internal static partial class Utf8SliceRunner
                     continue;
                 }
                 position += stop;
-                if (unboundedAsciiSet || input[position] < 128 || !TryReadScalar(input, position, false, out var scalar, out var width))
+                if (unboundedAsciiSet || wordCategory ||
+                    input[position] < 128 || !TryReadScalar(input, position, false, out var scalar, out var width))
                     break;
                 breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);
                 if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
                 if (!hit) break;
                 position += width;
             }
-            var terminalBreach = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
-            if (terminalBreach != Utf8ExecutionLimitKind.None) return (-1, terminalBreach);
-            // With no maximum and minimum at most one, nonempty byte extent
-            // suffices; bounded/scalar-counted repeats keep the normal loop.
-            if (minimum != 0 && position > start)
-                minimumEnd = unboundedAsciiSet ? start + 1 : AdvancePastScalar(input, start, reverse: false);
-            return position != start || minimum == 0
-                ? (position, Utf8ExecutionLimitKind.None)
-                : (-1, Utf8ExecutionLimitKind.None);
+            if (!wordCategory || position == input.Length || input[position] < 128)
+            {
+                var terminalBreach = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
+                if (terminalBreach != Utf8ExecutionLimitKind.None) return (-1, terminalBreach);
+                // With no maximum and minimum at most one, nonempty byte extent suffices.
+                if (minimum != 0 && position > start)
+                    minimumEnd = unboundedAsciiSet ? start + 1 : AdvancePastScalar(input, start, reverse: false);
+                return position != start || minimum == 0
+                    ? (position, Utf8ExecutionLimitKind.None)
+                    : (-1, Utf8ExecutionLimitKind.None);
+            }
+
+            // The prefix contains one scalar per byte. Resume scalar classification
+            // at the first wide character so mixed runs do not repeat the block scan.
+            count = position - start;
+            if (minimum != 0 && count != 0) minimumEnd = start + 1;
         }
         var completeMask = hybrid || atom.Kind == Utf8SliceInstructionKind.Set || atom.IsDecimalDigitSet;
         ReadOnlySpan<byte> asciiMask = hybrid ||

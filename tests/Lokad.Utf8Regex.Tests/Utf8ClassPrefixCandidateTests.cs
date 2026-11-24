@@ -582,7 +582,8 @@ public sealed class Utf8ClassPrefixCandidateTests
     {
         var text = phase switch
         {
-            0 => "word Holmes!" + new string('!', 200000),
+            // Leave enough tail search to reach a checkpoint after a fast initial word match.
+            0 => "word Holmes!" + new string('!', 1 << 20),
             1 => new string('x', 200000) + " Holmes",
             2 => "word" + new string(' ', 200000) + "Holmes",
             3 => string.Concat(Enumerable.Repeat("word Holmesx ", 16000)),

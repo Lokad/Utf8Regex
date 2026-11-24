@@ -116,10 +116,33 @@ public sealed class Utf8DeferredRepeatStateTests
     }
 
     [Theory]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    public void WordCategoryScanResumesAtTheFirstWideScalar(int asciiLength)
+    {
+        using var regex = new Utf8Regex(@"\A(\w+)\b", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 64 }
+        });
+        var prefix = new string('a', asciiLength) + "é界";
+        var hit = System.Text.Encoding.UTF8.GetBytes(prefix + "😀");
+        var miss = System.Text.Encoding.UTF8.GetBytes(prefix + "\u200c");
+        var end = System.Text.Encoding.UTF8.GetByteCount(prefix);
+        var captures = new Utf8CaptureRange[2];
+
+        Assert.Equal(new Utf8CaptureRange(0, end), regex.Match(hit, captures: captures));
+        Assert.Equal(new Utf8CaptureRange(0, end), captures[1]);
+        Assert.False(regex.IsMatch(miss));
+        Assert.Equal(0, regex.Count(miss));
+    }
+
+    [Theory]
     [InlineData(@"\A([a.]+)\b", "a..", 1)]
     [InlineData(@"\A([\w.]+)\b", "é..", 2)]
+    [InlineData(@"\A([\w.]+)\b", "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz.é!", 55)]
     [InlineData(@"\A(\p{M}+)\b", "\u0301\u0903.", 2)]
-    public void ARepeatContainingNonwordScalarsCanRewindToTheWordBoundary(string pattern, string text, int end)
+    public void MixedClassesPreserveTheirOrderedBoundaryEndpoints(string pattern, string text, int end)
     {
         using var regex = new Utf8Regex(pattern);
         var captures = new Utf8CaptureRange[2];
