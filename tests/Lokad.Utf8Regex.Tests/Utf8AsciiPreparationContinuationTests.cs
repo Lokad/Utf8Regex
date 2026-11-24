@@ -32,14 +32,14 @@ public sealed class Utf8AsciiPreparationContinuationTests
     private readonly record struct BranchSnapshot(List<AsciiPatternToken> Tokens);
     private static CompilerState Compiler() => new();
     private static Utf8ConstructionBudget Invocation(CompilerState compiler) => compiler.Budget ?? throw new InvalidOperationException();
-    private static bool Lower(CompilerState compiler, Utf8TreeNode node, out Array branches)
+    private static bool Lower(CompilerState compiler, Utf8TreeNode node, out Array branches, bool ignoreCase = false)
     {
         using var construction = Utf8ConstructionScope.Enter();
         compiler.Budget = construction.Budget;
         using var storage = Internal.Utf8ConstructionSession.Create(construction.Budget);
         var preparation = construction.Budget.AllocateObject((4096, 4096),
             static limits => new Utf8PreparationBudget(limits.Item1, limits.Item2));
-        object?[] arguments = [storage, node, preparation, 0, null];
+        object?[] arguments = [storage, node, preparation, 0, ignoreCase, null];
         bool found;
         try
         {
@@ -54,7 +54,7 @@ public sealed class Utf8AsciiPreparationContinuationTests
         }
         // Snapshot witnesses before session disposal; the production buffers never
         // escape this test owner. Private optimizer declines remain empty results.
-        branches = found ? ReadBuffer<object>(arguments[4] ?? throw new InvalidOperationException())
+        branches = found ? ReadBuffer<object>(arguments[5] ?? throw new InvalidOperationException())
             .Select(value => new BranchSnapshot(ReadBuffer<AsciiPatternToken>(Property<object>(value, "Tokens")))).ToArray() : [];
         return found;
     }
@@ -194,17 +194,33 @@ public sealed class Utf8AsciiPreparationContinuationTests
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
     }
-    [Theory]
-    [InlineData(65)]
-    [InlineData(16385)]
-    public void DeepCaseFactsUseIterativeTraversal(int depth)
+    [Fact]
+    public void ScopedExactGroupDeclinesFoldedLoweringAndRestoresParent()
     {
-        var folded = typeof(Utf8FiniteLiteralLowerer).GetMethod("HasCaseClearingGroup", BindingFlags.NonPublic | BindingFlags.Static)
-            ?? throw new InvalidOperationException();
-        var clearing = Wrap(Node(Utf8TreeNodeKind.Group, Text("a")), Utf8TreeNodeKind.Capture, depth);
-        Assert.True(Assert.IsType<bool>(folded.Invoke(null, [Node(Utf8TreeNodeKind.Concatenate, Text("x"), clearing)])));
-        Assert.False(Assert.IsType<bool>(folded.Invoke(null, [Wrap(Text("a"), Utf8TreeNodeKind.Capture, depth)])));
+        var clearing = Wrap(Node(Utf8TreeNodeKind.Group, Text("a")), Utf8TreeNodeKind.Capture, 65);
+        var tree = Node(Utf8TreeNodeKind.Concatenate, Text("x"), clearing);
+        using var owner = Utf8ConstructionScope.Enter();
+        owner.Budget.ReserveBytes(7);
+        var checkpoint = owner.Budget.ReservedBytes;
+
+        Assert.False(Lower(Compiler(), tree, out var declined, ignoreCase: true));
+        Assert.Empty(declined);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
+        Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.True(Lower(Compiler(), tree, out var accepted));
+        Assert.Equal(new[] { "xa" }, Literals(accepted));
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
     }
+
+    [Fact]
+    public void ScopedExactGroupPreservesCaseAndCapturedByteRanges()
+    {
+        const string pattern = "(?<pair>(?-i:ab)[01]|[cd]ef)";
+        const RegexOptions options = Options | RegexOptions.IgnoreCase | RegexOptions.Compiled;
+        Utf8SliceSparseGroupTests.AssertOwnedOperations(pattern, options,
+            ["", "AB0", "ab0", "CEF", "😀AB1 ab1 cEF ab0"], options);
+    }
+
     public static IEnumerable<object[]> PublicCases()
     {
         foreach (var pattern in new[] { "[ab]{96}", "(?=abc)ab[cd]", "(?:ab|cd){1,2}[xy]", "\\Aab[cd]\\Z" })

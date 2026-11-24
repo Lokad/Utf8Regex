@@ -4,8 +4,8 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 internal static partial class Utf8FiniteLiteralLowerer
 {
     private static bool TryLowerBranches(Utf8ConstructionSession storage, Utf8TreeNode node,
-        Utf8PreparationBudget budget, int depth, out Utf8ConstructionBuffer<LoweredBranch> branches)
-        => BranchLowerer.Create(budget, storage).TryLower(node, depth, out branches);
+        Utf8PreparationBudget budget, int depth, bool ignoreCase, out Utf8ConstructionBuffer<LoweredBranch> branches)
+        => BranchLowerer.Create(budget, storage).TryLower(node, depth, ignoreCase, out branches);
 
     private static bool TryReserveBranchCells(Utf8PreparationBudget budget, long count)
         => count <= int.MaxValue && budget.TryReserve((int)count, (int)count);

@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -8,15 +7,11 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8NativeEligibilityAdmissionTests
 {
-    public enum Route { Literal, CaseClearingGroup, NonBacktracking }
+    public enum Route { Literal, NonBacktracking }
 
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
     private static readonly Utf8OwnedRegexTree Seed = Utf8OwnedTreeParser.TryParse("a", RegexOptions.CultureInvariant)
         ?? throw new InvalidOperationException();
-    private static readonly Func<Utf8TreeNode, bool> HasCaseClearingGroup =
-        (typeof(Utf8FiniteLiteralLowerer).GetMethod("HasCaseClearingGroup", BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException())
-        .CreateDelegate<Func<Utf8TreeNode, bool>>();
 
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, RegexOptions options, params Utf8TreeNode[] children)
     {
@@ -30,12 +25,9 @@ public sealed class Utf8NativeEligibilityAdmissionTests
 
     private static Utf8OwnedRegexTree Make(Route route, int depth)
     {
-        var node = route switch
-        {
-            Route.CaseClearingGroup => Node(Utf8TreeNodeKind.Group, RegexOptions.None, Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a')),
-            Route.NonBacktracking => Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "😀"),
-            _ => Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a'),
-        };
+        var node = route == Route.NonBacktracking
+            ? Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "😀")
+            : Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
         if (route == Route.NonBacktracking)
         {
             for (var index = 0; index < depth; index++) node = Node(Utf8TreeNodeKind.Group, RegexOptions.None, node);
@@ -49,7 +41,6 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     private static bool Prepare(Route route, Utf8OwnedRegexTree tree) => route switch
     {
         Route.Literal => Utf8NativeExecutionAnalyzer.ScanLiteralEligibility(tree.Root) == (false, true),
-        Route.CaseClearingGroup => HasCaseClearingGroup(tree.Root),
         Route.NonBacktracking => Utf8SliceParser.IsNonBacktrackingFlatGraph(tree),
         _ => throw new ArgumentOutOfRangeException(nameof(route)),
     };
@@ -82,7 +73,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     }
 
     [Theory]
-    [InlineData(Route.Literal)] [InlineData(Route.CaseClearingGroup)] [InlineData(Route.NonBacktracking)]
+    [InlineData(Route.Literal)] [InlineData(Route.NonBacktracking)]
     public void DeepChildDenialAndSameOwnerRecoveryRestoreLoans(Route route)
     {
         var input = Make(route, 32);
@@ -107,7 +98,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     }
 
     [Theory]
-    [InlineData(Route.Literal)] [InlineData(Route.CaseClearingGroup)] [InlineData(Route.NonBacktracking)]
+    [InlineData(Route.Literal)] [InlineData(Route.NonBacktracking)]
     public void GrowthDenialReleasesFramesAndAnyLoweredPayload(Route route)
     {
         var input = Make(route, 128);
@@ -126,7 +117,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     }
 
     [Theory]
-    [InlineData(Route.Literal)] [InlineData(Route.CaseClearingGroup)] [InlineData(Route.NonBacktracking)]
+    [InlineData(Route.Literal)] [InlineData(Route.NonBacktracking)]
     public void EveryWorkCutoffRestoresParentWithoutRefundingWork(Route route)
     {
         var input = Make(route, 3);
@@ -159,7 +150,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     }
 
     [Theory]
-    [InlineData(Route.Literal)] [InlineData(Route.CaseClearingGroup)] [InlineData(Route.NonBacktracking)]
+    [InlineData(Route.Literal)] [InlineData(Route.NonBacktracking)]
     public void EveryByteCutoffRestoresTemporaryAndTransferredLoans(Route route)
     {
         var input = Make(route, 3);
@@ -188,9 +179,8 @@ public sealed class Utf8NativeEligibilityAdmissionTests
         }
     }
 
-    [Theory]
-    [InlineData(Route.Literal)] [InlineData(Route.CaseClearingGroup)]
-    public void WideBorrowedTreesUseAncestorCapacityAndRestoreParent(Route route)
+    [Fact]
+    public void WideBorrowedTreesUseAncestorCapacityAndRestoreParent()
     {
         var children = Enumerable.Range(0, 4097)
             .Select(_ => Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a')).ToArray();
@@ -199,7 +189,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
-        Assert.Equal(route == Route.Literal, Prepare(route, tree));
+        Assert.True(Prepare(Route.Literal, tree));
         Assert.Equal(3ul, owner.Budget.PeakDepth);
         Assert.InRange(owner.Budget.PeakBytes, 113ul, 1024ul);
         Assert.True(owner.Budget.WorkSteps >= 4097);

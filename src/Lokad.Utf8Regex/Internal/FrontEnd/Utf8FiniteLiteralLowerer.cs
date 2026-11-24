@@ -5,8 +5,6 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static partial class Utf8FiniteLiteralLowerer
 {
-    private readonly record struct ScanFrame(Utf8TreeNode Node, int NextChild, bool Entered);
-
     private const int MaxExpandedBranches = 64;
     private const int MaxLiteralCharClassExpansion = 4;
     private const int MaxPreparationWork = 4096;
@@ -26,10 +24,9 @@ internal static partial class Utf8FiniteLiteralLowerer
         using var storage = Utf8ConstructionSession.Create(construction.Budget);
         var preparation = construction.Budget.AllocateObject((MaxPreparationWork, MaxPreparationOutput),
             static state => new Utf8PreparationBudget(state.MaxPreparationWork, state.MaxPreparationOutput));
-        if (!TryLowerBranches(storage, root.Child(0), preparation, 0, out var lowered) || lowered.Count == 0)
-            return false;
         var ignoreCase = (options & RegexOptions.IgnoreCase) != 0;
-        if (ignoreCase && HasCaseClearingGroup(root.Child(0))) return false;
+        if (!TryLowerBranches(storage, root.Child(0), preparation, 0, ignoreCase, out var lowered) || lowered.Count == 0)
+            return false;
         var branches = storage.Allocate<AsciiPatternToken[]>(lowered.Count, false);
         for (var index = 0; index < lowered.Count; index++)
         {
@@ -44,32 +41,6 @@ internal static partial class Utf8FiniteLiteralLowerer
         storage.Complete();
         construction.Complete();
         return true;
-    }
-
-    private static bool HasCaseClearingGroup(Utf8TreeNode node) => HasGroupWithCase(node, false);
-
-    private static bool HasGroupWithCase(Utf8TreeNode node, bool ignoreCase)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(budget, new(node, 0, false));
-        while (frames.Count != 0)
-        {
-            budget.ChargeWork(1);
-            var index = frames.Count - 1;
-            var frame = frames[index];
-            node = frame.Node;
-            if (!frame.Entered)
-            {
-                frame = frame with { Entered = true };
-                if (node.Kind == Utf8TreeNodeKind.Group && ((node.Options & RegexOptions.IgnoreCase) != 0) == ignoreCase)
-                    return true;
-            }
-            if (frame.NextChild == node.ChildCount) { frames.Pop(); continue; }
-            frames[index] = frame with { NextChild = frame.NextChild + 1 };
-            frames.Push(new(node.Child(frame.NextChild), 0, false));
-        }
-        return false;
     }
 
     private static bool TryLowerLiteral(char ch, out AsciiPatternToken token)

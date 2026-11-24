@@ -20,7 +20,7 @@ internal static partial class Utf8FiniteLiteralLowerer
         internal static BranchLowerer Create(Utf8PreparationBudget budget, Utf8ConstructionSession storage) =>
             storage.Budget.AllocateObject((budget, storage), static state => new BranchLowerer(state.budget, state.storage));
 
-        internal bool TryLower(Utf8TreeNode node, int depth, out Utf8ConstructionBuffer<LoweredBranch> branches)
+        internal bool TryLower(Utf8TreeNode node, int depth, bool ignoreCase, out Utf8ConstructionBuffer<LoweredBranch> branches)
         {
             branches = storage.Buffer<LoweredBranch>();
             using var frames = Utf8ConstructionFrames<Frame>.Create(storage.Budget, new(node, depth));
@@ -39,6 +39,9 @@ internal static partial class Utf8FiniteLiteralLowerer
                     frame.Stage = 1;
                     switch (node.Kind)
                     {
+                        case Utf8TreeNodeKind.Group when ignoreCase && (node.Options & RegexOptions.IgnoreCase) == 0:
+                            // Folded branch normalization cannot honor a locally exact group.
+                            return false;
                         case Utf8TreeNodeKind.Capture:
                         case Utf8TreeNodeKind.Group:
                             if (node.ChildCount != 1) return false;
