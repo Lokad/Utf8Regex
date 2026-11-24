@@ -178,6 +178,11 @@ internal static partial class Utf8SearchExecutor
             buckets.Length == literals.Length;
         var sharedPrefix = shortPrepared && !confirmBoundaries &&
             prepared.Buckets is [{ CommonPrefix.Length: >= 3, Literals.Length: var size }] && size == literals.Length;
+        var sharedEndpoints = !confirmBoundaries && shortPrepared && Vector512.IsHardwareAccelerated &&
+            end - start >= 2048 && prepared.ShortestLength == longest &&
+            literals.Length == 4 && prepared.Buckets is [{ Literals.Length: 4 }] &&
+            literals[0][^1] == literals[1][^1] && literals[0][^1] == literals[2][^1] &&
+            literals[0][^1] == literals[3][^1];
         if (longest == 0 || confirmBoundaries && !distinctHeads)
         {
             PreparedByteSearch? firstBytes = confirmBoundaries && prepared.ShortestLength is > 0 and < int.MaxValue
@@ -193,28 +198,35 @@ internal static partial class Utf8SearchExecutor
             var block = input.Slice(low, Math.Min(starts + longest - 1, end - low));
             var best = -1; var ordinal = -1;
             var firstUnsearched = 0;
-            if (distinctHeads || sharedPrefix)
+            if (distinctHeads || sharedPrefix || sharedEndpoints)
             {
                 // The same checked search used by ordinary execution runs
                 // wholly inside this admitted window. Charge the combined
                 // primitive once; original authority also gates publication.
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
-                firstUnsearched = starts;
-                // A few rejects per block preserve the common sparse case.
-                // Dense false prefixes hand the remaining starts to the
-                // complete-needle search, within the original block bounds.
-                var foundInBlock = sharedPrefix
-                    ? PreparedLiteralSetSearch.TryFindFirstMatchSingleBucketPrefix(block, prepared,
-                        out var relative, out _, out firstUnsearched, maxRejected: 4)
-                    : PreparedLiteralSetSearch.TryFindFirstMatchSingleLiteralBuckets(block, prepared, out relative, out _);
-                if (foundInBlock && relative < starts)
+                if (sharedEndpoints)
                 {
-                    // Distinct heads identify the branch. With a shared
-                    // prefix, complete matches at the same start keep order.
-                    for (var id = 0; id < literals.Length; id++)
-                        if (sharedPrefix ? block[relative..].StartsWith(literals[id]) : literals[id][0] == block[relative])
-                        { best = relative; ordinal = id; break; }
+                    best = IndexOfShortFamilyWithSharedEndpoints(block, starts, literals, longest,
+                        out ordinal, out firstUnsearched);
+                }
+                else
+                {
+                    firstUnsearched = starts;
+                    // Dense false prefixes hand the remaining starts to the
+                    // complete-needle search, within the original block bounds.
+                    var foundInBlock = sharedPrefix
+                        ? PreparedLiteralSetSearch.TryFindFirstMatchSingleBucketPrefix(block, prepared,
+                            out var relative, out _, out firstUnsearched, maxRejected: 4)
+                        : PreparedLiteralSetSearch.TryFindFirstMatchSingleLiteralBuckets(block, prepared, out relative, out _);
+                    if (foundInBlock && relative < starts)
+                    {
+                        // Distinct heads identify the branch. Shared prefixes
+                        // retain pattern order at the same start.
+                        for (var id = 0; id < literals.Length; id++)
+                            if (sharedPrefix ? block[relative..].StartsWith(literals[id]) : literals[id][0] == block[relative])
+                            { best = relative; ordinal = id; break; }
+                    }
                 }
             }
             if (firstUnsearched < starts) for (var id = 0; id < literals.Length; id++)
@@ -490,5 +502,52 @@ internal static partial class Utf8SearchExecutor
         if (found < 0 || found >= starts - position) return -1;
         literalId = a >= 0 && a == found ? 0 : 1;
         return position + found;
+    }
+
+    private static int IndexOfShortFamilyWithSharedEndpoints(ReadOnlySpan<byte> input, int starts,
+        byte[][] literals, int width, out int ordinal, out int firstUnsearched)
+    {
+        ordinal = -1;
+        firstUnsearched = starts;
+        var head = literals[0][0];
+        var tail = literals[0][^1];
+        var heads = Vector512.Create(head);
+        var tails = Vector512.Create(tail);
+        var lastStart = Math.Min(starts, input.Length - width + 1);
+        var remainingRejects = 32;
+        var position = 0;
+        for (; position <= lastStart - Vector512<byte>.Count; position += Vector512<byte>.Count)
+        {
+            var first = MemoryMarshal.Read<Vector512<byte>>(input[position..]);
+            var last = MemoryMarshal.Read<Vector512<byte>>(input[(position + width - 1)..]);
+            var candidates = (Vector512.Equals(first, heads) & Vector512.Equals(last, tails)).ExtractMostSignificantBits();
+            while (candidates != 0)
+            {
+                var candidate = position + BitOperations.TrailingZeroCount(candidates);
+                ordinal = FindMatchingLiteral(input.Slice(candidate, width), literals);
+                if (ordinal >= 0) return candidate;
+                // Dense false candidates resume the existing complete-needle search.
+                if (--remainingRejects == 0)
+                {
+                    firstUnsearched = candidate + 1;
+                    return -1;
+                }
+                candidates &= candidates - 1;
+            }
+        }
+        for (; position < lastStart; position++)
+        {
+            if (input[position] != head || input[position + width - 1] != tail) continue;
+            ordinal = FindMatchingLiteral(input.Slice(position, width), literals);
+            if (ordinal >= 0) return position;
+        }
+        return -1;
+
+        static int FindMatchingLiteral(ReadOnlySpan<byte> candidate, byte[][] family)
+        {
+            for (var id = 0; id < family.Length; id++)
+                if (candidate.SequenceEqual(family[id])) return id;
+            return -1;
+        }
     }
 }

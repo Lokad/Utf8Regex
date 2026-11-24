@@ -67,6 +67,29 @@ public sealed class Utf8SmallFamilyCandidateTests
         }
     }
 
+    [Theory]
+    [InlineData('x')]
+    [InlineData('a')]
+    public void SharedEndpointsKeepRangeAndOrdinalThroughDenseRejects(char padding)
+    {
+        byte[][] literals = ["aBQa"u8.ToArray(), "aCDa"u8.ToArray(), "aTWa"u8.ToArray(), "aZYa"u8.ToArray()];
+        var prepared = new PreparedLiteralSetSearch(literals).SearchData;
+        foreach (var start in new[] { 32, 63, 64, 2044, 2045, 2047, 4093 })
+        {
+            var input = Encoding.UTF8.GetBytes(new string(padding, start) + "aZYa" + new string(padding, 4093 - start));
+            foreach (var end in new[] { input.Length, start + 3 })
+            {
+                var invocation = new Utf8SliceInvocation(new(1000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+                Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
+                    literals, false, input, 0, end, false, ref invocation, out var match, out var found, prepared));
+
+                Assert.Equal(end == input.Length, found);
+                if (found) Assert.Equal((start, 4, 3), (match.Index, match.Length, match.LiteralId));
+                else Assert.Equal(default, match);
+            }
+        }
+    }
+
     [Theory] [InlineData(false)] [InlineData(true)]
     public void EveryWorkCutoffKeepsStickyDenialAndCallerLoan(bool hit)
     {
