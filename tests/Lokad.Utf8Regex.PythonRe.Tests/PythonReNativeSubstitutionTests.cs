@@ -12,6 +12,8 @@ public sealed class PythonReNativeSubstitutionTests
     [InlineData("(?P<x>é|😀)(a)?", "!é😀a!", @"[\g<x>\2\g<0>]", 0, 0, "![éé][😀a😀a]!", 2)]
     [InlineData("(?P<𝒜>é)", "é😀é", "😀\\g<𝒜>\0\\377", 1, 2, "é😀😀é\0ÿ", 1)]
     [InlineData("x*", "abxd", @"[\g<0>]", 0, 0, "[]a[]b[x][]d[]", 5)]
+    [InlineData("x*?", "éx😀", @"\101\n", 0, 2, "éA\nA\nA\n😀A\n", 4)]
+    [InlineData("x*", "éx😀", "", 2, 2, "é😀", 2)]
     [InlineData("(?<=é)a", "éaéa", "😀", 1, 2, "é😀éa", 1)]
     [InlineData("^a", "éaaa", "!", 0, 2, "éaaa", 0)]
     [InlineData("a", "aaaa", "é\\&\\101", -1, 0, "aaaa", 0)]

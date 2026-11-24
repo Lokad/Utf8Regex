@@ -224,15 +224,20 @@ internal readonly record struct PythonReReplacementPlan(PythonReReplacementToken
     internal void AppendToUtf8(ReadOnlySpan<byte> input,
         scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer)
     {
-        cursor.Checkpoint();
+        // Preparation has already assembled and validated a capture-free template.
+        if (LiteralUtf8 is { } literal)
+        {
+            cursor.AppendBytes(ref writer, literal);
+            return;
+        }
+
+        // Each append checks the invocation and each large copy is bounded.
         foreach (var token in Tokens)
         {
-            cursor.Checkpoint();
             ReadOnlySpan<byte> value = token.Kind == PythonReReplacementTokenKind.Literal ? token.RequiredUtf8.AsSpan() :
                 cursor.TryGetCaptureByteRange(token.Number, out var start, out var end) ? input[start..end] : [];
             cursor.AppendBytes(ref writer, value);
         }
-        cursor.Checkpoint();
     }
 
 }

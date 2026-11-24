@@ -184,7 +184,6 @@ public sealed partial class Utf8PythonRegex
                 if (replaced == 0) writer = cursor.CreateOutputWriter();
                 cursor.AppendBytes(ref writer, input[last..cursor.StartOffsetInBytes]);
                 plan.AppendToUtf8(input, ref cursor, ref writer);
-                cursor.Checkpoint();
                 last = cursor.EndOffsetInBytes;
                 replaced++;
             }
