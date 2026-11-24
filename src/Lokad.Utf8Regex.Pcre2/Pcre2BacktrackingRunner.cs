@@ -1203,12 +1203,17 @@ internal static class Pcre2BacktrackingRunner
                             (next.BackreferenceOptions & Pcre2CharacterOptions.Caseless) == 0)
                         {
                             // A return restores the caller's capture. The call
-                            // cannot move the input backwards, so an exact
-                            // reference still needs its first byte in this suffix.
+                            // cannot move the input backwards, so the complete
+                            // exact reference must occur in this suffix.
                             ref readonly var referenced = ref captureState[next.CaptureSlot];
-                            if (referenced.Start >= 0 && referenced.End > referenced.Start &&
-                                (referenced.End - referenced.Start > input.Length - inputIndex ||
-                                    !input[inputIndex..].Contains(input[referenced.Start]))) break;
+                            if (referenced.Start >= 0 && referenced.End > referenced.Start)
+                            {
+                                var length = referenced.End - referenced.Start;
+                                if (length > input.Length - inputIndex) break;
+                                var suffix = input[inputIndex..];
+                                if (length == 1 ? !suffix.Contains(input[referenced.Start]) :
+                                    suffix.IndexOf(input.Slice(referenced.Start, length)) < 0) break;
+                            }
                         }
                         subroutineCalls.Push(
                             new Pcre2SubroutineCallFrame(

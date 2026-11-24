@@ -44,6 +44,7 @@ public sealed class Pcre2RecursivePalindromeTests
                      "é🙂é",
                      "é🙂🙂é",
                      "é🙂a",
+                     "åääääå",
                      "\n",
                      "aba\n",
                      "\r\n",
@@ -97,6 +98,18 @@ public sealed class Pcre2RecursivePalindromeTests
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch("abcba"u8)).ErrorKind);
+    }
+
+    [Theory]
+    [InlineData(@"^((.)(?1)\2|.?)$", "åäääää")]
+    [InlineData(@"^((.)(?1)\2|.?)$", "😀😁😁😁")]
+    [InlineData(@"^(.|(.)(?1)?\2)$", "åäääää")]
+    public void SubroutineScreenRejectsSharedUtf8LeadWithinWorkLimit(string pattern, string text)
+    {
+        using var regex = CreateMetered(pattern, 20);
+        using var cancellation = new CancellationTokenSource();
+
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(text), cancellationToken: cancellation.Token));
     }
 
     [Theory]
