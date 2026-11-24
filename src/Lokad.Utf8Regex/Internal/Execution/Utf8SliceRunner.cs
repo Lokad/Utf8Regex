@@ -1437,7 +1437,8 @@ internal static partial class Utf8SliceRunner
                     {
                         var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                             (byte)whitespaceLiteral, classSearch, whitespaceGapMaximum, directClassLiteral,
-                            ref position, ref invocation, out whitespaceWindowEnd, repeatPrefix, requiredSuffix: requiredClassSuffix);
+                            ref position, ref invocation, out whitespaceWindowEnd, repeatPrefix, requiredSuffix: requiredClassSuffix,
+                            countMinimumStart: verifiedClassLiteralLength != 0);
                         if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     }
                     else

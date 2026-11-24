@@ -1044,7 +1044,7 @@ internal static partial class Utf8SliceRunner
         long gapMaximum, bool direct, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd,
         in (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) repeatPrefix = default,
         byte[][]? delimiterAlternatives = null, (int First, int Second) requiredSuffix = default,
-        int screenedDelimiter = -1)
+        int screenedDelimiter = -1, bool countMinimumStart = false)
     {
         if (leadingClass >= 2 && !repeatPrefix.Any.HasValue && delimiterAlternatives is null)
         {
@@ -1149,7 +1149,26 @@ internal static partial class Utf8SliceRunner
             }
             return invocation.TryChargeInputStep();
         }
-        return TryRewindClassWhitespace(program, input, floor, leadingClass, gapMaximum, direct, ref position, ref invocation);
+        if (!countMinimumStart)
+            return TryRewindClassWhitespace(program, input, floor, leadingClass, gapMaximum, direct, ref position, ref invocation);
+
+        // Count observes the consumed end. The excluded delimiter and the
+        // proved minimum of one make this last scalar sufficient for the run.
+        breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        if (position > floor && TryReadScalar(input, position, true, out var scalar, out var width))
+        {
+            breach = TryMatchScalarClass(program, program.Instructions[leadingClass], scalar, ref invocation, out var member);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            if (member)
+            {
+                position -= width;
+                return Utf8ExecutionLimitKind.None;
+            }
+        }
+        // The final scalar cannot belong to the run, so this delimiter has no start.
+        position++;
+        return Utf8ExecutionLimitKind.None;
     }
 
     private static Utf8ExecutionLimitKind TryNarrowDisjointRepeatPrefix(Utf8SliceProgram program,

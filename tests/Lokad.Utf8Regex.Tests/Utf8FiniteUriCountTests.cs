@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -94,12 +93,28 @@ public sealed class Utf8FiniteUriCountTests
     }
 
     [Fact]
-    public void EntireInputValidityAndWorkDenialRemainAuthoritative()
+    public void InsufficientWorkStillDeniesCount()
     {
         var tiny = Create(RegexOptions.None, 1);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => tiny.Count(Encoding.UTF8.GetBytes(new string('x', 8192)))).ResourceKind);
         Assert.Equal(1, Create(RegexOptions.None, 100000).Count("x://ab"u8));
+    }
+
+    [Fact]
+    public void LongSchemeCountNeedsOnlyTheScalarBesideTheDelimiter()
+    {
+        const string rejected = "a/://ab ";
+        var input = Encoding.UTF8.GetBytes(rejected + new string('w', 32768) + "𐐀://ab");
+        using var source = new CancellationTokenSource();
+        using var count = Create(RegexOptions.Compiled, 64);
+        using var ranges = Create(RegexOptions.Compiled, 100000);
+
+        Assert.Equal(1, count.Count(input, source.Token));
+        var match = ranges.Match(input, cancellationToken: source.Token);
+        Assert.True(match.Success);
+        Assert.Equal((Encoding.UTF8.GetByteCount(rejected), input.Length),
+            (match.StartOffsetInBytes, match.EndOffsetInBytes));
     }
 
     [Fact]
@@ -120,17 +135,6 @@ public sealed class Utf8FiniteUriCountTests
             }
         }
     }
-
-    private static byte[] PhaseInput(int phase) => Encoding.UTF8.GetBytes(phase switch
-    {
-        0 => new string('x', 200000),
-        1 => new string('x', 512) + "://ab",
-        // Exercise enough bounded ASCII blocks to interrupt the live loop,
-        // rather than requiring one diagnostic checkpoint per scalar.
-        2 => "x://" + new string('b', 200000),
-        3 => "x://ab?" + new string('b', 200000),
-        _ => "x://ab#" + new string('b', 200000),
-    });
 
     [Theory]
     [InlineData(RegexOptions.IgnoreCase, 3)]
