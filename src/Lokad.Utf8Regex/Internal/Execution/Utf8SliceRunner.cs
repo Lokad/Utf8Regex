@@ -1231,6 +1231,11 @@ internal static partial class Utf8SliceRunner
         // PCRE2-INTEGRATION-POINT: a caller may provide its proved branch prefixes.
         var useBranchPrefixes = branchPrefixes.HasValue;
         var seekLiteral = useBranchPrefixes || CanSeekExactPrefix(program, candidatePlan);
+        // A successful line seek has already checked both of these instructions.
+        // A capture or other instruction before the literal keeps the VM entry.
+        var verifiedLinePrefix = seekBeginning && !seekLiteral && first is { B: 1, C: > 0 } &&
+            program.Instructions[1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } lineHead &&
+            lineHead.A == first.C - 1 ? (2, 1) : default;
         var prefixContinuation = 0;
         scoped Span<int> familyContinuations = default;
         if (seekLiteral && !useBranchPrefixes && input.Length - fromByte >= 256 &&
@@ -1525,7 +1530,7 @@ internal static partial class Utf8SliceRunner
                     position++;
                     continue;
                 }
-                var verifiedPrefix = candidateContinuation == 0 ? default : (candidateContinuation, prefixBytes);
+                var verifiedPrefix = candidateContinuation == 0 ? verifiedLinePrefix : (candidateContinuation, prefixBytes);
                 // The rewind proved this nonempty class run up to the
                 // excluded delimiter. Continue with the original suffix.
                 if (verifiedClassLiteralLength != 0 && position < whitespaceWindowEnd)
