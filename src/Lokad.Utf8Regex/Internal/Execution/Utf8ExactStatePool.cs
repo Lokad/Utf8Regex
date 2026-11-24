@@ -75,10 +75,10 @@ internal static class Utf8ExactStatePool
                     for (var index = 0; index < s_count; index++)
                     {
                         var value = cache[index].Value!;
-                        if (value.Length == capacity && value is T[] items && items.GetType() == typeof(T[]))
+                        if (value.Length == capacity && value.GetType() == typeof(T[]))
                         {
                             RemoveAt(cache, index);
-                            return items;
+                            return (T[])value;
                         }
                     }
             }
