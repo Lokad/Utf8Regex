@@ -1846,7 +1846,7 @@ internal static partial class Utf8SliceRunner
                         // A hit covers the same two literal visits. Leave a
                         // partial or failed comparison to the ordinary walk.
                         var tail = code[entry.A].C;
-                        if (tail != 0 && remaining >= 2 && input.Length - position >= 2 &&
+                        if (tail > 0 && remaining >= 2 && input.Length - position >= 2 &&
                             BinaryPrimitives.ReadUInt16LittleEndian(input[position..]) == tail - 1)
                         {
                             remaining -= 2;
@@ -1865,6 +1865,7 @@ internal static partial class Utf8SliceRunner
                             var next = index + 1;
                             var fallback = entry.A;
                             var afterSibling = literal.D;
+                            var armJump = ~literal.C;
                             while (true)
                             {
                                 var edge = position + 1;
@@ -1883,6 +1884,33 @@ internal static partial class Utf8SliceRunner
                                         edge++;
                                     }
                                 }
+                                if (possible && proveMatch && armJump >= 0 && remaining >= armJump - next + 2)
+                                {
+                                    while (next < armJump)
+                                    {
+                                        ref readonly var atom = ref code[next++];
+                                        remaining--;
+                                        if (edge == input.Length || (atom.Kind == Utf8SliceInstructionKind.Set
+                                            ? !atom.MatchesAsciiInterval(input[edge]) : atom.A != input[edge]))
+                                        {
+                                            possible = false;
+                                            break;
+                                        }
+                                        edge++;
+                                    }
+                                    if (possible)
+                                    {
+                                        var join = code[armJump].A;
+                                        remaining -= 2;
+                                        if (edge < input.Length && input[edge] == code[join].A)
+                                        {
+                                            position = edge + 1;
+                                            fallback = join + 1;
+                                            break;
+                                        }
+                                        possible = false;
+                                    }
+                                }
                                 if (possible)
                                 {
                                     var end = ProbeBranchedAsciiPrefix(program, input, edge, next, ref remaining, proveMatch);
@@ -1894,6 +1922,7 @@ internal static partial class Utf8SliceRunner
                                 // the same matching byte. Keep its fork and literal
                                 // visits while entering directly at the next atom.
                                 remaining -= 2;
+                                armJump = ~code[fallback + 1].C;
                                 next = fallback + 2;
                                 fallback = afterSibling;
                                 afterSibling = 0;

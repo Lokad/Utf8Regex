@@ -9,6 +9,25 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ClassPrefixCandidateTests
 {
     [Theory]
+    [InlineData(@"(?:ab[0-9]|a[a-z][0-4]|a[a-z]?[0-9][0-9])\.OK", "éab2.X ab8.OK a22.OK")]
+    [InlineData(@"(?:ab[0-9]|a[a-z][0-4]|a[a-z]??[0-9][0-9])\.OK", "😀ab2.X ab8.OK a22.OK")]
+    [InlineData(@"(?:ab[0-9]|ab[0-9]\.[a-z])\.OK", "éab2.x.OK")]
+    [InlineData(@"(?:ab[0-9]|ab[0-9][.]?)\.OK", "😀ab2..OK")]
+    public void AlternativesCanRetryAtADifferentDelimiterOnlyWhenTheirAtomsAdmitIt(string pattern, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = new Regex(pattern).Matches(text);
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled, new() { ResourcePolicy = Funded });
+
+        Assert.True(regex.IsMatch(input, token.Token));
+        Assert.Equal(expected.Count, regex.Count(input, token.Token));
+        var match = regex.Match(input, cancellationToken: token.Token);
+        var start = Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[0].Index));
+        Assert.Equal(new Utf8CaptureRange(start, start + Encoding.UTF8.GetByteCount(expected[0].Value)), match);
+    }
+
+    [Theory]
     [InlineData("[A-Z]", 3)]
     [InlineData("[ A-Z]", 4)]
     public void CountAfterLiteralFamilyPreservesWideRunsAndOverlappingFollowers(string follower, int count)

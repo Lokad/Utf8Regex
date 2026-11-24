@@ -231,6 +231,7 @@ internal readonly struct Utf8SliceInstruction
     // for the fall-through and target respectively. Zero leaves an arm unknown.
     // A negative C on a normal Fork encodes a disjoint target byte as ~C.
     // That captured fork's target Literal can pack two following ASCII bytes here, plus one.
+    // A negative Literal C holds the complemented jump of a fixed arm with a common delimiter.
     // A RepeatEnd can mark a proved consuming body for ordered discovery.
     // A leading Beginning anchor records a required first ASCII byte plus one.
     // Wide regular capture markers can record where a consecutive marker run ends.

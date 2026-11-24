@@ -1369,6 +1369,10 @@ internal static partial class Utf8SliceRunner
             return;
         }
 
+        if (first is { Kind: Utf8SliceInstructionKind.Literal, B: 0, C: 0, A: >= 0 and < 128 } &&
+            FindDelimitedForkArm(code, setMasks, forkIndex, fork.A, budget) is > 0 and var jump)
+            first = new(first.Kind, first.A, first.B, ~jump, first.D);
+
         if (first is { Kind: Utf8SliceInstructionKind.Literal, B: 0, D: 0, A: >= 0 and < 128 } &&
             fork.A < code.Length - 1 &&
             code[fork.A] is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } next && next.A > fork.A + 1 &&
@@ -1386,6 +1390,44 @@ internal static partial class Utf8SliceRunner
         var mask = setMasks[first.A];
         if (mask.Length == 16 && (mask[alternate.A >> 3] & (1 << (alternate.A & 7))) != 0)
             fork = new(fork.Kind, fork.A, 0, ~alternate.A, 0);
+    }
+
+    private static int FindDelimitedForkArm(ReadOnlySpan<Utf8SliceInstruction> code, byte[][] masks,
+        int fork, int alternate, Utf8ConstructionBudget budget)
+    {
+        var jumpIndex = alternate - 1;
+        if (jumpIndex - fork is < 3 or > 5) return 0;
+        budget.ChargeWork(2);
+        if (code[jumpIndex] is not { Kind: Utf8SliceInstructionKind.Jump, B: 0 } jump ||
+            jump.A <= alternate || jump.A - alternate > 20 || jump.A >= code.Length ||
+            code[jump.A] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } delimiter)
+            return 0;
+
+        // Any arm that reaches the common literal must stop at the first
+        // delimiter. No other arm can change a fully proved endpoint.
+        for (var pc = fork + 1; pc < jump.A; pc++)
+        {
+            budget.ChargeWork(1);
+            var atom = code[pc];
+            if (pc < jumpIndex && GetUnfoldedAsciiRange(atom, out _) < 0) return 0;
+            if (pc > jumpIndex && (atom.Kind is Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump) &&
+                atom.B == 0 && atom.A > pc && atom.A <= jump.A) continue;
+            if (pc == jumpIndex) continue;
+            if (pc > jumpIndex && atom is { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy,
+                RepeatMinimum: 0, RepeatMaximum: 1 } && atom.A < jump.A && IsSingleAtomRepeat(code, pc, atom))
+            {
+                budget.ChargeWork(3);
+                pc = atom.A;
+                atom = code[pc - 2];
+            }
+            if (atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } && atom.A != delimiter.A)
+                continue;
+            if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } &&
+                (masks[atom.A][delimiter.A >> 3] & (1 << (delimiter.A & 7))) == 0)
+                continue;
+            return 0;
+        }
+        return jumpIndex;
     }
 
     internal static void MarkExcludedLoopStart(Span<Utf8SliceInstruction> code, byte[][] setMasks,
