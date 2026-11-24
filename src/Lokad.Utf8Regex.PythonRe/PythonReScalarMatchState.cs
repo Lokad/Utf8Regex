@@ -748,7 +748,7 @@ internal struct PythonReScalarMatchState
 
     internal void Dispose()
     {
-        _workspace.Release(ref _invocation);
+        if (_workspace.NeedsRelease) _workspace.Release(ref _invocation);
         _results.Release(ref _invocation);
         Utf8SliceRunner.ReleaseSlots(_slots, ref _invocation);
         _slots = new Utf8SliceSlots([], []);
