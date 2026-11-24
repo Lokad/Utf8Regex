@@ -765,7 +765,6 @@ internal static partial class Utf8SliceRunner
         var singleWindowAttempt = false;
         var requiredClassSuffix = default((int First, int Second));
         var verifiedClassLiteralLength = 0;
-        var proveClassSuffix = false;
         var screenedDelimiter = -1;
         var wideInput = input.Length - fromByte >= 256;
         var needsClassWindow = leading is < 0 or >= 128;
@@ -808,7 +807,13 @@ internal static partial class Utf8SliceRunner
                         if (!collectHistory && proof.CanReusePrefix)
                         {
                             verifiedClassLiteralLength = aligned.Length;
-                            proveClassSuffix = existenceOnly && requiredClassSuffix.Second != 0 && proof.CanAcceptAfterPair;
+                            if (existenceOnly && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+                                requiredClassSuffix.Second != 0 && proof.CanAcceptAfterPair)
+                                return FindAlignedClassPair(program, input, fromByte, leadingClass, (byte)literal,
+                                    aligned, requiredClassSuffix,
+                                    ReferenceEquals(candidatePlan.RequiredPrefilterSearcher.LiteralSearch.Needle, aligned.Needle)
+                                        ? screenedLiteral : -1,
+                                    ref invocation);
                         }
                     }
                 }
@@ -1069,36 +1074,6 @@ internal static partial class Utf8SliceRunner
             var verifiedPrefix = verifiedClassLiteralLength != 0 && position < classWindowEnd
                 ? (4 + verifiedClassLiteralLength, classWindowEnd - position + verifiedClassLiteralLength)
                 : verifiedLeadingPrefix;
-            if (proveClassSuffix && verifiedPrefix.Item2 != 0)
-            {
-                var suffix = position + verifiedPrefix.Item2;
-                var code = program.Instructions;
-                ref readonly var firstClass = ref code[requiredClassSuffix.First];
-                ref readonly var secondClass = ref code[requiredClassSuffix.Second];
-                var tail = input[suffix..];
-                var width = MatchesAdjacentAsciiHybridClasses(program, firstClass, secondClass, tail) ? 2 : 0;
-                if (width == 0 && tail.Length >= 2 && (tail[0] | tail[1]) >= 128)
-                {
-                    breach = TryMatchAdjacentHybridScalars(program, firstClass, secondClass, tail, ref invocation, out width);
-                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
-                    if (width == 0)
-                    {
-                        // The proved delimiter fixes this suffix for the whole window.
-                        position = classWindowEnd;
-                        continue;
-                    }
-                }
-                if (width != 0)
-                {
-                    // Two admitted scalars satisfy the minimum and the rest
-                    // may be empty. Only the Boolean caller uses this witness.
-                    breach = invocation.TryChargeInputStep();
-                    invocation.Budget.ThrowIfCancellationRequested();
-                    return breach == Utf8ExecutionLimitKind.None
-                        ? new(true, position, suffix + width, breach)
-                        : new(false, -1, -1, breach);
-                }
-            }
             var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds,
                 collectHistory, false, true, ref workspace, ref invocation, existenceOnly, verifiedPrefix);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
@@ -1523,7 +1498,7 @@ internal static partial class Utf8SliceRunner
                         var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                             (byte)whitespaceLiteral, classSearch, whitespaceGapMaximum, directClassLiteral,
                             ref position, ref invocation, out whitespaceWindowEnd, repeatPrefix, requiredSuffix: requiredClassSuffix,
-                            countMinimumStart: verifiedClassLiteralLength != 0);
+                            useNearestViableStart: verifiedClassLiteralLength != 0);
                         if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     }
                     else

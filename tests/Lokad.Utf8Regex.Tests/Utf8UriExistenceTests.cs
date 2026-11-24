@@ -98,6 +98,20 @@ public sealed class Utf8UriExistenceTests
             Assert.True(Limited(100000, options).IsMatch("x://ab"u8));
     }
 
+    [Fact]
+    public void LongUriSchemeNeedsOnlyItsLastScalarForExistence()
+    {
+        using var source = new CancellationTokenSource();
+        using var limited = Limited(32, RegexOptions.Compiled, working: 1);
+        using var ordinary = new Utf8Regex(Pattern, RegexOptions.Compiled);
+        foreach (var tip in new[] { "", "𐐀" })
+        {
+            var input = Encoding.UTF8.GetBytes(new string('w', 4096) + tip + "://é/");
+            Assert.True(limited.IsMatch(input, source.Token));
+            Assert.Equal(new Utf8CaptureRange(0, input.Length), ordinary.Match(input));
+        }
+    }
+
     [Theory]
     [InlineData(0, false)]
     [InlineData(0, true)]

@@ -1196,12 +1196,56 @@ internal static partial class Utf8SliceRunner
         return start == limit || input[start - 1] < 128 ? start : -1;
     }
 
+    private static Utf8SliceSearchOutcome FindAlignedClassPair(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, int leadingClass, byte delimiter, in PreparedSubstringSearch search,
+        (int First, int Second) suffixClasses, int screenedDelimiter, ref Utf8SliceInvocation invocation)
+    {
+        ref readonly var first = ref program.Instructions[suffixClasses.First];
+        ref readonly var second = ref program.Instructions[suffixClasses.Second];
+        while (true)
+        {
+            var breach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass, delimiter, search,
+                0, true, ref position, ref invocation, out var delimiterStart, requiredSuffix: suffixClasses,
+                screenedDelimiter: screenedDelimiter, useNearestViableStart: true);
+            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+            if (position < 0)
+                return new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (position < delimiterStart)
+            {
+                // The leading run needs one scalar. The first suffix class
+                // has width one scalar, so the second class must follow it.
+                var suffix = delimiterStart + search.Length;
+                var tail = input[suffix..];
+                var width = MatchesAdjacentAsciiHybridClasses(program, first, second, tail) ? 2 : 0;
+                if (width == 0 && tail.Length >= 2 && (tail[0] | tail[1]) >= 128)
+                {
+                    breach = TryMatchAdjacentHybridScalars(program, first, second, tail, ref invocation, out width);
+                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+                }
+                if (width != 0)
+                {
+                    breach = invocation.TryChargeInputStep();
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    return breach == Utf8ExecutionLimitKind.None
+                        ? new(true, position, suffix + width, breach)
+                        : new(false, -1, -1, breach);
+                }
+            }
+            position = delimiterStart + 1;
+            screenedDelimiter = -1;
+        }
+    }
+
     internal static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int leadingClass, byte literal, in PreparedSubstringSearch? search,
         long gapMaximum, bool direct, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd,
         in (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) repeatPrefix = default,
         byte[][]? delimiterAlternatives = null, (int First, int Second) requiredSuffix = default,
-        int screenedDelimiter = -1, bool countMinimumStart = false)
+        int screenedDelimiter = -1, bool useNearestViableStart = false)
     {
         if (leadingClass >= 2 && !repeatPrefix.Any.HasValue && delimiterAlternatives is null)
         {
@@ -1306,11 +1350,11 @@ internal static partial class Utf8SliceRunner
             }
             return invocation.TryChargeInputStep();
         }
-        if (!countMinimumStart)
+        if (!useNearestViableStart)
             return TryRewindClassWhitespace(program, input, floor, leadingClass, gapMaximum, direct, ref position, ref invocation);
 
-        // Count observes the consumed end. The excluded delimiter and the
-        // proved minimum of one make this last scalar sufficient for the run.
+        // Boolean and Count callers can use the nearest valid start. The
+        // excluded delimiter and the minimum of one make this scalar sufficient.
         breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         if (position > floor && TryReadScalar(input, position, true, out var scalar, out var width))
