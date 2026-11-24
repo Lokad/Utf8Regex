@@ -1805,7 +1805,7 @@ internal static partial class Utf8SliceRunner
                             else
                             {
                                 if (digits[stop] < 128) return BranchedPrefixRejected;
-                                position = MatchWideDecimalPrefix(input, position + stop, count - stop);
+                                position = MatchWideDecimalPrefix(input, position + stop, count - stop, count - stop);
                                 if (position < 0) return BranchedPrefixRejected;
                             }
                             index = entry.A + 1;
@@ -1870,12 +1870,12 @@ internal static partial class Utf8SliceRunner
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int MatchWideDecimalPrefix(ReadOnlySpan<byte> input, int position, int count)
+    private static int MatchWideDecimalPrefix(ReadOnlySpan<byte> input, int position, int minimum, int maximum)
     {
-        for (var digit = 0; digit < count; digit++)
+        for (var digit = 0; digit < maximum; digit++)
         {
             if (!TryReadScalar(input, position, false, out var scalar, out var width) ||
-                !Rune.IsDigit(scalar)) return BranchedPrefixRejected;
+                !Rune.IsDigit(scalar)) return digit < minimum ? BranchedPrefixRejected : position;
             position += width;
         }
         return position;
@@ -1987,15 +1987,29 @@ internal static partial class Utf8SliceRunner
         var consumed = 0;
         if (decimalDigits)
         {
-            var stop = input.Slice(position, maximum).IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+            var suffix = input.Slice(position, maximum);
+            var stop = suffix.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+            if (stop >= 0 && suffix[stop] >= 128)
+            {
+                if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || !program.SkipsTerminalRewind(atomIndex - 1))
+                    return BranchedPrefixUndecided;
+                // Each admitted repeat visit covers one scalar. The certificate
+                // excludes shorter endpoints even when a digit spans several bytes.
+                var end = MatchWideDecimalPrefix(input, position + stop, Math.Max(0, minimum - stop), maximum - stop);
+                continueProof = end >= 0;
+                return end;
+            }
             consumed = stop < 0 ? maximum : stop;
         }
-        while (consumed < maximum)
+        else
         {
-            var value = input[position + consumed];
-            if (value >= 128 && !asciiOnly) return BranchedPrefixUndecided;
-            if (decimalDigits || !ascii.Contains(value) && additionalAsciiMember?.Invoke(value) != true) break;
-            consumed++;
+            while (consumed < maximum)
+            {
+                var value = input[position + consumed];
+                if (value >= 128 && !asciiOnly) return BranchedPrefixUndecided;
+                if (!ascii.Contains(value) && additionalAsciiMember?.Invoke(value) != true) break;
+                consumed++;
+            }
         }
         if (consumed < minimum) return BranchedPrefixRejected;
         if (consumed != minimum && !program.SkipsTerminalRewind(atomIndex - 1))

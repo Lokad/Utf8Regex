@@ -182,17 +182,22 @@ public sealed class Utf8ControlledDecimalBooleanTests
     }
 
     [Theory]
-    [InlineData("😀11/18/2019😀", true)]
-    [InlineData("😀11/18/2019é", false)]
-    [InlineData("😀11/18/2019\u200d", false)]
-    public void VerifiedDecimalRangeChecksWideBoundaryWithinProofAllowance(string text, bool expected)
+    [InlineData("😀11/18/2019😀", 4, 14)]
+    [InlineData("😀11/18/2019é", -1, -1)]
+    [InlineData("😀11/18/2019\u200d", -1, -1)]
+    [InlineData("😀11/18/20٢٦😀", 4, 16)]
+    [InlineData("😀11/18/𝟚0٢6😀", 4, 18)]
+    [InlineData("😀11/18/٢²😀", -1, -1)]
+    [InlineData("😀11/18/20٢٦٥!", -1, -1)]
+    [InlineData(" 1/𝟙/٢٠٢٦!", 1, 16)]
+    public void MixedDecimalRangeUsesBoundedProof(string text, int start, int end)
     {
         using var source = new CancellationTokenSource();
         using var limited = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", RegexOptions.Compiled,
             new() { ResourcePolicy = new() { MaxWorkSteps = 12, MaxWorkingBytes = 1 } });
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(expected, limited.IsMatch(input, source.Token));
-        Assert.Equal(expected ? new Utf8CaptureRange(4, 14) : default,
+        Assert.Equal(start >= 0, limited.IsMatch(input, source.Token));
+        Assert.Equal(start >= 0 ? new Utf8CaptureRange(start, end) : default,
             limited.Match(input, cancellationToken: source.Token));
     }
 
