@@ -470,6 +470,17 @@ internal static partial class Utf8SliceRunner
         var workspace = new AttemptWorkspace();
         try
         {
+            // Prepared absolute-beginning proofs already fix the only origin.
+            // Dispatch without setting up the general search or changing the
+            // single-origin verifier's admission and fallback.
+            ref readonly var first = ref program.Instructions[0];
+            if (fromByte == 0 && !program.IsNonBacktracking && !program.RightToLeft &&
+                first is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: not 0 })
+            {
+                invocation.Budget.ThrowIfCancellationRequested();
+                return TryFindFirstAtSingleOrigin(program, input, fromByte, captureStarts, captureEnds,
+                    collectHistory, ref workspace, ref invocation, existenceOnly, first, seekBeginning: true, seekVeryEnd: false);
+            }
             return TryFindFirst(program, input, fromByte, captureStarts, captureEnds,
                 collectHistory, ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral);
         }
