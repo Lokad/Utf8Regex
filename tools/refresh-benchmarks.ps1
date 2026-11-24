@@ -82,6 +82,12 @@ function Invoke-RefreshBenchmark([string]$name, [string[]]$arguments) {
     }
 }
 
+function Assert-LoadedRevision([string]$assembly, [string]$identity) {
+    if ($identity -notmatch "[+.]$revision sha256=[0-9a-f]{64}$") {
+        throw "Full refresh requires $assembly from $revision. Loaded identity: $identity"
+    }
+}
+
 try {
     if ('Build' -in $Phase) {
         Invoke-RefreshStep build {
@@ -165,9 +171,15 @@ try {
                 $environment.SourceCommit -ne $revision.Substring(0, 12)) {
                 throw 'Full refresh retained a different source/runtime. Consult snapshot row identities.'
             }
+            Assert-LoadedRevision BenchmarkAssembly $environment.BenchmarkAssembly
+            Assert-LoadedRevision CoreAssembly $environment.CoreAssembly
+            Assert-LoadedRevision PythonReAssembly $environment.PythonReAssembly
+            if ($environment.Contains('Pcre2Assembly')) {
+                Assert-LoadedRevision Pcre2Assembly $environment.Pcre2Assembly
+            }
         }
-        foreach ($row in $python.Cases.Values) {
-            if (!$row.Qualification.PairedEvidence) { throw 'Full refresh lacks Python paired evidence.' }
+        foreach ($row in $posix.Cases.Values) {
+            Assert-LoadedRevision PosixAssembly $row.PosixAssembly
         }
         foreach ($row in @($pcre2.Sections.Values | ForEach-Object { $_.Cases.Values })) {
             if ($row.PcreNetNativeStatus -ne 'Excluded' -and !$row.PcreNetNativePair) {

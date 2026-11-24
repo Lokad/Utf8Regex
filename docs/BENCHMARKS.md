@@ -80,8 +80,10 @@ budget. Keep the SSH session open until you have copied the evidence from
 Track compact summaries and generated README blocks. Keep full samples and
 provenance under `artifacts/benchmark-refresh/`. Regenerate tables through the
 existing commands. The Verify phase requires matching frozen paired evidence
-and binaries, and CI checks the compact summaries offline. Preserve source
-identities, uncertainty and lifecycle or scaling evidence on selective refreshes.
+and binaries. A full refresh checks both the checkout revision and the source
+revision embedded in the recorded runner and producer identities. CI checks the
+compact summaries offline. Preserve source identities, uncertainty and lifecycle
+or scaling evidence on selective refreshes.
 [Compact summaries](../bench/Snapshots/)
 
 ## Focused comparisons
