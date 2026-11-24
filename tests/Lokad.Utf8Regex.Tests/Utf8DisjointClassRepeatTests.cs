@@ -50,6 +50,19 @@ public sealed class Utf8DisjointClassRepeatTests
     }
 
     [Fact]
+    public void DisjointAsciiFollowerKeepsDenseCountWithinWorkBudget()
+    {
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("northbound7east9south1west0", 128)));
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex("(?<tag>[a-z]+)[0-9]", RegexOptions.Compiled | RegexOptions.CultureInvariant, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 5_000 }
+        });
+
+        Assert.Equal(512, regex.Count(input, source.Token));
+    }
+
+    [Fact]
     public void ComplementedMaskFollowersCoverBothHalvesAndKeepScalarCaptures()
     {
         for (var excluded = 1; excluded < 128; excluded++)
