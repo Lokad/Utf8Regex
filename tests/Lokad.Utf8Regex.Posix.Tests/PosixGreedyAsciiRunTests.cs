@@ -58,6 +58,26 @@ public sealed class PosixGreedyAsciiRunTests
     }
 
     [Fact]
+    public void ExactStarterSkipsMixedDecoysWithinOneWorkLimit()
+    {
+        using var regex = new Utf8PosixRegex("(sku)([0-9]+)", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256 }
+        });
+        using var source = new CancellationTokenSource();
+        var prefix = "😀" + string.Concat(Enumerable.Repeat("!!!!é😀", 512));
+        var input = Encoding.UTF8.GetBytes(prefix + "sku007");
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var whole = new Utf8CaptureRange(start, start + 6);
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[3];
+        Assert.Equal(whole, regex.Match(input, 4, captures, source.Token));
+        Assert.Equal(whole, captures[0]);
+        Assert.Equal(new Utf8CaptureRange(start, start + 3), captures[1]);
+        Assert.Equal(new Utf8CaptureRange(start + 3, start + 6), captures[2]);
+        Assert.Equal(1, regex.Count(input, 4, source.Token));
+    }
+
+    [Fact]
     public void AbsoluteStartSearchStaysWithinOneAttempt()
     {
         using var plain = new Utf8PosixRegex("^([[:alpha:]]+)([0-9]+)$", policy: new Utf8RegexPolicy

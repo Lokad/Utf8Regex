@@ -68,8 +68,8 @@ internal partial struct PosixWorkspace
         var firstAtomIndex = _program.FirstRequiredRunAtom;
         var firstAtom = firstAtomIndex >= 0 ? _program.Scalar.Instructions[firstAtomIndex] : default;
         var lastCandidate = _program.StartsAtInputStart ? 0 : input.Length;
-        var canSkipAscii = firstAtomIndex >= 0 && firstAtom.B == 0 &&
-            lastCandidate - fromByte >= AsciiScanBlockSize && PreparedByteSetState.CanScanAsciiMask;
+        var canSkipAscii = firstAtomIndex >= 0 && firstAtom.B == 0 && lastCandidate - fromByte >= AsciiScanBlockSize &&
+            (firstAtom.Kind == Utf8SliceInstructionKind.Literal || PreparedByteSetState.CanScanAsciiMask);
         // This case-sensitive run proof admits an ASCII literal or a positive
         // ASCII mask. A wide scalar cannot satisfy either predicate.
         ReadOnlySpan<byte> starterMask = canSkipAscii && firstAtom.Kind == Utf8SliceInstructionKind.CategorySet
@@ -105,7 +105,9 @@ internal partial struct PosixWorkspace
                 {
                     // Dense starts use scalar discovery. After several rejected
                     // ASCII starts, search from the next untested boundary.
-                    candidate += 1 + SkipRejectedAscii(input[(candidate + 1)..], firstAtom.A, starterMask, ref invocation);
+                    var literal = starterMask.IsEmpty ? firstAtom.A : -1;
+                    candidate += 1 + ScanAsciiRun(input[(candidate + 1)..], literal, starterMask,
+                        ref invocation, negated: true);
                     rejectedAsciiStarts = 0;
                     continue;
                 }
@@ -478,18 +480,6 @@ internal partial struct PosixWorkspace
         }
     }
 
-    private static int SkipRejectedAscii(ReadOnlySpan<byte> input, int literal, ReadOnlySpan<byte> mask,
-        ref Utf8SliceInvocation invocation)
-    {
-        if (!mask.IsEmpty)
-            return ScanAsciiRun(input, -1, mask, ref invocation, negated: true);
-
-        Span<byte> rejected = stackalloc byte[16];
-        rejected.Fill(byte.MaxValue);
-        rejected[literal >> 3] ^= (byte)(1 << (literal & 7));
-        return ScanAsciiRun(input, -1, rejected, ref invocation);
-    }
-
     private static int ScanAsciiRun(ReadOnlySpan<byte> input, int literal, ReadOnlySpan<byte> mask,
         ref Utf8SliceInvocation invocation, bool negated = false)
     {
@@ -501,7 +491,8 @@ internal partial struct PosixWorkspace
             var block = input.Slice(consumed, Math.Min(AsciiScanBlockSize, input.Length - consumed));
             if (literal >= 0)
             {
-                var stop = block.IndexOfAnyExcept((byte)literal);
+                // An exact ASCII starter cannot occur inside a wide scalar.
+                var stop = negated ? block.IndexOf((byte)literal) : block.IndexOfAnyExcept((byte)literal);
                 if (stop >= 0) return consumed + stop;
             }
             else if (block.Length >= 16 && PreparedByteSetState.CanScanAsciiMask)
