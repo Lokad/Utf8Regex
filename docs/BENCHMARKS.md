@@ -43,6 +43,19 @@ Raw durations, iteration counts, allocations and loaded producer identities go
 to a unique JSON file under `artifacts/benchmark-refresh/generality/`. A focused
 selection neither replaces accepted README tables nor qualifies a package.
 
+## Fixture sources
+
+The public .NET corpus comes from `dotnet/performance`.
+[Public fixture paths and attribution](../bench/Lokad.Utf8Regex.Benchmarks/DotNetPerformanceReplica/Public/Data/README.md)
+
+The stress corpus uses the English word list and OpenSubtitles v2018 samples
+from `BurntSushi/aho-corasick` and the Rust tools and CPython source corpora
+from `BurntSushi/rebar`. The CPython fixture is stored as gzip. Corpus loading
+decodes external bytes before preparing the UTF-8 and string inputs for the
+matching lanes.
+[Stress fixtures](../bench/Lokad.Utf8Regex.Benchmarks/DotNetPerformanceReplica/Stress/Data/) ·
+[OpenSubtitles v2018](https://opus.nlpl.eu/OpenSubtitles-v2018.php)
+
 ## Complete refreshes on the quiet VM
 
 The full refresh includes both-runtime tests, public catalogs, paired
