@@ -33,23 +33,28 @@ public sealed class Utf8SmallFamilyCandidateTests
     }
 
     [Theory]
-    [InlineData(3)]
-    [InlineData(4)]
-    public void PreparedDistinctHeadsKeepOrdinalAndBorrowedBounds(int size)
+    [InlineData(3, 123)]
+    [InlineData(3, 1988)]
+    [InlineData(3, 2047)]
+    [InlineData(4, 135)]
+    [InlineData(4, 2043)]
+    [InlineData(4, 2047)]
+    public void PreparedDistinctHeadsKeepOrdinalAndBorrowedBounds(int size, int padding)
     {
         byte[][] literals = ["record"u8.ToArray(), "struct"u8.ToArray(), "class"u8.ToArray(), "enum"u8.ToArray()];
         literals = literals[..size];
         var prepared = new PreparedLiteralSetSearch(literals).SearchData;
-        var bytes = Encoding.UTF8.GetBytes("record😀" + new string('r', 2047) + "class struct");
+        var bytes = Encoding.UTF8.GetBytes("record😀" + new string('r', padding) + "class struct");
         var input = bytes.AsSpan("record"u8.Length);
         var start = "😀"u8.Length;
-        var candidate = start + 2047;
+        var candidate = start + padding;
+        foreach (var limits in new[] { Utf8ExecutionLimits.Unlimited, new Utf8ExecutionLimits(100, 0, 0) })
         foreach (var (floor, end, ordinal) in new[]
         {
             (start, input.Length, 2), (start, candidate + 4, -1), (candidate + 1, input.Length, 1)
         })
         {
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, default);
             Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
                 literals, false, input, floor, end, false, ref invocation, out var match, out var found, prepared));
             Assert.Equal(ordinal >= 0, found);

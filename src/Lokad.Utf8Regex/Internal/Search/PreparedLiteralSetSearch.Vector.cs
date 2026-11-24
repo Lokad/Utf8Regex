@@ -38,16 +38,21 @@ internal readonly partial struct PreparedLiteralSetSearch
         var tail2 = Vector512.Create(third[anchor]);
         var head3 = Vector512.Create(fourth[0]);
         var tail3 = Vector512.Create(fourth[anchor]);
-        var limit = input.Length - anchor - Vector512<byte>.Count;
-        while (offset <= limit)
+        var end = input.Length - anchor;
+        var limit = end - Vector512<byte>.Count;
+        while (offset < end)
         {
-            var heads = MemoryMarshal.Read<Vector512<byte>>(input[offset..]);
-            var tails = MemoryMarshal.Read<Vector512<byte>>(input[(offset + anchor)..]);
+            // Align a final partial block to the end of the admitted span.
+            // Mask starts the preceding block already checked.
+            var blockStart = Math.Min(offset, limit);
+            var heads = MemoryMarshal.Read<Vector512<byte>>(input[blockStart..]);
+            var tails = MemoryMarshal.Read<Vector512<byte>>(input[(blockStart + anchor)..]);
             var candidates = (AsciiSearch.CorrelateExactPairs(heads, tails, head0, tail0, head1, tail1) |
                 AsciiSearch.CorrelateExactPairs(heads, tails, head2, tail2, head3, tail3)).ExtractMostSignificantBits();
+            if (blockStart != offset) candidates &= ulong.MaxValue << (offset - blockStart);
             while (candidates != 0)
             {
-                var candidate = offset + BitOperations.TrailingZeroCount(candidates);
+                var candidate = blockStart + BitOperations.TrailingZeroCount(candidates);
                 var bucket = data.BucketIndexMap[input[candidate]];
                 if (bucket >= 0)
                 {
@@ -61,9 +66,8 @@ internal readonly partial struct PreparedLiteralSetSearch
                 }
                 candidates &= candidates - 1;
             }
-            offset += Vector512<byte>.Count;
+            offset = blockStart + Vector512<byte>.Count;
         }
-        // The canonical scalar loop resumes at this first unprocessed start.
         return false;
     }
 }
