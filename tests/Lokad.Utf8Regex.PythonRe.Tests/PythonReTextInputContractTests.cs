@@ -1,5 +1,4 @@
 using System.Text;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
@@ -21,36 +20,29 @@ public sealed class PythonReTextInputContractTests
             ConstructionPolicy = default,
             ConstructionTimeout = Timeout.InfiniteTimeSpan
         }, cancellationToken: default);
-        var session = Utf8SearchDiagnosticsSession.Start();
-        try
+        foreach (var length in new[] { 0, 63, 4096 })
         {
-            foreach (var length in new[] { 0, 63, 4096 })
+            foreach (var withMatches in new[] { false, true })
             {
-                foreach (var withMatches in new[] { false, true })
-                {
-                    var text = new string('a', length) + (withMatches ? literal + " " + literal : "");
-                    var bytes = Encoding.UTF8.GetBytes(text);
-                    var storage = new byte[bytes.Length + 13];
-                    Array.Fill(storage, (byte)0xff);
-                    bytes.CopyTo(storage.AsSpan(5));
-                    var expected = withMatches ? 2 : 0;
-                    Assert.Equal(expected, regex.Count(storage.AsSpan(5, bytes.Length)));
-                    Assert.Equal(expected, compiled.Count(storage.AsSpan(5, bytes.Length)));
-                }
+                var text = new string('a', length) + (withMatches ? literal + " " + literal : "");
+                var bytes = Encoding.UTF8.GetBytes(text);
+                var storage = new byte[bytes.Length + 13];
+                Array.Fill(storage, (byte)0xff);
+                bytes.CopyTo(storage.AsSpan(5));
+                var expected = withMatches ? 2 : 0;
+                Assert.Equal(expected, regex.Count(storage.AsSpan(5, bytes.Length)));
+                Assert.Equal(expected, compiled.Count(storage.AsSpan(5, bytes.Length)));
             }
-        }
-        finally
-        {
-            session.Complete();
         }
     }
 
     [Theory]
-    [InlineData("(needle)", "é😀 needle!", 1, 7, 6)]
-    [InlineData("(é|😀)", "é😀", 2, 0, 2)]
-    [InlineData("", "é😀", 3, 0, 0)]
-    public void TextOperationsAndCursorsDoNotValidateSubjects(string pattern, string text,
-        int count, int firstByte, int firstLength)
+    [InlineData("(needle)", "é😀 needle!", 1, 7, 6, false, "é😀 X!", new[] { "é😀 ", "needle", "!" })]
+    [InlineData("(é|😀)", "é😀", 2, 0, 2, false, "XX", new[] { "", "é", "", "😀", "" })]
+    [InlineData("", "é😀", 3, 0, 0, false, "XéX😀X", new[] { "", "é", "😀", "" })]
+    [InlineData("(é)", "é", 1, 0, 2, true, "X", new[] { "", "é", "" })]
+    public void TextOperationsAndCursorsPreserveScalarByteCoordinates(string pattern, string text,
+        int count, int firstByte, int firstLength, bool fullMatch, string replacement, string[] split)
     {
         var input = Encoding.UTF8.GetBytes(text);
         using var regex = new Utf8PythonRegex(pattern);
@@ -61,45 +53,26 @@ public sealed class PythonReTextInputContractTests
             ConstructionPolicy = default,
             ConstructionTimeout = Timeout.InfiniteTimeSpan
         }, cancellationToken: default);
-        var session = Utf8SearchDiagnosticsSession.Start();
-        try
-        {
-            Assert.True(regex.IsMatch(input));
-            Assert.Equal(count, regex.Count(input));
-            Assert.Equal(count, compiled.Count(input));
-            var first = regex.Match(input, mode: Utf8PythonMatchMode.Search);
-            Assert.Equal(firstByte, first.StartOffsetInBytes);
-            Assert.Equal(firstByte + firstLength, first.EndOffsetInBytes);
-            _ = regex.Match(input);
-            _ = regex.Match(input, mode: Utf8PythonMatchMode.FullMatch);
-            ReadOnlyMemory<byte> snapshots1Input = input;
-            var snapshots1 = new List<Utf8PythonRangeMatch>();
-            using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
-            {
-                while (snapshots1Cursor.MoveNext(out var snapshots1Match))
-                    snapshots1.Add(snapshots1Match);
-            }
-            _ = snapshots1;
-            ReadOnlyMemory<byte> snapshots2Input = input;
-            var snapshots2 = new List<Utf8PythonRangeMatch>();
-            using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 0, default))
-            {
-                while (snapshots2Cursor.MoveNext(out var snapshots2Match))
-                    snapshots2.Add(snapshots2Match);
-            }
-            _ = snapshots2;
-            _ = PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default));
-            _ = regex.Replace(input, "X"u8);
-            using var cursor = regex.CreateMatchCursor(input);
-            var observed = 0;
-            while (cursor.MoveNext(out _))
-                observed++;
-            Assert.Equal(count, observed);
-        }
-        finally
-        {
-            session.Complete();
-        }
+
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(count, regex.Count(input));
+        Assert.Equal(count, compiled.Count(input));
+        var first = regex.Match(input, mode: Utf8PythonMatchMode.Search);
+        Assert.True(first.Success);
+        Assert.Equal((firstByte, firstByte + firstLength), (first.StartOffsetInBytes, first.EndOffsetInBytes));
+        Assert.Equal(firstByte == 0, regex.Match(input).Success);
+        Assert.Equal(fullMatch, regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.Equal(split, PythonReSplitAssert.Decode(input, regex.SplitRanges(input)));
+        Assert.Equal(replacement, Encoding.UTF8.GetString(regex.Replace(input, "X"u8)));
+
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNext(out var cursorFirst));
+        Assert.Equal((firstByte, firstByte + firstLength),
+            (cursorFirst.Value.StartOffsetInBytes, cursorFirst.Value.EndOffsetInBytes));
+        var observed = 1;
+        while (cursor.MoveNext(out _))
+            observed++;
+        Assert.Equal(count, observed);
     }
 
     [Fact]

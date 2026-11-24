@@ -1,5 +1,4 @@
 using System.Text;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
@@ -136,15 +135,7 @@ public sealed class PythonReCountOwnershipTests
                 ResourcePolicy = policy
             });
             var input = Encoding.UTF8.GetBytes(text);
-            var session = Utf8SearchDiagnosticsSession.Start();
-            try
-            {
-                Assert.Equal(expected, regex.Count(input));
-            }
-            finally
-            {
-                session.Complete();
-            }
+            Assert.Equal(expected, regex.Count(input));
             using var token = new CancellationTokenSource();
             Assert.Equal(1, regex.Count(input, afterFirst, token.Token));
             Assert.Equal(0, regex.Count(input, input.Length));
