@@ -344,6 +344,19 @@ internal static partial class Utf8SliceRunner
             start < input.Length && (input[start] & 0xC0) == 0x80)
             return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.None);
 
+        var terminalRoot = collectHistory ? Utf8SliceTerminalRootKind.None : program.TerminalRoot;
+        var canStopEarly = existenceOnly && !collectHistory && !requireNonEmpty && !requireFullInput;
+        if (terminalRoot == Utf8SliceTerminalRootKind.ClassRepeat)
+        {
+            // The complete repeat has no mutable VM state. Its metered scalar
+            // scan supplies the endpoint, including for a nonempty retry.
+            if (captureStarts.Length != 0) Array.Fill(captureStarts, -1);
+            if (captureEnds.Length != 0) Array.Fill(captureEnds, -1);
+            var repeat = RunTerminalClassRepeat(program, input, start, requireNonEmpty, ref invocation, canStopEarly);
+            return requireFullInput && repeat.IsMatch && repeat.EndIndex != input.Length
+                ? new(false, -1, repeat.Breach) : repeat;
+        }
+
         if (!workspace.Initialized)
         {
             var breach = workspace.Initialize(program, ref invocation);
@@ -363,9 +376,7 @@ internal static partial class Utf8SliceRunner
         try
         {
             Utf8SliceMatchOutcome attempt;
-            var canStopEarly = existenceOnly && !collectHistory && !requireNonEmpty && !requireFullInput;
             int? requiredEnd = requireFullInput ? input.Length : null;
-            var terminalRoot = collectHistory ? Utf8SliceTerminalRootKind.None : program.TerminalRoot;
             if (terminalRoot == Utf8SliceTerminalRootKind.Capture)
             {
                 // A proved complete root has no continuation or capture rollback.
@@ -386,11 +397,6 @@ internal static partial class Utf8SliceRunner
                 invocation.Budget.ThrowIfCancellationRequested();
                 attempt = new(matched && breach == Utf8ExecutionLimitKind.None,
                     matched && breach == Utf8ExecutionLimitKind.None ? start : -1, breach);
-            }
-            else if (terminalRoot == Utf8SliceTerminalRootKind.ClassRepeat)
-            {
-                // This complete repeat has no assertion continuation to drive.
-                attempt = RunTerminalClassRepeat(program, input, start, requireNonEmpty, ref invocation, canStopEarly);
             }
             else if (!collectHistory && program.Assertions.Length == 0)
             {
