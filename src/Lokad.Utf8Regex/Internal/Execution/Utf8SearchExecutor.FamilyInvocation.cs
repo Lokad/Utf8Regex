@@ -176,6 +176,19 @@ internal static partial class Utf8SearchExecutor
         var shortPrepared = prepared.ShortestLength >= 3 && longest is > 0 and <= 16;
         var distinctHeads = shortPrepared && prepared.Buckets is { Length: 3 or 4 } buckets &&
             buckets.Length == literals.Length;
+        if (distinctHeads && !confirmBoundaries && invocation.IsUnmetered && invocation.CheckpointHook is null)
+        {
+            // The prepared scan visits each start once. A unique head also
+            // identifies the original ordinal because bucket order is insertion order.
+            found = PreparedLiteralSetSearch.TryFindFirstMatchSingleLiteralBuckets(input[start..end], prepared,
+                out var relative, out var length);
+            if (found)
+            {
+                var index = start + relative;
+                match = new PreparedSearchMatch(index, length, prepared.BucketIndexMap[input[index]]);
+            }
+            return Utf8ExecutionLimitKind.None;
+        }
         var sharedPrefix = shortPrepared && !confirmBoundaries &&
             prepared.Buckets is [{ CommonPrefix.Length: >= 3, Literals.Length: var size }] && size == literals.Length;
         var sharedEndpoints = !confirmBoundaries && shortPrepared && Vector512.IsHardwareAccelerated &&

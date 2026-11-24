@@ -7,6 +7,34 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8SmallFamilyCandidateTests
 {
+    [Theory]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void PreparedDistinctHeadsKeepOrdinalAndBorrowedBounds(int size)
+    {
+        byte[][] literals = ["record"u8.ToArray(), "struct"u8.ToArray(), "class"u8.ToArray(), "enum"u8.ToArray()];
+        literals = literals[..size];
+        var prepared = new PreparedLiteralSetSearch(literals).SearchData;
+        var bytes = Encoding.UTF8.GetBytes("record😀" + new string('r', 2047) + "class struct");
+        var input = bytes.AsSpan("record"u8.Length);
+        var start = "😀"u8.Length;
+        var candidate = start + 2047;
+        foreach (var (floor, end, ordinal) in new[]
+        {
+            (start, input.Length, 2), (start, candidate + 4, -1), (candidate + 1, input.Length, 1)
+        })
+        {
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
+            Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
+                literals, false, input, floor, end, false, ref invocation, out var match, out var found, prepared));
+            Assert.Equal(ordinal >= 0, found);
+            if (found)
+                Assert.Equal((ordinal == 2 ? candidate : candidate + 6, literals[ordinal].Length, ordinal),
+                    (match.Index, match.Length, match.LiteralId));
+            else Assert.Equal(default, match);
+        }
+    }
+
     [Theory] [InlineData(3)] [InlineData(5)] [InlineData(8)] [InlineData(9)]
     public void WindowsPreserveLeftmostStartBranchOrderAndBorrowedBounds(int size)
     {
