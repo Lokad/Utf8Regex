@@ -2022,9 +2022,25 @@ internal static partial class Utf8SliceRunner
                             remaining--;
                             var offset = delimiter >> 8;
                             if (offset >= input.Length - position) return BranchedPrefixRejected;
-                            // The byte at the short delimiter offset selects
-                            // the only viable width. The tail still verifies it.
-                            if (input[position + offset] != (delimiter & 255)) position++;
+                            var delimiterByte = (byte)delimiter;
+                            var shortWidth = input[position + offset] == delimiterByte;
+                            if (!shortWidth) position++;
+                            if (offset == 2 && remaining >= 3 && code[index].HasAdjacentAsciiInterval)
+                            {
+                                // The width check leaves room for both interval
+                                // bytes, even after shifting to the longer arm.
+                                ref readonly var pair = ref code[index];
+                                remaining--;
+                                if (!pair.MatchesAsciiInterval(input[position])) return BranchedPrefixRejected;
+                                remaining--;
+                                if (!pair.MatchesAsciiInterval(input[position + 1])) return BranchedPrefixRejected;
+                                remaining--;
+                                position += 2;
+                                if (!shortWidth && (position == input.Length || input[position] != delimiterByte))
+                                    return BranchedPrefixRejected;
+                                position++;
+                                index += 3;
+                            }
                             continue;
                         }
                         var lazy = proveMatch && entry.Kind == Utf8SliceInstructionKind.RepeatLazy;

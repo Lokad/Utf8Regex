@@ -53,6 +53,9 @@ public sealed class Utf8OptionalRepeatTests
     [InlineData(@"\A[01]?[0-9][0-9]\.", "01.é", 3)]
     [InlineData(@"\A[01]??[0-9][0-9]\.", "012.é", 4)]
     [InlineData(@"\A[01]?[0-9][0-9]\.", "01", 0)]
+    [InlineData(@"\A[01]?[0-9][0-9]\.", "012", 0)]
+    [InlineData(@"\A[01]?[0-9][0-9]\.", "012X", 0)]
+    [InlineData(@"\A[01]??[0-9][0-9]\.", "0é.", 0)]
     [InlineData(@"\A[01]?[0-9][0-9]0", "0100", 4)]
     [InlineData(@"\A[01]??[0-9][0-9]0", "0100", 3)]
     public void RequiredAsciiDelimiterPreservesTheOrderedOptionalWidth(string pattern, string text, int end)
