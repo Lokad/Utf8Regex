@@ -26,7 +26,7 @@ internal sealed class Utf8RegexProgram
     public Utf8CaptureCatalog CaptureCatalog { get; }
 
     internal static Utf8RegexProgram Compile(Utf8ConstructionPattern pattern, RegexOptions options,
-        bool prepareRuntime, out Utf8TreeNode? root)
+        bool prepareRuntime, out Utf8TreeNode? root, bool enableProofTierUp = false)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
@@ -34,7 +34,7 @@ internal sealed class Utf8RegexProgram
         try
         {
             var effectiveOptions = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
-            var preparedRegex = Utf8FrontEnd.Compile(pattern, effectiveOptions, options, out root);
+            var preparedRegex = Utf8FrontEnd.Compile(pattern, effectiveOptions, options, out root, enableProofTierUp);
             var compiledEngineKind = Utf8CompiledEngineSelector.Select(preparedRegex);
             // The scalar program owns any compiled anchored verifier. Fixed
             // numeric policies can use it without a separate literal runtime.

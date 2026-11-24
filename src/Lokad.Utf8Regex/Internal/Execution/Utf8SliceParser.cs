@@ -21,12 +21,12 @@ internal static class Utf8SliceParser
         return program;
     }
 
-    internal static Utf8SliceProgram? TryParse(RegexOptions options, Utf8OwnedRegexTree? tree)
+    internal static Utf8SliceProgram? TryParse(RegexOptions options, Utf8OwnedRegexTree? tree, bool enableProofTierUp = false)
     {
         if (tree is null) return null;
         if ((options & RegexOptions.NonBacktracking) != 0 &&
             Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(tree.Root) is not null) return null;
-        return Utf8OwnedTreeSliceLowerer.TryLower(tree, options);
+        return Utf8OwnedTreeSliceLowerer.TryLower(tree, options, enableProofTierUp);
     }
 
     internal static bool IsNonBacktrackingFlatGraph(Utf8OwnedRegexTree? tree)

@@ -380,7 +380,7 @@ internal sealed class Utf8SliceProgram
 
     // Conservative carrier allowance; major children have separate admission.
     internal static ulong ObjectBytes =>
-        512 + 3UL * (ulong)IntPtr.Size + sizeof(int) + (ulong)Unsafe.SizeOf<(int, byte, byte, byte)>() +
+        512 + 3UL * (ulong)IntPtr.Size + (ulong)Unsafe.SizeOf<(int, byte, byte, byte)>() +
         (ulong)Unsafe.SizeOf<(long, Utf8SliceClassWindowProof)>() - sizeof(long);
 
     private Utf8SliceProgram(
@@ -421,7 +421,7 @@ internal sealed class Utf8SliceProgram
         bool requiresUnicodeWordBoundary,
         bool requiresUnicodeShorthand,
         bool requiresUnicodeCategory,
-        bool isRoot, bool emitBoundedMatch)
+        bool isRoot, Utf8BoundedProgramEmitter.Compilation proofCompilation)
     {
         Instructions = instructions;
         IsNonBacktracking = isNonBacktracking;
@@ -586,13 +586,19 @@ internal sealed class Utf8SliceProgram
             RequiredFinalAscii = FindRequiredFinalAscii(Utf8ConstructionScope.CurrentBudget, out var unanchoredByte);
             RequiredUnanchoredFinalByte = unanchoredByte;
         }
-        if (emitBoundedMatch)
+        if (proofCompilation == Utf8BoundedProgramEmitter.Compilation.Eager)
             EmittedMatch = Utf8BoundedProgramEmitter.TryEmit(this, Utf8ConstructionScope.CurrentBudget);
+        else if (proofCompilation == Utf8BoundedProgramEmitter.Compilation.Tiered)
+        {
+            var budget = Utf8ConstructionScope.CurrentBudget;
+            if (Utf8BoundedProgramEmitter.CanTierUp(this, budget))
+                _proofTier = budget.AllocateObject(0, static _ => new ProofTier());
+        }
     }
 
     internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings,
         bool isRoot, (ulong[]? Closures, byte[]? Leaves, uint Conditions) nonBacktrackingOrdered = default,
-        bool emitBoundedMatch = false)
+        Utf8BoundedProgramEmitter.Compilation proofCompilation = default)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -739,7 +745,7 @@ internal sealed class Utf8SliceProgram
             requiresUnicodeWordBoundary,
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
-            isRoot, emitBoundedMatch);
+            isRoot, proofCompilation);
         construction.Complete(); return result;
     }
 
@@ -808,23 +814,25 @@ internal sealed class Utf8SliceProgram
     internal (int Index, byte TerminalMin, byte TerminalMax) FollowingDecimalContinuation { get; }
     internal Utf8BoundedProgramEmitter.Match? EmittedMatch { get; }
     internal const int ProofTierThreshold = 512 * 1024;
-    private int _interpretedProofVisits = -1; // Disabled or already claimed.
-    internal bool ObservesProofWork => Volatile.Read(ref _interpretedProofVisits) >= 0;
-    private volatile Utf8BoundedProgramEmitter.Match? _tieredProof;
-    internal Utf8BoundedProgramEmitter.Match? TieredProof => _tieredProof;
+    // Construction admits a separate state object only for eligible roots.
+    // Published instructions and their metadata remain immutable.
+    private readonly ProofTier? _proofTier;
+    internal bool ObservesProofWork => _proofTier is { } tier && Volatile.Read(ref tier.InterpretedVisits) >= 0;
+    internal Utf8BoundedProgramEmitter.Match? TieredProof => _proofTier?.Emitted;
 
-    internal void EnableProofTierUp(Utf8ConstructionBudget budget)
+    private sealed class ProofTier
     {
-        if (Utf8BoundedProgramEmitter.CanTierUp(this, budget))
-            _interpretedProofVisits = 0;
+        internal int InterpretedVisits; // Negative once preparation is claimed.
+        internal volatile Utf8BoundedProgramEmitter.Match? Emitted;
     }
 
     internal void ObserveProofWork(int visits)
     {
+        if (_proofTier is not { } tier) return;
         int previous, next;
         do
         {
-            previous = Volatile.Read(ref _interpretedProofVisits);
+            previous = Volatile.Read(ref tier.InterpretedVisits);
             if (previous < 0) return;
             next = previous + visits;
             if (next >= ProofTierThreshold)
@@ -833,7 +841,7 @@ internal sealed class Utf8SliceProgram
                 if (Utf8ConstructionScope.IsActive) return;
                 next = -1;
             }
-        } while (Interlocked.CompareExchange(ref _interpretedProofVisits, next, previous) != previous);
+        } while (Interlocked.CompareExchange(ref tier.InterpretedVisits, next, previous) != previous);
 
         if (next >= 0) return;
         using var construction = Utf8ConstructionScope.Enter();
@@ -841,7 +849,7 @@ internal sealed class Utf8SliceProgram
         {
             var emitted = Utf8BoundedProgramEmitter.TryEmit(this, construction.Budget);
             construction.Complete();
-            _tieredProof = emitted;
+            tier.Emitted = emitted;
         }
         catch (Utf8ResourceLimitExceededException)
         {
@@ -1096,7 +1104,7 @@ internal static class Utf8SliceLowerer
             captureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, caseBehavior, false);
 
     internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool nonBacktracking,
-        bool prepareUnbranchedSearch = false, bool emitBoundedMatch = false)
+        bool prepareUnbranchedSearch = false, Utf8BoundedProgramEmitter.Compilation proofCompilation = default)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -1140,7 +1148,7 @@ internal static class Utf8SliceLowerer
                 {
                     if (owner.Failed) return null;
                     var program = FinishLowering(owner, frame.Root, frames.Count == 0,
-                        usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, prepareUnbranchedSearch, emitBoundedMatch);
+                        usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, prepareUnbranchedSearch, proofCompilation);
                     if (program is null) return null;
                     if (frames.Count == 0) { construction.Complete(); return program; }
                     var parent = frames[frames.Count - 1].Owner
@@ -1367,7 +1375,7 @@ internal static class Utf8SliceLowerer
 
     private static Utf8SliceProgram? FinishLowering(Lowering lowerer, Utf8SliceNode root, bool isRoot,
         bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, bool prepareUnbranchedSearch,
-        bool emitBoundedMatch)
+        Utf8BoundedProgramEmitter.Compilation proofCompilation)
     {
         lowerer.Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Accept, 0, 0, 0, 0));
         var requiresUnicodeWordBoundary = false;
@@ -1496,7 +1504,7 @@ internal static class Utf8SliceLowerer
             isRoot && usesInterpretedLazyLoopSemantics, isRoot && usesLiteralClassBracketSyntax, lowerer.CaseBehavior,
             lowerer.NonBacktracking, lowerer.CaptureOpeningCount,
             epsilonOrder, epsilonAncestors,
-            lowerer.BackreferenceLowerings.Take(), isRoot, ordered, emitBoundedMatch);
+            lowerer.BackreferenceLowerings.Take(), isRoot, ordered, proofCompilation);
     }
 
     private static void MarkBoundedEndTails(Span<Utf8SliceInstruction> code, bool hasAlternation, Utf8ConstructionBudget budget)

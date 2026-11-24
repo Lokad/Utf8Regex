@@ -21,8 +21,9 @@ parse -> analyze -> prepare -> immutable instructions -> invoke
   absolute-origin proofs and from unanchored checks admitted to run the
   entire emitted proof. A candidate search contributes its total at the
   end of the search, including checks that entered the general matcher.
-  One caller claims bounded compilation and publishes the delegate for
-  future eligible calls.
+  Construction admits separate tier state for eligible programs and keeps
+  the lowered program fields immutable. One caller claims bounded
+  compilation and publishes the delegate for future eligible calls.
   Funded and interruptible calls retain their original paths.
   The scalar interpreter handles capture output. The supported
   `NonBacktracking` subset uses its own ordered traversal. Eligible literal

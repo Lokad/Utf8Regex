@@ -80,7 +80,8 @@ public sealed partial class Utf8Regex : IDisposable
             construction.Budget.ChargeWork(1);
             construction.Budget.ReserveBytes(ProgramFixedMetadataBytes);
 
-            _program = Utf8RegexProgram.Compile(pattern, options, prepareRuntime: !HasFiniteExecutionLimits, out var root);
+            _program = Utf8RegexProgram.Compile(pattern, options, prepareRuntime: !HasFiniteExecutionLimits, out var root,
+                enableProofTierUp: canTierUp && matchTimeout == Regex.InfiniteMatchTimeout && !HasFiniteExecutionLimits);
             var preparedRegex = _program.PreparedRegex;
             _asciiLiteralCountAnchorOffset =
                 matchTimeout == Regex.InfiniteMatchTimeout &&
@@ -113,8 +114,6 @@ public sealed partial class Utf8Regex : IDisposable
             var ownedSliceProgram = preparedRegex.ScalarProgram
                 ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
             _ownedSliceProgram = ownedSliceProgram;
-            if (canTierUp && matchTimeout == Regex.InfiniteMatchTimeout && !HasFiniteExecutionLimits)
-                ownedSliceProgram.EnableProofTierUp(construction.Budget);
             if (matchTimeout == Regex.InfiniteMatchTimeout &&
                 _program.CompiledEngineRuntime is { } literalRuntime && HasScalarBoundaryLiteralSearch(ownedSliceProgram))
             {
