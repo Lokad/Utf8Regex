@@ -98,19 +98,16 @@ internal static class Utf8ScalarWordBoundary
             ThrowOffsetOutOfRange();
         }
 
-        var hasPrevious = byteOffset > 0;
-        var hasNext = byteOffset < input.Length;
-        var previous = hasPrevious ? input[byteOffset - 1] : (byte)0;
-        var next = hasNext ? input[byteOffset] : (byte)0;
-        if (hasPrevious && previous >= 0x80 || hasNext && next >= 0x80)
+        // NUL is ASCII and non-word, just like an absent neighbor.
+        var previous = byteOffset > 0 ? input[byteOffset - 1] : (byte)0;
+        var next = byteOffset < input.Length ? input[byteOffset] : (byte)0;
+        if ((previous | next) >= 0x80)
         {
             isBoundary = false;
             return false;
         }
 
-        var previousIsWord = hasPrevious && Utf8AsciiBytePredicates.IsWord(previous);
-        var nextIsWord = hasNext && Utf8AsciiBytePredicates.IsWord(next);
-        isBoundary = previousIsWord != nextIsWord;
+        isBoundary = Utf8AsciiBytePredicates.IsWord(previous) != Utf8AsciiBytePredicates.IsWord(next);
         return true;
     }
 
