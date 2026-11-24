@@ -59,7 +59,7 @@ public enum Pcre2BackslashCPolicy
     /// <summary>Rejects <c>\C</c> during compilation.</summary>
     Forbid = 0,
 
-    /// <summary>Allows <c>\C</c>, including matches that split UTF-8 scalars and lack a UTF-16 projection.</summary>
+    /// <summary>Allows <c>\C</c>, including matches whose byte ranges split UTF-8 scalars.</summary>
     Allow = 1,
 }
 

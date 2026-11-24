@@ -46,7 +46,6 @@ public sealed class Pcre2SliceClassTests
     public void PosixClassDeclinesSliceRouting()
     {
         var regex = new Utf8Pcre2Regex("([[:alpha:]]+)", options: Pcre2CompileOptions.None);
-        Assert.Null(regex.DebugCompiledProgram.PrimaryUtf8);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
     }
 

@@ -15,7 +15,7 @@ public sealed class Pcre2LiteralCompilerTests
     {
         var regex = new Utf8Pcre2Regex(pattern);
         var program = regex.DebugCompiledProgram;
-        Assert.Null(program.PrimaryUtf8);
+        Assert.IsType<Pcre2LiteralDirectProgram>(program.Operations.Match);
         ReadOnlyMemory<byte> match1Input = Encoding.UTF8.GetBytes(pattern);
         using var match1Cursor = regex.CreateMatchCursor(match1Input);
         match1Cursor.MoveNext(out var match1Result);

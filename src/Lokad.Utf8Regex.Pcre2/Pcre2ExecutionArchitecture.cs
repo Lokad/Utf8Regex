@@ -472,7 +472,6 @@ internal sealed class Pcre2CompiledProgram
 {
     internal Pcre2CompiledProgram(
         Pcre2CompileRequest request,
-        Utf8Regex? primaryUtf8,
         Pcre2OperationPrograms operations,
         Pcre2CandidateSearchProgram candidateSearch,
         Pcre2PartialProbeProgram partialProbe,
@@ -481,7 +480,6 @@ internal sealed class Pcre2CompiledProgram
         int captureGroupCount)
     {
         Request = request;
-        PrimaryUtf8 = primaryUtf8;
         Operations = operations;
         CandidateSearchPlan = new Pcre2CandidateSearchPlan(candidateSearch);
         PartialProbe = partialProbe;
@@ -500,8 +498,6 @@ internal sealed class Pcre2CompiledProgram
     }
 
     internal Pcre2CompileRequest Request { get; }
-
-    internal Utf8Regex? PrimaryUtf8 { get; }
 
     internal Pcre2OperationPrograms Operations { get; }
 
@@ -539,7 +535,6 @@ internal static class Pcre2CompiledProgramOverlay
         var direct = new Pcre2LiteralDirectProgram(literalProgram);
         return new Pcre2CompiledProgram(
             request,
-            null,
             new Pcre2OperationPrograms(direct, direct, direct, direct, direct),
             default,
             Pcre2PartialProbeProgram.None,
@@ -609,14 +604,8 @@ internal static class Pcre2CompiledProgramOverlay
             var literal = new Pcre2LiteralDirectProgram(caselessLiteral);
             operations = operations with { Count = literal, Enumerate = literal };
         }
-        var core = Pcre2ProgramInvariant.GetCoreRegex(operations.IsMatch) ??
-            Pcre2ProgramInvariant.GetCoreRegex(operations.Count) ??
-            Pcre2ProgramInvariant.GetCoreRegex(operations.Match) ??
-            Pcre2ProgramInvariant.GetCoreRegex(operations.Enumerate) ??
-            Pcre2ProgramInvariant.GetCoreRegex(operations.Replace);
         return new Pcre2CompiledProgram(
             request,
-            core,
             operations,
             candidateSearch,
             partialProbe,
@@ -887,12 +876,6 @@ internal static class Pcre2ProgramInvariant
             ReferenceEquals(fallback, slice.Fallback));
     }
 
-    internal static Utf8Regex? GetCoreRegex(IPcre2DirectProgram program) => program switch
-    {
-        Pcre2LiteralFamilyDirectProgram family => family.Regex,
-        _ => null,
-    };
-
     private static void ValidateDirectProgram(IPcre2DirectProgram directProgram, Pcre2CompiledProgram program)
     {
         if (directProgram is Pcre2SliceDirectProgram sliceProgram)
@@ -906,10 +889,6 @@ internal static class Pcre2ProgramInvariant
             if (!shared && !countOnly)
                 throw new InvalidOperationException("Slice operations must share their payload, or own a proved Count payload and canonical PCRE2 fallback.");
         }
-
-        if (GetCoreRegex(directProgram) is { } core &&
-            !ReferenceEquals(program.PrimaryUtf8, core))
-            throw new InvalidOperationException("A Core-backed operation must retain its live Core owner.");
 
         if (directProgram is Pcre2SameStartLiteralDirectProgram sameStartLiteralProgram &&
             !IsOwnedIsMatchFallback(program, sameStartLiteralProgram.Fallback))

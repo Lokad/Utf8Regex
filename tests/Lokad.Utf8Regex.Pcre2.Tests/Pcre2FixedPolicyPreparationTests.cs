@@ -24,7 +24,8 @@ public sealed class Pcre2FixedPolicyPreparationTests
                 ResourcePolicy = policy,
                 MatchTimeout = Timeout.InfiniteTimeSpan
             });
-            var core = Assert.IsType<Utf8Regex>(regex.DebugCompiledProgram.PrimaryUtf8);
+            var family = Assert.IsAssignableFrom<Pcre2LiteralFamilyDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+            var core = family.Regex;
             Assert.Equal(policy, core.ResourcePolicy);
             Assert.Null(core.Inspection.CompiledRuntime);
             Assert.True(core.CanFindNativeLiteralForResult);

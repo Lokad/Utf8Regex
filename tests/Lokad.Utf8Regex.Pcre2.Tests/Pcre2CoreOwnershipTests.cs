@@ -13,7 +13,7 @@ public sealed class Pcre2CoreOwnershipTests
         {
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        Assert.Null(regex.DebugCompiledProgram.PrimaryUtf8);
+        Assert.False(regex.DebugCompiledProgram.Operations.Count is Pcre2LiteralFamilyDirectProgram);
         var bytes = System.Text.Encoding.UTF8.GetBytes(subject);
         Assert.True(regex.IsMatch(bytes));
         Assert.Equal(1, regex.Count(bytes));
@@ -25,9 +25,11 @@ public sealed class Pcre2CoreOwnershipTests
     public void FiniteCapturedLanguageKeepsItsLiveDerivedCoreInsteadOfTheOriginal()
     {
         var regex = new Utf8Pcre2Regex("(?<left>a)(b)");
-        var owner = Assert.IsType<Utf8Regex>(regex.DebugCompiledProgram.PrimaryUtf8);
-        Assert.Equal("ab", owner.Pattern);
-        Assert.Same(owner, Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(regex.DebugCompiledProgram.Operations.Count).Regex);
+        var operations = regex.DebugCompiledProgram.Operations;
+        var family = Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(operations.Count);
+        Assert.Equal("ab", family.Regex.Pattern);
+        Assert.Same(family, operations.IsMatch);
+        Assert.Same(family, operations.Enumerate);
         Assert.Equal(2, regex.Count("ab ab"u8));
         ReadOnlySpan<byte> match2Input = "ab"u8;
         var match2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
@@ -40,10 +42,11 @@ public sealed class Pcre2CoreOwnershipTests
     public void SharedSliceOwnsItsPayloadAndFallbackWithoutTheUnusedCoreFacade()
     {
         var regex = new Utf8Pcre2Regex(@"([0-9]+)-\1");
-        var program = regex.DebugCompiledProgram;
-        Assert.Null(program.PrimaryUtf8);
-        var canonical = Assert.IsType<Pcre2SliceDirectProgram>(program.Operations.Match);
-        Assert.Same(canonical.SliceProgram, Assert.IsType<Pcre2SliceDirectProgram>(program.Operations.Count).SliceProgram);
+        var operations = regex.DebugCompiledProgram.Operations;
+        var canonical = Assert.IsType<Pcre2SliceDirectProgram>(operations.Match);
+        var count = Assert.IsType<Pcre2SliceDirectProgram>(operations.Count);
+        Assert.Same(canonical.SliceProgram, count.SliceProgram);
+        Assert.Same(canonical.Fallback, count.Fallback);
         Assert.Equal(2, regex.Count("12-12 7-7"u8));
         ReadOnlySpan<byte> retained3Input = "12-12"u8;
         var retained3Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];

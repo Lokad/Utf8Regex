@@ -78,12 +78,11 @@ public sealed class Pcre2ExecutionArchitectureTests
         var special = new Utf8Pcre2Regex("(?|(abc)|(xyz))").DebugCompiledProgram;
 
         Assert.IsType<Pcre2LiteralDirectProgram>(literal.Operations.IsMatch);
-        Assert.Null(literal.PrimaryUtf8);
         var direct = Assert.IsType<Pcre2LiteralFamilyDirectProgram>(delegated.Operations.IsMatch);
-        var primary = Assert.IsType<Utf8Regex>(delegated.PrimaryUtf8);
-        Assert.Same(primary, direct.Regex);
+        Assert.Same(direct, delegated.Operations.Count);
+        Assert.Same(direct, delegated.Operations.Enumerate);
         var finite = Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(special.Operations.IsMatch);
-        Assert.Same(finite.Regex, Assert.IsType<Utf8Regex>(special.PrimaryUtf8));
+        Assert.Same(finite, special.Operations.Count);
         Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSet, special.CandidateSearch.Kind);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(special.Operations.Match);
     }

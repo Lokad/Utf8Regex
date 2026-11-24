@@ -39,7 +39,7 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
 
     internal void AttachProgramUse(Utf8FundedStorage.Use use) => _programUse = use;
 
-    /// <summary>Advances to immutable last-capture byte ranges, without captured text or UTF-16 projection.</summary>
+    /// <summary>Advances to immutable byte ranges for the whole match and the last capture of each group.</summary>
     /// <remarks>The optional token applies only to this synchronous call. The original token/deadline remains authoritative. Failure faults the cursor and refunds exclusive loans. Ordinary publication leaves continued result admission to the caller.</remarks>
     public bool MoveNext(out Utf8Pcre2RangeMatch match, CancellationToken cancellationToken = default)
         => MoveNextCore(cancellationToken, false, null, out match, out _);

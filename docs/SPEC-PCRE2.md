@@ -252,4 +252,5 @@ their original input contract. Result traffic stays cumulative after refund.
 Core is the adapter's only non-BCL implementation dependency. Shipped
 matching is managed. Callouts, the DFA matcher, invalid-UTF mode, RTL,
 split and full capture history are outside this profile. Use cursor ranges
-for host-defined output. [Profile examples](../src/Lokad.Utf8Regex.Pcre2/README.md)
+for host-defined output. [Profile examples](../src/Lokad.Utf8Regex.Pcre2/README.md) ·
+[Implementation](ARCHITECTURE-PCRE2.md)
