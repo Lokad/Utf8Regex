@@ -23,10 +23,10 @@ public sealed class Utf8OwnedTreeParserBalanceTests
         yield return new object?[] { "(?'a'x)(?-'a'y)", 512, RegexParseError.InvalidGroupingConstruct, 11 };
     }
 
-    public static IEnumerable<object?[]> BalanceResidualCases()
+    public static TheoryData<string, RegexOptions> BalanceExplicitCaptureCases => new()
     {
-        yield return new object?[] { "(?<a>x)(?<-a>y)", 516 };
-    }
+        { "(?<a>x)(?<-a>y)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture },
+    };
 
     [Theory]
     [MemberData(nameof(BalanceAcceptCases))]
@@ -52,11 +52,11 @@ public sealed class Utf8OwnedTreeParserBalanceTests
     }
 
     [Theory]
-    [MemberData(nameof(BalanceResidualCases))]
-    public void OwnedBalanceServesTopLevelExplicitCapture(string pattern, int options)
+    [MemberData(nameof(BalanceExplicitCaptureCases))]
+    public void OwnedBalanceServesTopLevelExplicitCapture(string pattern, RegexOptions options)
     {
-        Assert.NotNull(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
-        var oracle = new Regex(pattern, (RegexOptions)options);
+        Assert.NotNull(Utf8OwnedTreeParser.TryParse(pattern, options));
+        var oracle = new Regex(pattern, options);
         Assert.Equal(new[] { 0, 1 }, oracle.GetGroupNumbers());
         Assert.Equal(new[] { "0", "a" }, oracle.GetGroupNames());
     }

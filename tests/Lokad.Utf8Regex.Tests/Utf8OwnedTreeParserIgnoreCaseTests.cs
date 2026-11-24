@@ -139,13 +139,6 @@ public sealed class Utf8OwnedTreeParserIgnoreCaseTests
         yield return new object?[] { "(?i:\\U00010400)", 512, RegexParseError.UnrecognizedEscape, 6 };
     }
 
-    public static IEnumerable<object?[]> IgnoreCaseResidualCases()
-    {
-        yield return new object?[] { "(?i:[ab]){2}|(?:a.)", 512 };
-        yield return new object?[] { "(?m:\\d){2}|(?:a.)", 512 };
-        yield return new object?[] { "(?n:a){2}|(?:a.)", 512 };
-    }
-
     public static IEnumerable<object?[]> IgnoreCaseScopeBehaviorCases()
     {
         // Graduated scope shapes the fork serves with divergent option marking

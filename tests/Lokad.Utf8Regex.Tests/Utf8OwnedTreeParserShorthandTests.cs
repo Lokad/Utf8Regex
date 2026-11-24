@@ -434,10 +434,8 @@ public sealed class Utf8OwnedTreeParserShorthandTests
         Assert.Equal(offset, thrown.Offset);
     }
 
-    public static IEnumerable<object?[]> ShorthandResidualCases()
+    public static IEnumerable<object?[]> InvalidClassRangeUpperBounds()
     {
-        // BCL rejects a shorthand or category escape in upper-bound class position.
-        // These pin owned-decline plus the BCL construction error.
         yield return new object?[] { "[a-\\d]", RegexParseError.ShorthandClassInCharacterRange, 5 };
         yield return new object?[] { "[z-\\d]", RegexParseError.ShorthandClassInCharacterRange, 5 };
         yield return new object?[] { "[--\\d]", RegexParseError.ShorthandClassInCharacterRange, 5 };
@@ -461,10 +459,11 @@ public sealed class Utf8OwnedTreeParserShorthandTests
     }
 
     [Theory]
-    [MemberData(nameof(ShorthandResidualCases))]
-    public void OwnedShorthandDeclinesResidual(string pattern, RegexParseError error, int offset)
+    [MemberData(nameof(InvalidClassRangeUpperBounds))]
+    public void CharacterClassUpperBoundRejectsShorthandAndProperties(string pattern, RegexParseError error, int offset)
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options: RegexOptions.CultureInvariant));
         var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
         Assert.Equal(error, thrown.Error);
         Assert.Equal(offset, thrown.Offset);

@@ -123,21 +123,14 @@ public sealed class Utf8OwnedTreeParserSubtractionTests
         }
     }
 
-    public static IEnumerable<object?[]> SubtractionResidualCases()
+    [Fact]
+    public void NestedSubtractionRejectsShorthandAsARangeUpperBound()
     {
-        // Fork-widening debt (no-vendor rule): BCL rejects the nested upper-bound
-        // shorthand escape while the pristine fork accepts it. Pins owned-decline plus
-        // legacy-accept; the provider gatekeeper still declines it.
-        yield return new object?[] { "[a-[b-\\d]]", RegexParseError.ShorthandClassInCharacterRange, 8 };
-    }
-
-    [Theory]
-    [MemberData(nameof(SubtractionResidualCases))]
-    public void OwnedSubtractionDeclinesResidual(string pattern, RegexParseError error, int offset)
-    {
+        const string pattern = "[a-[b-\\d]]";
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options: RegexOptions.CultureInvariant));
         var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
-        Assert.Equal(error, thrown.Error);
-        Assert.Equal(offset, thrown.Offset);
+        Assert.Equal(RegexParseError.ShorthandClassInCharacterRange, thrown.Error);
+        Assert.Equal(8, thrown.Offset);
     }
 }
