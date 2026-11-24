@@ -108,10 +108,12 @@ One original token and deadline cover each operation and all cursor advances
 and waits. Cooperative cancellation reports the original token. Expiry
 throws `RegexMatchTimeoutException` with empty `Input`. Refusal ends the
 operation without partial output. Work covers discovery, matching, capture
-selection and publication. Proved case-sensitive ASCII runs that need no
-line-end rewind charge one step and check the deadline before searching each
-block of at most 64 bytes. Discovery can use the same bounded scan to skip
-rejected ASCII starts when the first required atom proves their exclusion.
+selection and publication. Proved ASCII runs that need neither case folding
+nor line-end rewind charge one step and check the deadline before searching
+each block of at most 64 bytes. This includes brackets containing only ASCII
+digits or punctuation under `IgnoreCase`. Discovery can use the same bounded
+scan to skip rejected ASCII starts when the first required atom proves their
+exclusion.
 Depth covers live alternatives and capture
 dependencies. General capture workspace can grow quadratically in subject
 boundaries. It requires working admission, including growth overlap.

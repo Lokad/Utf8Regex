@@ -236,10 +236,15 @@ internal sealed class PosixParser
         }
         var mask = _budget.AllocateArray<byte>(16, false);
         var retained = 0;
+        var fold = false;
         for (var index = 0; index < merged.Count; index += 2)
         {
             _budget.ChargeWork(1);
             var start = merged[index]; var end = merged[index + 1];
+            // Invariant folding changes only ASCII letters in an ASCII-only
+            // bracket. Wider ranges retain their scalar case comparison.
+            if (_ignoreCase && !fold)
+                fold = end > 128 || start <= 'Z' && end > 'A' || start <= 'z' && end > 'a';
             for (var value = start; value < Math.Min(end, 128); value++)
             {
                 _budget.ChargeWork(1);
@@ -261,8 +266,8 @@ internal sealed class PosixParser
             members = _budget.AllocateArray<Utf8SliceNode.CategorySetMember>(1, false);
             members[0] = Utf8SliceNode.CategorySetMember.Create(table, false);
         }
-        return _budget.AllocateObject((mask, negated, members, _ignoreCase),
-            static x => new Utf8SliceNode.CategorySetNode(x.mask, x.negated, [], x.members, x._ignoreCase));
+        return _budget.AllocateObject((mask, negated, members, fold),
+            static x => new Utf8SliceNode.CategorySetNode(x.mask, x.negated, [], x.members, x.fold));
     }
 
     private void ReadNamedClass(Utf8ConstructionBuffer<(int Start, int End)> ranges)

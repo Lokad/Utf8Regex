@@ -72,6 +72,8 @@
     { "id": "fold-no-multi-scalar-expansion", "pattern": "(ß)", "input": "SS", "options": "IgnoreCase", "groups": null },
     { "id": "fold-no-normalization", "pattern": "(é)", "input": "é", "options": "IgnoreCase", "groups": null },
     { "id": "fold-greedy-disjoint", "pattern": "(k+)([0-9]+)", "input": "KK007", "options": "IgnoreCase", "groups": [[0,7],[0,4],[4,3]] },
+    { "id": "fold-digit-stops-before-unicode-digit", "pattern": "(k+)([[:digit:]]+)", "input": "KK7١8", "options": "IgnoreCase", "groups": [[0,5],[0,4],[4,1]] },
+    { "id": "fold-bracket-keeps-wide-letters", "pattern": "(k+)([0-9é]+)", "input": "KKÉ7", "options": "IgnoreCase", "groups": [[0,7],[0,4],[4,3]] },
     { "id": "fold-greedy-bounded-floor", "pattern": "([k]{1,2})([0-9]{2,3})", "input": "éKK1234", "startOffsetInBytes": 2, "options": "IgnoreCase", "groups": [[2,7],[2,4],[6,3]] },
     { "id": "fold-greedy-nullable-captures", "pattern": "([k]*)()([K]*)", "input": "KK", "options": "IgnoreCase", "groups": [[0,4],[0,4],[4,0],[4,0]] },
     { "id": "fold-required-overlap-after-closure", "pattern": "([k]+)([K]+)", "input": "KKk", "options": "IgnoreCase", "groups": [[0,5],[0,4],[4,1]] },
