@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -150,7 +151,6 @@ internal partial struct PosixWorkspace
         var code = _program.Scalar.Instructions;
         var pc = 0; var at = start; end = -1;
         var maximumEnd = input.Length;
-        var terminalExit = -1;
         while (true)
         {
             Charge(ref invocation);
@@ -162,14 +162,7 @@ internal partial struct PosixWorkspace
                 case Utf8SliceInstructionKind.Dot:
                 case Utf8SliceInstructionKind.Set:
                 case Utf8SliceInstructionKind.CategorySet:
-                    if (Rune.DecodeFromUtf8(input[at..], out var scalar, out var width) != OperationStatus.Done)
-                    { failed = true; break; }
-                    var hit = instruction.Kind switch
-                    {
-                        Utf8SliceInstructionKind.Literal => MatchesLiteral(scalar, instruction.A),
-                        Utf8SliceInstructionKind.Dot => instruction.A != 0 || scalar.Value != '\n',
-                        _ => MatchesClass(scalar, instruction, ref invocation),
-                    };
+                    var hit = TryConsumeAtom(input[at..], instruction, ref invocation, out var width);
                     if (hit) { at += width; pc++; } else failed = true;
                     break;
                 case Utf8SliceInstructionKind.Anchor:
@@ -263,6 +256,24 @@ internal partial struct PosixWorkspace
                         pc = instruction.A + 1; // Skip the unused counter reset.
                         break;
                     }
+                    if (code[instruction.A].B == PosixProgram.RepeatExitWithoutRewind)
+                    {
+                        // This scalar run has no competing endpoint. Its count
+                        // is local, so an enclosing choice only restores its own state.
+                        var atom = code[pc + 1];
+                        var consumed = 0;
+                        var limit = instruction.RepeatMaximum;
+                        while (consumed < limit && at < input.Length)
+                        {
+                            Charge(ref invocation);
+                            if (!TryConsumeAtom(input[at..], atom, ref invocation, out var size)) break;
+                            at += size;
+                            consumed++;
+                        }
+                        if (consumed < instruction.RepeatMinimum) failed = true;
+                        else pc = instruction.A + 1;
+                        break;
+                    }
                     var slot = instruction.B * 2;
                     var count = state[slot];
                     if (count < 0) { count = 0; SetState(state, slot, 0, ref invocation); }
@@ -286,11 +297,7 @@ internal partial struct PosixWorkspace
                     }
                     else
                     {
-                        // A proved terminal scalar run has no shorter choice.
-                        // Keep its ordinary counters, decoder and predicates;
-                        // a failed optional atom selects the same exit directly.
-                        if (code[instruction.A].B == PosixProgram.RepeatExitWithoutRewind) terminalExit = instruction.A;
-                        else PushFrame(new(instruction.A, at, _trace.Count, _undo.Count), ref invocation);
+                        PushFrame(new(instruction.A, at, _trace.Count, _undo.Count), ref invocation);
                         SetState(state, slot, maximum == long.MaxValue ? (int)minimum + 1 : count + 1, ref invocation);
                         SetState(state, slot + 1, at, ref invocation);
                         pc++;
@@ -298,7 +305,6 @@ internal partial struct PosixWorkspace
                     break;
                 case Utf8SliceInstructionKind.RepeatEnd: pc = instruction.A; break;
                 case Utf8SliceInstructionKind.RepeatExit:
-                    terminalExit = -1;
                     SetState(state, instruction.A * 2, -1, ref invocation);
                     SetState(state, instruction.A * 2 + 1, -1, ref invocation);
                     pc++;
@@ -341,11 +347,7 @@ internal partial struct PosixWorkspace
                     break;
                 default: throw new InvalidOperationException($"Unsupported POSIX instruction {instruction.Kind}.");
             }
-            if (failed)
-            {
-                if (terminalExit >= 0) { pc = terminalExit; terminalExit = -1; }
-                else if (!Backtrack(state, ref pc, ref at, ref invocation)) return end >= 0;
-            }
+            if (failed && !Backtrack(state, ref pc, ref at, ref invocation)) return end >= 0;
         }
     }
 
@@ -512,6 +514,19 @@ internal partial struct PosixWorkspace
             consumed += block.Length;
         }
         return consumed;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool TryConsumeAtom(ReadOnlySpan<byte> suffix, Utf8SliceInstruction instruction,
+        ref Utf8SliceInvocation invocation, out int width)
+    {
+        if (Rune.DecodeFromUtf8(suffix, out var scalar, out width) != OperationStatus.Done) return false;
+        return instruction.Kind switch
+        {
+            Utf8SliceInstructionKind.Literal => MatchesLiteral(scalar, instruction.A),
+            Utf8SliceInstructionKind.Dot => instruction.A != 0 || scalar.Value != '\n',
+            _ => MatchesClass(scalar, instruction, ref invocation),
+        };
     }
 
     private bool MatchesLiteral(Rune scalar, int value)
