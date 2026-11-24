@@ -30,6 +30,16 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(Encoding.UTF8.GetBytes(text), 1));
     }
 
+    [Fact]
+    public void CountUsesTheFirstScreenedStartWithinOneWorkAllowance()
+    {
+        using var regex = Create("(a)b+", working: 1, work: 90);
+        using var source = new CancellationTokenSource();
+        var subject = Encoding.UTF8.GetBytes("ab😀" + new string('x', 65536) + "a ax ab abb aabc aa😀abbb");
+
+        Assert.Equal(4, regex.Count(subject, startOffsetInBytes: 2, cancellationToken: source.Token));
+    }
+
     [Theory]
     [InlineData("(a*)")]
     [InlineData("([ab]*)")]

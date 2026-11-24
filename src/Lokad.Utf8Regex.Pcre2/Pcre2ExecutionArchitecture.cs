@@ -1792,12 +1792,18 @@ internal static class Pcre2GlobalOperationDriver
 
         if (program is Pcre2SliceDirectProgram sliceProgram && matchOptions == Pcre2MatchOptions.None)
         {
-            if (Pcre2SliceDriver.RejectMissingCandidate(sliceProgram.SliceProgram,
-                compiledProgram.CandidateSearch, input, start.Value, ref invocation, out _))
+            var scalar = sliceProgram.SliceProgram;
+            if (Pcre2SliceDriver.RejectMissingCandidate(scalar,
+                compiledProgram.CandidateSearch, input, start.Value, ref invocation, out var firstAsciiStart))
             {
                 result = 0;
                 return true;
             }
+
+            // An admitted ASCII start rules out the preceding bytes. Keep the
+            // original subject and start when the program can observe the origin.
+            if (firstAsciiStart > start.Value && !scalar.HasContiguousAnchor)
+                start = new Utf8BytePosition(firstAsciiStart);
 
             result = Pcre2SliceDriver.Count(
                 sliceProgram,
