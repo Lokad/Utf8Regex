@@ -149,16 +149,6 @@ internal sealed class LokadPublicBenchmarkContext
 
     public int ExecuteUtf8PrefilterOnly() => Utf8PrefilterReplay.Rejects(Utf8Regex.Inspection.SearchPlan, InputBytes) ? 0 : 1;
 
-    public int ExecuteUtf8FallbackSearchStartsOnly()
-    {
-        if (Operation != LokadPublicBenchmarkOperation.IsMatch || !Utf8Regex.Inspection.SearchPlan.HasStructuralCandidates)
-        {
-            return 0;
-        }
-
-        return Utf8FallbackReplay.IsMatch(Utf8Regex, InputBytes) ? 1 : 0;
-    }
-
     public int ExecuteUtf8CompiledMatchOnly()
     {
         return Operation switch

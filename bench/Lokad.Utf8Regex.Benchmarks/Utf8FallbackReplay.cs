@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Search;
@@ -58,16 +57,6 @@ internal static class Utf8FallbackReplay
         }
 
         return count;
-    }
-
-    internal static bool IsMatch(Utf8Regex regex, ReadOnlySpan<byte> input)
-    {
-        var plan = regex.Inspection.SearchPlan;
-        if (!plan.HasStructuralCandidates || Utf8PrefilterReplay.Rejects(plan, input)) return false;
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, regex.MatchTimeout, default);
-        invocation.AnchorOriginByte = 0;
-        return TryFindNextVerifiedMatch(plan.StructuralSearchPlan, regex.Inspection.PreparedRegex,
-            input, 0, ref invocation, out _);
     }
 
     internal static int Count(Utf8Regex regex, ReadOnlySpan<byte> input)

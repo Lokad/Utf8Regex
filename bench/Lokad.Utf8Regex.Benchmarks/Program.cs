@@ -168,11 +168,6 @@ if (args.Length >= 2 && args[0].Equals("--measure-lokad-public-case-deep", Strin
     return BenchmarkInspectReporter.RunMeasureLokadPublicCaseDeep(args[1], args.Length >= 3 ? args[2] : null);
 }
 
-if (args.Length >= 2 && args[0].Equals("--measure-lokad-public-validator-deep", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureLokadPublicValidatorDeep(args[1], args.Length >= 3 ? args[2] : null);
-}
-
 if (args.Length >= 2 && args[0].Equals("--measure-small-ascii-literal-family-primitive-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureSmallAsciiLiteralFamilyPrimitiveCase(args[1], args.Length >= 3 ? args[2] : null);
