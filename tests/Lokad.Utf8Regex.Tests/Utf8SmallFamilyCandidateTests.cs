@@ -8,6 +8,31 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8SmallFamilyCandidateTests
 {
     [Theory]
+    [InlineData(63)]
+    [InlineData(64)]
+    [InlineData(2040)]
+    [InlineData(2041)]
+    [InlineData(4097)]
+    public void ShortPairKeepsOrdinalAcrossWindowsAndClippedNeedles(int padding)
+    {
+        byte[][] literals = ["reported"u8.ToArray(), "report"u8.ToArray()];
+        var bytes = Encoding.UTF8.GetBytes("reported😀" + new string('x', padding) + "reported");
+        var input = bytes.AsSpan("reported"u8.Length);
+        var start = "😀"u8.Length;
+        var candidate = start + padding;
+        foreach (var limits in new[] { Utf8ExecutionLimits.Unlimited, new Utf8ExecutionLimits(100, 0, 0) })
+        foreach (var (end, ordinal) in new[] { (input.Length, 0), (candidate + 6, 1), (candidate + 5, -1) })
+        {
+            var invocation = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, default);
+            Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
+                literals, false, input, start, end, false, ref invocation, out var match, out var found));
+            Assert.Equal(ordinal >= 0, found);
+            if (found) Assert.Equal((candidate, literals[ordinal].Length, ordinal), (match.Index, match.Length, match.LiteralId));
+            else Assert.Equal(default, match);
+        }
+    }
+
+    [Theory]
     [InlineData(3)]
     [InlineData(4)]
     public void PreparedDistinctHeadsKeepOrdinalAndBorrowedBounds(int size)

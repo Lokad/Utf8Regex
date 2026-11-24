@@ -325,6 +325,33 @@ internal static partial class Utf8SearchExecutor
         var boundedExactHeads = !folded && !reverse && literals.Length <= 8;
         var low = start;
         var high = end - 1;
+        if (Vector512.IsHardwareAccelerated && !confirm && !reverse && !folded && firstByteSearch is null &&
+            literals.Length == 2 && literals[0].Length is >= 3 and <= 16 && literals[1].Length is >= 3 and <= 16)
+        {
+            // The pair scan visits starts in order and verifies both complete
+            // needles. Admit each bounded window when the invocation needs
+            // checkpoints. Otherwise one scan can cover the remaining span.
+            var wholeSpan = invocation.IsUnmetered && invocation.CheckpointHook is null;
+            var lookahead = Math.Max(literals[0].Length, literals[1].Length) - 1;
+            while (end - low >= Vector512<byte>.Count)
+            {
+                var count = wholeSpan ? end - low : Math.Min(2048 - lookahead, end - low);
+                var length = wholeSpan ? count : Math.Min(count + lookahead, end - low);
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                var relative = IndexOfShortExactPair(input.Slice(low, length), count, literals[0], literals[1], out var id);
+                if (relative >= 0)
+                {
+                    breach = invocation.TryChargeInputStep();
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                    match = new PreparedSearchMatch(low + relative, literals[id].Length, id);
+                    found = true;
+                    return Utf8ExecutionLimitKind.None;
+                }
+                low += count;
+            }
+        }
         if (literals.Length > 0)
         {
             while (low <= high)
@@ -359,13 +386,9 @@ internal static partial class Utf8SearchExecutor
                         var pairBlock = input.Slice(blockStart, Math.Min(count + longest - 1, end - blockStart));
                         breach = invocation.TryChargeInputStep();
                         if (breach != Utf8ExecutionLimitKind.None) return breach;
-                        var shared = Vector512.IsHardwareAccelerated && count >= Vector512<byte>.Count &&
-                            longest <= 16 && Math.Min(literals[0].Length, literals[1].Length) >= 3;
-                        var provedId = -1;
-                        var relative = shared ? IndexOfShortExactPair(pairBlock, count, literals[0], literals[1], out provedId)
-                            : pairBlock.IndexOf(literals[0]);
+                        var relative = pairBlock.IndexOf(literals[0]);
                         if (relative >= count) relative = -1;
-                        if (!shared && relative != 0)
+                        if (relative != 0)
                         {
                             breach = invocation.TryChargeInputStep();
                             if (breach != Utf8ExecutionLimitKind.None) return breach;
@@ -377,22 +400,7 @@ internal static partial class Utf8SearchExecutor
                             var other = otherBlock.IndexOf(literals[1]);
                             if (other >= 0 && other < count && (relative < 0 || other < relative)) relative = other;
                         }
-                        if (relative >= 0)
-                        {
-                            candidateByte = blockStart + relative;
-                            if (shared)
-                            {
-                                // The bounded primitive already compared complete
-                                // needles in pattern order. Publish that exact
-                                // prefix proof under the original authority.
-                                breach = invocation.TryChargeInputStep();
-                                if (breach != Utf8ExecutionLimitKind.None) return breach;
-                                invocation.Budget.ThrowIfCancellationRequested();
-                                match = new PreparedSearchMatch(candidateByte, literals[provedId].Length, provedId);
-                                found = true;
-                                return Utf8ExecutionLimitKind.None;
-                            }
-                        }
+                        if (relative >= 0) candidateByte = blockStart + relative;
                     }
                     else
                     {
