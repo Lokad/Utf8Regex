@@ -59,6 +59,11 @@ retry stops anchored iteration or advances to the next scalar boundary.
 Caller `NotEmpty` and `NotEmptyAtStart` options apply to each attempt.
 Substitution can retain a reset-empty `\K` result suppressed by enumeration.
 
+With CRLF-aware newlines, unanchored wildcard discovery skips the LF in a
+CRLF pair after a failed CR candidate. An explicit LF start or an explicit
+newline atom can still match there. DotAll and supported partial probes follow
+the selected wildcard and newline options.
+
 ### Captures and metadata
 
 Capture numbers follow declaration order and branch-reset slot reuse.
@@ -146,9 +151,12 @@ Syntax errors preserve native no-match and unselected-fallback deferral.
 
 Discovery, capture and MARK access, output growth and copying share one
 invocation. Cold template keys and parser buffers require admission.
-`TryReplace` can stage overlapping output. If its destination is too short,
-it stays unchanged and the method returns `DestinationTooSmall`, with zero
-bytes written or the required length under `SubstituteOverflowLength`. [Output ownership](SPEC.md#results-splitting-and-replacement)
+`TryReplace` accepts input or template bytes that overlap its destination.
+Staging a result requires working and result admission. A short destination
+stays unchanged and returns `DestinationTooSmall`, with zero bytes written
+or the required length under `SubstituteOverflowLength`. Interruption during
+the final copy can leave partial output.
+[Output ownership](SPEC.md#results-splitting-and-replacement)
 
 ## Interruption and resource controls
 

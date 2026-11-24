@@ -1,96 +1,33 @@
 # Lokad.Utf8Regex.Pcre2
 
-**0.5.0 development**, .NET 10 and .NET 11. A strictly managed, UTF-8-native
-selected PCRE2 10.47 standard profile, requiring the exact Core package version
-matching the adapter. It can coexist with PythonRe at the same version. There is
-no P/Invoke, native PCRE2 binary, RID-specific payload or implementation dependency
-other than Core and the BCL.
+A managed implementation of selected PCRE2 10.47 standard-matcher semantics
+for .NET 10 and 11. The adapter requires the exact matching Core package. It
+ships without native binaries or interop.
 
 ## Subject input contract
 
-Pass already-valid UTF-8 text and keep borrowed bytes unchanged while results or
-cursors use it. Regex operations do not validate subjects or expose an input
-policy. Validate external bytes where they become text. Pattern/template/output
-validation, checked accesses, scalar semantics and matching/output admission
-remain independent. Results expose byte endpoints without prefix scans or UTF-16
-coordinates. See the [PCRE2 contract](../../docs/SPEC-PCRE2.md#subject-input-contract).
-
-Standalone views expose byte access rather than `GetValueString`. Inspect
-`IsUtf8SliceWellFormed` before host decoding: opted-in `\C` can return scalar
-fragments. Noncontiguous reported spans still reject byte access. Host decoding
-and its allocations are outside regex resource/interruption controls.
-
-Canonical benchmarks give both sides valid text and use native `NO_UTF_CHECK`,
-equivalent options and matching requested outputs. This input contract deliberately
-differs from native PCRE2's default validation. Frozen tables retain their original
-producer and comparator guarantees until a coherent refresh.
+Pass valid UTF-8 and keep borrowed bytes unchanged during use. Validate
+external bytes as they become text. Patterns and UTF-8 templates have their
+own validation rules. Starts and reported endpoints use byte offsets.
+[Input and range rules](../../docs/SPEC-PCRE2.md#subject-input-contract)
 
 ## Supported scope and limitations
 
-The admitted profile includes literals/classes, branching/repetition, captures,
-backreferences, assertions, scoped options, branch reset, duplicate names,
-recursion/subroutines, conditionals, atomic groups, backtracking control, `\K`,
-Unicode and opted-in `\C`. Normal operations include `IsMatch`, `Match`,
-`CreateMatchCursor`, `Count`, `EnumerateMatches` and substitution.
-`MatchDetailed` is removed: use caller-owned capture slots, or a persistent cursor
-for owned snapshots. Dispose temporary cursors after the
-required results; returned ranges remain valid with unchanged subject memory.
-Cursor creation and owned publication have additional operating costs. First-only
-callers can retain reusable capture buffers and copy UTF-8 name numbers once.
+The adapter supports captures, backreferences, assertions, branch reset,
+duplicate names, recursion, conditionals, atomic groups and backtracking
+verbs. Use `Probe` for ordinary MARK results and supported soft or hard
+partial decisions. The scope excludes DFA matching, callouts, invalid-UTF
+subject mode, RTL, split and full capture history.
+[Grammar and probe coverage](../../docs/SPEC-PCRE2.md)
 
-Subjects follow the caller-valid input contract above. Normal character matching and
-empty-match progression use scalars and primary byte coordinates. Explicit `\C`
-is a separately opted-in byte atom: it can report a slice splitting a scalar.
-`\K` in an opted-in lookaround can report non-slice ranges. Check the reported
-slice-validity properties before decoding or slicing these special results.
-
-With CRLF-aware newline settings, unanchored wildcard search skips the LF after
-a failed CR candidate: `.` does not find a match in `\r\n`. Explicitly starting
-at LF still permits it. Explicit newline atoms/alternatives, leading class
-filtering and DotAll retain their own rules; CRLF is not a blanket ban on
-matching either byte. This also applies to the supported wildcard partial probes.
-
-`Probe` offers literal/curated soft/hard partial-match support. Outside those
-drivers, generic Soft full matches keep their captures/MARK; unsupported Hard
-decisions and ordinary marked misses throw `NotSupportedException`. Ordinary
-`Probe(None)` and its MARK results remain available. DFA matching, invalid-UTF subject mode, callouts,
-split, full capture history and substitution forms outside the selected profile
-are excluded. Operation/option combinations have explicit admission boundaries;
-similarity to .NET syntax does not establish PCRE2 support. See the
-[profile specification](../../docs/SPEC-PCRE2.md)
-and its executable fixtures for exact coverage.
-
-Default shorthand classes are ASCII unless the selected UCP/options say otherwise.
-The documented managed uppercasing replacement of final sigma U+03C2 produces
-uppercase U+03A3; it intentionally does not copy the observed native 10.47
-replacement anomaly that yields lowercase sigma. Complete native PCRE2
-compatibility is not promised.
-
-UTF-8 replacement templates are parsed and cached directly as bytes through the
-existing simple/extended grammar and execution drivers. Warm queries borrow the
-caller span; cold keys are copied after admission. Full strict template validation,
-deferred syntax errors, captures/MARK, aliasing and original operation limits
-remain. Text and byte keys share one bounded cache with independent entries;
-native construction extents use bytes and can require larger position tables.
-Funded program owners expose byte-template `TryReplace` into caller-owned storage.
-Cold preparation and live output share working admission through final copying;
-temporary loans refund synchronously. Program admission conservatively prepays
-the bounded replacement cache, including before first use. Substitution flags,
-byte starts, lazy errors and original operation controls remain. Output survives
-owner disposal; no additional retained-output receipt is needed for this route.
-
-Operation defaults now use one optional token-bearing signature per input/template
-representation. `IsMatch` and `Count` also accept optional `workingMemoryAllowance`:
-null keeps numeric controls without a shared account; a supplied account retains
-terminal refusal and synchronous refunds. Funded owners inherit program funding
-when that argument is null. For example, `regex.Match(subject, cancellationToken: token)`
-starts at byte zero. Recompile old callers. When using TryReplace's retired
-options-only fifth argument, write `substitutionOptions: options`. Cancellation,
-finite limits and literal fast paths remain enforced.
+Opted-in `\C` can return byte fragments. Check `IsUtf8SliceWellFormed`
+before decoding them. Opted-in lookaround `\K` can report endpoints that
+cannot be sliced. Check `HasContiguousByteRange` on a match before extracting
+its bytes. [Reported ranges and global progress](../../docs/SPEC-PCRE2.md#reported-ranges-and-global-progress)
 
 ## Example
 
-To copy captures into reusable storage, use the primary Match signature:
+To copy captures into reusable storage, pass a span to `Match`.
 
 ```csharp
 using Lokad.Utf8Regex.Pcre2;
@@ -101,17 +38,15 @@ var match = regex.Match("abc-123"u8, captures: captures);
 // Slot zero: [0,7); word: [0,3); number: [4,7), all byte coordinates.
 ```
 
-Short destinations keep the same match; excess slots stay untouched. Caller-owned
-slots require no producer-owned result capacity. Match also returns the last
-relevant `Mark` on hits and misses, reusing the immutable compiled label without
-another search or capture array. The label survives subsequent calls and program
-close. Shared working admission and funded Match use the same numeric limits,
-token and deadline. Capture cursors and full probes expose numbered slots. Resolve
-names on the compiled regex before using those slots. Span enumeration publishes
-whole-match ranges. Borrowed subjects must remain unchanged.
-Use `CopyNumbersForUtf8Name` for regex-level number copies; the redundant string
-variant is removed. Host key encoding is outside the call. Complete key validation
-precedes destination writes, and the optional token remains synchronous.
+Slot zero holds the whole match. A short destination receives the slots that
+fit, and additional entries stay untouched. `CopyNumbersForUtf8Name` maps
+a name to its numbered slots. `Match` and `Probe` can also report MARK.
+[Capture slots and metadata](../../docs/SPEC-PCRE2.md#operations-and-results)
+
+Use `EnumerateMatches` to stream ranges, or `CreateMatchCursor` for
+last-capture snapshots across calls. `Replace` returns owned bytes.
+`TryReplace` writes a caller buffer. Custom substitutions can use cursor
+ranges and host-owned output.
 
 ```csharp
 using System.Text;
@@ -138,132 +73,26 @@ while (matches.MoveNext())
 byte[] redacted = regex.Replace(input, "<$host>"u8);
 ```
 
-UTF-8 templates use PCRE2 substitution syntax. Replace returns owned bytes
-through `Replace` or write caller storage through `TryReplace`. Decode valid output
-in the host when text is needed; the extra string is outside regex resource
-controls. Opt-in `\C` can produce raw malformed UTF-8, so check that output first.
-Callback replacement, evaluator delegates and the public callback writer are
-removed. Custom computation uses `CreateMatchCursor` and host-owned buffers.
-Detailed numeric-slot/name-table results and explicit compile/execution settings
-remain available. Cursor advances preserve regex controls; host computation and
-final output admission/cancellation checks belong to the host.
-
 ## Resource controls and ownership
 
-Construct or Compile text/strict UTF-8 patterns with options, PCRE2 compile
-settings and immutable `Utf8RegexPolicy`. Shared positive work/depth/working/result
-caps map to the existing PCRE2 limits. Null means unlimited; zero is invalid and
-work above `uint.MaxValue` rejects. `ResourcePolicy` and `DefaultExecutionLimits`
-are read-only projections. No separate Create factory or funded wrapper remains.
-**Defaults remain unlimited.** Numeric work/depth units depend on the route and
-are not native-PCRE2 or Core/PythonRe interchangeable units.
+`Utf8RegexPolicy` sets match timeouts and optional work, depth, working-byte
+and result-byte limits. Construction has separate limits and a deadline.
+`Compile` also accepts a construction token. Operations check the original
+cancellation token. Match timeouts and numeric denials throw
+`Pcre2MatchException` with a specific error kind. The limits cover modeled
+engine work and storage capacities.
+[Interruption and resource controls](../../docs/SPEC-PCRE2.md#interruption-and-resource-controls)
 
-Covered validation, discovery, projection, capture/output shaping and controlled
-replacement preparation share the original invocation's work, token and absolute
-deadline. Cancellation throws with the original token. Deadline/resource denial
-uses `Pcre2MatchException` with `Timeout`, `MatchLimit`, `DepthLimit`, `HeapLimit`
-or `ResultLimit`; no silently truncated success is returned. Terminal cursor
-advances also check interruption. The original deadline includes host waits.
-Host computation between advances is outside regex interruption controls.
+Dispose a funded regex when finished. Admitted calls and memory cursors
+can finish after close. Copies of a span enumerator have independent
+positions and each advance needs an open funded regex. Memory cursor aliases
+share progress and disposal. Dispose an abandoned cursor and keep its
+borrowed input alive while using published ranges.
+[Cursor and result lifetimes](../../docs/SPEC-PCRE2.md#cursor-and-result-lifetimes)
 
-Concurrent cold replacements can share template preparation. A waiting call
-observes its own cancellation, deadline and resource allowance; another
-preparer's interruption can cause one independent preparation under the waiter's
-controls, rather than transferring that preparer's failure to the waiter.
-
-Major covered arrays, output controls and growth overlap require admission before
-allocation. Result/staging capacity is cumulatively charged without refunds;
-scalar value/boolean/count and inline partial results need no owned payload.
-This is a modeled capacity policy, not total managed heap, process RSS or arbitrary
-retained-storage containment. Subject/destination memory, incidental owners,
-compiled/cache retention, host decoding and custom-output allocations have
-separate scope. Basic bounded state, backtracking and interruption metering
-remain active even when they have a measurable execution cost.
-
-Controlled `\X` scans and grapheme-aware advancement poll the original token and
-deadline in bounded scalar blocks and charge that scan work. Large clusters can
-therefore exhaust a finite work allowance earlier.
-
-Grapheme boundaries now use owned Unicode 16.0 break, pictographic and Indic
-properties. Earlier category/range approximations could join unrelated letters
-or split spacing marks. The existing Unicode Indic-conjunct rule remains, including
-its documented difference from native PCRE2 10.47; see SPEC-PCRE2.md.
-
-Fixed finite settings also reach optional Core preparation, omitting unmetered
-runtime/emission storage while preserving live search/scalar payloads and PCRE2
-operation selection. Construction charges can fall; invocation units and scope
-remain unchanged.
-
-Policy construction controls provide separate work/depth/instruction/byte limits
-and timeout on constructors and Compile. Compile additionally accepts a token,
-which is not retained for matching. Construction admits backtracking
-metadata conservatively at 256 bytes per UTF-16 pattern character, plus separate
-name-lookup admission per lowerer and instruction/auxiliary-array capacity with
-growth overlap. Its recursive compiler
-has a fixed 256-frame construction-depth backstop; smaller public caps tighten it.
-These charges can double-count shared storage and cause earlier refusal; they do
-not cover every allocation. An all-declined pattern now fails during construction
-with `NotSupportedException`, rather than returning an unusable expression.
-Curated partial-probe preparation also shares the original construction owner:
-fixed semantic checks replace whole-tree string serialization, and literal
-operand storage and bounded scans are admitted before acquisition. This can
-cause earlier construction refusal without changing supported Probe semantics.
-Cold finite-heap replacement preparation borrows
-remaining working capacity as a construction ceiling and retains its additional
-peak through replacement. Warm plans use a separate conservative cache. See
-[resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits) for exact mappings and scopes.
-
-A declined simple-template optimization lends its complete prepared outcome to
-the executor for that call, including templates too large for the cache. Work
-and preparation capacity reflect one compilation; numeric implementation costs
-are not a stable per-template quota or an exact managed-heap measurement.
-
-Finite controls can select a materially slower route: the existing email corpus
-Count can exhaust a 50-million-step policy even though unlimited Count succeeds.
-This is a disclosed operating-cost limitation; an experimental candidate-search
-change was reverted and is not included. Choose budgets for the required workload;
-there is no universal finite default or new release-wide performance claim.
-
-ProgramMemoryAllowance prepays compiled storage and bounded replacement-cache
-capacity; dispose funded expressions. New calls and program-dependent metadata
-reject after close. Admitted calls and existing persistent cursors finish under
-their original controls; refunds wait for the final use, without GC timing.
-IsMatch/Match/Count/cursor/TryReplace inherit program funding for null working
-admission; explicit working accounts override only temporary storage. Span
-enumerators keep numeric working controls and borrow an open producer for each
-advance; close rejects further advances on every copy, while Current remains valid.
-Use persistent cursors for shared working admission or traversal surviving close.
-Unfunded Dispose is a no-op. Pattern/options/settings/resource projections remain
-readable; other metadata, probes and owned output keep numeric limits and program
-protection without an additional overload family.
-
-Keep borrowed subjects unchanged and their owners alive. Copied value cursors
-retain independent positions but share allowance/deadline. Owned detailed results
-remain valid after cursor advance/failure. `MatchMany` and its whole-range carrier
-are removed. Stream ranges with `EnumerateMatches`, or retain a memory cursor for
-captures across host waits. Callers decide when to request another result; there
-is no implicit bulk lookahead or `isMore` result. Caller-buffered prefixes remain
-valid after later failure. Input and caller capture storage must be disjoint;
-overlap is unsupported and is not checked, since writes can corrupt the subject
-before later discovery.
-An already cancelled explicit token still wins. Interruption during TryReplace copying can
-also leave modified destination bytes. DestinationTooSmall leaves destination
-storage unchanged. Host-retained storage requires separate admission.
-
-Enumeration publishes byte endpoints and value status directly,
-preserving snapshots and independent copied positions. Capture publication has
-no coordinate table, sort or prefix scan. Numerical work/storage needs can drop;
-pattern/template checks, allocation admission and cumulative interruption/limits stay enforced.
-
-`TryReplace` supports input and template buffers overlapping the destination.
-Matched overlapping input stages output before copying to caller storage, so
-later gaps and captures retain their original bytes. That temporary capacity
-requires working and cumulative result admission under the same invocation.
-Disjoint simple-template output and no-match copies retain their direct paths.
-
-See the [release notes](../../CHANGELOG.md) for upgrades and version history.
-The [PCRE2 summary](../../bench/Snapshots/Pcre2.json) records the measured source,
-runtime and comparator qualification for each byte-operation row.
+The tables compare public operations with equivalent outputs and valid UTF-8
+on both sides. The native comparator uses `PCRE2_NO_UTF_CHECK`.
+[Benchmark procedure](../../docs/BENCHMARKS.md) · [Release notes](../../CHANGELOG.md)
 
 The `simple/ab-plus` Count ratio reflects the archived paired run. In fixed-CPU
 replays with matching results and native settings, the native Count median
