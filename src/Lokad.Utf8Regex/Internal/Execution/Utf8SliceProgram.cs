@@ -380,7 +380,7 @@ internal sealed class Utf8SliceProgram
 
     // Conservative carrier allowance; major children have separate admission.
     internal static ulong ObjectBytes =>
-        512 + 2UL * (ulong)IntPtr.Size + (ulong)Unsafe.SizeOf<(int, byte, byte, byte)>() +
+        512 + 3UL * (ulong)IntPtr.Size + sizeof(int) + (ulong)Unsafe.SizeOf<(int, byte, byte, byte)>() +
         (ulong)Unsafe.SizeOf<(long, Utf8SliceClassWindowProof)>() - sizeof(long);
 
     private Utf8SliceProgram(
@@ -807,6 +807,48 @@ internal sealed class Utf8SliceProgram
     internal (int Min, int Max, byte Literal) FollowingDecimalLiteralWindow { get; }
     internal (int Index, byte TerminalMin, byte TerminalMax) FollowingDecimalContinuation { get; }
     internal Utf8BoundedProgramEmitter.Match? EmittedMatch { get; }
+    private const int AbsoluteProofTierThreshold = 512 * 1024;
+    private int _absoluteProofVisits = -1; // Disabled or already claimed.
+    internal bool ObservesAbsoluteProofWork => Volatile.Read(ref _absoluteProofVisits) >= 0;
+    private volatile Utf8BoundedProgramEmitter.Match? _tieredAbsoluteProof;
+    internal Utf8BoundedProgramEmitter.Match? TieredAbsoluteProof => _tieredAbsoluteProof;
+
+    internal void EnableAbsoluteProofTierUp(Utf8ConstructionBudget budget)
+    {
+        if (Utf8BoundedProgramEmitter.CanTierUpShortAbsoluteProof(this, budget))
+            _absoluteProofVisits = 0;
+    }
+
+    internal void ObserveAbsoluteProofWork(int visits)
+    {
+        int previous, next;
+        do
+        {
+            previous = Volatile.Read(ref _absoluteProofVisits);
+            if (previous < 0) return;
+            next = previous + visits;
+            if (next >= AbsoluteProofTierThreshold)
+            {
+                // A host callback may be inside another construction owner.
+                if (Utf8ConstructionScope.IsActive) return;
+                next = -1;
+            }
+        } while (Interlocked.CompareExchange(ref _absoluteProofVisits, next, previous) != previous);
+
+        if (next >= 0) return;
+        using var construction = Utf8ConstructionScope.Enter();
+        try
+        {
+            var emitted = Utf8BoundedProgramEmitter.TryEmit(this, construction.Budget);
+            construction.Complete();
+            _tieredAbsoluteProof = emitted;
+        }
+        catch (Utf8ResourceLimitExceededException)
+        {
+            // A failed speculative optimization leaves the interpreter available.
+        }
+    }
+
     private (ulong Mask, int Anchor) TerminalRepeatsWithoutRewind { get; }
     private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) RequiredFinalAscii { get; }
     internal byte? RequiredUnanchoredFinalByte { get; }

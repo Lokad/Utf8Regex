@@ -59,8 +59,10 @@ public sealed partial class Utf8Regex : IDisposable
         constructionPolicy.Validate(nameof(policy));
         var constructionTimeout = Utf8MatchTimeout.Validate(policy.ConstructionTimeout ?? Timeout.InfiniteTimeSpan, nameof(policy));
         var account = policy.ProgramMemoryAllowance;
-        var ownsConstruction = explicitCompile || account is not null || constructionPolicy != default ||
+        var controlledConstruction = account is not null || constructionPolicy != default ||
             constructionTimeout != Timeout.InfiniteTimeSpan;
+        var ownsConstruction = explicitCompile || controlledConstruction;
+        var canTierUp = !controlledConstruction && !Utf8ConstructionScope.IsActive && (options & RegexOptions.Compiled) == 0;
         using var construction = !ownsConstruction ? Utf8ConstructionScope.Enter() : account is null
             ? Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token)
             : Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token, account);
@@ -111,6 +113,8 @@ public sealed partial class Utf8Regex : IDisposable
             var ownedSliceProgram = preparedRegex.ScalarProgram
                 ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
             _ownedSliceProgram = ownedSliceProgram;
+            if (canTierUp && matchTimeout == Regex.InfiniteMatchTimeout && !HasFiniteExecutionLimits)
+                ownedSliceProgram.EnableAbsoluteProofTierUp(construction.Budget);
             if (matchTimeout == Regex.InfiniteMatchTimeout &&
                 _program.CompiledEngineRuntime is { } literalRuntime && HasScalarBoundaryLiteralSearch(ownedSliceProgram))
             {

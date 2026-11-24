@@ -1,7 +1,7 @@
 # Core compilation architecture
 
 ```text
-parse -> analyze -> prepare -> immutable program -> invoke
+parse -> analyze -> prepare -> immutable instructions -> invoke
 ```
 
 - `Internal/FrontEnd` parses the pattern and derives semantic facts, capture
@@ -17,6 +17,10 @@ parse -> analyze -> prepare -> immutable program -> invoke
   A proven delimiter can let ordered alternatives share an emitted
   continuation. The admitted extent can bound a decimal run with a proved
   endpoint. Search applies invocation checks at each admitted origin.
+  Eligible ordinary Core calls accumulate visits from completed short
+  absolute-origin proofs. One caller claims bounded compilation after a
+  proof finishes and publishes the delegate for future eligible calls.
+  Funded and interruptible calls retain their original paths.
   The scalar interpreter handles capture output. The supported
   `NonBacktracking` subset uses its own ordered traversal. Eligible literal
   families also use emitted delegates.

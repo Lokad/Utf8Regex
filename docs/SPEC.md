@@ -337,14 +337,19 @@ profile scopes.
 
 ## Implementation and qualification
 
-Managed code performs parsing, preparation and execution. An immutable program
-drives each invocation. Shipped matching and result publication are owned by the
+Managed code performs parsing, preparation and execution. Immutable instructions
+drive each invocation. Shipped matching and result publication are owned by the
 library and use managed bounds checks. Actual `Unsafe.SizeOf<T>()` is permitted.
 `Compiled` affects strategy only. When dynamic code is available, Core emits
 IL at construction for eligible bounded forward programs. The existing search
 admits each origin and applies invocation limits. Emitted code can verify
 Boolean and whole-range results when no captures are requested. The scalar
 interpreter handles other programs and capture publication.
+An eligible ordinary Core program can also publish one emitted proof after
+repeated complete interpreted checks at the absolute beginning of short inputs.
+This automatic tier applies to unlimited, unfunded calls without a cancelable
+token, on engines built with default construction controls. Finite policies,
+funding and cooperative interruption retain their existing execution paths.
 The CLR can JIT the emitted method on first use. Construction admits the
 emitter's managed storage and bounded expansion. Native JIT storage is outside
 the construction byte limit. Eligible literal families also use emitted code.

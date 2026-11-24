@@ -660,10 +660,28 @@ internal static partial class Utf8SliceRunner
             // Unknown instructions still enter the original attempt.
             int acceptedEnd;
             bool possible;
-            if (seekBeginning && fromByte == 0 && program.EmittedMatch is { } emitted)
+            var visits = 0;
+            var emitted = seekBeginning && fromByte == 0 ? program.EmittedMatch : null;
+            var tiered = false;
+            if (emitted is null && seekBeginning && fromByte == 0 && proofStart == 1 &&
+                (program.ObservesAbsoluteProofWork || program.TieredAbsoluteProof is not null) &&
+                invocation.CheckpointHook is null && invocation.IsUnmetered)
+            {
+                emitted = program.TieredAbsoluteProof;
+                tiered = emitted is null;
+            }
+            if (emitted is not null)
             {
                 acceptedEnd = emitted(input);
                 possible = acceptedEnd >= 0;
+            }
+            else if (tiered)
+            {
+                var remaining = proofLimit;
+                var end = ProbeBranchedAsciiPrefix(program, input, fromByte, proofStart, ref remaining, proveMatch: true);
+                possible = end != BranchedPrefixRejected;
+                acceptedEnd = Math.Max(BranchedPrefixUndecided, end);
+                visits = proofLimit - remaining;
             }
             else
                 possible = MayMatchBranchedAsciiPrefix(program, input, fromByte, proofStart, out acceptedEnd,
@@ -674,6 +692,8 @@ internal static partial class Utf8SliceRunner
                 // already admitted, and this step retains a prior denial.
                 breach = invocation.TryChargeInputStep();
                 invocation.Budget.ThrowIfCancellationRequested();
+                if (breach == Utf8ExecutionLimitKind.None && visits != 0)
+                    program.ObserveAbsoluteProofWork(visits);
                 return possible && breach == Utf8ExecutionLimitKind.None
                     ? new(true, fromByte, acceptedEnd, breach)
                     : new(false, -1, -1, breach);

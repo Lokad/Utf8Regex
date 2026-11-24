@@ -19,12 +19,21 @@ internal static class Utf8BoundedProgramEmitter
     private static readonly MethodInfo s_matchDecimalRun = typeof(Utf8SliceRunner).GetMethod(
         nameof(Utf8SliceRunner.MatchBoundedDecimalRun), BindingFlags.Static | BindingFlags.NonPublic)!;
 
+    internal static bool CanTierUpShortAbsoluteProof(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+        => CanEmit(program) && program.Instructions.Length <= MaxUnsplitInstructions &&
+           program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Anchor,
+               A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: 1 } &&
+           CountExpandedVisits(program, 1, program.Instructions.Length, budget) <= MaxExpandedVisits;
+
+    private static bool CanEmit(Utf8SliceProgram program)
+        => RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled &&
+           !program.RightToLeft && !program.IsNonBacktracking && !program.ReadsCaptures &&
+           program.Instructions.Length is >= 2 and <= MaxExpandedVisits;
+
     internal static Match? TryEmit(Utf8SliceProgram program, Utf8ConstructionBudget budget)
     {
         var code = program.Instructions;
-        if (!RuntimeFeature.IsDynamicCodeSupported || !RuntimeFeature.IsDynamicCodeCompiled ||
-            program.RightToLeft || program.IsNonBacktracking ||
-            program.ReadsCaptures || code.Length is < 2 or > MaxExpandedVisits) return null;
+        if (!CanEmit(program)) return null;
 
         var anchored = code[0] is { Kind: Utf8SliceInstructionKind.Anchor,
             A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: not 0 };

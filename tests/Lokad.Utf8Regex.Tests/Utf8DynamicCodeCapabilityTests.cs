@@ -73,6 +73,54 @@ public sealed class Utf8DynamicCodeCapabilityTests
             Assert.Single(retained.GetCaptures(1).ToArray()));
     }
 
+    [Fact]
+    public void OrdinaryAbsoluteProofTiersUpOnceForUncontrolledCalls()
+    {
+        const string pattern = "^#?([a-f0-9]{6}|[a-f0-9]{3})$";
+        using var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        var dynamicCode = RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
+        Assert.Equal(dynamicCode, program.ObservesAbsoluteProofWork);
+        Assert.Null(program.EmittedMatch);
+        Assert.Null(program.TieredAbsoluteProof);
+
+        using var source = new CancellationTokenSource();
+        var bytes = "#ab10e3"u8.ToArray();
+        for (var i = 0; i < 100_000; i++)
+        {
+            if (!regex.IsMatch(bytes, source.Token)) throw new InvalidOperationException("Expected a match.");
+        }
+        Assert.Null(program.TieredAbsoluteProof);
+
+        Parallel.For(0, 100_000, i =>
+        {
+            var expected = i % 2 == 0;
+            if (regex.IsMatch(expected ? bytes : "#aF09B2\n\n"u8) != expected)
+                throw new InvalidOperationException("The shared proof changed the match result.");
+        });
+        var tiered = program.TieredAbsoluteProof;
+        Assert.Equal(dynamicCode, tiered is not null);
+        Assert.False(program.ObservesAbsoluteProofWork);
+        Assert.Equal(new Utf8CaptureRange(0, 4), regex.Match("#aF9\n"u8));
+        Assert.Equal(new Utf8CaptureRange(0, 7), regex.Match(bytes));
+        Assert.False(regex.IsMatch("Aé3"u8));
+        Assert.False(regex.IsMatch(new byte[33]));
+        using var cursor = regex.CreateMatchCursor(bytes);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(new Utf8CaptureRange(1, 7), Assert.Single(match.GetCaptures(1).ToArray()));
+        Assert.Same(tiered, program.TieredAbsoluteProof);
+
+        source.Cancel();
+        Assert.Equal(source.Token,
+            Assert.Throws<OperationCanceledException>(() => regex.IsMatch(bytes, source.Token)).CancellationToken);
+        using var limited = new Utf8Regex(pattern, RegexOptions.IgnoreCase,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 5 } });
+        Assert.False(limited.Inspection.AvailableOwnedSliceProgram.ObservesAbsoluteProofWork);
+        using var controlled = new Utf8Regex(pattern, RegexOptions.IgnoreCase,
+            new() { ConstructionPolicy = new() { MaxWorkSteps = 1_000_000 } });
+        Assert.False(controlled.Inspection.AvailableOwnedSliceProgram.ObservesAbsoluteProofWork);
+    }
+
     [Theory]
     [InlineData("a12", 1)]
     [InlineData("Ab1 2", 2)]
