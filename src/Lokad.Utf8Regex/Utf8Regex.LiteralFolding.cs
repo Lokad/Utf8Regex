@@ -1,80 +1,11 @@
-using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal.Diagnostics;
-using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.FrontEnd;
-using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
-using Lokad.Utf8Regex.Internal.Replacement;
-using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Lokad.Utf8Regex;
 
-// scalar fallback execution and native verification, split from the matching facade.
-/// <summary>Scalar fallback execution and native verification for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {
-    private bool TryMatchAnchoredLiteral(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
-    {
-        match = default(Utf8CaptureRange);
-        // Anchored ASCII literal prefixes are byte-exact on every input: astral scalars
-        // never start with ASCII bytes, so non-ASCII input stays direct rather than
-        // requiring the general owned scalar route.
-        // Folded prefixes compare per byte under invariant folding (Kelvin and Turkic
-        // divergences stay fenced upstream); the executor switches on the kind.
-        if (_anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix &&
-            _anchoredLiteral.LiteralUtf8 is { Length: > 0 })
-        {
-            if (Utf8AnchoredLiteralPrefixExecutor.TryMatchPrefix(input, _anchoredLiteral, out var anchoredPrefixLength))
-            {
-                match = new Utf8CaptureRange(0, 0 + (anchoredPrefixLength));
-            }
-
-            return true;
-        }
-
-        // Anchored ASCII literal suffixes are byte-exact on every input, just like
-        // prefixes: UTF-8 scalar encodings never end with ASCII bytes. Both
-        // operations return byte ranges without describing the subject prefix.
-        if ((_anchoredLiteral.IsExactSuffix ||
-            _anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
-            _anchoredLiteral.LiteralUtf8 is { Length: > 0 })
-        {
-            if (Utf8AnchoredLiteralSuffixExecutor.TryMatchSuffix(input, _anchoredLiteral, out var suffixByteIndex, out var suffixLength))
-            {
-
-                match = new Utf8CaptureRange(suffixByteIndex, (suffixByteIndex) + (suffixLength));
-            }
-
-            return true;
-        }
-        return false;
-    }
-
-    internal bool TryIsMatchAnchoredLiteral(ReadOnlySpan<byte> input, out bool isMatch)
-    {
-        isMatch = false;
-        // Same byte-exact contract as the Match arm above: anchored ASCII prefixes
-        // stay direct even on non-ASCII input. Folded prefixes ride
-        // the same arm; the executor switches on the kind.
-        if (_anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix)
-        {
-            isMatch = Utf8AnchoredLiteralPrefixExecutor.TryMatchPrefix(input, _anchoredLiteral, out _);
-            return true;
-        }
-
-        // Same byte-exact contract for suffixes: a tail miss is definitive on
-        // every input, and IsMatch needs no coordinates.
-        if (_anchoredLiteral.IsExactSuffix ||
-            _anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd)
-        {
-            isMatch = Utf8AnchoredLiteralSuffixExecutor.TryMatchSuffix(input, _anchoredLiteral, out _, out _);
-            return true;
-        }
-        return false;
-    }
-
     private bool ShouldUseKelvinSignFallback(ReadOnlySpan<byte> input)
         => _requiresKelvinSignFallback && ContainsKelvinSign(input);
 
@@ -86,7 +17,7 @@ public sealed partial class Utf8Regex
     {
         match = default;
         if (token.CanBeCanceled || MatchTimeout != Regex.InfiniteMatchTimeout ||
-            _hasCaptures || _anchoredLiteral.HasValue || UsesRightToLeft() ||
+            _hasCaptures || UsesRightToLeft() ||
             (Options & RegexOptions.CultureInvariant) == 0 ||
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
             return false;

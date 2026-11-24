@@ -460,12 +460,6 @@ internal static class Utf8NativeExecutionAnalyzer
                     case Utf8TreeNodeKind.Alternate:
                     case Utf8TreeNodeKind.One:
                     case Utf8TreeNodeKind.Multi:
-                    case Utf8TreeNodeKind.Bol:
-                    case Utf8TreeNodeKind.Eol:
-                    case Utf8TreeNodeKind.Beginning:
-                    case Utf8TreeNodeKind.Start:
-                    case Utf8TreeNodeKind.EndZ:
-                    case Utf8TreeNodeKind.End:
                     case Utf8TreeNodeKind.Empty:
                         break;
                     case Utf8TreeNodeKind.Set:

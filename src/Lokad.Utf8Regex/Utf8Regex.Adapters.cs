@@ -4,23 +4,8 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex;
 
-/// <summary>Byte-offset adapters and direct matching for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {
-    // Selection already accounts for boundary, folding and timeout requirements.
-    private bool TryMatchSelectedDirect(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
-    {
-        if (TryMatchAnchoredLiteral(input, out match))
-        {
-            return true;
-        }
-
-        if (_program.CompiledEngineRuntime is { } runtime)
-            return runtime.TryMatchDirect(input, out match);
-
-        return false;
-    }
-
     private Utf8PreparedValueMatchEnumerator EnumeratePreparedMatchesAtByteOffset(
         Utf8ValidatedInput input, Utf8BytePosition start)
     {

@@ -5,6 +5,28 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal ref partial struct Utf8OperationMatchCursor
 {
+    // Both cursor edges pass an exact-length slice. The local length check
+    // lets the JIT eliminate the input bounds check inside the loop.
+    private static bool FoldedAnchoredLiteralEquals(ReadOnlySpan<byte> input, byte[] literal)
+    {
+        if (input.Length < literal.Length)
+            return false;
+
+        for (var index = 0; index < literal.Length; index++)
+        {
+            var candidate = input[index];
+            var expected = literal[index];
+            if (candidate == expected)
+                continue;
+            if (ToUpperAscii(candidate) != ToUpperAscii(expected))
+                return false;
+        }
+        return true;
+    }
+
+    private static byte ToUpperAscii(byte value) =>
+        value is >= (byte)'a' and <= (byte)'z' ? (byte)(value - 32) : value;
+
     internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal, Utf8AnchoredLiteralKind kind, Utf8SliceInvocation invocation)
         : this(input, literal, Utf8ExecutionDeadline.Infinite, kind)
     {

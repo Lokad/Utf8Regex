@@ -329,17 +329,13 @@ public sealed partial class Utf8Regex : IDisposable
             return OwnedSliceIsMatch(input, ownedProgram, cancellationToken);
         }
 
-        if (TryIsMatchAnchoredLiteral(input, out var directIsMatch))
-        {
-            return directIsMatch;
-        }
-
-        if (TryMatchSelectedDirect(input, out var directMatch))
+        var runtime = _compiledEngineRuntime;
+        if (runtime.TryMatchDirect(input, out var directMatch))
         {
             return directMatch.Success;
         }
 
-        return _compiledEngineRuntime.IsMatch(input, CreateExecutionBudget());
+        return runtime.IsMatch(input, CreateExecutionBudget());
     }
 
     private bool OwnedSliceIsMatchFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program, int startByte, CancellationToken token)
@@ -647,12 +643,12 @@ public sealed partial class Utf8Regex : IDisposable
             return OwnedSliceMatch(input, ownedProgram, cancellationToken);
         }
 
-        if (TryMatchSelectedDirect(input, out var directMatch))
+        var runtime = _compiledEngineRuntime;
+        if (runtime.TryMatchDirect(input, out var directMatch))
         {
             return directMatch;
         }
 
-        var runtime = _compiledEngineRuntime;
         if (runtime.SupportsUtf8MatchProbe)
             return runtime.TryMatchUtf8Probe(input, out var probeMatch) ? probeMatch : default;
 
