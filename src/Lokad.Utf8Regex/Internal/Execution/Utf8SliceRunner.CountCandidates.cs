@@ -1981,6 +1981,20 @@ internal static partial class Utf8SliceRunner
                             index = entry.A + 1;
                             continue;
                         }
+                        if (maximum <= 4 && entry.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
+                            code[index] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } set &&
+                            program.SkipsTerminalRewind(index - 1))
+                        {
+                            // This continuation excludes every shorter end of the ASCII run.
+                            var available = Math.Min(input.Length - position, (int)maximum);
+                            if (available > remaining) return BranchedPrefixUndecided;
+                            remaining -= available;
+                            var consumed = ScanAsciiMask(input.Slice(position, available), program.SetMasks[set.A], category: false);
+                            if (consumed < minimum) return BranchedPrefixRejected;
+                            position += consumed;
+                            index = entry.A + 1;
+                            continue;
+                        }
                         var end = TryMatchPrefixRepeat(program, input, position, index, in entry, ref remaining,
                             out var continueProof);
                         if (continueProof)
