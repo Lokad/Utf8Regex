@@ -799,6 +799,10 @@ internal sealed class Utf8SliceProgram
         = (-1, -1, -1, 0, false);
     internal Utf8SliceClassWindowProof LeadingClassWindowProof { get; }
     internal bool LeadingScalarIsDecimal { get; }
+    internal bool HasShortDecimalHead => LeadingScalarIsDecimal && Instructions.Length <= 32 &&
+        LeadingByteCandidate.InstructionIndex is > 0 and var index &&
+        Instructions[index - 1] is { Kind: Utf8SliceInstructionKind.RepeatGreedy,
+            RepeatMinimum: > 0, RepeatMaximum: <= 4 };
     internal (int Min, int Max, byte Literal) LeadingRepeatLiteralWindow { get; }
     internal (int Min, int Max, byte Literal) FollowingDecimalLiteralWindow { get; }
     internal (int Index, byte TerminalMin, byte TerminalMax) FollowingDecimalContinuation { get; }

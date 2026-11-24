@@ -1161,20 +1161,22 @@ internal static partial class Utf8SliceRunner
         }
     }
 
-    private static int MatchTerminalDecimalBoundary(ReadOnlySpan<byte> input, int start, int minimum, int maximum)
+    internal static int MatchBoundedDecimalRun(ReadOnlySpan<byte> input, int start, int minimum, int maximum)
     {
-        // The admitted continuation has at most four digits and one boundary.
         var digits = input.Slice(start, Math.Min(maximum, input.Length - start));
         var stop = digits.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
         var count = stop < 0 ? digits.Length : stop;
         var end = start + count;
         if (stop >= 0 && digits[stop] >= 128)
-        {
-            end = MatchWideDecimalPrefix(input, end, Math.Max(0, minimum - count), maximum - count);
-            if (end < 0) return end;
-        }
-        else if (count < minimum) return BranchedPrefixRejected;
+            return MatchWideDecimalPrefix(input, end, Math.Max(0, minimum - count), maximum - count);
+        return count < minimum ? BranchedPrefixRejected : end;
+    }
 
+    private static int MatchTerminalDecimalBoundary(ReadOnlySpan<byte> input, int start, int minimum, int maximum)
+    {
+        // The admitted continuation has at most four digits and one boundary.
+        var end = MatchBoundedDecimalRun(input, start, minimum, maximum);
+        if (end < 0) return end;
         // The required digit before the boundary is a Unicode word scalar.
         if (end == input.Length) return end;
         var next = input[end];

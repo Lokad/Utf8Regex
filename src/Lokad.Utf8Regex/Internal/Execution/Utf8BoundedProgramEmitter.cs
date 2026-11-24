@@ -16,6 +16,8 @@ internal static class Utf8BoundedProgramEmitter
     private const int Unsupported = MaxExpandedVisits + 1;
     private static readonly MethodInfo s_spanLength = typeof(ReadOnlySpan<byte>).GetProperty(nameof(ReadOnlySpan<byte>.Length))!.GetMethod!;
     private static readonly MethodInfo s_spanItem = typeof(ReadOnlySpan<byte>).GetProperty("Item")!.GetMethod!;
+    private static readonly MethodInfo s_matchDecimalRun = typeof(Utf8SliceRunner).GetMethod(
+        nameof(Utf8SliceRunner.MatchBoundedDecimalRun), BindingFlags.Static | BindingFlags.NonPublic)!;
 
     internal static Match? TryEmit(Utf8SliceProgram program, Utf8ConstructionBudget budget)
     {
@@ -26,7 +28,7 @@ internal static class Utf8BoundedProgramEmitter
 
         var anchored = code[0] is { Kind: Utf8SliceInstructionKind.Anchor,
             A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: not 0 };
-        if (!anchored &&
+        if (!anchored && !program.HasShortDecimalHead &&
             program.LeadingByteCandidate is not { FromBranch: true, First: >= 0 and < 128 }) return null;
         var entry = anchored ? 1 : 0;
         Span<int> splits = stackalloc int[MaxExpandedVisits];
@@ -100,6 +102,23 @@ internal static class Utf8BoundedProgramEmitter
                         case Utf8SliceInstructionKind.RepeatLazy:
                             var min = (int)instruction.RepeatMinimum;
                             var max = (int)instruction.RepeatMaximum;
+                            if (code[pc].IsDecimalDigitSet)
+                            {
+                                var end = il.DeclareLocal<int>();
+                                il.LoadArg(0);
+                                LoadPosition(origin, offset);
+                                il.LdcI4(min);
+                                il.LdcI4(max);
+                                il.Emit(OpCodes.Call, s_matchDecimalRun);
+                                il.StoreLocal(end);
+                                il.LoadLocal(end);
+                                il.LdcI4(0);
+                                il.Emit(OpCodes.Blt, retry);
+                                origin = end;
+                                offset = 0;
+                                pc = instruction.A + 1;
+                                break;
+                            }
                             if (min != max && code[instruction.A].RepeatExitRejectsShorterEndpoints)
                             {
                                 origin = EmitSingleEndpointRun(code[pc], origin, offset, min, max, retry);
@@ -324,6 +343,12 @@ internal static class Utf8BoundedProgramEmitter
                     => 1 + visits[instruction.A],
                 Utf8SliceInstructionKind.Fork when instruction.B == 0 && instruction.A > pc && instruction.A < end
                     => 1 + visits[pc + 1] + visits[instruction.A],
+                Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy when
+                    instruction.HasSingleAtomBody && instruction.RepeatMaximum <= 4 && instruction.A + 1 < end &&
+                    code[pc + 1].IsDecimalDigitSet && (instruction.RepeatMinimum == instruction.RepeatMaximum ||
+                        instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy && instruction.RepeatMinimum > 0 &&
+                        (code[instruction.A + 1].Kind == Utf8SliceInstructionKind.Accept || program.SkipsTerminalRewind(pc)))
+                    => 1 + (int)instruction.RepeatMaximum + visits[instruction.A + 1],
                 Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy when
                     instruction.HasSingleAtomBody && instruction.RepeatMaximum <= 4 && instruction.A + 1 < end &&
                     IsAsciiAtom(program, code[pc + 1])

@@ -855,10 +855,7 @@ internal static partial class Utf8SliceRunner
         var proveBranchedMatch = canProveValue && checkBranchedPrefix &&
             (leadingScalarIndex == 0 ||
              Utf8SliceInstruction.SkipLeadingCaptureMarkers(program.Instructions, 0) == leadingScalarIndex);
-        var shortDecimalHead = canProveValue && seekDecimal &&
-            program.Instructions.Length <= 32 && leadingScalarIndex > 0 &&
-            program.Instructions[leadingScalarIndex - 1] is
-                { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0, RepeatMaximum: <= 4 };
+        var shortDecimalHead = canProveValue && seekDecimal && program.HasShortDecimalHead;
         var proveDecimalWindow = canProveValue && followingWindow.Min != 0 && program.SkipsTerminalRewind(1);
         var reuseDecimalWindow = proveDecimalWindow && leadingClass == 2 && program.Instructions[1].RepeatMinimum == 1;
         var verifyFollowingWindow = reuseDecimalWindow && program.FollowingDecimalContinuation.Index != 0 &&
@@ -1654,7 +1651,7 @@ internal static partial class Utf8SliceRunner
                 // The bounded proof can count a complete ordered endpoint.
                 // An undecided result still enters the scalar matcher.
                 if (proveDecimalMatch &&
-                    !MayMatchBranchedAsciiPrefix(program, input, position, 0, out provedEnd, proveMatch: true))
+                    !MayMatchAdmittedCandidate(program, input, position, 0, out provedEnd, proveMatch: true))
                 {
                     position = AdvancePastScalar(input, position, reverse: false);
                     continue;

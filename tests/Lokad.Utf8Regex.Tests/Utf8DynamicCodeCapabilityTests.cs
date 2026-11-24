@@ -105,6 +105,34 @@ public sealed class Utf8DynamicCodeCapabilityTests
         if (match.Success) Assert.Equal(new Utf8CaptureRange(start, end), match);
     }
 
+    [Fact]
+    public void EmittedDecimalRunsKeepByteRangesAndRepeatedCaptures()
+    {
+        using var regex = new Utf8Regex(@"(\d{4}[- ]){3}\d{3,4}", RegexOptions.Compiled);
+        var program = Assert.IsType<Utf8SliceProgram>(regex.Inspection.AvailableOwnedSliceProgram);
+        Assert.Equal(RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled,
+            program.EmittedMatch is not null);
+
+        const string prefix = "😀:";
+        const string first = "𝟙2٣4-";
+        const string value = first + "5678-1234-𝟜5٦";
+        var input = Encoding.UTF8.GetBytes(prefix + value + "!");
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var end = start + Encoding.UTF8.GetByteCount(value);
+        var firstEnd = start + Encoding.UTF8.GetByteCount(first);
+        var expected = new Utf8CaptureRange(start, end);
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(expected, regex.Match(input));
+        Assert.Equal(1, regex.Count(input));
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(expected, match.Value);
+        Assert.Equal(new Utf8CaptureRange[]
+        {
+            new(start, firstEnd), new(firstEnd, firstEnd + 5), new(firstEnd + 5, firstEnd + 10)
+        }, match.GetCaptures(1).ToArray());
+    }
+
     [Theory]
     [InlineData("abc|xyz", "é😀 xyz abc", 2)]
     [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", 1)]
