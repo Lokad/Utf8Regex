@@ -109,7 +109,7 @@ public sealed partial class Utf8PythonRegex
     private int CountCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         using var programUse = EnterProgramUse();
-        Utf8ValidatedInput.GetBytePosition(input, startOffsetInBytes, nameof(startOffsetInBytes));
+        Utf8BytePosition.CreateScalarChecked(input, startOffsetInBytes, nameof(startOffsetInBytes));
         // The native rendering intentionally has exact references. Other shapes
         // keep lexical profile comparison, apart from the proven exact literal.
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&

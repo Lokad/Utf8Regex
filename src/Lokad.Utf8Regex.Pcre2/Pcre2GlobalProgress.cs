@@ -30,10 +30,10 @@ internal struct Pcre2GlobalProgress(Utf8BytePosition start)
         _retry = consumedStart == consumedEnd ? Pcre2GlobalRetryState.EmptyAtSamePosition : Pcre2GlobalRetryState.Search;
     }
 
-    internal bool AfterMiss(ref Utf8ValidatedInput input, in Pcre2CompileRequest request, Pcre2MatchOptions options)
+    internal bool AfterMiss(ReadOnlySpan<byte> input, in Pcre2CompileRequest request, Pcre2MatchOptions options)
     {
         if (_retry != Pcre2GlobalRetryState.EmptyAtSamePosition ||
-            !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(ref input, request, options, _restart, out _restart))
+            !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(input, request, options, _restart, out _restart))
         { _retry = Pcre2GlobalRetryState.Finished; return false; }
         _retry = Pcre2GlobalRetryState.Search;
         return true;

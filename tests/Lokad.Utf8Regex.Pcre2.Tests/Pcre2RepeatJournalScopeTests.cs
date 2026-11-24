@@ -85,13 +85,14 @@ public sealed class Pcre2RepeatJournalScopeTests
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 100)));
-        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation, out _);
+        Pcre2Runner.AdmitStart(bytes, 0, ref invocation);
+        ReadOnlySpan<byte> input = bytes;
         try
         {
             for (var attempt = 0; attempt < 2; attempt++)
             {
                 Exception? failure = null;
-                try { Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
+                try { Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, input,
                     new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _); }
                 catch (Exception error) { failure = error; }
                 Assert.Equal(limit switch
@@ -111,7 +112,8 @@ public sealed class Pcre2RepeatJournalScopeTests
         var regex = Create("(?i)(a+)(b)");
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 100)));
-        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation, out _);
+        Pcre2Runner.AdmitStart(bytes, 0, ref invocation);
+        ReadOnlySpan<byte> input = bytes;
         var budget = new Pcre2ResourceBudget(regex.DebugCompiledProgram.Request.DefaultLimits, invocation, true);
         Assert.True(Pcre2GlobalOperationDriver.TryCreateCursor(regex.DebugCompiledProgram, input,
             new Utf8BytePosition(0), Pcre2MatchOptions.None, out var cursor, budget));

@@ -1436,7 +1436,7 @@ internal static partial class Pcre2Runner
 
     internal static bool TryIsMatch(
         Pcre2CompiledProgram compiledProgram,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         scoped ref Pcre2ResourceBudget budget,
@@ -1451,7 +1451,7 @@ internal static partial class Pcre2Runner
             result = Pcre2BacktrackingRunner.Match(
                 backtrackingProgram.Program,
                 compiledProgram.CandidateSearch,
-                ref input,
+                input,
                 start,
                 matchOptions,
                 ref budget, out _).Success;
@@ -1463,20 +1463,20 @@ internal static partial class Pcre2Runner
             budget.WorkingInvocation.CheckpointHook = null;
             result = Pcre2LiteralRunner.Match(
                 literalProgram.Program,
-                ref input,
+                input,
                 start,
                 matchOptions,
                 ref budget).Success;
             return true;
         }
 
-        return TryIsMatchSpecialized(compiledProgram, ref input, start, matchOptions,
+        return TryIsMatchSpecialized(compiledProgram, input, start, matchOptions,
             ref budget, out result);
     }
 
     private static bool TryIsMatchSpecialized(
         Pcre2CompiledProgram compiledProgram,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         scoped ref Pcre2ResourceBudget budget,
@@ -1489,7 +1489,7 @@ internal static partial class Pcre2Runner
             matchOptions == Pcre2MatchOptions.None &&
             (invocation.IsUnmetered && invocation.CheckpointHook is null))
         {
-            result = finiteLiteralProgram.BooleanSearch.IsMatch(input.Bytes, start.Value);
+            result = finiteLiteralProgram.BooleanSearch.IsMatch(input, start.Value);
             return true;
         }
 
@@ -1498,7 +1498,7 @@ internal static partial class Pcre2Runner
             if (matchOptions == Pcre2MatchOptions.None &&
                 (invocation.IsUnmetered && invocation.CheckpointHook is null))
             {
-                if (literalFamilyProgram.Regex.TryFindNativeLiteralForResult(input.Bytes, start.Value,
+                if (literalFamilyProgram.Regex.TryFindNativeLiteralForResult(input, start.Value,
                         ref invocation, out result, out _, out _)) return true;
             }
 
@@ -1506,7 +1506,7 @@ internal static partial class Pcre2Runner
             result = Pcre2BacktrackingRunner.Match(
                 literalFamilyProgram.Fallback,
                 compiledProgram.CandidateSearch,
-                ref input,
+                input,
                 start,
                 matchOptions,
                 ref budget, out _).Success;
@@ -1521,7 +1521,7 @@ internal static partial class Pcre2Runner
                 result = Pcre2BacktrackingRunner.Match(
                     sliceProgram.Fallback,
                     compiledProgram.CandidateSearch,
-                    ref input,
+                    input,
                     start,
                     matchOptions,
                     ref budget, out _).Success;
@@ -1531,15 +1531,15 @@ internal static partial class Pcre2Runner
             if (sliceProgram.BooleanLiteral is { } exact)
             {
                 Pcre2SliceDriver.ThrowIfSliceBreached(invocation.TryReserveWorking(0));
-                var breach = Utf8SearchExecutor.TryFindLiteralCandidate(exact.Search, input.Bytes,
-                    start.Value, input.ByteLength - exact.LiteralUtf8.Length, false, ref invocation, out var candidate);
+                var breach = Utf8SearchExecutor.TryFindLiteralCandidate(exact.Search, input,
+                    start.Value, input.Length - exact.LiteralUtf8.Length, false, ref invocation, out var candidate);
                 Pcre2SliceDriver.ThrowIfSliceBreached(breach);
                 result = candidate >= 0;
                 return true;
             }
 
             if (Pcre2SliceDriver.RejectMissingCandidate(sliceProgram.SliceProgram,
-                compiledProgram.CandidateSearch, input.Bytes, start.Value, ref invocation, out var firstAsciiStart))
+                compiledProgram.CandidateSearch, input, start.Value, ref invocation, out var firstAsciiStart))
             {
                 result = false;
                 return true;
@@ -1547,7 +1547,7 @@ internal static partial class Pcre2Runner
 
             var leadingAsciiByte = (compiledProgram.Request.Options & Pcre2CompileOptions.Anchored) != 0
                 ? null : sliceProgram.Fallback.LeadingAsciiByte;
-            result = Pcre2SliceDriver.FindFirst(sliceProgram.SliceProgram, input.Bytes, start.Value,
+            result = Pcre2SliceDriver.FindFirst(sliceProgram.SliceProgram, input, start.Value,
                 sliceProgram.Fallback.MinimumByteLength, ref invocation, leadingAsciiByte,
                 sliceProgram.DisjointClassDelimiter, firstAsciiStart).Success;
             return true;
@@ -1559,7 +1559,7 @@ internal static partial class Pcre2Runner
 
     internal static bool TryMatch(
         Pcre2CompiledProgram compiledProgram,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         scoped ref Pcre2ResourceBudget budget,
@@ -1577,7 +1577,7 @@ internal static partial class Pcre2Runner
                 directMatch = Pcre2BacktrackingRunner.Match(
                     sliceProgram.Fallback,
                     compiledProgram.CandidateSearch,
-                    ref input,
+                    input,
                     start,
                     matchOptions,
                     ref budget, out mark);
@@ -1587,15 +1587,15 @@ internal static partial class Pcre2Runner
                 var firstAsciiStart = -1;
                 // Bulk leading-byte discovery avoids trying every scalar in a
                 // long prefix. Short whole matches use the direct attempt.
-                if (input.ByteLength - start.Value >= 64 &&
+                if (input.Length - start.Value >= 64 &&
                     compiledProgram.CandidateSearch.Kind == Pcre2CandidateSearchKind.LeadingAsciiSet &&
                     Pcre2SliceDriver.RejectMissingCandidate(sliceProgram.SliceProgram, compiledProgram.CandidateSearch,
-                        input.Bytes, start.Value, ref invocation, out firstAsciiStart))
+                        input, start.Value, ref invocation, out firstAsciiStart))
                 {
                     result = default;
                     return true;
                 }
-                directMatch = Pcre2SliceDriver.FindFirst(sliceProgram.SliceProgram, input.Bytes, start.Value,
+                directMatch = Pcre2SliceDriver.FindFirst(sliceProgram.SliceProgram, input, start.Value,
                     sliceProgram.Fallback.MinimumByteLength, ref invocation, delimiter: sliceProgram.DisjointClassDelimiter,
                     firstAsciiStart: firstAsciiStart);
                 invocation.CheckpointHook = null;
@@ -1607,7 +1607,7 @@ internal static partial class Pcre2Runner
             invocation.CheckpointHook = null;
             var literalMatch = Pcre2LiteralRunner.Match(
                 literalProgram.Program,
-                ref input,
+                input,
                 start,
                 matchOptions,
                 ref budget);
@@ -1615,7 +1615,7 @@ internal static partial class Pcre2Runner
             // Discovery and required coordinate projection share the original
             // native authority; a short successful kernel is not publication.
             result = Pcre2MatchPublication.Publish(literalMatch.StartOffsetInBytes,
-                literalMatch.EndOffsetInBytes, ref input, ref budget);
+                literalMatch.EndOffsetInBytes, input, ref budget);
             budget.CheckDeadline();
             return true;
         }
@@ -1625,7 +1625,7 @@ internal static partial class Pcre2Runner
             directMatch = Pcre2BacktrackingRunner.Match(
                 backtrackingProgram.Program,
                 compiledProgram.CandidateSearch,
-                ref input,
+                input,
                 start,
                 matchOptions,
                 ref budget, out mark);
@@ -1642,13 +1642,13 @@ internal static partial class Pcre2Runner
             return true;
         }
         result = Pcre2MatchPublication.Publish(directMatch.StartOffsetInBytes,
-            directMatch.EndOffsetInBytes, ref input, ref budget);
+            directMatch.EndOffsetInBytes, input, ref budget);
         return true;
     }
 
     internal static bool TryMatchDetailed(
         Pcre2CompiledProgram compiledProgram,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         scoped ref Utf8SliceInvocation invocation,
@@ -1662,7 +1662,7 @@ internal static partial class Pcre2Runner
                 var fallbackMatch = ExecuteBacktrackingDetailed(
                     sliceProgram.Fallback,
                     compiledProgram.CandidateSearch,
-                    ref input,
+                    input,
                     start,
                     matchOptions,
                     compiledProgram.Request, ref invocation);
@@ -1675,7 +1675,7 @@ internal static partial class Pcre2Runner
             return Pcre2SliceDriver.TryMatchDetailed(
                 sliceProgram,
                 compiledProgram.CandidateSearch,
-                ref input,
+                input,
                 start,
                 ref invocation,
                 out result,
@@ -1706,7 +1706,7 @@ internal static partial class Pcre2Runner
         var match = ExecuteBacktrackingDetailed(
             backtrackingProgram.Program,
             compiledProgram.CandidateSearch,
-            ref input,
+            input,
             start,
             matchOptions,
             compiledProgram.Request, ref invocation);
@@ -1725,7 +1725,7 @@ internal static partial class Pcre2Runner
     private static Pcre2BacktrackingMatch ExecuteBacktrackingDetailed(
         Pcre2BacktrackingProgram program,
         in Pcre2CandidateSearchProgram candidateSearch,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request, scoped ref Utf8SliceInvocation invocation)
@@ -1734,7 +1734,7 @@ internal static partial class Pcre2Runner
         {
             var budget = new Pcre2ResourceBudget(request.DefaultLimits,
                 invocation, collectDiagnostics: false);
-            var result = Pcre2BacktrackingRunner.MatchDetailed(program, candidateSearch, ref input, start, matchOptions, ref budget);
+            var result = Pcre2BacktrackingRunner.MatchDetailed(program, candidateSearch, input, start, matchOptions, ref budget);
             result.CaptureResult.DetachProjectedWorking(ref budget);
             return result;
         }
@@ -1750,7 +1750,7 @@ internal static class Pcre2GlobalOperationDriver
 {
     internal static bool TryCount(
         Pcre2CompiledProgram compiledProgram,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         scoped ref Utf8SliceInvocation invocation,
@@ -1759,7 +1759,7 @@ internal static class Pcre2GlobalOperationDriver
         var program = compiledProgram.Operations.Count;
 
         if (matchOptions == Pcre2MatchOptions.None && program is Pcre2BacktrackingDirectProgram categoryProgram &&
-            Pcre2SliceDriver.TryCountGeneralCategory(categoryProgram.Program, input.Bytes[start.Value..], ref invocation, out result))
+            Pcre2SliceDriver.TryCountGeneralCategory(categoryProgram.Program, input[start.Value..], ref invocation, out result))
             return true;
 
         if (program is Pcre2FiniteLiteralLanguageDirectProgram finiteLiteralProgram &&
@@ -1783,7 +1783,7 @@ internal static class Pcre2GlobalOperationDriver
             {
                 // Exact, case-sensitive literal portfolios count byte ranges;
                 // they consume no whole-subject coordinate description.
-                result = literalFamilyProgram.Regex.ByteOffsetExecution.CountLiteralFamily(input.Bytes[start.Value..]);
+                result = literalFamilyProgram.Regex.ByteOffsetExecution.CountLiteralFamily(input[start.Value..]);
                 return true;
             }
 
@@ -1802,11 +1802,11 @@ internal static class Pcre2GlobalOperationDriver
                     !searchPlan.HasBoundaryRequirements && !searchPlan.HasTrailingLiteralRequirement)
                 {
                     var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(searchPlan,
-                        input.Bytes[start.Value..], false, ref invocation, out result);
+                        input[start.Value..], false, ref invocation, out result);
                     Pcre2SliceDriver.ThrowIfSliceBreached(breach);
                     return true;
                 }
-                result = Pcre2SliceDriver.CountNonEmpty(scalarProgram, searchPlan, ref input, start, ref invocation);
+                result = Pcre2SliceDriver.CountNonEmpty(scalarProgram, searchPlan, input, start, ref invocation);
                 return true;
             }
         }
@@ -1814,7 +1814,7 @@ internal static class Pcre2GlobalOperationDriver
         if (program is Pcre2SliceDirectProgram sliceProgram && matchOptions == Pcre2MatchOptions.None)
         {
             if (Pcre2SliceDriver.RejectMissingCandidate(sliceProgram.SliceProgram,
-                compiledProgram.CandidateSearch, input.Bytes, start.Value, ref invocation, out _))
+                compiledProgram.CandidateSearch, input, start.Value, ref invocation, out _))
             {
                 result = 0;
                 return true;
@@ -1823,7 +1823,7 @@ internal static class Pcre2GlobalOperationDriver
             result = Pcre2SliceDriver.Count(
                 sliceProgram,
                 compiledProgram.CandidateSearch,
-                ref input,
+                input,
                 start,
                 compiledProgram.Request,
                 ref invocation);
@@ -1901,7 +1901,7 @@ internal static class Pcre2GlobalOperationDriver
 
     internal static bool TryCreateCursor(
         Pcre2CompiledProgram compiledProgram,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         out Pcre2GlobalMatchCursor cursor,
@@ -2006,7 +2006,7 @@ internal ref struct Pcre2GlobalMatchCursor
 
     internal static Pcre2GlobalMatchCursor CreateLiteral(
         Pcre2LiteralProgram program,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
@@ -2015,14 +2015,14 @@ internal ref struct Pcre2GlobalMatchCursor
 
     internal static Pcre2GlobalMatchCursor CreateLiteralFamily(
         Pcre2LiteralFamilyDirectProgram program,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         scoped in Pcre2ResourceBudget budget) =>
         new(new Pcre2LiteralFamilyGlobalMatchCursor(program, input, start, budget));
 
     internal static Pcre2GlobalMatchCursor CreateSameStartLiteral(
         Pcre2SameStartLiteralDirectProgram program,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
         scoped in Pcre2ResourceBudget budget) =>
@@ -2031,7 +2031,7 @@ internal ref struct Pcre2GlobalMatchCursor
     internal static Pcre2GlobalMatchCursor CreateBacktracking(
         Pcre2BacktrackingProgram program,
         Pcre2CandidateSearchPlan candidateSearch,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
@@ -2042,7 +2042,7 @@ internal ref struct Pcre2GlobalMatchCursor
     internal static Pcre2GlobalMatchCursor CreateBacktracking(
         Pcre2BacktrackingProgram program,
         Pcre2CandidateSearchPlan candidateSearch,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
@@ -2112,7 +2112,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
     private readonly Pcre2SameStartLiteralDirectProgram? _sameStartLiteralProgram;
     private readonly Pcre2BacktrackingProgram? _backtrackingProgram;
     private readonly Pcre2CandidateSearchPlan? _candidateSearch;
-    private Utf8ValidatedInput _input;
+    private ReadOnlySpan<byte> _input;
     private readonly Pcre2CompileRequest _request;
     private readonly Pcre2MatchOptions _matchOptions;
     private Pcre2ResourceBudget _budget;
@@ -2126,7 +2126,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Pcre2SameStartLiteralDirectProgram? sameStartLiteralProgram,
         Pcre2BacktrackingProgram? backtrackingProgram,
         Pcre2CandidateSearchPlan? candidateSearch,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
@@ -2153,7 +2153,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
 
     internal static Pcre2DirectGlobalMatchCursor CreateLiteral(
         Pcre2LiteralProgram program,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
@@ -2172,7 +2172,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
 
     internal static Pcre2DirectGlobalMatchCursor CreateSameStartLiteral(
         Pcre2SameStartLiteralDirectProgram program,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
         scoped in Pcre2ResourceBudget budget) =>
@@ -2191,7 +2191,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
     internal static Pcre2DirectGlobalMatchCursor CreateBacktracking(
         Pcre2BacktrackingProgram program,
         Pcre2CandidateSearchPlan candidateSearch,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
@@ -2247,7 +2247,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                             throw new InvalidOperationException("The PCRE2 literal cursor has no execution program.");
                         var literalMatch = Pcre2LiteralRunner.Match(
                             literalProgram,
-                            ref _input,
+                            _input,
                             _restartPosition,
                             options,
                             ref _budget);
@@ -2264,7 +2264,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                             throw new InvalidOperationException("The PCRE2 same-start literal cursor has no execution program.");
                         match = Pcre2SameStartLiteralRunner.Match(
                             sameStartLiteralProgram,
-                            _input.Bytes,
+                            _input,
                             _restartPosition,
                             _firstMatchingPosition,
                             options);
@@ -2277,7 +2277,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                         var backtrackingMatch = Pcre2BacktrackingRunner.Match(
                             backtrackingProgram,
                             candidateSearch.Program,
-                            ref _input,
+                            _input,
                             _restartPosition,
                             _firstMatchingPosition,
                             options,
@@ -2309,7 +2309,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                     match.ConsumedStartOffsetInBytes == match.ConsumedEndOffsetInBytes)
                 {
                     if (!Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
-                            ref _input,
+                            _input,
                             _request, _matchOptions, new Utf8BytePosition(match.ConsumedEndOffsetInBytes),
                             out _restartPosition))
                     {
@@ -2335,7 +2335,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                 Current = Pcre2MatchPublication.Publish(
                     match.StartOffsetInBytes,
                     match.EndOffsetInBytes,
-                    ref _input,
+                    _input,
                     ref _budget);
                 _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
                 if (isBacktracking)
@@ -2354,7 +2354,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
 
             if (!retryingEmptyAtSamePosition ||
                 !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
-                    ref _input,
+                    _input,
                     _request, _matchOptions, _restartPosition,
                     out _restartPosition))
             {
@@ -2384,7 +2384,7 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2LiteralFamilyGlobalMatchCursor>();
 
     private Utf8PreparedValueMatchEnumerator _enumerator;
-    private Utf8ValidatedInput _input;
+    private ReadOnlySpan<byte> _input;
     private readonly Pcre2FiniteLiteralBoundaryProjection? _boundaryProjection;
     private Pcre2ResourceBudget _budget;
 
@@ -2393,7 +2393,7 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
 
     internal Pcre2LiteralFamilyGlobalMatchCursor(
         Pcre2LiteralFamilyDirectProgram program,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         scoped in Pcre2ResourceBudget budget)
     {
@@ -2419,13 +2419,13 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
         var consumedStart = _enumerator.StartOffsetInBytes;
         var consumedEnd = _enumerator.EndOffsetInBytes;
         var reportedStart = _boundaryProjection?.ProjectStartOffset(
-            _input.Bytes,
+            _input,
             consumedStart,
             consumedEnd) ?? consumedStart;
         Current = Pcre2MatchPublication.Publish(
             reportedStart,
             consumedEnd,
-            ref _input,
+            _input,
             ref _budget);
         return true;
     }
@@ -2437,7 +2437,7 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
 
     private readonly Pcre2BacktrackingProgram _program;
     private readonly Pcre2CandidateSearchPlan _candidateSearch;
-    private Utf8ValidatedInput _input;
+    private ReadOnlySpan<byte> _input;
     private readonly Pcre2CompileRequest _request;
     private readonly Pcre2MatchOptions _matchOptions;
     private Pcre2ResourceBudget _budget;
@@ -2446,7 +2446,7 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
     internal Pcre2BacktrackingDetailedGlobalMatchCursor(
         Pcre2BacktrackingProgram program,
         Pcre2CandidateSearchPlan candidateSearch,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request)
@@ -2458,7 +2458,7 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
     internal Pcre2BacktrackingDetailedGlobalMatchCursor(
         Pcre2BacktrackingProgram program,
         Pcre2CandidateSearchPlan candidateSearch,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
@@ -2493,7 +2493,7 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
                 match = Pcre2BacktrackingRunner.MatchDetailed(
                     _program,
                     _candidateSearch.Program,
-                    ref _input,
+                    _input,
                     restart,
                     firstMatchingPosition,
                     options,
@@ -2514,7 +2514,7 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
                 return true;
             }
 
-            if (!_progress.AfterMiss(ref _input, _request, _matchOptions))
+            if (!_progress.AfterMiss(_input, _request, _matchOptions))
             {
                 Current = default;
                 return false;
@@ -2529,11 +2529,11 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
 internal static class Pcre2MatchPublication
 {
     internal static Pcre2GroupData Publish(int start, int end,
-        ref Utf8ValidatedInput input, ref Pcre2ResourceBudget budget)
-        => Publish(start, end, ref input, new Pcre2ResultControl(ref budget));
+        ReadOnlySpan<byte> input, ref Pcre2ResourceBudget budget)
+        => Publish(start, end, input, new Pcre2ResultControl(ref budget));
 
     internal static Pcre2GroupData Publish(int start, int end,
-        ref Utf8ValidatedInput input, scoped Pcre2ResultControl control)
+        ReadOnlySpan<byte> input, scoped Pcre2ResultControl control)
     {
         control.ChargeWorkspaceStep();
         return new Pcre2GroupData
@@ -2543,8 +2543,8 @@ internal static class Pcre2MatchPublication
             StartOffsetInBytes = start,
             EndOffsetInBytes = end,
             Utf8SliceIsWellFormed = start <= end &&
-                input.IsScalarBoundary(new Utf8BytePosition(start)) &&
-                input.IsScalarBoundary(new Utf8BytePosition(end))
+                new Utf8BytePosition(start).IsScalarBoundary(input) &&
+                new Utf8BytePosition(end).IsScalarBoundary(input)
         };
     }
 }
@@ -2552,7 +2552,7 @@ internal static class Pcre2MatchPublication
 internal static class Pcre2GlobalCursorMovement
 {
     internal static bool TryAdvanceAfterEmpty(
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         in Pcre2CompileRequest request,
         Pcre2MatchOptions matchOptions,
         Utf8BytePosition position,
@@ -2567,8 +2567,8 @@ internal static class Pcre2GlobalCursorMovement
             return false;
         }
         var settings = request.Settings;
-        var bytes = input.Bytes;
-        if (!input.IsScalarBoundary(position))
+        var bytes = input;
+        if (!position.IsScalarBoundary(input))
         {
             next = new Utf8BytePosition(position.Value + 1);
             return next.Value <= bytes.Length;
@@ -2583,7 +2583,7 @@ internal static class Pcre2GlobalCursorMovement
             return true;
         }
 
-        return input.TryAdvanceScalar(position, out next);
+        return position.TryAdvanceScalar(input, out next);
     }
 
     private static bool RecognizesCrlf(Pcre2NewlineConvention newline)

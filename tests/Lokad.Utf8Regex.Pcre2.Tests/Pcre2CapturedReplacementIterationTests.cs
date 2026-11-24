@@ -27,7 +27,7 @@ public sealed class Pcre2CapturedReplacementIterationTests
         foreach (var options in new[] { Pcre2MatchOptions.None, Pcre2MatchOptions.NotBol })
         {
             var bytes = Encoding.UTF8.GetBytes(input);
-            var subject = Utf8ValidatedInput.BorrowBytes(bytes);
+            ReadOnlySpan<byte> subject = bytes;
             var invocation = Pcre2SliceDriver.CreateInvocation(compiled.Request, CancellationToken.None);
             var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(program, compiled.CandidateSearchPlan,
                 subject, new(0), options, compiled.Request,

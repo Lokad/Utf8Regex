@@ -8,7 +8,7 @@ internal static partial class Pcre2Runner
     // Same compiled programs and native finders; only final capture shaping
     // differs from MatchDetailed. No UTF-16 coordinate projection is requested.
     internal static Pcre2BacktrackingMatch MatchByteRanges(Pcre2CompiledProgram compiled,
-        ref Utf8ValidatedInput input, Utf8BytePosition start, Utf8BytePosition firstMatchingPosition,
+        ReadOnlySpan<byte> input, Utf8BytePosition start, Utf8BytePosition firstMatchingPosition,
         Pcre2MatchOptions options, ref Pcre2ResourceBudget budget,
         ref Utf8SliceSlots sliceSlots, ref Utf8SliceRunner.AttemptWorkspace sliceWorkspace,
         scoped Span<Utf8Pcre2CaptureRange> destination = default)
@@ -18,15 +18,15 @@ internal static partial class Pcre2Runner
         {
             case Pcre2SliceDirectProgram slice when options == Pcre2MatchOptions.None ||
                 options == (Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart):
-                return MatchSliceByteRanges(slice, compiled, ref input, start, firstMatchingPosition,
+                return MatchSliceByteRanges(slice, compiled, input, start, firstMatchingPosition,
                     options != Pcre2MatchOptions.None, ref budget, ref sliceSlots, ref sliceWorkspace, destination);
             case Pcre2LiteralDirectProgram literal:
-                var literalMatch = Pcre2LiteralRunner.Match(literal.Program, ref input, start, options, ref budget);
+                var literalMatch = Pcre2LiteralRunner.Match(literal.Program, input, start, options, ref budget);
                 match = literalMatch.Success ? new(true, literalMatch.StartOffsetInBytes, literalMatch.EndOffsetInBytes,
                     literalMatch.StartOffsetInBytes, literalMatch.ConsumedEndOffsetInBytes, false) : default;
                 break;
             case Pcre2LiteralFamilyDirectProgram family when options == Pcre2MatchOptions.None &&
-                family.Regex.TryFindNativeLiteralForResult(input.Bytes, start.Value, ref budget.WorkingInvocation,
+                family.Regex.TryFindNativeLiteralForResult(input, start.Value, ref budget.WorkingInvocation,
                     out var found, out var begin, out var end):
                 match = found ? Pcre2CharacterMatch.Create(begin, end) : default;
                 break;
@@ -42,26 +42,26 @@ internal static partial class Pcre2Runner
                         _ => throw new NotSupportedException("SPEC-PCRE2 does not support this pattern for range discovery.")
                     }
                 };
-                return Pcre2BacktrackingRunner.MatchByteRanges(program, compiled.CandidateSearch, ref input,
+                return Pcre2BacktrackingRunner.MatchByteRanges(program, compiled.CandidateSearch, input,
                     start, firstMatchingPosition, options, ref budget, destination);
         }
         if (!match.Success) return default;
         if (!destination.IsEmpty)
         {
             Pcre2BacktrackingRunner.WriteByteGroups(destination, match.StartOffsetInBytes, match.EndOffsetInBytes,
-                default, input.Bytes, ref budget);
+                default, input, ref budget);
             return new(true, match.StartOffsetInBytes, match.EndOffsetInBytes,
                 match.ConsumedStartOffsetInBytes, match.ConsumedEndOffsetInBytes, match.MatchBoundaryWasReset, default, null);
         }
         var groups = Pcre2BacktrackingRunner.MaterializeByteGroups(1, match.StartOffsetInBytes,
-            match.EndOffsetInBytes, default, input.Bytes, ref budget);
+            match.EndOffsetInBytes, default, input, ref budget);
         return new(true, match.StartOffsetInBytes, match.EndOffsetInBytes,
             match.ConsumedStartOffsetInBytes, match.ConsumedEndOffsetInBytes, match.MatchBoundaryWasReset,
             Pcre2BacktrackingCaptureResult.FromByteGroups(groups), null);
     }
 
     private static Pcre2BacktrackingMatch MatchSliceByteRanges(Pcre2SliceDirectProgram slice,
-        Pcre2CompiledProgram compiled, ref Utf8ValidatedInput input, Utf8BytePosition start,
+        Pcre2CompiledProgram compiled, ReadOnlySpan<byte> input, Utf8BytePosition start,
         Utf8BytePosition firstMatchingPosition, bool retryNonEmpty, ref Pcre2ResourceBudget budget,
         ref Utf8SliceSlots slots, ref Utf8SliceRunner.AttemptWorkspace workspace,
         scoped Span<Utf8Pcre2CaptureRange> destination)
@@ -71,7 +71,7 @@ internal static partial class Pcre2Runner
         invocation.AnchorOriginByte = firstMatchingPosition.Value;
         var firstAsciiStart = -1;
         if (!retryNonEmpty && Pcre2SliceDriver.RejectMissingCandidate(program, compiled.CandidateSearch,
-                input.Bytes, start.Value, ref invocation, out firstAsciiStart)) return default;
+                input, start.Value, ref invocation, out firstAsciiStart)) return default;
         // The exclusive memory cursor owns this admitted storage across moves,
         // just as Core's memory cursor does. Attempts reset semantic VM state;
         // capacity and its loan survive host waits until EOF/failure/Dispose.
@@ -81,7 +81,7 @@ internal static partial class Pcre2Runner
         {
             // PCRE2 retries an empty match anchored at the same position,
             // admitting only a nonempty result under the original origin.
-            var retry = Utf8SliceRunner.TryMatchAt(program, input.Bytes, start.Value, slots.Starts, slots.Ends,
+            var retry = Utf8SliceRunner.TryMatchAt(program, input, start.Value, slots.Starts, slots.Ends,
                 false, true, startIsScalarBoundary: true, ref workspace, ref invocation);
             Pcre2SliceDriver.ThrowIfSliceBreached(retry.Breach);
             if (!retry.IsMatch) return default;
@@ -89,7 +89,7 @@ internal static partial class Pcre2Runner
         }
         else
         {
-            var outcome = Pcre2SliceDriver.FindCaptureRanges(slice, input.Bytes,
+            var outcome = Pcre2SliceDriver.FindCaptureRanges(slice, input,
                 Math.Max(start.Value, firstAsciiStart), slots, ref workspace, ref invocation);
             Pcre2SliceDriver.ThrowIfSliceBreached(outcome.Breach);
             if (!outcome.Found) return default;

@@ -345,7 +345,7 @@ internal sealed class Utf8NonBacktrackingSearchState
             var index = Array.BinarySearch(_boundaries, byteOffset);
             if (index >= 0) return index;
         }
-        else if (Utf8ValidatedInput.IsScalarBoundary(input, byteOffset))
+        else if (Utf8BytePosition.IsScalarBoundary(input, byteOffset))
         {
             // Every skipped start is impossible. The first retained row,
             // or the end of an empty table, represents any earlier floor.

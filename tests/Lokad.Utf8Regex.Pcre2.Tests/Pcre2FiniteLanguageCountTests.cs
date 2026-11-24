@@ -56,10 +56,11 @@ public sealed class Pcre2FiniteLanguageCountTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ab ", 100)));
         var measured = Create(pattern, new() { MatchLimit = 1000000 });
         var invocation = Pcre2SliceDriver.CreateInvocation(measured.DebugCompiledProgram.Request, default);
-        var validated = Pcre2Runner.PrepareInput(input, 0, ref invocation, out _);
+        Pcre2Runner.AdmitStart(input, 0, ref invocation);
+        ReadOnlySpan<byte> validated = input;
         var validationSteps = invocation.Budget.Steps;
         Assert.True(Pcre2GlobalOperationDriver.TryCount(measured.DebugCompiledProgram,
-            ref validated, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
+            validated, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
         Assert.Equal(100, count);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         var matchingSteps = invocation.Budget.Steps - validationSteps;
@@ -80,13 +81,14 @@ public sealed class Pcre2FiniteLanguageCountTests
             // and the scalar VM must keep "a" available for a real retry.
             var regex = Create("((ab)|(a)|(c)|(d))(?=b[XY])", new() { HeapLimitInBytes = allowance });
             var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-            var input = Pcre2Runner.PrepareInput("abX abY"u8, 0, ref invocation, out _);
+            Pcre2Runner.AdmitStart("abX abY"u8, 0, ref invocation);
+            ReadOnlySpan<byte> input = "abX abY"u8;
             if (allowance == 1)
             {
                 Pcre2MatchException? failure = null;
                 try
                 {
-                    Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
+                    Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, input,
                         new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _);
                 }
                 catch (Pcre2MatchException error) { failure = error; }
@@ -94,7 +96,7 @@ public sealed class Pcre2FiniteLanguageCountTests
             }
             else
             {
-                Assert.True(Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
+                Assert.True(Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, input,
                     new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
                 Assert.Equal(2, count);
                 Assert.True(invocation.Budget.PeakDepth > 0);
@@ -210,7 +212,8 @@ public sealed class Pcre2FiniteLanguageCountTests
         });
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(new string('x', 192 * 1024));
-        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation, out _);
+        Pcre2Runner.AdmitStart(bytes, 0, ref invocation);
+        ReadOnlySpan<byte> input = bytes;
         var validatedSteps = invocation.Budget.Steps;
         int checkpoints = 0;
         invocation.CheckpointHook = _ =>
@@ -221,7 +224,7 @@ public sealed class Pcre2FiniteLanguageCountTests
         Exception? failure = null;
         try
         {
-            Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
+            Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, input,
                 new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _);
         }
         catch (Exception error) { failure = error; }

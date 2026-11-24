@@ -1284,13 +1284,13 @@ internal static class Pcre2CharacterRunner
     internal static bool TryAdvanceCandidate(
         Pcre2CompileRequest request,
         byte? leadingAsciiByte,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         int candidate,
         bool allowAcceleration,
         out int next)
     {
         if ((request.Options & Pcre2CompileOptions.FirstLine) != 0 &&
-            Pcre2CharacterSemantics.TryGetNewlineWidth(input.Bytes, candidate, request.Settings.Newline, out _))
+            Pcre2CharacterSemantics.TryGetNewlineWidth(input, candidate, request.Settings.Newline, out _))
         {
             next = 0;
             return false;
@@ -1299,9 +1299,9 @@ internal static class Pcre2CharacterRunner
         if (allowAcceleration &&
             (request.Options & Pcre2CompileOptions.FirstLine) == 0 &&
             leadingAsciiByte is { } leading &&
-            candidate < input.Bytes.Length)
+            candidate < input.Length)
         {
-            var relative = input.Bytes[(candidate + 1)..].IndexOf(leading);
+            var relative = input[(candidate + 1)..].IndexOf(leading);
             if (relative < 0)
             {
                 next = 0;
@@ -1313,20 +1313,20 @@ internal static class Pcre2CharacterRunner
         }
 
         var candidatePosition = new Utf8BytePosition(candidate);
-        if (!input.IsScalarBoundary(candidatePosition))
+        if (!candidatePosition.IsScalarBoundary(input))
         {
             next = candidate + 1;
-            return next <= input.Bytes.Length;
+            return next <= input.Length;
         }
 
-        if (!input.TryAdvanceScalar(candidatePosition, out var nextPosition))
+        if (!candidatePosition.TryAdvanceScalar(input, out var nextPosition))
         {
             next = 0;
             return false;
         }
 
         next = nextPosition.Value;
-        if (Pcre2CharacterSemantics.IsSkippedCrLfCandidate(request.SkipsCrLfContinuation, input.Bytes, next, candidate)) next++;
+        if (Pcre2CharacterSemantics.IsSkippedCrLfCandidate(request.SkipsCrLfContinuation, input, next, candidate)) next++;
         return true;
     }
 }

@@ -37,7 +37,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         {
             Utf8SliceBufferWork.Checkpoint(ref _invocation);
             if ((uint)start > (uint)input.Length ||
-                start < input.Length && !Utf8ValidatedInput.IsScalarBoundary(input.Span, start))
+                start < input.Length && !Utf8BytePosition.IsScalarBoundary(input.Span, start))
                 throw new ArgumentOutOfRangeException("startOffsetInBytes");
             _position = _origin = start;
             _slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref _invocation);

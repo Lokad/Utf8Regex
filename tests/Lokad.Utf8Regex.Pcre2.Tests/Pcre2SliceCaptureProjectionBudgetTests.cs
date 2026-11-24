@@ -117,7 +117,7 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
         var compiled = regex.DebugCompiledProgram;
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(compiled.Operations.Match);
         var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram,
-            Utf8ValidatedInput.BorrowBytes("xé😀xé😀"u8), new Utf8BytePosition(0), compiled.Request, cancellation.Token);
+            "xé😀xé😀"u8, new Utf8BytePosition(0), compiled.Request, cancellation.Token);
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(7));
         var slots = Pcre2SliceDriver.RentProgramSlots(direct.SliceProgram, ref cursor.WorkingInvocation);
         var held = cursor.WorkingInvocation.Ledger.ReservedBytes;

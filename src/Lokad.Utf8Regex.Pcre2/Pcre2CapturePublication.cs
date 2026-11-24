@@ -43,7 +43,7 @@ internal readonly ref struct Pcre2CaptureRanges
 
     internal static bool IsWellFormed(ReadOnlySpan<byte> input, int start, int end, bool scalarRanges)
         => start <= end && (scalarRanges ||
-            Utf8ValidatedInput.IsScalarBoundary(input, start) && Utf8ValidatedInput.IsScalarBoundary(input, end));
+            Utf8BytePosition.IsScalarBoundary(input, start) && Utf8BytePosition.IsScalarBoundary(input, end));
 }
 
 internal static partial class Pcre2Runner
@@ -52,11 +52,11 @@ internal static partial class Pcre2Runner
     internal static Pcre2GroupData[] PublishCaptures(
         int captureSlotCount, int matchStart, int matchEnd,
         scoped Pcre2CaptureRanges captureRanges,
-        ref Utf8ValidatedInput input, ref Pcre2ResourceBudget budget)
+        ReadOnlySpan<byte> input, ref Pcre2ResourceBudget budget)
     {
         var control = new Pcre2ResultControl(ref budget);
         return PublishCaptureGroups(captureSlotCount, matchStart, matchEnd,
-            captureRanges, input.Bytes, false, control);
+            captureRanges, input, false, control);
     }
 
     internal static Pcre2GroupData[] PublishSliceCaptures(

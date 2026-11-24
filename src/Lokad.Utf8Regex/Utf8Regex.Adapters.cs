@@ -6,12 +6,6 @@ namespace Lokad.Utf8Regex;
 
 public sealed partial class Utf8Regex
 {
-    private Utf8PreparedValueMatchEnumerator EnumeratePreparedMatchesAtByteOffset(
-        Utf8ValidatedInput input, Utf8BytePosition start)
-    {
-        return new Utf8PreparedValueMatchEnumerator(input.Bytes, _preparedRegex.SearchPlan.PreparedSearcher, start);
-    }
-
     internal readonly struct Utf8ByteOffsetExecution
     {
         private readonly Utf8Regex _owner;
@@ -28,8 +22,8 @@ public sealed partial class Utf8Regex
 
         // PCRE2-INTEGRATION-POINT: flavor-neutral prepared byte-range iteration.
         public Utf8PreparedValueMatchEnumerator EnumeratePreparedMatches(
-            Utf8ValidatedInput input, Utf8BytePosition start)
-            => _owner.EnumeratePreparedMatchesAtByteOffset(input, start);
+            ReadOnlySpan<byte> input, Utf8BytePosition start)
+            => new(input, _owner._preparedRegex.SearchPlan.PreparedSearcher, start);
 
         public Utf8SearchPortfolioKind SearchPortfolioKind =>
             _owner._preparedRegex.SearchPlan.PortfolioKind;

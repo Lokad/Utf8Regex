@@ -93,7 +93,7 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
     {
         match = default; retained = null;
         Checkpoint();
-        var subject = Utf8ValidatedInput.BorrowBytes(_input.Span);
+        ReadOnlySpan<byte> subject = _input.Span;
         while (!_progress.Finished)
         {
             var results = new Utf8InvocationResultLedger();
@@ -101,12 +101,12 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
             try
             {
                 _progress.GetAttempt(_options, out var restart, out var firstMatchingPosition, out var options);
-                var outcome = Pcre2Runner.MatchByteRanges(_program!, ref subject, restart, firstMatchingPosition, options,
+                var outcome = Pcre2Runner.MatchByteRanges(_program!, subject, restart, firstMatchingPosition, options,
                     ref _budget, ref _sliceSlots, ref _sliceWorkspace);
                 var groups = outcome.CaptureResult.ByteGroups;
                 if (outcome.Success) captureBytes = Utf8ConstructionBudget.ArrayBytes<Utf8Pcre2CaptureRange>(groups.Length);
                 Checkpoint();
-                if (!outcome.Success) { _progress.AfterMiss(ref subject, _program!.Request, _options); continue; }
+                if (!outcome.Success) { _progress.AfterMiss(subject, _program!.Request, _options); continue; }
                 _progress.Accept(outcome.StartOffsetInBytes, outcome.EndOffsetInBytes,
                     outcome.ConsumedStartOffsetInBytes, outcome.ConsumedEndOffsetInBytes);
                 var completed = new Utf8Pcre2RangeMatch(_input, groups, outcome.Mark);

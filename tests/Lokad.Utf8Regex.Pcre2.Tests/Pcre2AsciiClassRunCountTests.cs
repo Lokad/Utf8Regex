@@ -283,10 +283,10 @@ public sealed class Pcre2AsciiClassRunCountTests
             Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
                 regex.Count(bytes)).ErrorKind);
             // Also exercise the global driver with its own invocation budget.
-            var input = Utf8ValidatedInput.BorrowBytes(bytes);
+            ReadOnlySpan<byte> input = bytes;
             var invocation = new Utf8SliceInvocation(new() { MaxWorkSteps = 100 }, Timeout.InfiniteTimeSpan, default);
             Pcre2MatchException? failure = null;
-            try { Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input, new(0), default, ref invocation, out _); }
+            try { Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, input, new(0), default, ref invocation, out _); }
             catch (Pcre2MatchException error) { failure = error; }
             Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
         }
@@ -304,9 +304,9 @@ public sealed class Pcre2AsciiClassRunCountTests
         if (kind == 0) { invocation.TryChargeStep(); invocation.TryChargeStep(); }
         else if (kind == 1) invocation.Budget.TryNoteDepth(2);
         else invocation.TryReserveWorking(2);
-        var input = Utf8ValidatedInput.BorrowBytes([]);
+        ReadOnlySpan<byte> input = [];
         Pcre2MatchException? failure = null;
-        try { Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input, new(0), default, ref invocation, out _); }
+        try { Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, input, new(0), default, ref invocation, out _); }
         catch (Pcre2MatchException error) { failure = error; }
         Assert.Equal(kind switch
         {

@@ -160,7 +160,7 @@ public sealed class Pcre2ExecutionArchitectureTests
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
-        var input = Utf8ValidatedInput.BorrowBytes("é😀é😀"u8);
+        ReadOnlySpan<byte> input = "é😀é😀"u8;
         var left = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, input, new(0), regex.DebugCompiledProgram.Request, CancellationToken.None);
         var right = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, input, new(0), regex.DebugCompiledProgram.Request, CancellationToken.None);
         var leftSlots = Pcre2SliceDriver.RentProgramSlots(direct.SliceProgram, ref left.WorkingInvocation);
@@ -212,9 +212,9 @@ public sealed class Pcre2ExecutionArchitectureTests
 
         var compiled = regex.DebugCompiledProgram;
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Enumerate).Program;
-        var subject = Utf8ValidatedInput.BorrowBytes(input);
+        ReadOnlySpan<byte> subject = input;
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
-            subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
+            subject, Utf8BytePosition.CreateScalarChecked(subject, 0, "startOffsetInBytes"), Pcre2MatchOptions.None,
             compiled.Request, collectDiagnostics: true);
         var count = 0;
         while (cursor.MoveNext()) count = checked(count + 1);
@@ -265,9 +265,9 @@ public sealed class Pcre2ExecutionArchitectureTests
         var input = "foofoo barbar xx foofoo"u8;
         var compiled = regex.DebugCompiledProgram;
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Enumerate).Program;
-        var subject = Utf8ValidatedInput.BorrowBytes(input);
+        ReadOnlySpan<byte> subject = input;
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
-            subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
+            subject, Utf8BytePosition.CreateScalarChecked(subject, 0, "startOffsetInBytes"), Pcre2MatchOptions.None,
             compiled.Request, collectDiagnostics: true);
         var count = 0;
         while (cursor.MoveNext()) count = checked(count + 1);
@@ -531,9 +531,9 @@ public sealed class Pcre2ExecutionArchitectureTests
         var program = compiled.Operations.Match is Pcre2SliceDirectProgram slice ? slice.Fallback :
             Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Match).Program;
         Assert.NotNull(program);
-        var subject = Utf8ValidatedInput.BorrowBytes(input);
+        ReadOnlySpan<byte> subject = input;
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
-            subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
+            subject, Utf8BytePosition.CreateScalarChecked(subject, 0, "startOffsetInBytes"), Pcre2MatchOptions.None,
             compiled.Request, collectDiagnostics: true);
         var result = (IsMatch: cursor.MoveNext(), Execution: cursor.Diagnostics);
 
@@ -663,9 +663,9 @@ public sealed class Pcre2ExecutionArchitectureTests
         var program = compiled.Operations.Match is Pcre2SliceDirectProgram slice ? slice.Fallback :
             Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Match).Program;
         Assert.NotNull(program);
-        var subject = Utf8ValidatedInput.BorrowBytes(input);
+        ReadOnlySpan<byte> subject = input;
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
-            subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
+            subject, Utf8BytePosition.CreateScalarChecked(subject, 0, "startOffsetInBytes"), Pcre2MatchOptions.None,
             compiled.Request, collectDiagnostics: true);
         var result = (IsMatch: cursor.MoveNext(), Execution: cursor.Diagnostics);
 

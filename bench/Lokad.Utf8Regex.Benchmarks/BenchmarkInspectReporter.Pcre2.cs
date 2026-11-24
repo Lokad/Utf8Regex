@@ -21,8 +21,7 @@ internal static partial class BenchmarkInspectReporter
         Utf8Pcre2Regex regex, ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         var program = regex.DebugCompiledProgram;
-        var subject = Utf8ValidatedInput.BorrowBytes(input);
-        var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+        var start = Utf8BytePosition.CreateScalarChecked(input, startOffsetInBytes, nameof(startOffsetInBytes));
         var backtrackingProgram = program.Operations.IsMatch switch
         {
             Pcre2BacktrackingDirectProgram direct => direct.Program,
@@ -37,7 +36,7 @@ internal static partial class BenchmarkInspectReporter
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
             backtrackingProgram,
             program.CandidateSearchPlan,
-            subject,
+            input,
             start,
             Pcre2MatchOptions.None,
             program.Request,
@@ -51,8 +50,7 @@ internal static partial class BenchmarkInspectReporter
         var program = regex.DebugCompiledProgram;
         if (program.Operations.Match is Pcre2BacktrackingDirectProgram { Program.MayReportNonMonotoneMatchOffsets: true })
             throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches.");
-        var subject = Utf8ValidatedInput.BorrowBytes(input);
-        var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+        var start = Utf8BytePosition.CreateScalarChecked(input, startOffsetInBytes, nameof(startOffsetInBytes));
         var backtrackingProgram = program.Operations.Enumerate switch
         {
             Pcre2BacktrackingDirectProgram direct => direct.Program,
@@ -66,7 +64,7 @@ internal static partial class BenchmarkInspectReporter
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
             backtrackingProgram,
             program.CandidateSearchPlan,
-            subject,
+            input,
             start,
             Pcre2MatchOptions.None,
             program.Request,
@@ -603,11 +601,11 @@ internal static partial class BenchmarkInspectReporter
     private static int ExecutePcre2DirectLiteralFamilyIndexSum(Utf8Pcre2BenchmarkContext context)
     {
         var searcher = GetPcre2DirectLiteralFamilySearcher(context);
-        var input = Utf8ValidatedInput.BorrowBytes(context.InputBytes);
+        ReadOnlySpan<byte> input = context.InputBytes;
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var sum = 0;
         while (searcher.TryFindNextNonOverlappingLength(
-            input.Bytes,
+            input,
             ref state,
             out var matchStart,
             out var matchLength))
@@ -621,12 +619,12 @@ internal static partial class BenchmarkInspectReporter
     private static int ExecutePcre2DirectLiteralFamilyProjectionSum(Utf8Pcre2BenchmarkContext context)
     {
         var searcher = GetPcre2DirectLiteralFamilySearcher(context);
-        var input = Utf8ValidatedInput.BorrowBytes(context.InputBytes);
+        ReadOnlySpan<byte> input = context.InputBytes;
         var budget = new Pcre2ResourceBudget(default, Timeout.InfiniteTimeSpan, false);
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var sum = 0;
         while (searcher.TryFindNextNonOverlappingLength(
-            input.Bytes,
+            input,
             ref state,
             out var matchStart,
             out var matchLength))
@@ -634,7 +632,7 @@ internal static partial class BenchmarkInspectReporter
             var match = Pcre2MatchPublication.Publish(
                 matchStart,
                 matchStart + matchLength,
-                ref input,
+                input,
                 ref budget);
             sum = unchecked(sum + match.StartOffsetInBytes + match.EndOffsetInBytes);
         }

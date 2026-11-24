@@ -143,7 +143,7 @@ internal static class Pcre2BacktrackingRunner
     internal static Pcre2CharacterMatch Match(
         Pcre2BacktrackingProgram program,
         in Pcre2CandidateSearchProgram candidateSearch,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         ref Pcre2ResourceBudget budget, out string? mark)
@@ -151,7 +151,7 @@ internal static class Pcre2BacktrackingRunner
         var match = MatchCore(
             program,
             candidateSearch,
-            ref input,
+            input,
             start,
             start,
             matchOptions,
@@ -173,25 +173,25 @@ internal static class Pcre2BacktrackingRunner
 
     internal static Pcre2CharacterMatch Match(
         Pcre2BacktrackingProgram program, in Pcre2CandidateSearchProgram candidateSearch,
-        ref Utf8ValidatedInput input, Utf8BytePosition searchStart, Utf8BytePosition firstMatchingPosition,
+        ReadOnlySpan<byte> input, Utf8BytePosition searchStart, Utf8BytePosition firstMatchingPosition,
         Pcre2MatchOptions matchOptions, ref Pcre2ResourceBudget budget,
         scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
         scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
         scoped ref Pcre2BacktrackingWorkspace workspace)
-        => MatchCore(program, candidateSearch, ref input, searchStart, firstMatchingPosition,
+        => MatchCore(program, candidateSearch, input, searchStart, firstMatchingPosition,
             matchOptions, Pcre2CaptureMaterialization.None, ref budget, ref frames, ref repeatMutations, ref workspace).ToCharacterMatch();
 
     internal static Pcre2BacktrackingMatch MatchDetailed(
         Pcre2BacktrackingProgram program,
         in Pcre2CandidateSearchProgram candidateSearch,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         ref Pcre2ResourceBudget budget)
         => MatchCore(
             program,
             candidateSearch,
-            ref input,
+            input,
             start,
             start,
             matchOptions,
@@ -201,7 +201,7 @@ internal static class Pcre2BacktrackingRunner
     internal static Pcre2BacktrackingMatch MatchDetailed(
         Pcre2BacktrackingProgram program,
         in Pcre2CandidateSearchProgram candidateSearch,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition searchStart,
         Utf8BytePosition firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
@@ -209,7 +209,7 @@ internal static class Pcre2BacktrackingRunner
         => MatchCore(
             program,
             candidateSearch,
-            ref input,
+            input,
             searchStart,
             firstMatchingPosition,
             matchOptions,
@@ -217,16 +217,16 @@ internal static class Pcre2BacktrackingRunner
             ref budget);
 
     internal static Pcre2BacktrackingMatch MatchByteRanges(Pcre2BacktrackingProgram program,
-        in Pcre2CandidateSearchProgram candidateSearch, ref Utf8ValidatedInput input,
+        in Pcre2CandidateSearchProgram candidateSearch, ReadOnlySpan<byte> input,
         Utf8BytePosition start, Utf8BytePosition firstMatchingPosition, Pcre2MatchOptions options,
         ref Pcre2ResourceBudget budget, scoped Span<Utf8Pcre2CaptureRange> destination = default)
-        => MatchCore(program, candidateSearch, ref input, start, firstMatchingPosition,
+        => MatchCore(program, candidateSearch, input, start, firstMatchingPosition,
             options, Pcre2CaptureMaterialization.ByteFinalSlots, ref budget, destination);
 
     private static Pcre2BacktrackingMatch MatchCore(
         Pcre2BacktrackingProgram program,
         in Pcre2CandidateSearchProgram candidateSearch,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Utf8BytePosition firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
@@ -238,7 +238,7 @@ internal static class Pcre2BacktrackingRunner
         var workspace = new Pcre2BacktrackingWorkspace();
         try
         {
-            return MatchCore(program, candidateSearch, ref input, start, firstMatchingPosition,
+            return MatchCore(program, candidateSearch, input, start, firstMatchingPosition,
                 matchOptions, captureMaterialization, ref budget, ref frames, ref repeatMutations, ref workspace, destination);
         }
         finally { workspace.Dispose(ref budget); repeatMutations.Dispose(ref budget); frames.Dispose(ref budget); }
@@ -247,7 +247,7 @@ internal static class Pcre2BacktrackingRunner
     private static Pcre2BacktrackingMatch MatchCore(
         Pcre2BacktrackingProgram program,
         in Pcre2CandidateSearchProgram candidateSearch,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Utf8BytePosition firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
@@ -257,7 +257,7 @@ internal static class Pcre2BacktrackingRunner
         scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
         scoped ref Pcre2BacktrackingWorkspace workspace, scoped Span<Utf8Pcre2CaptureRange> destination = default)
     {
-        var bytes = input.Bytes;
+        var bytes = input;
         var (lastScalars, allowTrailingLf, canMatchEmpty) = program.AnchoredFinalAscii;
         if (lastScalars.HasValue && matchOptions == Pcre2MatchOptions.None &&
             lastScalars.ExcludesFinalScalar(bytes, allowTrailingLf, canMatchEmpty))
@@ -333,7 +333,7 @@ internal static class Pcre2BacktrackingRunner
                 if (TryMatchAt(
                         program,
                         bytes,
-                        ref input,
+                        input,
                         candidate,
                         firstMatchingPosition.Value,
                         matchOptions,
@@ -373,7 +373,7 @@ internal static class Pcre2BacktrackingRunner
             if (anchored || !Pcre2CharacterRunner.TryAdvanceCandidate(
                     program.Request,
                     program.LeadingAsciiByte,
-                    ref input,
+                    input,
                     candidate,
                     !budget.RequiresCandidateMetering,
                     out var nextCandidate))
@@ -682,7 +682,7 @@ internal static class Pcre2BacktrackingRunner
     private static bool TryMatchAt(
         Pcre2BacktrackingProgram program,
         ReadOnlySpan<byte> input,
-        ref Utf8ValidatedInput projectionInput,
+        ReadOnlySpan<byte> projectionInput,
         int candidate,
         int firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
@@ -699,7 +699,7 @@ internal static class Pcre2BacktrackingRunner
         var workspace = new Pcre2BacktrackingWorkspace();
         try
         {
-            return TryMatchAt(program, input, ref projectionInput, candidate, firstMatchingPosition,
+            return TryMatchAt(program, input, projectionInput, candidate, firstMatchingPosition,
                 matchOptions, captureMaterialization, initialCaptures,
                 depthBase, isAssertion, ref budget, ref frames, ref repeatMutations, ref workspace, out match, out failure);
         }
@@ -709,7 +709,7 @@ internal static class Pcre2BacktrackingRunner
     private static bool TryMatchAt(
         Pcre2BacktrackingProgram program,
         ReadOnlySpan<byte> input,
-        ref Utf8ValidatedInput projectionInput,
+        ReadOnlySpan<byte> projectionInput,
         int candidate,
         int firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
@@ -1158,7 +1158,7 @@ internal static class Pcre2BacktrackingRunner
                                     program.AssertionPrograms[instruction.AssertionProgramId],
                                     instruction.AssertionKind,
                                     input,
-                                    ref projectionInput,
+                                    projectionInput,
                                     inputIndex,
                                     firstMatchingPosition,
                                     matchOptions,
@@ -1295,7 +1295,7 @@ internal static class Pcre2BacktrackingRunner
                                     program.AssertionPrograms[condition.AssertionProgramId],
                                     condition.AssertionKind,
                                     input,
-                                    ref projectionInput,
+                                    projectionInput,
                                     inputIndex,
                                     firstMatchingPosition,
                                     matchOptions,
@@ -1536,7 +1536,7 @@ internal static class Pcre2BacktrackingRunner
                 reportedStartOffsetInBytes,
                 inputIndex,
                 captureState,
-                ref projectionInput, ref budget, destination);
+                projectionInput, ref budget, destination);
             match = new Pcre2BacktrackingMatch(
                 true,
                 reportedStartOffsetInBytes,
@@ -1590,7 +1590,7 @@ internal static class Pcre2BacktrackingRunner
         Pcre2BacktrackingProgram assertionProgram,
         Pcre2AssertionKind assertionKind,
         ReadOnlySpan<byte> input,
-        ref Utf8ValidatedInput projectionInput,
+        ReadOnlySpan<byte> projectionInput,
         int inputIndex,
         int outerFirstMatchingPosition,
         Pcre2MatchOptions outerMatchOptions,
@@ -1625,7 +1625,7 @@ internal static class Pcre2BacktrackingRunner
             var matched = TryMatchAt(
                 assertionProgram,
                 input,
-                ref projectionInput,
+                projectionInput,
                 inputIndex,
                 outerFirstMatchingPosition,
                 nestedOptions,
@@ -1663,7 +1663,7 @@ internal static class Pcre2BacktrackingRunner
             if (TryMatchAt(
                     assertionProgram,
                     input[..inputIndex],
-                    ref projectionInput,
+                    projectionInput,
                     candidate,
                     outerFirstMatchingPosition,
                     nestedOptions,
@@ -2419,12 +2419,12 @@ internal static class Pcre2BacktrackingRunner
         int matchStart,
         int matchEnd,
         ReadOnlySpan<Pcre2CaptureState> captureState,
-        ref Utf8ValidatedInput input, ref Pcre2ResourceBudget budget,
+        ReadOnlySpan<byte> input, ref Pcre2ResourceBudget budget,
         scoped Span<Utf8Pcre2CaptureRange> destination = default)
     {
         if (materialization == Pcre2CaptureMaterialization.ByteFinalSlots && !destination.IsEmpty)
         {
-            WriteByteGroups(destination, matchStart, matchEnd, new(captureState), input.Bytes, ref budget);
+            WriteByteGroups(destination, matchStart, matchEnd, new(captureState), input, ref budget);
             return default;
         }
         return materialization switch
@@ -2439,10 +2439,10 @@ internal static class Pcre2BacktrackingRunner
                         matchStart,
                         matchEnd,
                         new(captureState),
-                        ref input, ref budget)),
+                        input, ref budget)),
             Pcre2CaptureMaterialization.ByteFinalSlots =>
                 Pcre2BacktrackingCaptureResult.FromByteGroups(MaterializeByteGroups(captureSlotCount,
-                    matchStart, matchEnd, new(captureState), input.Bytes, ref budget)),
+                    matchStart, matchEnd, new(captureState), input, ref budget)),
             _ => default,
         };
     }

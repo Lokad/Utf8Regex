@@ -15,7 +15,7 @@ public sealed partial class Utf8Regex
         try
         {
             Utf8SliceBufferWork.Checkpoint(ref invocation);
-            if (!Utf8ValidatedInput.IsScalarBoundary(input, startOffsetInBytes))
+            if (!Utf8BytePosition.IsScalarBoundary(input, startOffsetInBytes))
                 throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
             Utf8OperationMatchCursor cursor;
             var anchored = false;

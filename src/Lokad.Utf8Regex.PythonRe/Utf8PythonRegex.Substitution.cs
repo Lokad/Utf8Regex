@@ -214,7 +214,7 @@ public sealed partial class Utf8PythonRegex
     {
         retained = null;
         using var programUse = EnterProgramUse();
-        Utf8ValidatedInput.GetBytePosition(input, startOffsetInBytes, nameof(startOffsetInBytes));
+        Utf8BytePosition.CreateScalarChecked(input, startOffsetInBytes, nameof(startOffsetInBytes));
         var invocation = CreateInvocation(cancellationToken);
         var scalarPlan = GetReplacementPlan(input, replacement, ref invocation, cancellationToken, out var memoryUse);
         using var planUse = memoryUse;

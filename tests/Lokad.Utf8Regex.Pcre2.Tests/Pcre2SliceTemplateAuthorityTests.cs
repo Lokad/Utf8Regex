@@ -100,7 +100,7 @@ public sealed class Pcre2SliceTemplateAuthorityTests
         });
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
         var input = Encoding.UTF8.GetBytes(match ? "é😀" : "zzz");
-        var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, Utf8ValidatedInput.BorrowBytes(input),
+        var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, input,
             new Utf8BytePosition(0), regex.DebugCompiledProgram.Request, CancellationToken.None);
         Assert.Equal(match, cursor.MoveNext());
         ticks = 15;

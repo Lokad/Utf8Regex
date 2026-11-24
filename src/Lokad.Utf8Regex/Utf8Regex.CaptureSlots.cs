@@ -44,10 +44,10 @@ public sealed partial class Utf8Regex
         {
             Utf8SliceBufferWork.Checkpoint(ref invocation);
             var end = endOffsetInBytes ?? input.Length;
-            if (!Utf8ValidatedInput.IsScalarBoundary(input, end))
+            if (!Utf8BytePosition.IsScalarBoundary(input, end))
                 throw new ArgumentOutOfRangeException(nameof(endOffsetInBytes));
             var subject = input[..end];
-            if (!Utf8ValidatedInput.IsScalarBoundary(subject, startOffsetInBytes))
+            if (!Utf8BytePosition.IsScalarBoundary(subject, startOffsetInBytes))
                 throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
             var program = _ownedSliceProgram;
             invocation.AnchorOriginByte = startOffsetInBytes;

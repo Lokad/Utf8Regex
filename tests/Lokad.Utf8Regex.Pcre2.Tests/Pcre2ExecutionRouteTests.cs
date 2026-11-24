@@ -225,9 +225,9 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
 
         var compiled = regex.DebugCompiledProgram;
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Enumerate).Program;
-        var subject = Utf8ValidatedInput.BorrowBytes(input);
+        ReadOnlySpan<byte> subject = input;
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
-            subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
+            subject, Utf8BytePosition.CreateScalarChecked(subject, 0, "startOffsetInBytes"), Pcre2MatchOptions.None,
             compiled.Request, collectDiagnostics: true);
         var count = 0;
         while (cursor.MoveNext()) count = checked(count + 1);

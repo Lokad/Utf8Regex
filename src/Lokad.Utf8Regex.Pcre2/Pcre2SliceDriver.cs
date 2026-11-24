@@ -16,7 +16,7 @@ namespace Lokad.Utf8Regex.Pcre2;
 internal ref struct Pcre2SliceGlobalMatchCursor
 {
     private readonly Utf8SliceProgram _program;
-    private Utf8ValidatedInput _input;
+    private ReadOnlySpan<byte> _input;
     private readonly Pcre2CompileRequest _request;
     private Utf8SliceInvocation _invocation;
     private int _position;
@@ -27,7 +27,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 
     internal Pcre2SliceGlobalMatchCursor(
         Utf8SliceProgram program,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
         CancellationToken cancellationToken)
@@ -40,7 +40,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
     internal Pcre2SliceGlobalMatchCursor(
         Utf8SliceProgram program,
         Utf8SliceInvocation invocation,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
         byte? leadingAsciiByte = null,
@@ -53,7 +53,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         _invocation = invocation;
         _position = start.Value;
         var minimum = program.CanMatchEmpty ? 0 : Math.Max(minimumByteLength, leadingAsciiByte.HasValue ? 1 : 0);
-        _lastStart = input.ByteLength - minimum;
+        _lastStart = input.Length - minimum;
         _retryPending = false;
         _leadingAsciiByte = leadingAsciiByte;
         _disjointClassDelimiter = disjointClassDelimiter;
@@ -123,7 +123,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         // The public enumerator retains this byte/status snapshot for Current;
         // publication does not scan text or maintain coordinate state.
         return Pcre2MatchPublication.Publish(Current.StartOffsetInBytes,
-            Current.EndOffsetInBytes, ref _input, new Pcre2ResultControl(ref _invocation));
+            Current.EndOffsetInBytes, _input, new Pcre2ResultControl(ref _invocation));
     }
 
     private bool MoveNextCore(Utf8SliceSlots slots, scoped ref Utf8SliceRunner.AttemptWorkspace workspace)
@@ -132,7 +132,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         _invocation.AnchorOriginByte = _position;
         try
         {
-            var bytes = _input.Bytes;
+            var bytes = _input;
             if (_retryPending)
             {
                 _retryPending = false;
@@ -149,7 +149,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
                 }
 
                 if (!Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
-                        ref _input, _request, Pcre2MatchOptions.None, new Utf8BytePosition(_position), out var advanced))
+                        _input, _request, Pcre2MatchOptions.None, new Utf8BytePosition(_position), out var advanced))
                 {
                     _position = -1;
                     return false;
@@ -350,7 +350,7 @@ internal static class Pcre2SliceDriver
     internal static int Count(
         Pcre2SliceDirectProgram slice,
         in Pcre2CandidateSearchProgram candidates,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
         scoped ref Utf8SliceInvocation invocation)
@@ -359,8 +359,8 @@ internal static class Pcre2SliceDriver
         // The shared Count loop already skips impossible capture-first
         // candidates without paying for the explicit delimiter rewind.
         if (candidates.Kind == Pcre2CandidateSearchKind.LeadingRunThenLiteral &&
-            slice.DisjointClassDelimiter >= 0 && input.ByteLength - start.Value - slice.Fallback.MinimumByteLength >= 64)
-            return CountWithDelimiterWindows(slice, input.Bytes, start.Value, ref invocation);
+            slice.DisjointClassDelimiter >= 0 && input.Length - start.Value - slice.Fallback.MinimumByteLength >= 64)
+            return CountWithDelimiterWindows(slice, input, start.Value, ref invocation);
 
         // A non-empty program needs no PCRE2 empty retry. Keep admitted scratch
         // across matches instead of renting/releasing it on every MoveNext.
@@ -368,7 +368,7 @@ internal static class Pcre2SliceDriver
         {
             ref readonly var branchPrefixes = ref (candidates.Kind == Pcre2CandidateSearchKind.BranchLeadingLiterals
                 ? ref candidates.Searcher : ref s_emptyCountBranchPrefixes);
-            return CountNonEmpty(program, in s_emptyCountSearchPlan, ref input, start, ref invocation, in branchPrefixes);
+            return CountNonEmpty(program, in s_emptyCountSearchPlan, input, start, ref invocation, in branchPrefixes);
         }
 
         var cursor = new Pcre2SliceGlobalMatchCursor(
@@ -432,7 +432,7 @@ internal static class Pcre2SliceDriver
     internal static int CountNonEmpty(
         Utf8SliceProgram program,
         in Utf8SearchPlan searchPlan,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         scoped ref Utf8SliceInvocation invocation,
         in PreparedSearcher branchPrefixes = default)
@@ -442,7 +442,7 @@ internal static class Pcre2SliceDriver
         var slots = program.ReadsCaptures ? RentProgramSlots(program, ref invocation) : Utf8SliceSlots.Empty;
         try
         {
-            var outcome = Utf8SliceRunner.CountFromBytes(program, input.Bytes, start.Value,
+            var outcome = Utf8SliceRunner.CountFromBytes(program, input, start.Value,
                 slots.Starts, slots.Ends, ref invocation, searchPlan, branchPrefixes);
             ThrowIfSliceBreached(outcome.Breach);
             return outcome.Count;
@@ -468,7 +468,7 @@ internal static class Pcre2SliceDriver
 
     internal static bool TryMatchDetailed(
         Pcre2SliceDirectProgram slice, in Pcre2CandidateSearchProgram candidateSearch,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         scoped ref Utf8SliceInvocation invocation,
         out Pcre2GroupData[] groups,
@@ -481,7 +481,7 @@ internal static class Pcre2SliceDriver
         mark = null;
         try
         {
-            var bytes = input.Bytes;
+            var bytes = input;
             invocation.AnchorOriginByte = start.Value;
             if (RejectMissingCandidate(program, candidateSearch, bytes, start.Value, ref invocation, out var firstAsciiStart))
                 return true;

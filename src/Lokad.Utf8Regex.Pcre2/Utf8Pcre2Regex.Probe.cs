@@ -9,7 +9,7 @@ public sealed partial class Utf8Pcre2Regex
 {
     private ref struct Pcre2PartialProbeRunner
 {
-    private Utf8ValidatedInput _input;
+    private ReadOnlySpan<byte> _input;
     private Pcre2ResourceBudget _budget;
     private readonly Pcre2BacktrackingProgram? _captureProgram;
     private readonly bool _anchored;
@@ -20,7 +20,7 @@ public sealed partial class Utf8Pcre2Regex
     private int _candidateScan;
     private int _candidateLimit;
 
-    internal Pcre2PartialProbeRunner(Utf8ValidatedInput input, Pcre2CompiledProgram program,
+    internal Pcre2PartialProbeRunner(ReadOnlySpan<byte> input, Pcre2CompiledProgram program,
         Pcre2MatchOptions matchOptions, Pcre2ResourceBudget budget)
     {
         _input = input;
@@ -39,7 +39,7 @@ public sealed partial class Utf8Pcre2Regex
         };
         _originalStart = 0;
         _candidateScan = 0;
-        _candidateLimit = input.Bytes.Length;
+        _candidateLimit = input.Length;
     }
 
     internal Utf8Pcre2ProbeResult Probe(
@@ -48,7 +48,7 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2CompiledProgram compiled, Pcre2MatchOptions matchOptions)
     {
         var program = compiled.PartialProbe;
-        var input = _input.Bytes;
+        var input = _input;
         _originalStart = startOffsetInBytes;
         _candidateScan = startOffsetInBytes;
         try
@@ -93,7 +93,7 @@ public sealed partial class Utf8Pcre2Regex
                 // when an earlier line's body failed. Keep the original subject
                 // and first-position authority for every attempt.
                 if (_anchored || !canRetry || !Pcre2CharacterRunner.TryAdvanceCandidate(compiled.Request,
-                    null, ref _input, startOffsetInBytes, allowAcceleration: false, out var next))
+                    null, _input, startOffsetInBytes, allowAcceleration: false, out var next))
                     return NoMatch();
                 _budget.ChargeWorkspaceStep();
                 startOffsetInBytes = next;
@@ -407,7 +407,7 @@ public sealed partial class Utf8Pcre2Regex
             if (hasMinimum && end > 0 && input[end - 1] is (byte)'b' or (byte)'c' &&
                 (end > candidate || AllowsEmptyFull(candidate)))
                 return Full([Project(0, candidate, end)]);
-            if (_anchored || !_input.TryAdvanceScalar(new Utf8BytePosition(candidate), out var next)) return NoMatch();
+            if (_anchored || !new Utf8BytePosition(candidate).TryAdvanceScalar(_input, out var next)) return NoMatch();
             candidate = next.Value;
         }
         return NoMatch();
@@ -434,7 +434,7 @@ public sealed partial class Utf8Pcre2Regex
                     return Partial(Project(0, candidate, end));
                 if (end > candidate || AllowsEmptyFull(candidate)) return Full([Project(0, candidate, end)]);
             }
-            if (_anchored || !_input.TryAdvanceScalar(new Utf8BytePosition(candidate), out var next)) return NoMatch();
+            if (_anchored || !new Utf8BytePosition(candidate).TryAdvanceScalar(_input, out var next)) return NoMatch();
             candidate = next.Value;
         }
         return NoMatch();
@@ -727,7 +727,7 @@ public sealed partial class Utf8Pcre2Regex
             {
                 candidate += width;
             }
-            else if (_input.TryAdvanceScalar(new Utf8BytePosition(candidate), out var nextCandidate)) candidate = nextCandidate.Value;
+            else if (new Utf8BytePosition(candidate).TryAdvanceScalar(_input, out var nextCandidate)) candidate = nextCandidate.Value;
             else break;
         }
         return NoMatch();
@@ -776,7 +776,7 @@ public sealed partial class Utf8Pcre2Regex
                 var result = ProbeTrailingAssertion(input, partialMode, start, start + literal.Length, lastToken, compiled.Request);
                 if (result.Kind != Utf8Pcre2ProbeKind.NoMatch) return result;
             }
-            if (_anchored || intrinsic || !_input.TryAdvanceScalar(new Utf8BytePosition(start), out var next)) return NoMatch();
+            if (_anchored || intrinsic || !new Utf8BytePosition(start).TryAdvanceScalar(_input, out var next)) return NoMatch();
             search = next.Value;
         }
         return NoMatch();
@@ -890,7 +890,7 @@ public sealed partial class Utf8Pcre2Regex
 
     private Pcre2GroupData Project(int number, int start, int end)
     {
-        var group = Pcre2MatchPublication.Publish(start, end, ref _input, ref _budget);
+        var group = Pcre2MatchPublication.Publish(start, end, _input, ref _budget);
         return group with { Number = number };
     }
 
@@ -902,7 +902,7 @@ public sealed partial class Utf8Pcre2Regex
             // admitted native program at that start to obtain final captures,
             // preserving the original \G position and invocation allowance.
             var value = groups[0];
-            var detailed = Pcre2BacktrackingRunner.MatchDetailed(captureProgram, default, ref _input,
+            var detailed = Pcre2BacktrackingRunner.MatchDetailed(captureProgram, default, _input,
                 new Utf8BytePosition(value.StartOffsetInBytes), new Utf8BytePosition(_originalStart),
                 Pcre2MatchOptions.Anchored | _matchOptions, ref _budget);
             try
@@ -911,7 +911,7 @@ public sealed partial class Utf8Pcre2Regex
                     detailed.EndOffsetInBytes != value.EndOffsetInBytes)
                     throw new InvalidOperationException("The full probe range disagrees with its admitted capture program.");
                 _budget.CheckDeadline();
-                return Utf8Pcre2ProbeResult.CreateFullMatch(_input.Bytes,
+                return Utf8Pcre2ProbeResult.CreateFullMatch(_input,
                     detailed.CaptureResult.ProjectedGroups, detailed.Mark);
             }
             finally { detailed.CaptureResult.DetachProjectedWorking(ref _budget); }
@@ -923,7 +923,7 @@ public sealed partial class Utf8Pcre2Regex
         {
             var owned = groups.ToArray();
             _budget.CheckDeadline();
-            return Utf8Pcre2ProbeResult.CreateFullMatch(_input.Bytes, owned);
+            return Utf8Pcre2ProbeResult.CreateFullMatch(_input, owned);
         }
         finally { _budget.ReleaseWorking(bytes); }
     }
@@ -931,13 +931,13 @@ public sealed partial class Utf8Pcre2Regex
     private Utf8Pcre2ProbeResult Partial(Pcre2GroupData group)
     {
         _budget.CheckDeadline();
-        return Utf8Pcre2ProbeResult.CreatePartial(_input.Bytes, group);
+        return Utf8Pcre2ProbeResult.CreatePartial(_input, group);
     }
 
     private Utf8Pcre2ProbeResult NoMatch()
     {
         _budget.CheckDeadline();
-        return Utf8Pcre2ProbeResult.CreateNoMatch(_input.Bytes);
+        return Utf8Pcre2ProbeResult.CreateNoMatch(_input);
     }
 
     private bool CanStartCandidate(int start) => !_firstLine || IsFirstLineCandidate(start);
@@ -952,7 +952,7 @@ public sealed partial class Utf8Pcre2Regex
         while (_candidateScan < start)
         {
             _budget.ChargeWorkspaceStep();
-            if (!Pcre2CharacterRunner.TryAdvanceCandidate(_compiled.Request, null, ref _input,
+            if (!Pcre2CharacterRunner.TryAdvanceCandidate(_compiled.Request, null, _input,
                 _candidateScan, allowAcceleration: false, out var next))
             {
                 _candidateLimit = _candidateScan;

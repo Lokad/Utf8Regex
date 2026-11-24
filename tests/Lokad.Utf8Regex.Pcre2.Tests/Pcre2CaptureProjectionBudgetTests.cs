@@ -31,20 +31,20 @@ public sealed class Pcre2ResultControlTests
         {
             var budget = Budget(7 + groupBytes - (allow || groupBytes == 0 ? 0UL : 1UL));
             budget.ReserveWorking(7);
-            var input = Utf8ValidatedInput.BorrowBytes("x😀é"u8);
+            ReadOnlySpan<byte> input = "x😀é"u8;
             Pcre2GroupData[]? groups = null;
             try
             {
                 if (!allow && groupBytes > 0)
                 {
-                    try { groups = Pcre2Runner.PublishCaptures(slots, 1, 7, new(starts, ends), ref input, ref budget); Assert.Fail("Expected physical aggregate denial."); }
+                    try { groups = Pcre2Runner.PublishCaptures(slots, 1, 7, new(starts, ends), input, ref budget); Assert.Fail("Expected physical aggregate denial."); }
                     catch (Pcre2MatchException failure) { Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind); }
                     Assert.Null(groups);
                     Assert.Equal(7UL, budget.ReservedWorkingBytes);
                 }
                 else
                 {
-                    groups = Pcre2Runner.PublishCaptures(slots, 1, 7, new(starts, ends), ref input, ref budget);
+                    groups = Pcre2Runner.PublishCaptures(slots, 1, 7, new(starts, ends), input, ref budget);
                     Assert.Equal(slots, groups.Length);
                     Assert.Equal(7 + groupBytes, budget.HeapBytes);
                     Assert.Equal(7 + groupBytes, budget.ReservedWorkingBytes);
@@ -72,12 +72,12 @@ public sealed class Pcre2ResultControlTests
         {
             var budget = Budget(1UL << 20, limit);
             budget.ReserveWorking(7);
-            var input = Utf8ValidatedInput.BorrowBytes(subject);
+            ReadOnlySpan<byte> input = subject;
             try
             {
                 try
                 {
-                    var groups = Pcre2Runner.PublishCaptures(slots, 0, subject.Length, new(starts, ends), ref input, ref budget);
+                    var groups = Pcre2Runner.PublishCaptures(slots, 0, subject.Length, new(starts, ends), input, ref budget);
                     Pcre2BacktrackingCaptureResult.FromProjectedGroups(groups).DetachProjectedWorking(ref budget);
                     completed = true;
                 }
@@ -107,9 +107,9 @@ public sealed class Pcre2ResultControlTests
         var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         var budget = Budget(1UL << 20);
         budget.ReserveWorking(7);
-        var input = Utf8ValidatedInput.BorrowBytes(Encoding.UTF8.GetBytes(subject));
+        ReadOnlySpan<byte> input = Encoding.UTF8.GetBytes(subject);
         var match = Pcre2BacktrackingRunner.Match(direct.Program, regex.DebugCompiledProgram.CandidateSearch,
-            ref input, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget, out _);
+            input, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget, out _);
         Assert.Equal(expected, match.Success);
         Assert.Equal(7UL, budget.ReservedWorkingBytes);
         budget.ReleaseWorking(7);
@@ -128,13 +128,13 @@ public sealed class Pcre2ResultControlTests
         {
             var budget = Budget(1UL << 20, limit);
             budget.ReserveWorking(7);
-            var input = Utf8ValidatedInput.BorrowBytes("a"u8);
+            ReadOnlySpan<byte> input = "a"u8;
             try
             {
                 try
                 {
                     var match = Pcre2BacktrackingRunner.Match(direct.Program, regex.DebugCompiledProgram.CandidateSearch,
-                        ref input, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget, out _);
+                        input, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget, out _);
                     Assert.True(match.Success);
                     completed = true;
                 }
@@ -154,9 +154,9 @@ public sealed class Pcre2ResultControlTests
         var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         var budget = Budget(1UL << 20);
         budget.ReserveWorking(7);
-        var input = Utf8ValidatedInput.BorrowBytes("😀😀"u8);
+        ReadOnlySpan<byte> input = "😀😀"u8;
         var match = Pcre2BacktrackingRunner.MatchDetailed(direct.Program, regex.DebugCompiledProgram.CandidateSearch,
-            ref input, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget);
+            input, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget);
         Assert.True(match.Success);
         var groups = match.CaptureResult.ProjectedGroups;
         Assert.Equal(7 + Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(groups.Length), budget.ReservedWorkingBytes);
@@ -171,11 +171,11 @@ public sealed class Pcre2ResultControlTests
     public void ProjectionWindowsCrossSupplementaryScalarsAtCompleteBoundaries()
     {
         var subject = Encoding.UTF8.GetBytes("a" + string.Concat(Enumerable.Repeat("😀", 3000)) + "é");
-        var input = Utf8ValidatedInput.BorrowBytes(subject);
+        ReadOnlySpan<byte> input = subject;
         var budget = Budget(1UL << 20);
         int[] starts = [0, 1];
         int[] ends = [subject.Length, subject.Length - 2];
-        var groups = Pcre2Runner.PublishCaptures(2, 0, subject.Length, new(starts, ends), ref input, ref budget);
+        var groups = Pcre2Runner.PublishCaptures(2, 0, subject.Length, new(starts, ends), input, ref budget);
         Assert.Equal((0,subject.Length),(groups[0].StartOffsetInBytes,groups[0].EndOffsetInBytes));
         Assert.Equal((1,subject.Length - 2),(groups[1].StartOffsetInBytes,groups[1].EndOffsetInBytes));
         Pcre2BacktrackingCaptureResult.FromProjectedGroups(groups).DetachProjectedWorking(ref budget);
@@ -189,7 +189,7 @@ public sealed class Pcre2ResultControlTests
         var compiled = regex.DebugCompiledProgram;
         var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Match);
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(direct.Program,
-            new Pcre2CandidateSearchPlan(compiled.CandidateSearch), Utf8ValidatedInput.BorrowBytes("aa"u8),
+            new Pcre2CandidateSearchPlan(compiled.CandidateSearch), "aa"u8,
             new Utf8BytePosition(0), Pcre2MatchOptions.None, compiled.Request);
         Assert.True(cursor.MoveNext());
         var first = cursor.ProjectCurrentCaptures();

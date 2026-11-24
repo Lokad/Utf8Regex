@@ -152,7 +152,7 @@ public sealed class Utf8ValidationTests
     }
 
     [Fact]
-    public void ValidatedInputRejectsEveryContinuationByteAsAStart()
+    public void ScalarStartRejectsEveryContinuationByte()
     {
         var input = "aé€😀z"u8.ToArray();
 
@@ -173,10 +173,9 @@ public sealed class Utf8ValidationTests
     [InlineData("é€😀")]
     [InlineData("\U00010000\U0010ffff")]
     [InlineData("e\u0301👩‍💻")]
-    public void ValidatedInputAdvancesAndRetreatsByScalar(string text)
+    public void BytePositionAdvancesByScalar(string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        var subject = Utf8ValidatedInput.BorrowBytes(input);
         var boundaries = new List<(int Bytes, int Utf16)> { (0, 0) };
         foreach (var scalar in text.EnumerateRunes())
         {
@@ -185,22 +184,21 @@ public sealed class Utf8ValidationTests
         }
         Assert.Equal((input.Length, text.Length), boundaries[^1]);
 
-        var position = subject.GetBytePosition(0, "position");
+        var position = Utf8BytePosition.CreateScalarChecked(input, 0, "position");
         for (var index = 0; index < boundaries.Count; index++)
         {
             Assert.Equal(boundaries[index].Bytes, position.Value);
             if (index == boundaries.Count - 1) break;
-            Assert.True(subject.TryAdvanceScalar(position, out var next));
+            Assert.True(position.TryAdvanceScalar(input, out var next));
             Assert.True(next.Value > position.Value);
             position = next;
         }
-        Assert.False(subject.TryAdvanceScalar(position, out _));
+        Assert.False(position.TryAdvanceScalar(input, out _));
     }
 
     private static void ValidateBytePosition(byte[] input, int offset)
     {
-        var subject = Utf8ValidatedInput.BorrowBytes(input);
-        _ = subject.GetBytePosition(offset, "startOffsetInBytes");
+        _ = Utf8BytePosition.CreateScalarChecked(input, offset, "startOffsetInBytes");
     }
 
     [Fact]

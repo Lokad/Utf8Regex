@@ -83,12 +83,13 @@ public sealed class Pcre2BacktrackingCountFramesTests
         });
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 100)));
         var invocation = Pcre2SliceDriver.CreateExclusiveInvocation(regex.DebugCompiledProgram.Request, default);
-        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation, out _);
+        Pcre2Runner.AdmitStart(bytes, 0, ref invocation);
+        ReadOnlySpan<byte> input = bytes;
         var validated = invocation.Budget.Steps;
         Exception? failure = null;
         try
         {
-            Assert.True(Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
+            Assert.True(Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, input,
                 new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
             Assert.Equal(100, count);
         }
@@ -125,13 +126,14 @@ public sealed class Pcre2BacktrackingCountFramesTests
         var retained = regex.Match(retained1Input, captures: retained1Captures);
         var invocation = Pcre2SliceDriver.CreateExclusiveInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 3000)));
-        var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation, out _);
+        Pcre2Runner.AdmitStart(bytes, 0, ref invocation);
+        ReadOnlySpan<byte> input = bytes;
         var validated = invocation.Budget.Steps;
         armed = true;
         Exception? failure = null;
         try
         {
-            Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
+            Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, input,
                 new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _);
         }
         catch (Exception error) { failure = error; }

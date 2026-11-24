@@ -335,22 +335,22 @@ internal static class Pcre2LiteralRunner
 
     internal static Pcre2LiteralMatch Match(
         Pcre2LiteralProgram program,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition requestedStart,
         Pcre2MatchOptions matchOptions,
         ref Pcre2ResourceBudget budget)
     {
         if (budget.IsUnmetered)
-            return MatchCore(program, ref input, requestedStart, matchOptions, ref budget);
+            return MatchCore(program, input, requestedStart, matchOptions, ref budget);
         budget.CheckDeadline();
-        var result = MatchCore(program, ref input, requestedStart, matchOptions, ref budget);
+        var result = MatchCore(program, input, requestedStart, matchOptions, ref budget);
         budget.CheckDeadline();
         return result;
     }
 
     private static Pcre2LiteralMatch MatchCore(
         Pcre2LiteralProgram program,
-        ref Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition requestedStart,
         Pcre2MatchOptions matchOptions,
         ref Pcre2ResourceBudget budget)
@@ -367,7 +367,7 @@ internal static class Pcre2LiteralRunner
         if (startAnchor == Pcre2LiteralAnchor.AbsoluteStart)
         {
             budget.ChargeCandidate();
-            return requestedStart.Value == 0 && MatchesAt(program, input.Bytes, 0, endAnchored) &&
+            return requestedStart.Value == 0 && MatchesAt(program, input, 0, endAnchored) &&
                    !RejectsEmptyAtRequestedStart(literal, matchOptions)
                 ? Pcre2LiteralMatch.Create(0, literal.Length)
                 : Pcre2LiteralMatch.NoMatch;
@@ -376,7 +376,7 @@ internal static class Pcre2LiteralRunner
         if (startAnchor == Pcre2LiteralAnchor.RequestedStart)
         {
             budget.ChargeCandidate();
-            return MatchesAt(program, input.Bytes, requestedStart.Value, endAnchored) &&
+            return MatchesAt(program, input, requestedStart.Value, endAnchored) &&
                    !RejectsEmptyAtRequestedStart(literal, matchOptions)
                 ? Pcre2LiteralMatch.Create(requestedStart.Value, literal.Length)
                 : Pcre2LiteralMatch.NoMatch;
@@ -385,9 +385,9 @@ internal static class Pcre2LiteralRunner
         if (endAnchored)
         {
             budget.ChargeCandidate();
-            var candidate = input.ByteLength - literal.Length;
+            var candidate = input.Length - literal.Length;
             return candidate >= requestedStart.Value &&
-                   MatchesAt(program, input.Bytes, candidate, endAnchored: true) &&
+                   MatchesAt(program, input, candidate, endAnchored: true) &&
                    !(candidate == requestedStart.Value && RejectsEmptyAtRequestedStart(literal, matchOptions))
                 ? Pcre2LiteralMatch.Create(candidate, literal.Length)
                 : Pcre2LiteralMatch.NoMatch;
@@ -396,7 +396,7 @@ internal static class Pcre2LiteralRunner
         var searchStart = requestedStart;
         if (RejectsEmptyAtRequestedStart(literal, matchOptions))
         {
-            if (!input.TryAdvanceScalar(requestedStart, out searchStart))
+            if (!requestedStart.TryAdvanceScalar(input, out searchStart))
             {
                 return Pcre2LiteralMatch.NoMatch;
             }
@@ -408,7 +408,7 @@ internal static class Pcre2LiteralRunner
             return Pcre2LiteralMatch.Create(searchStart.Value, 0);
         }
 
-        var relative = IndexOfLiteral(program, input.Bytes[searchStart.Value..], ref budget);
+        var relative = IndexOfLiteral(program, input[searchStart.Value..], ref budget);
         return relative >= 0
             ? Pcre2LiteralMatch.Create(searchStart.Value + relative, literal.Length)
             : Pcre2LiteralMatch.NoMatch;
@@ -481,9 +481,8 @@ internal static class Pcre2LiteralRunner
 internal static class Pcre2LiteralProbeRunner
 {
     internal static Utf8Pcre2ProbeResult Probe(
-        ReadOnlySpan<byte> subject,
         Pcre2LiteralProgram program,
-        Utf8ValidatedInput input,
+        ReadOnlySpan<byte> input,
         Utf8BytePosition requestedStart,
         Pcre2PartialMode partialMode,
         Pcre2MatchOptions matchOptions,
@@ -491,15 +490,15 @@ internal static class Pcre2LiteralProbeRunner
     {
         try
         {
-            var fullMatch = Pcre2LiteralRunner.Match(program, ref input, requestedStart, matchOptions, ref budget);
+            var fullMatch = Pcre2LiteralRunner.Match(program, input, requestedStart, matchOptions, ref budget);
             if (fullMatch.Success)
             {
-                var projected = Project(ref input, fullMatch.StartOffsetInBytes, fullMatch.EndOffsetInBytes, ref budget);
+                var projected = Project(input, fullMatch.StartOffsetInBytes, fullMatch.EndOffsetInBytes, ref budget);
                 if (partialMode == Pcre2PartialMode.Hard && program.HasExplicitEndAssertion &&
-                    fullMatch.EndOffsetInBytes == input.ByteLength)
+                    fullMatch.EndOffsetInBytes == input.Length)
                 {
                     budget.CheckDeadline();
-                    return Utf8Pcre2ProbeResult.CreatePartial(subject, projected);
+                    return Utf8Pcre2ProbeResult.CreatePartial(input, projected);
                 }
 
                 var bytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
@@ -509,7 +508,7 @@ internal static class Pcre2LiteralProbeRunner
                 {
                     var groups = new[] { projected };
                     budget.CheckDeadline();
-                    return Utf8Pcre2ProbeResult.CreateFullMatch(subject, groups);
+                    return Utf8Pcre2ProbeResult.CreateFullMatch(input, groups);
                 }
                 finally { budget.ReleaseWorking(bytes); }
             }
@@ -521,38 +520,38 @@ internal static class Pcre2LiteralProbeRunner
                 // requested/absolute anchors cannot move to a different start.
                 if (partialMode != Pcre2PartialMode.None && program.LiteralUtf8.IsEmpty &&
                     program.HasExplicitEndAssertion &&
-                    (!IsEffectivelyAnchored(program, matchOptions) || requestedStart.Value == input.ByteLength) &&
+                    (!IsEffectivelyAnchored(program, matchOptions) || requestedStart.Value == input.Length) &&
                     (program.StartAnchor != Pcre2LiteralAnchor.AbsoluteStart || requestedStart.Value == 0))
                 {
                     budget.ChargeCandidate();
-                    var projected = Project(ref input, input.ByteLength, input.ByteLength, ref budget);
+                    var projected = Project(input, input.Length, input.Length, ref budget);
                     budget.CheckDeadline();
-                    return Utf8Pcre2ProbeResult.CreatePartial(subject, projected);
+                    return Utf8Pcre2ProbeResult.CreatePartial(input, projected);
                 }
                 budget.CheckDeadline();
-                return Utf8Pcre2ProbeResult.CreateNoMatch(subject);
+                return Utf8Pcre2ProbeResult.CreateNoMatch(input);
             }
 
             var literal = program.LiteralUtf8;
-            var candidate = GetFirstPartialCandidate(program, input.Bytes, requestedStart, matchOptions);
-            while (candidate >= 0 && candidate < input.ByteLength)
+            var candidate = GetFirstPartialCandidate(program, input, requestedStart, matchOptions);
+            while (candidate >= 0 && candidate < input.Length)
             {
                 budget.ChargeCandidate();
-                var suffix = input.Bytes[candidate..];
+                var suffix = input[candidate..];
                 if (suffix.Length < literal.Length && literal.StartsWith(suffix))
                 {
-                    var projected = Project(ref input, candidate, input.ByteLength, ref budget);
+                    var projected = Project(input, candidate, input.Length, ref budget);
                     budget.CheckDeadline();
-                    return Utf8Pcre2ProbeResult.CreatePartial(subject, projected);
+                    return Utf8Pcre2ProbeResult.CreatePartial(input, projected);
                 }
 
                 if (IsEffectivelyAnchored(program, matchOptions) ||
-                    !input.TryAdvanceScalar(new Utf8BytePosition(candidate), out var next)) break;
+                    !new Utf8BytePosition(candidate).TryAdvanceScalar(input, out var next)) break;
                 candidate = next.Value;
             }
 
             budget.CheckDeadline();
-            return Utf8Pcre2ProbeResult.CreateNoMatch(subject);
+            return Utf8Pcre2ProbeResult.CreateNoMatch(input);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -590,10 +589,10 @@ internal static class Pcre2LiteralProbeRunner
             (matchOptions & Pcre2MatchOptions.Anchored) != 0;
 
     private static Pcre2GroupData Project(
-        ref Utf8ValidatedInput input, int startOffsetInBytes, int endOffsetInBytes,
+        ReadOnlySpan<byte> input, int startOffsetInBytes, int endOffsetInBytes,
         ref Pcre2ResourceBudget budget)
     {
         return Pcre2MatchPublication.Publish(startOffsetInBytes, endOffsetInBytes,
-            ref input, ref budget);
+            input, ref budget);
     }
 }
