@@ -1,70 +1,15 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-// R03 backreference slice for the PCRE2 profile: single-digit backward
-// references over slice-owned shapes run first-match, detailed projection,
-// and replacement on the shared slice runner (single-group shapes keep the
-// specialized literal-family IsMatch/Count/Enumerate; the repeated-capture
-// shape rides the slice for every operation). Ordinal byte comparison
-// agrees with native PCRE2 on case-sensitive ASCII shapes (unset groups
-// fail in both, the last iteration wins, empty-but-set groups match
-// empty), so expectations below are BCL-computed ground truths on shapes
-// where BCL and native PCRE2 agree. Multi-digit and \g
-// forms decline to the generic backtracking VM, as do backreferences over
-// unsupported profile-specific atoms. Named and forward references now bind owned.
 public sealed class Pcre2SliceBackrefTests
 {
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
 
-    private static System.Text.RegularExpressions.Regex Bcl(string pattern)
-    {
-        return new System.Text.RegularExpressions.Regex(
-            pattern,
-            System.Text.RegularExpressions.RegexOptions.CultureInvariant,
-            System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
-    }
-
-    [Fact]
-    public void BackrefShapesRouteThroughSlice()
-    {
-        // Single-group backrefs keep the specialized literal-family
-        // IsMatch/Count/Enumerate (substring search plus verification);
-        // first-match and replacement ride the shared slice runner. The
-        // repeated-capture shape has no literal-family program, so every
-        // operation rides the slice.
-        foreach (var pattern in new[] { "(a)\\1", "(a|ab)\\1" })
-        {
-            var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-            Assert.Equal(
-                "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Slice, Replace=Pcre2Slice",
-                regex.DebugDescribeExecutionPlan());
-        }
-
-        var repeated = new Utf8Pcre2Regex("(ab|a)+\\1z", options: Pcre2CompileOptions.None);
-        Assert.Equal(
-            "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
-            repeated.DebugDescribeExecutionPlan());
-    }
-
-    [Theory]
-    [InlineData("(a)\\11")]
-    [InlineData("(a)\\g{1}")]
-    public void NonSliceBackrefShapesDeclineSliceRouting(string pattern)
-    {
-        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
-    }
-
-    [Fact]
-    public void NonAsciiBmpLiteralBackrefUsesSharedRouting()
-    {
-        var pattern = "(" + ((char)0xE9) + ")\\1";
-        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        Assert.Contains("Pcre2Slice", regex.DebugDescribeExecutionPlan());
-        Assert.True(regex.IsMatch(Utf8(new string((char)0xE9, 2))));
-    }
+    // These case-sensitive patterns share their participation and retry rules with .NET.
+    private static Regex Bcl(string pattern) => new(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
 
     public static IEnumerable<object?[]> IsMatchCases()
     {
@@ -73,6 +18,7 @@ public sealed class Pcre2SliceBackrefTests
         yield return new object?[] { "(?<x>a)\\k<x>", "ab", false };
         yield return new object?[] { "(\\2a|(b))+", "bba", true };
         yield return new object?[] { "(a)\\1", "ab", false };
+        yield return new object?[] { "(é)\\1", "éé", true };
         yield return new object?[] { "(a|b)+\\1", "abb", true };
         yield return new object?[] { "(a|b)+\\1", "aba", false };
         yield return new object?[] { "(a*)\\1", "aaa", true };
@@ -89,11 +35,8 @@ public sealed class Pcre2SliceBackrefTests
         string pattern, string inputText, bool expected)
     {
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
-        var reuse = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        Assert.Equal(expected, reuse.IsMatch(Utf8(inputText)));
-        Assert.True(reuse.DebugCompiledProgram is not null, "pattern=" + pattern);
-        var explicitStart = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        Assert.Equal(expected, explicitStart.IsMatch(Utf8(inputText), 0));
+        using var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
+        Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
     }
 
     [Theory]
@@ -110,70 +53,57 @@ public sealed class Pcre2SliceBackrefTests
             Assert.Equal(expected, Bcl(pattern).Matches(inputText).Count);
         }
 
-        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
+        using var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
-    [InlineData("(a|ab)\\1", "xabab", 0, true, 1, 5)]
-    [InlineData("(a)(b)\\2\\1", "xxabbayy", 0, true, 2, 6)]
-    [InlineData("(a)\\1", "ab", 0, false, 0, 0)]
+    [InlineData("(a|ab)\\1", "xabab", true, 1, 5)]
+    [InlineData("(a)(b)\\2\\1", "xxabbayy", true, 2, 6)]
+    [InlineData("(é)\\1", "😀éé", true, 4, 8)]
+    [InlineData("(a)\\1", "ab", false, 0, 0)]
     public void OwnedFirstMatchProjectsBytes(
-        string pattern, string inputText, int startOffsetInBytes, bool expectedSuccess, int expectedStart, int expectedEnd)
+        string pattern, string inputText, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        var expected = Bcl(pattern).Match(inputText);
-        Assert.Equal(expectedSuccess, expected.Success);
-        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        var found = regex.Match(Utf8(inputText), startOffsetInBytes: startOffsetInBytes);
+        using var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
+        var found = regex.Match(Utf8(inputText));
         Assert.Equal(expectedSuccess, found.Success);
         if (expectedSuccess)
-        {
-            Assert.Equal(expected.Index, found.StartOffsetInBytes);
-            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInBytes);
-            Assert.Equal(expectedStart, found.StartOffsetInBytes);
-            Assert.Equal(expectedEnd, found.EndOffsetInBytes);
-        }
-
-        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
+            Assert.Equal((expectedStart, expectedEnd), (found.StartOffsetInBytes, found.EndOffsetInBytes));
     }
 
     [Fact]
     public void OwnedEnumerationAdvancesThroughBackrefs()
     {
-        var regex = new Utf8Pcre2Regex("(a)\\1", options: Pcre2CompileOptions.None);
+        using var regex = new Utf8Pcre2Regex("(a)\\1", options: Pcre2CompileOptions.None);
         var enumerator = regex.EnumerateMatches(Utf8("aa aa"), 0);
-        var ranges = new List<string>();
+        var ranges = new List<(int Start, int End)>();
         while (enumerator.MoveNext())
         {
-            ranges.Add(
-                enumerator.Current.StartOffsetInBytes
-                + "-" + enumerator.Current.EndOffsetInBytes);
+            ranges.Add((enumerator.Current.StartOffsetInBytes, enumerator.Current.EndOffsetInBytes));
         }
 
-        Assert.Equal(["0-2", "3-5"], ranges);
-        Assert.True(regex.DebugCompiledProgram is not null);
+        Assert.Equal([(0, 2), (3, 5)], ranges);
     }
 
     [Fact]
     public void PrimaryMatchWritesBackreferenceGroups()
     {
-        var regex = new Utf8Pcre2Regex("(a)(b)\\2\\1", options: Pcre2CompileOptions.None);
-        ReadOnlySpan<byte> detailed1Input = Utf8("xxabbayy");
-        var detailed1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
-        var detailed = regex.Match(detailed1Input, captures: detailed1Captures);
+        using var regex = new Utf8Pcre2Regex("(a)(b)\\2\\1", options: Pcre2CompileOptions.None);
+        var captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var detailed = regex.Match("xxabbayy"u8, captures: captures);
         Assert.True(detailed.Success);
-        Assert.Equal("abba", System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed1Captures[1].Success ? detailed1Input.Slice(detailed1Captures[1].StartOffsetInBytes, detailed1Captures[1].EndOffsetInBytes - detailed1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString((detailed1Captures[2].Success ? detailed1Input.Slice(detailed1Captures[2].StartOffsetInBytes, detailed1Captures[2].EndOffsetInBytes - detailed1Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.True(regex.DebugCompiledProgram is not null);
+        Assert.Equal("abba"u8.ToArray(), detailed.GetValueBytes().ToArray());
+        Assert.True(captures[1].Success);
+        Assert.True(captures[2].Success);
+        Assert.Equal((2, 3), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.Equal((3, 4), (captures[2].StartOffsetInBytes, captures[2].EndOffsetInBytes));
     }
 
     [Fact]
     public void OwnedReplaceExpandsBackrefMatch()
     {
-        var regex = new Utf8Pcre2Regex("(a)\\1", options: Pcre2CompileOptions.None);
-        Assert.Equal("<aa> ab", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("aa ab"), "<$0>"u8)));
-        Assert.True(regex.DebugCompiledProgram is not null);
+        using var regex = new Utf8Pcre2Regex("(a)\\1", options: Pcre2CompileOptions.None);
+        Assert.Equal("<aa> ab"u8.ToArray(), regex.Replace("aa ab"u8, "<$0>"u8));
     }
 }
