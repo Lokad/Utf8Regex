@@ -276,34 +276,30 @@ public sealed class Utf8ClassPrefixCandidateTests
         const int spaces = 200000;
         const string pattern = @"\p{Lu}+\s+result";
         var input = Encoding.UTF8.GetBytes("😀" + new string(' ', spaces) + "result");
-        // Search and the backwards whitespace scan finish well before this
-        // point. The tiny workspace cap prevents a failed VM attempt from
-        // satisfying this witness instead of the forward membership scan.
-        const ulong threshold = spaces + spaces / 2;
+        using var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
+        // The tiny cap rules out a VM attempt. Cancel or expire after the
+        // delimiter search and the block-charged backwards whitespace scan.
+        const ulong threshold = spaces / 2;
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
             if (steps < threshold) return;
-            entered = true;
             if (expire) ticks = 50; else token.Cancel();
         });
         try
         {
-            var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,
-                ResourcePolicy = Funded with
-                {
-                    MaxWorkingBytes = 1,
-                    MaxResultBytes = 1
-                }
-            });
             if (expire) Assert.IsType<RegexMatchTimeoutException>(Record.Exception(() => regex.Count(input, token.Token)));
             else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, token.Token)).CancellationToken);
-            Assert.True(entered);
         }
         finally { session.Complete(); }
     }
@@ -406,6 +402,25 @@ public sealed class Utf8ClassPrefixCandidateTests
                         MaxWorkSteps = 1
                     }
                 }).Count(input)).ResourceKind);
+    }
+
+    [Fact]
+    public void WhitespaceRewindCrossesBlockEdgesWithinWorkLimit()
+    {
+        const string prefix = "😀!";
+        var text = prefix + "é\u0085" + new string(' ', 2046) + "\u3000" + new string(' ', 63) + "Holmes";
+        var input = Encoding.UTF8.GetBytes(text);
+        using var regex = new Utf8Regex(@"\w+\s+Holmes", policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 256 }
+        });
+        using var token = new CancellationTokenSource();
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        using var cursor = regex.CreateMatchCursor(input, start, token.Token);
+        Assert.True(cursor.MoveNext(out var match));
+        var complete = match.GetCaptures(0)[0];
+        Assert.Equal((start, input.Length), (complete.StartOffsetInBytes, complete.EndOffsetInBytes));
+        Assert.False(cursor.MoveNext(out _));
     }
 
     [Theory]

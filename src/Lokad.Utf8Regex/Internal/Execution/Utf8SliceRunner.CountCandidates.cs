@@ -869,8 +869,12 @@ internal static partial class Utf8SliceRunner
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            if (!TryReadScalar(input, position, true, out var scalar, out var width) || !Rune.IsWhiteSpace(scalar)) break;
-            position -= width;
+            // Admit a bounded block and finish any scalar crossing its edge.
+            var blockFloor = Math.Max(floor, position - 64);
+            while (position > blockFloor &&
+                TryReadScalar(input, position, true, out var scalar, out var width) && Rune.IsWhiteSpace(scalar))
+                position -= width;
+            if (position > blockFloor) break;
         }
         var classStart = position;
         var classMaximum = leadingClass >= 0 ? program.Instructions[leadingClass - 1].RepeatMaximum : 0;
