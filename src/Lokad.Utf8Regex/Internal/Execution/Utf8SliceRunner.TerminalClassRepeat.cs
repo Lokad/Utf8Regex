@@ -2061,6 +2061,11 @@ internal static partial class Utf8SliceRunner
         if (window.Length >= Vector128<byte>.Count && !category && PreparedByteSetState.CanScanAsciiMask)
             return PreparedByteSetState.ScanAsciiMaskPrefix(window, mask, negated);
 
+        return ScanScalarAsciiMask(window, mask, category, negated);
+    }
+
+    private static int ScanScalarAsciiMask(ReadOnlySpan<byte> window, ReadOnlySpan<byte> mask, bool category, bool negated = false)
+    {
         var consumed = 0;
         foreach (var value in window)
         {

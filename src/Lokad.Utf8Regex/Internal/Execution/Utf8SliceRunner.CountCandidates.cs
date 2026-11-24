@@ -2005,7 +2005,7 @@ internal static partial class Utf8SliceRunner
                             var available = Math.Min(input.Length - position, (int)maximum);
                             if (available > remaining) return BranchedPrefixUndecided;
                             remaining -= available;
-                            var consumed = ScanAsciiMask(input.Slice(position, available), program.SetMasks[set.A], category: false);
+                            var consumed = ScanScalarAsciiMask(input.Slice(position, available), program.SetMasks[set.A], category: false);
                             if (consumed < minimum) return BranchedPrefixRejected;
                             position += consumed;
                             index = entry.A + 1;
