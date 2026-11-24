@@ -125,6 +125,12 @@ public sealed class Utf8ControlledDecimalBooleanTests
 
         Assert.False(regex.IsMatch("Today is 11/18/201A and tomorrow is 11/19/201A."u8, source.Token));
         Assert.Equal(new Utf8CaptureRange(7, 22), regex.Match(" 1/2x! 1/𝟙/٢٠٢٦!"u8, cancellationToken: source.Token));
+
+        const string suffix = "11/18/2019";
+        var prefix = string.Concat(Enumerable.Repeat("3333/x/ ", 16)) + "🙂";
+        var input = Encoding.UTF8.GetBytes(prefix + suffix);
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        Assert.Equal(new Utf8CaptureRange(start, input.Length), regex.Match(input, cancellationToken: source.Token));
     }
 
     [Theory]

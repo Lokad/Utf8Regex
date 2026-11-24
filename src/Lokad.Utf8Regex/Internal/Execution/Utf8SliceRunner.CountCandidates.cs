@@ -1012,31 +1012,48 @@ internal static partial class Utf8SliceRunner
 
     private static Utf8ExecutionLimitKind TrySeekDecimalLiteralWindow(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, byte literal, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd,
-        int verifiedNextDelimiter)
+        int verifiedNextDelimiter, bool verifyFollowingWindow, out int followingWindowEnd)
     {
         // The caller proved a boundary, decimal run and adjacent one-byte delimiter.
         var floor = position;
-        if (verifiedNextDelimiter >= floor)
+        var reuseDelimiter = verifiedNextDelimiter >= floor;
+        followingWindowEnd = 0;
+        if (!reuseDelimiter)
         {
-            // The preceding window already classified the ASCII digits
-            // from this floor through the next delimiter. Keep the search
-            // and rewind checkpoints under the original invocation.
+            var breach = TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
+            windowEnd = position;
+            if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
+        }
+        else
+        {
             windowEnd = verifiedNextDelimiter;
             if (!invocation.IsUnmetered || invocation.CheckpointHook is not null)
             {
                 var searchBreach = invocation.TryChargeInputStep();
                 if (searchBreach != Utf8ExecutionLimitKind.None) return searchBreach;
             }
-            var rewindBreach = invocation.TryChargeInputStep();
-            if (rewindBreach == Utf8ExecutionLimitKind.None)
-                position = Math.Max(floor, windowEnd - (int)program.Instructions[1].RepeatMaximum);
-            return rewindBreach;
         }
-        var breach = TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
-        windowEnd = position;
-        return breach != Utf8ExecutionLimitKind.None || position < 0 ? breach :
-            TryRewindClassWhitespace(program, input, floor, leadingClass: 2, gapMaximum: 0, directClassLiteral: true,
+
+        if (verifyFollowingWindow)
+        {
+            // Every start in this window must pass the same following run.
+            followingWindowEnd = FindShortAsciiDecimalLiteralEnd(input, windowEnd + 1, program.FollowingDecimalLiteralWindow);
+            if (followingWindowEnd < 0)
+            {
+                position = windowEnd + 1;
+                return Utf8ExecutionLimitKind.None;
+            }
+        }
+
+        if (!reuseDelimiter)
+            return TryRewindClassWhitespace(program, input, floor, leadingClass: 2, gapMaximum: 0, directClassLiteral: true,
                 ref position, ref invocation);
+
+        // The preceding window classified all digits from the floor through this delimiter.
+        var rewindBreach = invocation.TryChargeInputStep();
+        if (rewindBreach == Utf8ExecutionLimitKind.None)
+            position = Math.Max(floor, windowEnd - (int)program.Instructions[1].RepeatMaximum);
+        return rewindBreach;
     }
 
     internal static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,

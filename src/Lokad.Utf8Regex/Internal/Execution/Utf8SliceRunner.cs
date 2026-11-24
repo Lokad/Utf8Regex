@@ -838,7 +838,8 @@ internal static partial class Utf8SliceRunner
             {
                 var seekBreach = seekDecimalWindow
                     ? TrySeekDecimalLiteralWindow(program, input, (byte)classLiteral,
-                        ref position, ref invocation, out classWindowEnd, screenedDelimiter)
+                        ref position, ref invocation, out classWindowEnd, screenedDelimiter,
+                        verifyFollowingWindow, out followingWindowEnd)
                     : TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                         (byte)classLiteral, classSearch, classGapMaximum, directClassLiteral,
                         ref position, ref invocation, out classWindowEnd, repeatPrefix, classAlternatives,
@@ -853,9 +854,10 @@ internal static partial class Utf8SliceRunner
                 // in its window must reach the next literal from the same suffix.
                 if (followingWindow.Min != 0 && position <= classWindowEnd)
                 {
-                    followingWindowEnd = verifyFollowingWindow
-                        ? FindShortAsciiDecimalLiteralEnd(input, classWindowEnd + 1, followingWindow)
-                        : 0;
+                    if (!seekDecimalWindow)
+                        followingWindowEnd = verifyFollowingWindow
+                            ? FindShortAsciiDecimalLiteralEnd(input, classWindowEnd + 1, followingWindow)
+                            : 0;
                     if (followingWindowEnd < 0 || !verifyFollowingWindow &&
                         !MayReachShortRepeatLiteral(input, classWindowEnd + 1, followingWindow, admitsWideScalars: true))
                         position = classWindowEnd + 1;
