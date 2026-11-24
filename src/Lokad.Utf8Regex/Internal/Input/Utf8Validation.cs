@@ -8,10 +8,10 @@ namespace Lokad.Utf8Regex.Internal.Input;
 
 internal static partial class Utf8Validation
 {
-    public static void ThrowIfInvalidOnly(ReadOnlySpan<byte> input)
+    public static void ThrowIfInvalidOnly(ReadOnlySpan<byte> input, int sourceOffset = 0)
     {
         if (!TryValidateOnly(input, out var errorOffset))
-            throw CreateInvalidUtf8Exception(errorOffset);
+            throw CreateInvalidUtf8Exception(sourceOffset + errorOffset);
     }
 
     internal static bool TryValidateOnly(ReadOnlySpan<byte> input, out int errorOffset)

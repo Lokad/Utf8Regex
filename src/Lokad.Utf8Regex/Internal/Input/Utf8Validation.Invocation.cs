@@ -22,8 +22,7 @@ internal static partial class Utf8Validation
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var count = Utf8SliceBufferWork.Utf8BlockLength(input[offset..], 2048);
-            if (!TryValidateOnly(input.Slice(offset, count), out var error))
-                throw CreateInvalidUtf8Exception(offset + error);
+            ThrowIfInvalidOnly(input.Slice(offset, count), offset);
             offset += count;
         }
         breach = invocation.TryChargeInputStep();

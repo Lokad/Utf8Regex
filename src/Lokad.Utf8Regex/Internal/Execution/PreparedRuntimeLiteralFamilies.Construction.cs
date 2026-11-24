@@ -1,4 +1,4 @@
-using Lokad.Utf8Regex.Internal.Input;
+using System.Text;
 using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -23,7 +23,7 @@ internal readonly partial struct PreparedShortAsciiLiteralFamilyCounter
                 // much weaker primary filter than prepared first-byte search.
                 if (literal.Length is < 3 or > 8) { scope.Complete(); return false; }
                 budget.ChargeWork((ulong)literal.Length);
-                if (!Utf8InputAnalyzer.IsAscii(literal)) { scope.Complete(); return false; }
+                if (!Ascii.IsValid(literal)) { scope.Complete(); return false; }
                 shortest = Math.Min(shortest, literal.Length);
             }
             if (!TryChooseBestUniquePair(literals, shortest, budget, out var primary, out var secondary))

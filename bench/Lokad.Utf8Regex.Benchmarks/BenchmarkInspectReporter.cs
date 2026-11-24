@@ -12,7 +12,6 @@ using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Pcre2;
@@ -1770,7 +1769,7 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"FallbackReason    : {context.CompiledUtf8Regex.Inspection.FallbackReason}");
         }
 
-        Measure("AsciiOnlyCheck", iterations, () => Utf8InputAnalyzer.IsAscii(context.InputBytes) ? context.InputBytes.Length : 0);
+        Measure("AsciiOnlyCheck", iterations, () => Ascii.IsValid(context.InputBytes) ? context.InputBytes.Length : 0);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
         Measure("Utf8Compiled", iterations, context.ExecuteUtf8Compiled);
         Measure("DecodeThenRegex", iterations, context.ExecuteDecodeThenRegex);

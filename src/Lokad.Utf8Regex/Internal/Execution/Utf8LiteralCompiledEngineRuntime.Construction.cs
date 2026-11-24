@@ -1,4 +1,4 @@
-using Lokad.Utf8Regex.Internal.Input;
+using System.Text;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 
@@ -72,7 +72,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
                 var literal = candidates[index];
                 if (literal.Length == 0) return false;
                 budget.ChargeWork((ulong)literal.Length);
-                if (!Utf8InputAnalyzer.IsAscii(literal)) return false;
+                if (!Ascii.IsValid(literal)) return false;
                 budget.ChargeWork((ulong)index);
                 if (values[..index].Contains(literal[0])) return false;
                 values[index] = literal[0]; order[index] = index;

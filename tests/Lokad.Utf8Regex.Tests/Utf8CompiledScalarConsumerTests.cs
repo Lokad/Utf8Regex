@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Replacement;
 
@@ -40,15 +39,14 @@ public sealed class Utf8CompiledScalarConsumerTests
     }
 
     [Theory]
-    [InlineData("import \"abc\"\n", 1, true)]
-    [InlineData("import \"😀é\"\n", 1, false)]
-    [InlineData("import \"abc\"\nimport shared \"😀é\"\n", 2, false)]
-    public void PublicQuotedLinesKeepCompleteScalarSubjects(string text, int expected, bool isAscii)
+    [InlineData("import \"abc\"\n", 1)]
+    [InlineData("import \"😀é\"\n", 1)]
+    [InlineData("import \"abc\"\nimport shared \"😀é\"\n", 2)]
+    public void PublicQuotedLinesKeepCompleteScalarSubjects(string text, int expected)
     {
         const string pattern = "^import\\s+(?<shared>shared\\s+)?\"(?<path>(\\.|[^\\\\\"]*))\".*$";
         const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.Multiline;
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(isAscii, Utf8InputAnalyzer.IsAscii(input));
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(pattern, options: options | mode);

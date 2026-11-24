@@ -9,6 +9,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Replacement;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
@@ -287,7 +288,7 @@ public sealed partial class Utf8Regex : IDisposable
              // neighboring scalars. Other native predicates still need ASCII.
              (!scalarAlignedLiteral ||
                  _preparedRegex.SearchPlan.HasBoundaryRequirements && !_canUseUnmeteredScalarBoundaryLiterals) &&
-                !Utf8InputAnalyzer.IsAscii(input))
+                !Ascii.IsValid(input))
             return _ownedSliceProgram;
         return null;
     }

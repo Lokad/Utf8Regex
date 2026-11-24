@@ -85,8 +85,7 @@ public sealed partial class Utf8Regex
             construction?.ChargeWork(0);
             control.Check();
             var count = Utf8SliceBufferWork.Utf8BlockLength(template[offset..]);
-            if (!Utf8Validation.TryValidateOnly(template.Slice(offset, count), out var error))
-                throw Utf8Validation.CreateInvalidUtf8Exception(offset + error);
+            Utf8Validation.ThrowIfInvalidOnly(template.Slice(offset, count), offset);
             offset += count;
         }
         construction?.ChargeWork(0);
