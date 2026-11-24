@@ -786,9 +786,6 @@ internal static partial class PythonReBenchmarkReporter
         var effectiveIterations = GetEffectiveIterations(benchmarkCase, iterations);
         using var processorScope = BenchmarkProcessorScope.EnterSingleHighestEfficiencyProcessor();
         var context = new PythonReBenchmarkContext(benchmarkCase);
-        var byteControl = PythonReBenchmarkCatalog.GetByteControlEligibility(
-            benchmarkCase,
-            context.InputBytes);
         var pythonResult = context.ExecutePythonRe();
         var decodeResult = context.ExecuteDecodeThenRegex();
         var predecodedResult = context.ExecutePredecodedRegex();
@@ -820,8 +817,6 @@ internal static partial class PythonReBenchmarkReporter
             Coverage = benchmarkCase.Coverage,
             ComparatorOwner = PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase),
             ManagedRoute = context.DescribeManagedRoute(),
-            ByteControlEligible = byteControl.IsEligible,
-            ByteControlReason = byteControl.Reason,
             Environment = CaptureEnvironment(),
             MeasurementProtocol = "RetainedResultBatchV2",
             PythonRe = MeasureResultOperation(context.MeasurePythonReBatch, effectiveIterations, samples, pythonResult),
@@ -3425,8 +3420,6 @@ internal sealed class PythonReCaseMeasurement
     public PythonReBenchmarkCoverage? Coverage { get; set; }
     public string ComparatorOwner { get; set; } = string.Empty;
     public string ManagedRoute { get; set; } = string.Empty;
-    public bool ByteControlEligible { get; set; }
-    public string ByteControlReason { get; set; } = string.Empty;
     public required PythonReBenchmarkEnvironment Environment { get; init; }
     // Historical independent measurements. New catalog rows use paired timings.
     public PythonReOperationMeasurement? PythonRe { get; init; }
@@ -3440,11 +3433,7 @@ internal sealed class PythonReQualificationMeasurement
 {
     public required string Status { get; init; }
     public required string StatusReason { get; init; }
-    public required string EngineEvidenceBasis { get; init; }
-    public required string EngineConclusion { get; init; }
-    public string EngineConclusionReason { get; init; } = "No engine-comparable evidence is available.";
     public PythonRePairedEvidence? PairedEvidence { get; init; }
-
 }
 
 internal sealed class PythonRePairedEvidence
@@ -3491,41 +3480,8 @@ internal sealed class PythonRePairedEvidence
     public required double[] CpythonEmptyLoopMicroseconds { get; init; }
     public double[] ManagedTrivialCallMicroseconds { get; init; } = [];
     public double[] CpythonTrivialCallMicroseconds { get; init; } = [];
-    public PythonReByteControlEvidence? ByteControl { get; init; }
     public required CpythonStreamEnvironment CpythonEnvironment { get; init; }
     public required PythonReBenchmarkEnvironment ManagedEnvironment { get; init; }
-}
-
-internal sealed class PythonReByteControlEvidence
-{
-    public required string EligibilityReason { get; init; }
-    public required int CpythonIterations { get; init; }
-    public required int CpythonWarmupCalls { get; init; }
-    public required double CpythonWarmupMilliseconds { get; init; }
-    public required double CpythonMedianMicroseconds { get; init; }
-    public required double RatioMedian { get; init; }
-    public required double RatioLower95 { get; init; }
-    public required double RatioUpper95 { get; init; }
-    public required double OrderEffect { get; init; }
-    public required double ManagedInterquartileSpread { get; init; }
-    public required double CpythonInterquartileSpread { get; init; }
-    public required double ManagedTrivialCallFraction { get; init; }
-    public required double CpythonTrivialCallFraction { get; init; }
-    public required string EngineConclusion { get; init; }
-    public required string EngineConclusionReason { get; init; }
-    public required PythonReByteControlSampleEvidence[] Samples { get; init; }
-    public required double[] CpythonEmptyLoopMicroseconds { get; init; }
-    public required double[] CpythonTrivialCallMicroseconds { get; init; }
-}
-
-internal sealed class PythonReByteControlSampleEvidence
-{
-    public required string Order { get; init; }
-    public required double CpythonMicroseconds { get; init; }
-    public required double Ratio { get; init; }
-    public required double CpythonElapsedMilliseconds { get; init; }
-    public required double CpythonProcessCpuMilliseconds { get; init; }
-    public required int[] CpythonGcCollections { get; init; }
 }
 
 internal sealed class PythonRePairedSampleEvidence

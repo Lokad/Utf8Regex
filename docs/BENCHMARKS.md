@@ -112,8 +112,9 @@ Core and PythonRe attribution commands use caller-valid UTF-8 and report
 selected kernels alongside public operations. These timings are independent.
 
 Python uses a long-lived official CPython worker over `str`, with startup and
-compilation outside timing. The paired pass creates the PythonRe catalog from a
-fresh checkout and saves each completed case for resumption. Use
+compilation outside timing. This is the only timed comparator in the paired
+pass. The pass creates the PythonRe catalog from a fresh checkout and saves
+each completed case for resumption. Use
 `--measure-pythonre-case` for focused .NET and decode-inclusive controls.
 The canonical PCRE2 comparison uses the interpreted UTF-mode matcher
 through benchmark-only PCRE.NET, with `NO_UTF_CHECK` on caller-valid text.

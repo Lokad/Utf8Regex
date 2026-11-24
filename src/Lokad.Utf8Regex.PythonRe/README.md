@@ -221,7 +221,7 @@ Measured source `022dedc80645`: .NET 11.0.0; CPython 3.13.2. Selective refreshes
 <details>
 <summary>Qualification, allocations and lifecycle evidence</summary>
 
-The full snapshot retains per-row confidence intervals, exclusion reasons, exact input/source/binary identities, allocation probes, CPython operation owners and managed routes. Finite limits and retained-output costs are separate from these ordinary rows. Byte-control ratios are representation-neutral engine diagnostics and do not set public Status.
+The full snapshot retains per-row confidence intervals, exclusion reasons, exact input/source/binary identities, allocation probes, CPython operation owners and managed routes. Finite limits and retained-output costs are separate from these ordinary rows.
 
 - `anchor/fullmatch-miss`: Removable harness floors are 0.22 %/15.87 % of the lanes.
 - `lookbehind/search-miss`: Removable harness floors are 0.21 %/13.77 % of the lanes.

@@ -98,7 +98,7 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine("<details>");
         writer.WriteLine("<summary>Qualification, allocations and lifecycle evidence</summary>");
         writer.WriteLine();
-        writer.WriteLine("The full snapshot retains per-row confidence intervals, exclusion reasons, exact input/source/binary identities, allocation probes, CPython operation owners and managed routes. Finite limits and retained-output costs are separate from these ordinary rows. Byte-control ratios are representation-neutral engine diagnostics and do not set public Status.");
+        writer.WriteLine("The full snapshot retains per-row confidence intervals, exclusion reasons, exact input/source/binary identities, allocation probes, CPython operation owners and managed routes. Finite limits and retained-output costs are separate from these ordinary rows.");
         writer.WriteLine();
         foreach (var (caseId, row) in rows.Where(static row => row.Value.DisplayRatio is null))
             writer.WriteLine($"- `{caseId}`: {row.Reason ?? "No paired qualification evidence."}");
