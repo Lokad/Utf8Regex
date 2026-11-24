@@ -76,7 +76,7 @@ public sealed class Utf8ScalarCountPrefixTests
     public void ExactFamilyFollowerSkipsDecoysWithinFiniteWorkAllowance()
     {
         const string pattern = @"\b(?:public|private|internal)\s+class\b";
-        var decoys = string.Concat(Enumerable.Repeat("public static | internal record | ", 128)) +
+        var decoys = "// " + string.Concat(Enumerable.Repeat("public static | internal record | ", 128)) +
             string.Concat(Enumerable.Repeat("sealed class | ", 8));
         using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
@@ -84,8 +84,12 @@ public sealed class Utf8ScalarCountPrefixTests
         });
         using var source = new CancellationTokenSource();
 
-        Assert.Equal(0, regex.Count(Encoding.UTF8.GetBytes(decoys), source.Token));
-        Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes(decoys + "private class"), source.Token));
+        var miss = Encoding.UTF8.GetBytes(decoys);
+        var hit = Encoding.UTF8.GetBytes(decoys + "private class");
+        Assert.Equal(0, regex.Count(miss, source.Token));
+        Assert.Equal(1, regex.Count(hit, source.Token));
+        Assert.False(regex.IsMatch(miss, source.Token));
+        Assert.True(regex.IsMatch(hit, source.Token));
     }
 
     [Theory]

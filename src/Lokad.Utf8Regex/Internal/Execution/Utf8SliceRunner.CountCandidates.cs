@@ -91,6 +91,25 @@ internal static partial class Utf8SliceRunner
             ? (repeated, follower) : default;
     }
 
+    // Keep the family proof's stack storage out of general first-match discovery.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Utf8ExecutionLimitKind ScreenFirstExactFamilyFollower(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, byte[][] prefixes, ref int position, ref Utf8SliceInvocation invocation)
+    {
+        var breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        // A Boolean search can finish immediately at a plausible first byte.
+        // Keep its forward search before inspecting any later follower.
+        var head = input[position];
+        foreach (var prefix in prefixes)
+            if (prefix is [var first, ..] && first == head) return Utf8ExecutionLimitKind.None;
+        Span<int> continuations = stackalloc int[prefixes.Length];
+        return TryFindExactFamilyContinuations(program.Instructions, prefixes, continuations, out var continuation) &&
+            continuation != 0
+            ? ScreenExactFamilyFollower(program, input, prefixes, continuation, ref position, ref invocation)
+            : Utf8ExecutionLimitKind.None;
+    }
+
     private static Utf8ExecutionLimitKind ScreenExactFamilyFollower(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, byte[][] prefixes, int continuation,
         ref int position, ref Utf8SliceInvocation invocation)

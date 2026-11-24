@@ -814,6 +814,15 @@ internal static partial class Utf8SliceRunner
         var rejectedSuffix = noSuffixCheck;
         var searchStart = screenedLiteral - fromByte >= 64 && checkBranchedPrefix
             ? GetFirstPossibleBranchStart(program, input, fromByte, screenedLiteral, candidatePlan) : fromByte;
+        if (existenceOnly && seekLiteral && wideInput && program.Assertions.Length == 0 &&
+            candidatePlan.Kind == Utf8SearchKind.ExactAsciiLiterals && candidatePlan.LiteralSearch is null &&
+            candidatePlan.AlternateLiteralsUtf8 is { Length: >= 2 and <= 8 } literals)
+        {
+            var breach = ScreenFirstExactFamilyFollower(program, input, literals, ref searchStart, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+            if (searchStart < 0)
+                return new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+        }
         for (var position = searchStart; position >= 0; position = AdvancePastScalar(input, position, program.RightToLeft))
         {
             // The required delimiter proves a window of possible starts.
