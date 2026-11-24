@@ -1841,9 +1841,10 @@ internal static partial class Utf8SliceRunner
         var asciiNegated = hybrid && atom.B != 0;
         ReadOnlySpan<byte> exactAsciiMask = unbounded && (hybrid || atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 })
             ? program.SetMasks[atom.A] : [];
-        var wordCategory = unbounded && atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
+        var categories = program.GetCompleteAsciiCategoryMask(atom);
+        var wordCategory = unbounded && categories != 0 &&
             input.Length - start >= 32 && (BinaryPrimitives.ReadUInt32LittleEndian(input[start..]) & 0x80808080u) == 0 &&
-            IsAsciiWordMask(program.SetMasks[atom.A]) && program.GetCompleteAsciiCategoryMask(atom) != 0;
+            IsAsciiWordMask(program.SetMasks[atom.A]);
         var asciiWord = wordCategory || !hybrid && !exactAsciiMask.IsEmpty && IsAsciiWordMask(exactAsciiMask);
         if (unbounded && (unboundedAsciiSet || hybrid || asciiWord))
         {
@@ -1888,7 +1889,7 @@ internal static partial class Utf8SliceRunner
             count = position - start;
             if (minimum != 0 && count != 0) minimumEnd = start + 1;
         }
-        var completeMask = hybrid || atom.Kind == Utf8SliceInstructionKind.Set || atom.IsDecimalDigitSet;
+        var completeMask = hybrid || atom.Kind == Utf8SliceInstructionKind.Set || categories != 0;
         ReadOnlySpan<byte> asciiMask = hybrid ||
             atom.Kind is Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet &&
             atom.B == 0 && atom.C == 0 ? program.SetMasks[atom.A] : [];
@@ -1907,13 +1908,18 @@ internal static partial class Utf8SliceRunner
                     if (++count == minimum) minimumEnd = position;
                     continue;
                 }
-                if (completeMask || program.GetCompleteAsciiCategoryMask(atom) != 0)
-                    break;
+                if (completeMask) break;
             }
             if (!TryReadScalar(input, position, false, out var scalar, out var width)) break;
             if (dot)
             {
                 if (atom.A == 0 && scalar.Value == '\n') break;
+            }
+            else if (categories != 0)
+            {
+                // The ASCII mask already handled every ASCII member. Only
+                // the single unfolded category table can admit a wide scalar.
+                if ((categories & (1u << (int)Rune.GetUnicodeCategory(scalar))) == 0) break;
             }
             else
             {
