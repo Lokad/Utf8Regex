@@ -1784,12 +1784,19 @@ internal static partial class Utf8SliceRunner
                             {
                                 var edge = position + 1;
                                 var possible = true;
-                                if (remaining != 0 && GetUnfoldedAsciiRange(code[next], out var last) is >= 0 and var first)
+                                if (remaining != 0)
                                 {
-                                    remaining--;
-                                    possible = edge < input.Length && (uint)(input[edge] - first) <= (uint)(last - first);
-                                    next++;
-                                    edge++;
+                                    ref readonly var follower = ref code[next];
+                                    var hasInterval = follower is { Kind: Utf8SliceInstructionKind.Set, D: not 0 };
+                                    if (hasInterval || follower is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 })
+                                    {
+                                        remaining--;
+                                        possible = edge < input.Length && (hasInterval
+                                            ? follower.MatchesAsciiInterval(input[edge])
+                                            : input[edge] == follower.A);
+                                        next++;
+                                        edge++;
+                                    }
                                 }
                                 if (possible)
                                 {
