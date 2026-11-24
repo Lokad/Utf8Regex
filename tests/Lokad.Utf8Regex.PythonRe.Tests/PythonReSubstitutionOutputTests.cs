@@ -42,8 +42,9 @@ public sealed class PythonReSubstitutionOutputTests
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
+        var slotBytes = Utf8ConstructionBudget.ArrayBytes<int>(2 * program.GroupCount);
         var cursor = new PythonReScalarMatchCursor([], program, 0, Regex.InfiniteMatchTimeout,
-            null, "(.)", new(new(0, 0, 13 + 96 + 2 * Bytes(8193) - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None));
+            null, "(.)", new(new(0, 0, 13 + slotBytes + 2 * Bytes(8193) - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         var writer = cursor.CreateOutputWriter();
         var payload = Enumerable.Repeat((byte)'x', 8193).ToArray();
@@ -59,7 +60,7 @@ public sealed class PythonReSubstitutionOutputTests
                 Assert.Null(failure); Assert.Equal(payload, result);
                 Assert.Equal(0, writer.Length);
                 Assert.Equal(Bytes(8193), cursor.ResultReservation);
-                Assert.Equal(13 + 96 + 2 * Bytes(8193), cursor.WorkingInvocation.Budget.PeakWorkingBytes);
+                Assert.Equal(13 + slotBytes + 2 * Bytes(8193), cursor.WorkingInvocation.Budget.PeakWorkingBytes);
             }
             else
             {
@@ -67,7 +68,7 @@ public sealed class PythonReSubstitutionOutputTests
                 Assert.Equal(payload, writer.WrittenBytes.ToArray());
                 Assert.Equal(0UL, cursor.ResultReservation);
             }
-            Assert.Equal(13 + 96 + Bytes(8193), cursor.ReservedBytes);
+            Assert.Equal(13 + slotBytes + Bytes(8193), cursor.ReservedBytes);
         }
         finally { cursor.ReleaseOutput(ref writer); cursor.Dispose(); }
         Assert.Equal(13UL, cursor.ReservedBytes);
@@ -80,6 +81,7 @@ public sealed class PythonReSubstitutionOutputTests
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
+        var slotBytes = Utf8ConstructionBudget.ArrayBytes<int>(2 * program.GroupCount);
         var payload = new byte[8193];
         ulong seed;
         ulong completionWork;
@@ -116,7 +118,7 @@ public sealed class PythonReSubstitutionOutputTests
                     Assert.Equal(8193, writer.Length); Assert.Equal(payload, writer.WrittenBytes.ToArray());
                 }
                 Assert.Equal(cutoff >= 3 ? Bytes(8193) : 0, cursor.ResultReservation);
-                Assert.Equal(13 + 96 + Bytes(8193) + (cutoff >= 3 && cutoff < completionWork ? Bytes(8193) : 0), cursor.ReservedBytes);
+                Assert.Equal(13 + slotBytes + Bytes(8193) + (cutoff >= 3 && cutoff < completionWork ? Bytes(8193) : 0), cursor.ReservedBytes);
             }
             finally { cursor.ReleaseOutput(ref writer); cursor.Dispose(); }
             Assert.Equal(13UL, cursor.ReservedBytes);
