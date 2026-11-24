@@ -85,20 +85,9 @@ of a malformed tail. Representation and resource failures remain distinct.
 `NonBacktracking` provides linear discovery for its admitted regular subset.
 It preserves branch priority, greedy and lazy preference, scalar empty
 progress and the last completed capture in each group. Unsupported syntax
-fails during construction. Viability tables and capture registers use
-working admission and bounded execution checks. Full viability tables count
-scalars in bounded input blocks to size their arrays, then record each byte
-offset under its row's work admission. A later refusal leaves prior cursor
-results valid.
-Forward closure visits check work and cancellation individually and poll
-the deadline on the engine cadence. The scan checks it directly at scalar
-edges, bulk register copies and final publication.
-
-First-match capture searches in wide programs can use viability rows when the
-suffix is small relative to the number of capture registers. On longer eligible
-inputs, discovery selects the range without capture registers and replay builds
-rows only for that range. Replay uses one set of capture openings and keeps
-byte offsets and boundary context in the original subject.
+fails during construction. Discovery and capture replay share the invocation's
+limits and interruption checks. Replay keeps byte offsets and boundary context
+in the original subject. A later refusal leaves prior cursor results valid.
 
 ### Native pattern metadata
 
@@ -164,9 +153,8 @@ host-defined substitutions. Host copying and decoding belong to the caller.
 bytes and leaves the destination unchanged. Overlap is supported and
 overlapping input requires staging. Other failures throw. Interruption or
 work exhaustion during final copying can leave a partial destination.
-Eligible literal replacements can stage match ranges and copy into one
-result array or a disjoint destination. Range and result array capacities
-count toward working and result limits.
+Staging and output capacities count toward the applicable working and result
+limits.
 
 ## Cancellation, deadlines and resource limits
 
@@ -213,21 +201,8 @@ If NonBacktracking needs a scratch array beyond the runtime's maximum array
 length, it reports the capacity failure as `InvalidOperationException` before
 allocating that array.
 
-With execution controls active, the scalar engine's leading-byte scan
-admits up to 2,048 bytes at a time. Folded starters can include a wider
-scalar's lead byte. The scalar verifier decides whether each candidate
-matches.
-
-Backward discovery for an unbounded class with a complete Unicode category
-mask can admit up to 64 input bytes per step, plus the bytes needed to finish
-a scalar crossing the block edge. It tests exact membership and stays at or
-after the requested search floor.
-
-Exact backreferences compare captured bytes in admitted blocks of up to
-2,048 bytes, starting at the right edge in RTL mode. Folded backreferences
-compare scalar equivalents. Fixed RTL dot repeats can admit ASCII suffixes
-in blocks of up to 2,048 bytes. Each accepted ASCII byte counts as one
-scalar. Wider scalars consume one repetition each.
+Exact backreferences compare captured bytes in the search direction. Folded
+backreferences compare scalar equivalents. Both use bounded execution checks.
 
 The engine admits covered storage before acquisition. It covers capture
 and projection arrays, cursor tables, output staging and finalized result
@@ -288,10 +263,7 @@ Dispose an abandoned cursor.
 
 `MoveNext` returns immutable byte ranges and group metadata that survive cursor
 advance, failure and closure. The subject and its memory manager stay borrowed.
-A group-zero-only snapshot uses one stored capture for `Value` and `GetCaptures(0)`.
-When the program proves each group can capture at most once on the successful
-path, the cursor can copy completed slots directly. This can reduce modeled
-result traffic by avoiding temporary history arrays.
+
 Ordinary publication ends working admission for the range result.
 `MoveNextRetained` requires shared working funding and returns a
 `Utf8RetainedRangeMatch`. Captures, group numbers and the receipt are admitted.

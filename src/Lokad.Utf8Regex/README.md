@@ -1,9 +1,7 @@
 # Lokad.Utf8Regex
 
-**0.5.0 development**, .NET 10 and .NET 11. Regular expressions over strict UTF-8
-`ReadOnlySpan<byte>` / `Span<byte>`, matching Unicode scalars with primary byte
-coordinates. Dot matches 😀 once across four bytes. Results expose byte ranges;
-callers derive character positions when needed.
+Managed regular expressions for .NET 10 and 11. Match Unicode scalars
+directly over UTF-8 and return byte ranges.
 
 ```csharp
 using Lokad.Utf8Regex;
@@ -33,24 +31,15 @@ cursor advances. Explicit `Compile` factories offer separate construction
 controls. Memory accounting admits modeled major capacities before allocation.
 See the [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits).
 
-Constructors and `Compile` accept `Utf8RegexPolicy`, combining execution and
-construction limits/timeouts with optional `ProgramMemoryAllowance`. Both funded
-and unfunded factories return `Utf8Regex`; dispose funded expressions. The bounded
-replacement cache is conservatively prepaid before publication (4MiB payload plus
-64KiB metadata), without eagerly allocating it. The UTF8-template
-`TryReplace` writes into caller-owned storage; cold preparation and output share
-working admission, while cached plans remain covered by the program allowance.
-Temporary loans refund synchronously and copied output survives owner disposal.
-With shared working admission this uses the controlled scalar replacement route, preserving RTL, captures,
-NonBacktracking, cancellation and numeric limits.
+`Utf8RegexPolicy` can also supply a shared `ProgramMemoryAllowance`. Dispose
+funded expressions when finished. Operations with an optional working allowance
+inherit the program account by default. [Program and working allowances](../../docs/SPEC.md#program-and-working-allowances)
 
-Keep borrowed subjects unchanged and their owners alive. Owned snapshots remain
-valid after advance/failure/disposal. Copied value cursors retain independent
-positions while sharing numeric allowance/deadline. Funded span enumeration borrows
-an open regex and rejects later advances after close; Current values remain valid.
-Use the memory cursor for traversal surviving close or shared working admission.
-APIs exposing a working allowance inherit program funding when it is null.
-The host accounts for its own storage and retained results.
+Keep borrowed subjects unchanged and their owners alive. Span enumerator
+copies have independent positions and share limits. Each advance needs an
+open funded regex when program admission is in use. Use a memory cursor
+for traversal across calls or after closing the regex. Published snapshots
+survive advances and disposal. [Cursor and result lifetimes](../../docs/SPEC.md#cursor-and-result-lifetimes)
 
 Optional `Lokad.Utf8Regex.PythonRe`, `Lokad.Utf8Regex.Pcre2` and
 `Lokad.Utf8Regex.Posix` adapters require
@@ -58,17 +47,11 @@ the exact matching Core package version. Keep selected packages at the same
 version. They are managed profile adapters with explicit compatibility boundaries;
 no native PCRE2 binary is shipped.
 
-See the [release notes](../../CHANGELOG.md) for upgrades and version history.
-The [repository specification](../../docs/SPEC.md)
-defines the target contract; qualification fixtures establish implemented scope.
-Performance snapshots retain their recorded source/package/runtime identities.
+[Core specification](../../docs/SPEC.md) · [Release notes](../../CHANGELOG.md)
 
 ## Subject input contract
 
 All four profiles require valid, unchanged UTF-8 subjects. Validate external bytes
 where they become text, for example with `System.Text.Unicode.Utf8.IsValid`.
-Regex operations expose no validation policy or token. Malformed subjects have
-unspecified matching results; managed bounds checking and resource controls remain.
-Pattern/template checks are independent. Necessary search, output and eligibility
-work can still inspect input. See the [shared contract](../../docs/SPEC.md#subject-input-contract).
-Frozen performance snapshots retain their recorded input contracts.
+Matching trusts this input guarantee. Pattern and template validation are
+independent. [Subject input contract](../../docs/SPEC.md#subject-input-contract)
