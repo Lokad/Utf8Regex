@@ -72,6 +72,22 @@ public sealed class Utf8ScalarCountPrefixTests
         Assert.Equal(3, funded.Count(input, source.Token));
     }
 
+    [Fact]
+    public void ExactFamilyFollowerSkipsDecoysWithinFiniteWorkAllowance()
+    {
+        const string pattern = @"\b(?:public|private|internal)\s+class\b";
+        var decoys = string.Concat(Enumerable.Repeat("public static | internal record | ", 128)) +
+            string.Concat(Enumerable.Repeat("sealed class | ", 8));
+        using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128 }
+        });
+        using var source = new CancellationTokenSource();
+
+        Assert.Equal(0, regex.Count(Encoding.UTF8.GetBytes(decoys), source.Token));
+        Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes(decoys + "private class"), source.Token));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

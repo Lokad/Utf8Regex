@@ -1236,6 +1236,13 @@ internal static partial class Utf8SliceRunner
                 familyContinuations = stackalloc int[literals.Length];
                 if (!TryFindExactFamilyContinuations(program.Instructions, literals, familyContinuations, out prefixContinuation))
                     familyContinuations = default;
+                else if (prefixContinuation != 0)
+                {
+                    breach = ScreenExactFamilyFollower(program, input, literals, prefixContinuation,
+                        ref position, ref invocation);
+                    if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+                    if (position < 0) return new(0, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                }
             }
         }
         var splitFamilyTails = prefixContinuation == 0 && !familyContinuations.IsEmpty;

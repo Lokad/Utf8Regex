@@ -91,6 +91,66 @@ internal static partial class Utf8SliceRunner
             ? (repeated, follower) : default;
     }
 
+    private static Utf8ExecutionLimitKind ScreenExactFamilyFollower(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, byte[][] prefixes, int continuation,
+        ref int position, ref Utf8SliceInvocation invocation)
+    {
+        var code = program.Instructions.AsSpan();
+        var followerIndex = continuation + 4;
+        if (followerIndex >= code.Length || !IsSingleClassRepeat(code, continuation) ||
+            code[continuation].RepeatMinimum == 0 || !IsUnicodeSpace(program, code[continuation + 1]))
+            return Utf8ExecutionLimitKind.None;
+
+        Span<byte> storage = stackalloc byte[16];
+        var follower = GetExactLeadingLiteral(program, followerIndex, storage);
+        if (follower.IsEmpty || Utf8AsciiBytePredicates.IsSixByteWhitespace(follower[0]))
+            return Utf8ExecutionLimitKind.None;
+        var longest = 0;
+        foreach (var prefix in prefixes)
+        {
+            if (Utf8AsciiBytePredicates.IsSixByteWhitespace(prefix[^1]))
+                return Utf8ExecutionLimitKind.None;
+            longest = Math.Max(longest, prefix.Length);
+        }
+
+        var floor = position;
+        var suffix = floor;
+        while (true)
+        {
+            var breach = TrySeekLeadingByte(input, ref suffix, follower[0], follower[0], false, ref invocation, follower);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            if (suffix < 0) { position = -1; return Utf8ExecutionLimitKind.None; }
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+
+            // A bare prefix ends outside whitespace. Any such match must
+            // end its prefix at the left edge of this run. Wider scalars and
+            // runs that reach the probe bound leave the result undecided.
+            var edge = suffix;
+            var stop = Math.Max(floor, suffix - 64);
+            while (edge > stop && Utf8AsciiBytePredicates.IsSixByteWhitespace(input[edge - 1])) edge--;
+            if (edge > floor)
+            {
+                if (edge == stop || input[edge - 1] >= 128) return Utf8ExecutionLimitKind.None;
+                if (edge != suffix)
+                {
+                    var beforeRun = input[floor..edge];
+                    foreach (var prefix in prefixes)
+                    {
+                        if (!beforeRun.EndsWith(prefix)) continue;
+                        // Later followers cannot rewind through this nonspace
+                        // byte. Even their longest prefix cannot start earlier
+                        // than this floor. Verify in the original forward order.
+                        position = Math.Max(floor, edge - longest);
+                        while (position > floor && (input[position] & 0xc0) == 0x80) position--;
+                        return Utf8ExecutionLimitKind.None;
+                    }
+                }
+            }
+            suffix++;
+        }
+    }
+
     // The candidate step covers this bounded scan. Only a complete ASCII
     // run can prove the following scalar's unique start. Wider or longer runs
     // leave the existing scalar attempt in charge.
