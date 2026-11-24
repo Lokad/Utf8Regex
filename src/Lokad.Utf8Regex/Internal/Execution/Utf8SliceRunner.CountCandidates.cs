@@ -884,6 +884,16 @@ internal static partial class Utf8SliceRunner
         {
             if (program.LeadingScalarIsDecimal && leadingClass == program.LeadingByteCandidate.InstructionIndex)
             {
+                if (gapMaximum == 0 && classMaximum <= 4 && code[leadingClass - 1].RepeatMinimum > 0 &&
+                    windowEnd < input.Length && input[windowEnd] is < 128 and var delimiter &&
+                    !Utf8AsciiBytePredicates.IsDigit(delimiter) &&
+                    FindShortAsciiDecimalStart(input, floor, windowEnd, (int)classMaximum) is >= 0 and var asciiStart)
+                {
+                    var breach = invocation.TryChargeInputStep();
+                    if (breach == Utf8ExecutionLimitKind.None)
+                        position = asciiStart < windowEnd ? asciiStart : windowEnd + 1;
+                    return breach;
+                }
                 ascii = Utf8SearchAsciiSet.FromMasks(Utf8AsciiBytePredicates.DecimalMask, 0);
                 hasAsciiMask = true;
             }
@@ -1043,20 +1053,12 @@ internal static partial class Utf8SliceRunner
         {
             if (!reuseDelimiter && program.Instructions[1].RepeatMaximum is >= 1 and <= 4 and var maximum)
             {
-                // A short ASCII run needs only the existing block charge.
-                // A possible wider digit at its left edge needs scalar rewind.
-                var start = windowEnd;
-                var limit = Math.Max(floor, start - (int)maximum);
-                while (start > limit && Utf8AsciiBytePredicates.IsDigit(input[start - 1])) start--;
-                if (start == limit || input[start - 1] < 128)
+                asciiStart = FindShortAsciiDecimalStart(input, floor, windowEnd, (int)maximum);
+                if (asciiStart == windowEnd)
                 {
-                    if (start == windowEnd)
-                    {
-                        // No decimal scalar can end at this delimiter inside the floor.
-                        position = windowEnd + 1;
-                        return Utf8ExecutionLimitKind.None;
-                    }
-                    asciiStart = start;
+                    // No decimal scalar can end at this delimiter within the search floor.
+                    position = windowEnd + 1;
+                    return Utf8ExecutionLimitKind.None;
                 }
             }
 
@@ -1078,6 +1080,16 @@ internal static partial class Utf8SliceRunner
         if (rewindBreach == Utf8ExecutionLimitKind.None)
             position = reuseDelimiter ? Math.Max(floor, windowEnd - (int)program.Instructions[1].RepeatMaximum) : asciiStart;
         return rewindBreach;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int FindShortAsciiDecimalStart(ReadOnlySpan<byte> input, int floor, int end, int maximum)
+    {
+        var start = end;
+        var limit = Math.Max(floor, end - maximum);
+        while (start > limit && Utf8AsciiBytePredicates.IsDigit(input[start - 1])) start--;
+        // A possible wider digit at the left edge needs scalar rewind.
+        return start == limit || input[start - 1] < 128 ? start : -1;
     }
 
     internal static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,

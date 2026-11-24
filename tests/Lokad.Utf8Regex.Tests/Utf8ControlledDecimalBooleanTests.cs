@@ -148,6 +148,18 @@ public sealed class Utf8ControlledDecimalBooleanTests
             regex.Match(input, cancellationToken: source.Token));
     }
 
+    [Fact]
+    public void CountRewindsShortDecimalWindowsWithinTheWorkLimit()
+    {
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 700, MaxWorkingBytes = 1 << 20 } });
+        var prefix = string.Concat(Enumerable.Repeat("x/11/2.x ", 32));
+        var input = Encoding.UTF8.GetBytes(prefix + " 1/18/2026.");
+
+        Assert.Equal(1, regex.Count(input, source.Token));
+    }
+
     [Theory]
     [InlineData("Today is 11/18/201A and tomorrow is 11/19/201A.", 13ul)]
     [InlineData("x12/34/2026! ", 8ul)]
