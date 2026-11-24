@@ -518,7 +518,8 @@ public sealed class Utf8CaptureSlotMatchTests
         {
             MatchTimeout = TimeSpan.FromMilliseconds(100)
         });
-        var input = Encoding.UTF8.GetBytes(new string('a', 256));
+        var input = new byte[1 << 18];
+        input.AsSpan().Fill((byte)'a');
         var output = new Utf8CaptureRange[2];
         using var source = new CancellationTokenSource();
         var session = Utf8SearchDiagnosticsSession.Start(_ => source.Cancel());

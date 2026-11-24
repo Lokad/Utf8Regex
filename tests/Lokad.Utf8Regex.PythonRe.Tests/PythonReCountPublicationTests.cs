@@ -8,6 +8,8 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReCountPublicationTests
 {
+    private const int LiteralScanBlockBytes = 2048;
+
     private static T Field<T>(Utf8PythonRegex value, string name) =>
         (T)typeof(Utf8PythonRegex).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(value)!;
 
@@ -128,18 +130,19 @@ public sealed class PythonReCountPublicationTests
         byte[] input = [];
         ulong terminal = 0;
         var expected = -1;
-        for (var length = 0; length < 256 && expected < 0; length++)
-            for (var tail = 0; tail < 8 && expected < 0; tail++)
-            {
-                input = Encoding.UTF8.GetBytes(new string('a', length) + new string('x', tail));
-                using var measured = regex.CreateMatchCursor(input, 0, token.Token);
-                measured.WorkingInvocation.ShareStorageForCursor();
-                var observer = measured.WorkingInvocation;
-                var count = 0;
-                while (measured.MoveNext(out _)) count++;
-                terminal = observer.Budget.Steps;
-                if ((terminal & 63) == 0) expected = count;
-            }
+        // Extend the literal run by a scan block to find a terminal poll.
+        for (var blocks = 1; blocks <= 128 && expected < 0; blocks++)
+        {
+            input = new byte[blocks * LiteralScanBlockBytes];
+            input.AsSpan().Fill((byte)'a');
+            using var measured = regex.CreateMatchCursor(input, 0, token.Token);
+            measured.WorkingInvocation.ShareStorageForCursor();
+            var observer = measured.WorkingInvocation;
+            var count = 0;
+            while (measured.MoveNext(out _)) count++;
+            terminal = observer.Budget.Steps;
+            if ((terminal & 63) == 0) expected = count;
+        }
         Assert.True(expected > 0, "No bounded terminal cursor checkpoint witness found.");
 
         var account = new PythonReSharedWorkingAllowanceTests.Allowance(1 << 20);
@@ -218,21 +221,21 @@ public sealed class PythonReCountPublicationTests
         byte[] input = [];
         ulong terminal = 0;
         var expected = -1;
-        for (var length = 0; length < 256 && expected < 0; length++)
-            for (var tail = 0; tail < 8 && expected < 0; tail++)
+        for (var blocks = 1; blocks <= 128 && expected < 0; blocks++)
+        {
+            input = new byte[blocks * LiteralScanBlockBytes];
+            input.AsSpan().Fill((byte)'a');
+            var invocation = new Utf8SliceInvocation(limits, timeout, token.Token);
+            var cursor = new PythonReScalarMatchCursor(input, program, 0, timeout, candidate, pattern, invocation);
+            try
             {
-                input = Encoding.UTF8.GetBytes(new string('a', length) + new string('x', tail));
-                var invocation = new Utf8SliceInvocation(limits, timeout, token.Token);
-                var cursor = new PythonReScalarMatchCursor(input, program, 0, timeout, candidate, pattern, invocation);
-                try
-                {
-                    var count = 0;
-                    while (cursor.MoveNext()) count++;
-                    terminal = cursor.WorkingInvocation.Budget.Steps;
-                    if ((terminal & 63) == 0) expected = count;
-                }
-                finally { cursor.Dispose(); }
+                var count = 0;
+                while (cursor.MoveNext()) count++;
+                terminal = cursor.WorkingInvocation.Budget.Steps;
+                if ((terminal & 63) == 0) expected = count;
             }
+            finally { cursor.Dispose(); }
+        }
         Assert.True(expected >= 0, "No bounded terminal VM checkpoint witness found.");
         var entered = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>

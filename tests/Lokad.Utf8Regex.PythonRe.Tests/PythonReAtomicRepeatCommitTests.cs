@@ -125,7 +125,9 @@ public sealed class PythonReAtomicRepeatCommitTests
     [InlineData(true)]
     public void OriginalInterruptionDuringGreedyRunDoesNotPoisonReuse(bool expire)
     {
-        var input = Encoding.UTF8.GetBytes(new string('a', 8192) + "b");
+        var input = new byte[(1 << 19) + 1];
+        input.AsSpan(0, input.Length - 1).Fill((byte)'a');
+        input[^1] = (byte)'b';
         const ulong cutoff = 128;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

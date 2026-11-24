@@ -141,7 +141,8 @@ public sealed class Utf8PolicyOwnershipTests
         });
         try
         {
-            var input = Encoding.UTF8.GetBytes(new string('a', 256));
+            var input = new byte[1 << 18];
+            input.AsSpan().Fill((byte)'a');
             var result = regex.Replace(input, "<$1>"u8);
             Assert.True(closed); Assert.Equal(input.Length + 2, result.Length);
             Assert.Equal((byte)'<', result[0]); Assert.Equal((byte)'>', result[^1]);

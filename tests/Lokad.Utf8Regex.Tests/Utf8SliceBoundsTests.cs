@@ -96,7 +96,8 @@ public sealed class Utf8SliceBoundsTests
     public void MidRunCancellationAbortsWithCleanup()
     {
         var program = Lower(new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode(97, false), 1, long.MaxValue, false));
-        var input = Encoding.ASCII.GetBytes(new string((char)97, 5000));
+        var input = new byte[1 << 18];
+        input.AsSpan().Fill((byte)'a');
         using var source = new CancellationTokenSource();
         var invocation = Invoke(0, 0, 0, source.Token);
         invocation.CheckpointHook = _ => source.Cancel();
