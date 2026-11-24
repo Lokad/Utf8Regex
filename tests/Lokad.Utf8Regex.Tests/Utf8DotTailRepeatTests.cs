@@ -40,6 +40,28 @@ public sealed class Utf8DotTailRepeatTests
         Assert.False(regex.IsMatch("startabcdefg\n finish"u8, source.Token));
     }
 
+    [Theory]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    public void BoundedDotResumesScalarCountingAfterTheAsciiBlock(int asciiLength)
+    {
+        const string pattern = @"\A(?<gap>.{32,2051})\bfinish\b";
+        var policy = new Utf8RegexPolicy { ResourcePolicy = Policy() with { MaxWorkSteps = 64 } };
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled, policy);
+        using var singleline = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.Singleline, policy);
+        var prefix = new string('x', asciiLength) + "😀";
+        var subject = Encoding.UTF8.GetBytes(prefix + " finish");
+        var withNewline = Encoding.UTF8.GetBytes(prefix + "\nfinish");
+        var captures = new Utf8CaptureRange[2];
+
+        Assert.True(regex.Match(subject, captures: captures).Success);
+        Assert.Equal(new Utf8CaptureRange(0, Encoding.UTF8.GetByteCount(prefix) + 1), captures[1]);
+        Assert.False(regex.IsMatch(withNewline));
+        Assert.True(singleline.Match(withNewline, captures: captures).Success);
+        Assert.Equal(new Utf8CaptureRange(0, Encoding.UTF8.GetByteCount(prefix) + 1), captures[1]);
+    }
+
     private static Utf8ResourcePolicy Policy(uint depth = 128, ulong result = 1 << 20, ulong working = 1 << 20) => new()
     {
         MaxWorkSteps = 1_000_000,

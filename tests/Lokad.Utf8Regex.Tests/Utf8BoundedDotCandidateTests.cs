@@ -171,15 +171,15 @@ public sealed class Utf8BoundedDotCandidateTests
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var token = new CancellationTokenSource();
-        using var regex = new Utf8Regex(reverse ? @"\AA.*Watson" : @"\AA.{0,511}Watson");
+        using var regex = new Utf8Regex(reverse ? @"\AA.*Watson" : @"\AA.{0,262144}Watson");
         var program = regex.Inspection.AvailableOwnedSliceProgram;
-        var input = Encoding.UTF8.GetBytes(reverse ? "AWatson" + new string('x', 250000) : "A" + new string('x', 100) + "Watson");
+        var input = Encoding.UTF8.GetBytes(reverse ? "AWatson" + new string('x', 250000) : "A" + new string('x', 200000) + "Watson");
         var invocation = new Utf8SliceInvocation(new(100000, 1024, 1 << 20),
             expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan, token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         var entered = false;
-        // The forward dot takes about 123 blocks for the long subject. The
-        // next selected checkpoint interrupts the descending literal search.
+        // The forward repeat reaches a checkpoint inside its block scan.
+        // For the reverse search, wait until it has left the forward scan.
         invocation.CheckpointHook = steps =>
         {
             if (reverse && steps < 192) return;

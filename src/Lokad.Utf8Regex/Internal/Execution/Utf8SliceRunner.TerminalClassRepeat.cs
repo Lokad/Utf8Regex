@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Search;
@@ -1889,6 +1890,16 @@ internal static partial class Utf8SliceRunner
             count = position - start;
             if (minimum != 0 && count != 0) minimumEnd = start + 1;
         }
+        if (dot && maximum is >= 32 and < long.MaxValue && input.Length - start >= 32 &&
+            (BinaryPrimitives.ReadUInt32LittleEndian(input[start..]) & 0x80808080u) == 0)
+        {
+            var end = start + (int)Math.Min(maximum, input.Length - start);
+            var ascii = ScanBoundedAsciiDotPrefix(input, start, end, atom.A != 0, ref invocation);
+            if (ascii.Breach != Utf8ExecutionLimitKind.None) return ascii;
+            position = ascii.EndIndex;
+            count = position - start;
+            if (count >= minimum) minimumEnd = start + (int)minimum;
+        }
         var completeMask = hybrid || atom.Kind == Utf8SliceInstructionKind.Set || categories != 0;
         ReadOnlySpan<byte> asciiMask = hybrid ||
             atom.Kind is Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet &&
@@ -1934,6 +1945,25 @@ internal static partial class Utf8SliceRunner
         if (terminal != Utf8ExecutionLimitKind.None) return (-1, terminal);
         return count >= minimum ? (position, Utf8ExecutionLimitKind.None)
             : (-1, Utf8ExecutionLimitKind.None);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static (int EndIndex, Utf8ExecutionLimitKind Breach) ScanBoundedAsciiDotPrefix(
+        ReadOnlySpan<byte> input, int position, int end, bool dotAll, ref Utf8SliceInvocation invocation)
+    {
+        // The scalar maximum is also the byte limit until a wide scalar.
+        while (position < end)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+            var block = input.Slice(position, Math.Min(2048, end - position));
+            var wide = block.IndexOfAnyInRange((byte)128, byte.MaxValue);
+            var ascii = wide < 0 ? block : block[..wide];
+            var lineFeed = dotAll ? -1 : ascii.IndexOf((byte)'\n');
+            position += lineFeed < 0 ? ascii.Length : lineFeed;
+            if (lineFeed >= 0 || wide >= 0) break;
+        }
+        return (position, Utf8ExecutionLimitKind.None);
     }
 
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunFixedReverseClassRepeat(Utf8SliceProgram program,
