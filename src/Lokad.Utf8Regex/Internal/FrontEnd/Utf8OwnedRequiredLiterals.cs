@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.Search;
+
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 // Required literal families guide native search. Clean alternatives keep their
@@ -55,8 +57,17 @@ internal static class Utf8OwnedRequiredLiterals
             for (var i = 1; i < families.Count; i++)
             {
                 budget.ChargeWork(1);
-                var score = TotalLength(families[i], budget);
-                if (score > bestScore) { best = families[i]; bestScore = score; }
+                var candidate = families[i];
+                var score = TotalLength(candidate, budget);
+                // For equal one-byte exact filters, the rarer byte is more
+                // likely to reject the subject before candidate discovery.
+                if (score > bestScore || score == bestScore &&
+                    candidate is [[< 128 and var value]] && best is [[< 128 and var prior]] &&
+                    AsciiSearch.GetAsciiFrequencyRank(value) < AsciiSearch.GetAsciiFrequencyRank(prior))
+                {
+                    best = candidate;
+                    bestScore = score;
+                }
             }
             return best;
         }

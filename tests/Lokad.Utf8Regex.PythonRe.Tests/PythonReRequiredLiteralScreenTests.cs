@@ -70,6 +70,20 @@ public sealed class PythonReRequiredLiteralScreenTests
     }
 
     [Fact]
+    public void MissingRequiredByteKeepsDenseAtomicMissWithinWorkBudget()
+    {
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("xxabbbdzz", 256)));
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8PythonRegex("(?>ab+)c", policy: new()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new() { MaxWorkSteps = 10 }
+        });
+
+        Assert.False(regex.Match(input, cancellationToken: source.Token, mode: Utf8PythonMatchMode.Search).Success);
+    }
+
+    [Fact]
     public void ARequiredLiteralDoesNotProveAMatchOrBypassAdmission()
     {
         var ordinary = new Utf8PythonRegex("a+b");
