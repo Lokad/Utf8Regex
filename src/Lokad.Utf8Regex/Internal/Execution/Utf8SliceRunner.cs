@@ -1552,7 +1552,8 @@ internal static partial class Utf8SliceRunner
                     {
                         // Screen the selected tail before starting an attempt.
                         if (!MayMatchPreparedDotTail(code, input, position + prefixBytes, packedTail,
-                            (int)repeat.RepeatMaximum, ref invocation, out var probeBreach))
+                            (int)repeat.RepeatMaximum, code[candidateContinuation + 1].A != 0,
+                            ref invocation, out var probeBreach))
                         {
                             if (probeBreach != Utf8ExecutionLimitKind.None) return new(count, probeBreach);
                             position++;

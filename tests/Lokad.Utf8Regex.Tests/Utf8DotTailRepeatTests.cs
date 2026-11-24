@@ -12,6 +12,8 @@ public sealed class Utf8DotTailRepeatTests
         "Alpha StopElse! Beta EndEnd! Alpha StopStop!", 2)]
     [InlineData(@"\b(?:Alpha.{0,25}Stop|Beta.{0,25}End)", "xBeta End! Alpha Stop! Beta End!", 2)]
     [InlineData(@"Ford.{0,8}End|Fordham.{0,8}Stop", "Fordham Stop! Ford End!", 2)]
+    [InlineData(@"Alpha.{0,25}(?<a>\nStop)\k<a>|Beta.{0,25}(?<b>En\nd)\k<b>",
+        "Alpha filler\nStop\nStop! Beta fillerEn\ndEn\nd!", 2)]
     public void LiteralFamilyCountRespectsDistinctTailsBoundariesAndOverlaps(string pattern, string line, int expected)
     {
         var text = string.Concat(Enumerable.Repeat(line + "\n", 12));
@@ -38,6 +40,23 @@ public sealed class Utf8DotTailRepeatTests
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("startx" + gap + "finish"), source.Token));
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("start" + gap + "finley"), source.Token));
         Assert.False(regex.IsMatch("startabcdefg\n finish"u8, source.Token));
+    }
+
+    [Theory]
+    [InlineData(@"\A(.{0,80})\nclass", "abc\nclass", 3)]
+    [InlineData(@"\A(.{0,80})cl\nass", "abccl\nass", 3)]
+    [InlineData(@"\A(?s:(.{0,80}))class", "abc\n class", 5)]
+    public void BoundedDotTailCanTouchOrCrossLineFeed(string pattern, string text, int gapBytes)
+    {
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled, new() { ResourcePolicy = Policy() });
+        using var source = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes(text);
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+
+        Assert.True(regex.Match(input, captures: captures, cancellationToken: source.Token).Success);
+        Assert.Equal(new Utf8CaptureRange(0, input.Length), captures[0]);
+        Assert.Equal(new Utf8CaptureRange(0, gapBytes), captures[1]);
+        Assert.Equal(1, regex.Count(input, source.Token));
     }
 
     [Theory]

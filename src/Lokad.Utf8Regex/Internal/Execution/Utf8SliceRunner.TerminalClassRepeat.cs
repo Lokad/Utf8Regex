@@ -666,7 +666,7 @@ internal static partial class Utf8SliceRunner
         }
         if (!dotTailChecked && atom.Kind == Utf8SliceInstructionKind.Dot &&
             instructions[repeat.A - 1].D is > 0 and var packedTail &&
-            !MayMatchPreparedDotTail(instructions, input, start, packedTail, (int)repeat.RepeatMaximum,
+            !MayMatchPreparedDotTail(instructions, input, start, packedTail, (int)repeat.RepeatMaximum, atom.A != 0,
                 ref invocation, out var probeBreach))
         {
             outcome = (-1, probeBreach);
@@ -988,7 +988,8 @@ internal static partial class Utf8SliceRunner
     }
 
     private static bool MayMatchPreparedDotTail(ReadOnlySpan<Utf8SliceInstruction> code, ReadOnlySpan<byte> input,
-        int start, int packedTail, int maximum, ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
+        int start, int packedTail, int maximum, bool singleline, ref Utf8SliceInvocation invocation,
+        out Utf8ExecutionLimitKind breach)
     {
         breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return false;
@@ -999,6 +1000,11 @@ internal static partial class Utf8SliceRunner
             prefix[offset] = (byte)code[tailStart + offset].A;
         // The repeat cannot cover more than four bytes per scalar.
         var window = input.Slice(start, Math.Min(input.Length - start, maximum * 4 + width));
+        if (!singleline && window.IndexOf((byte)'\n') is >= 0 and var newline)
+        {
+            // The dot stops at LF, but the literal can start there or span it.
+            window = window[..Math.Min(window.Length, newline + width)];
+        }
         var possible = width == 1 ? window.Contains(prefix[0]) : window.IndexOf(prefix[..width]) >= 0;
         breach = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();
