@@ -787,6 +787,34 @@ internal static partial class Utf8SliceRunner
                 { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } ||
                 program.GetCompleteAsciiCategoryMask(program.Instructions[index + 1]) != 0);
 
+    private static bool MayMatchGuardedRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
+        out int acceptedEnd)
+    {
+        acceptedEnd = -1;
+        var code = program.Instructions;
+        ref readonly var repeat = ref code[2];
+        // Candidate discovery has one preceding scalar guard. Reuse the
+        // bounded repeat proof when shortening cannot satisfy this follower.
+        if (code[1] is not { Kind: Utf8SliceInstructionKind.Set, D: not 0 } head ||
+            !code[repeat.A].RepeatExitRejectsShorterEndpoints ||
+            code[repeat.A + 1] is not { Kind: Utf8SliceInstructionKind.Fork, B: 1,
+                C: Utf8SliceInstruction.InlineClassAssertion } lookahead ||
+            code[lookahead.A + lookahead.D].Kind != Utf8SliceInstructionKind.Accept ||
+            code[repeat.A + 2] is not { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } guard)
+            return true;
+        if (position == input.Length || !head.MatchesAsciiInterval(input[position])) return false;
+
+        var remaining = BranchedPrefixInstructionLimit - 5;
+        var end = TryMatchLongPrefixRepeat(program, input, position + 1, 3, repeat, ref remaining);
+        if (end < 0) return end != BranchedPrefixRejected;
+        if (end < input.Length && input[end] >= 128) return true;
+
+        var matched = end < input.Length && MatchesAsciiHybridClass(program.SetMasks[guard.A], guard.B != 0, input[end]);
+        if (matched != (lookahead.D != 0)) return false;
+        acceptedEnd = end;
+        return true;
+    }
+
     private static byte[][]? GetAlignedDelimiterAlternatives(Utf8SliceProgram program, int index,
         in PreparedSearcher search)
     {

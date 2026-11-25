@@ -1039,6 +1039,15 @@ internal static partial class Utf8SliceRunner
         var seekDecimal = leading < 0 && !seekLiteral && !hasClassWindow &&
             program.LeadingScalarIsDecimal;
         var canProveValue = !collectHistory && captureStarts.Length == 0 && !program.ReadsCaptures;
+        var lookbehindMask = leading is >= 0 and < 128 && leadingScalarIndex == 1 && canProveValue && captureEnds.IsEmpty &&
+            !program.RightToLeft &&
+            invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
+            first is { Kind: Utf8SliceInstructionKind.Lookbehind, B: 1 } &&
+            program.Assertions[first.A] is { ForwardScalarCount: null,
+                InlineLiteralPrefixLength: Utf8SliceInstruction.InlineClassAssertion, Body.RightToLeft: true } assertion &&
+            assertion.Body.Instructions[0] is { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } guard &&
+            CanProveRepeatPrefix(program, 2)
+                ? assertion.Body.SetMasks[guard.A] : null;
         var proveBranchedMatch = canProveValue && checkBranchedPrefix &&
             (leadingScalarIndex == 0 ||
              Utf8SliceInstruction.SkipLeadingCaptureMarkers(program.Instructions, 0) == leadingScalarIndex);
@@ -1214,7 +1223,18 @@ internal static partial class Utf8SliceRunner
                 ? (classContinuation, classWindowEnd - position + verifiedClassLiteralLength)
                 : verifiedLeadingPrefix;
             var provePrefix = prefixProof && verifiedPrefix.Item1 == prefixContinuation;
-            if (checkBranchedPrefix || checkStraightRepeat || shortDecimalHead || provePrefix ||
+            var provedLookbehind = false;
+            if (lookbehindMask is not null)
+            {
+                if (position == 0) continue;
+                var previous = input[position - 1];
+                if (previous < 128)
+                {
+                    if (!MatchesAsciiHybridClass(lookbehindMask, false, previous)) continue;
+                    provedLookbehind = true;
+                }
+            }
+            if (checkBranchedPrefix || checkStraightRepeat || shortDecimalHead || provePrefix || provedLookbehind ||
                 proveDecimalWindow && input[position] < 128)
             {
                 // Starts only advance in these forward searches. The
@@ -1249,8 +1269,11 @@ internal static partial class Utf8SliceRunner
                 if (rejectedSuffix != NoBranchSuffixCheck &&
                     RejectRequiredBranchLiteralSuffix(program, input, position, ref rejectedSuffix, ref proofLimit))
                     continue;
-                if (!MayMatchAdmittedCandidate(program, input, proofPosition, proofStart, out var acceptedEnd,
-                    emitted, ref interpretedVisits, proveMatch, proofLimit))
+                var possible = provedLookbehind
+                    ? MayMatchGuardedRepeat(program, input, position, out var acceptedEnd)
+                    : MayMatchAdmittedCandidate(program, input, proofPosition, proofStart, out acceptedEnd,
+                        emitted, ref interpretedVisits, proveMatch, proofLimit);
+                if (!possible)
                 {
                     // Keep the full proof allowance for a compiled candidate.
                     if (rejectedSuffix == NoBranchSuffixCheck && proveBranchedMatch && emitted is null &&

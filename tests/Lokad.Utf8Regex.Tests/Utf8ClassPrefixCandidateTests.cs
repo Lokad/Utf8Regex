@@ -247,6 +247,25 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData("None !Word? Valid next", true)]
+    [InlineData("None !Word? Valid!", false)]
+    [InlineData("😀\u2003Valid next", true)]
+    [InlineData("😀 Valid\u2003next", true)]
+    public void BoundedLookaroundKeepsBothScalarGuards(string text, bool found)
+    {
+        const string pattern = @"(?<=\s)[A-Z][a-z]+(?=\s)";
+        var input = Encoding.UTF8.GetBytes(text);
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+        Assert.Equal(found, regex.IsMatch(input, source.Token));
+        var expected = Regex.Match(text, pattern);
+        Assert.Equal(found, expected.Success);
+        var actual = regex.Match(input, cancellationToken: source.Token);
+        Assert.Equal(found, actual.Success);
+        if (found) Utf8MatchSequence.AssertRange(actual, text, expected.Index, expected.Length);
+    }
+
+    [Theory]
     [InlineData(@"(?:ab[0-9]|a[a-z][0-4]|a[a-z]?[0-9][0-9])\.OK", "éab2.X ab8.OK a22.OK")]
     [InlineData(@"(?:ab[0-9]|a[a-z][0-4]|a[a-z]??[0-9][0-9])\.OK", "😀ab2.X ab8.OK a22.OK")]
     [InlineData(@"(?:ab[0-9]|ab[0-9]\.[a-z])\.OK", "éab2.x.OK")]
