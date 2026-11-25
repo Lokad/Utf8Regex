@@ -93,6 +93,26 @@ public sealed class Utf8ScalarCountPrefixTests
         Assert.Equal(4, finite.Count(input, source.Token));
     }
 
+    [Theory]
+    [InlineData("*", 4)]
+    [InlineData("+", 2)]
+    public void TerminalAsciiWordRepeatStopsAtWideScalarsAndHonorsItsMinimum(string quantifier, int expectedCount)
+    {
+        var pattern = @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]" + quantifier;
+        const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+        var first = "class A" + new string('x', 4096);
+        var bytes = Encoding.UTF8.GetBytes(first + "é class Z\u3000 record C123😀 struct Q");
+        using var ordinary = new Utf8Regex(pattern, options);
+        using var finite = new Utf8Regex(pattern, options, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxDepth = 128, MaxWorkingBytes = 1 << 16 }
+        });
+        using var source = new CancellationTokenSource();
+        Assert.Equal(expectedCount, ordinary.Count(bytes));
+        Assert.Equal(expectedCount, finite.Count(bytes, source.Token));
+        Assert.Equal(new Utf8CaptureRange(0, first.Length), finite.Match(bytes, cancellationToken: source.Token));
+    }
+
     [Fact]
     public void MultilineLiteralPrefixKeepsAnchorsAndCaptureReads()
     {

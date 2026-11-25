@@ -1908,6 +1908,25 @@ internal static partial class Utf8SliceRunner
         (uint)(input[start] - '0') <= 9 && (uint)(input[start + 1] - '0') <= 9 &&
         (uint)(input[start + 2] - '0') <= 9 && (uint)(input[start + 3] - '0') <= 9;
 
+    private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunUnboundedAsciiWord(
+        ReadOnlySpan<byte> input, int start, bool requiresScalar, ref Utf8SliceInvocation invocation,
+        bool checkExitDeadline = true)
+    {
+        var position = start;
+        while (position < input.Length)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+            var block = input.Slice(position, Math.Min(2048, input.Length - position));
+            var stop = Utf8AsciiBytePredicates.WordSearch.IndexOfAnyExcept(block);
+            if (stop >= 0) { position += stop; break; }
+            position += block.Length;
+        }
+        var terminal = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
+        return terminal == Utf8ExecutionLimitKind.None && (!requiresScalar || position != start)
+            ? (position, terminal) : (-1, terminal);
+    }
+
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunUnboundedDecimalDigits(
         ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation, bool checkExitDeadline)
     {
@@ -2078,6 +2097,12 @@ internal static partial class Utf8SliceRunner
             if (minimum != 0 && digits.EndIndex > start) minimumEnd = AdvancePastScalar(input, start, reverse: false);
             return digits.EndIndex == start && minimum != 0 ? (-1, digits.Breach) : digits;
         }
+        if (unboundedAsciiSet && IsAsciiWordMask(program.SetMasks[atom.A]))
+        {
+            var word = RunUnboundedAsciiWord(input, start, minimum != 0, ref invocation, checkExitDeadline);
+            if (minimum != 0 && word.EndIndex > start) minimumEnd = start + 1;
+            return word;
+        }
         // Lowering includes every shorthand's ASCII members in an unfolded
         // Hybrid mask. Its shorthand bits still classify non-ASCII scalars.
         var hybrid = atom is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 };
@@ -2088,7 +2113,7 @@ internal static partial class Utf8SliceRunner
         var wordCategory = unbounded && categories != 0 &&
             input.Length - start >= 32 && (BinaryPrimitives.ReadUInt32LittleEndian(input[start..]) & 0x80808080u) == 0 &&
             IsAsciiWordMask(program.SetMasks[atom.A]);
-        var asciiWord = wordCategory || !hybrid && !exactAsciiMask.IsEmpty && IsAsciiWordMask(exactAsciiMask);
+        var asciiWord = wordCategory || !unboundedAsciiSet && !hybrid && !exactAsciiMask.IsEmpty && IsAsciiWordMask(exactAsciiMask);
         if (unbounded && (unboundedAsciiSet || hybrid || asciiWord))
         {
             var blockSize = asciiWord ? 2048 : 64;

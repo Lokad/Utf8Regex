@@ -1610,6 +1610,7 @@ internal static partial class Utf8SliceRunner
         var straightPrefixBytes = straightPrefixStart != 0 ? leadingPrefix.Length : 0;
         var (prefixRepeatAscii, prefixRepeatFollower, prefixRepeatMinimum) = GetExactPrefixRepeatHead(program, prefixContinuation);
         var terminalRepeat = 0;
+        var terminalWordMinimum = -1;
         var terminalPrefixAccept = 0;
         if (prefixRepeatAscii.HasValue && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures)
         {
@@ -1627,6 +1628,9 @@ internal static partial class Utf8SliceRunner
                 var admission = invocation.TryReserveWorking(0);
                 if (admission != Utf8ExecutionLimitKind.None) return new(count, admission);
                 terminalRepeat = index;
+                if (code[index] is { RepeatMinimum: 0 or 1, RepeatMaximum: long.MaxValue } repeat &&
+                    IsAsciiWordMask(program.SetMasks[code[index + 1].A]))
+                    terminalWordMinimum = (int)repeat.RepeatMinimum;
             }
         }
         var remaining = program.RightToLeft ? fromByte : input.Length - fromByte;
@@ -1877,7 +1881,10 @@ internal static partial class Utf8SliceRunner
                 {
                     // An admitted prefix has reached a terminal repeat with no
                     // further choice. Reuse the same scan without VM workspace.
-                    var tail = RunClassRepeat(program, terminalRepeat, input, position + verifiedPrefix.Item2, ref invocation);
+                    var start = position + verifiedPrefix.Item2;
+                    var tail = terminalWordMinimum >= 0
+                        ? RunUnboundedAsciiWord(input, start, terminalWordMinimum != 0, ref invocation)
+                        : RunClassRepeat(program, terminalRepeat, input, start, ref invocation);
                     outcome = new(tail.EndIndex >= 0, tail.EndIndex, tail.Breach);
                 }
                 else
