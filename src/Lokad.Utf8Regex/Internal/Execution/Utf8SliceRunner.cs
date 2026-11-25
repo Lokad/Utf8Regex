@@ -725,8 +725,7 @@ internal static partial class Utf8SliceRunner
                 proofStart = -first.D;
                 // The anchor admits one proof. Keep the smaller allowance
                 // on short inputs and when searching multiple origins.
-                if (input.Length > BranchedPrefixInstructionLimit)
-                    proofLimit = SingleOriginPrefixInstructionLimit;
+                proofLimit = GetLongSingleOriginProofLimit(input.Length);
             }
             else if (!existenceOnly &&
                 first is { A: (int)Utf8SliceAnchorKind.Contiguous, D: 1 } &&
@@ -751,8 +750,8 @@ internal static partial class Utf8SliceRunner
             var atBeginning = seekBeginning && fromByte == 0;
             var emitted = atBeginning ? program.EmittedMatch : null;
             var tiered = false;
-            if (emitted is null && proofStart == 1 &&
-                (atBeginning || first.A == (int)Utf8SliceAnchorKind.Contiguous &&
+            if (emitted is null &&
+                (atBeginning || proofStart == 1 && first.A == (int)Utf8SliceAnchorKind.Contiguous &&
                     proofLimit == BranchedPrefixInstructionLimit) &&
                 (program.ObservesProofWork || program.TieredProof is not null || program.EmittedMatch is not null) &&
                 invocation.CheckpointHook is null && invocation.IsUnmetered)
@@ -774,18 +773,18 @@ internal static partial class Utf8SliceRunner
                 possible = length >= 0;
                 acceptedEnd = possible ? fromByte + length : -1;
             }
-            else if (emitted is not null)
+            else if (emitted is not null && emitted(fromByte == 0 ? input : input[fromByte..]) is var end &&
+                end != Utf8BoundedProgramEmitter.Incomplete)
             {
-                var end = emitted(fromByte == 0 ? input : input[fromByte..]);
                 possible = end >= 0;
                 acceptedEnd = possible ? fromByte + end : -1;
             }
             else if (tiered)
             {
                 var remaining = proofLimit;
-                var end = ProbeBranchedAsciiPrefix(program, input, fromByte, proofStart, ref remaining, proveMatch: true);
-                possible = end != BranchedPrefixRejected;
-                acceptedEnd = Math.Max(BranchedPrefixUndecided, end);
+                var probeEnd = ProbeBranchedAsciiPrefix(program, input, fromByte, proofStart, ref remaining, proveMatch: true);
+                possible = probeEnd != BranchedPrefixRejected;
+                acceptedEnd = Math.Max(BranchedPrefixUndecided, probeEnd);
                 visits = proofLimit - remaining;
             }
             else

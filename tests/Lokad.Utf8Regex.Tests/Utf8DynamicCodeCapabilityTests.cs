@@ -562,6 +562,46 @@ public sealed class Utf8DynamicCodeCapabilityTests
         }
     }
 
+    [Fact]
+    public void AnchoredSpanRunsTierUpAfterOrdinaryWorkAndKeepRetryResults()
+    {
+        const string pattern = @"^([0-9]+)(-a|-|-[a-z]+\n)(.*)\z";
+        const RegexOptions options = RegexOptions.Compiled;
+        using var regex = new Utf8Regex(pattern, options);
+        using var controlled = new Utf8Regex(pattern, options, new()
+        {
+            ConstructionPolicy = new() { MaxWorkSteps = 128 * 1024 }
+        });
+        using var source = new CancellationTokenSource();
+        var hit = Encoding.UTF8.GetBytes("100-a😀" + new string('x', 57));
+        var retry = Encoding.UTF8.GetBytes("100-a" + new string('x', 80) + "\nmore");
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        var dynamicCode = RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
+
+        Assert.Null(program.EmittedMatch);
+        Assert.Equal(dynamicCode, program.ObservesProofWork);
+        Assert.False(controlled.Inspection.AvailableOwnedSliceProgram!.ObservesProofWork);
+        for (var i = 0; i < 32_768; i++)
+            Assert.True(regex.IsMatch(hit, source.Token));
+        Assert.Null(program.TieredProof);
+
+        for (var i = 0; i < 32_768 && program.ObservesProofWork; i++)
+            Assert.True(regex.IsMatch(hit));
+        var proof = program.TieredProof;
+        Assert.Equal(dynamicCode, proof is not null);
+        if (proof is not null)
+            Assert.Equal(Utf8BoundedProgramEmitter.Incomplete, proof(retry));
+
+        Assert.True(regex.IsMatch(retry));
+        Assert.Equal(1, regex.Count(retry));
+        Assert.Equal(new Utf8CaptureRange(0, retry.Length), regex.Match(retry));
+        Assert.Equal(new Utf8CaptureRange(0, hit.Length), regex.Match(hit));
+        using var cursor = regex.CreateMatchCursor(retry);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(new Utf8CaptureRange(3, retry.Length - 4), Assert.Single(match.GetCaptures(2).ToArray()));
+        Assert.Equal(new Utf8CaptureRange(retry.Length - 4, retry.Length), Assert.Single(match.GetCaptures(3).ToArray()));
+    }
+
     [Theory]
     [InlineData("abc|xyz", "é😀 xyz abc", 2)]
     [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", 1)]

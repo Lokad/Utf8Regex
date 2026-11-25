@@ -69,7 +69,7 @@ public sealed partial class Utf8Regex : IDisposable
             constructionTimeout != Timeout.InfiniteTimeSpan;
         var ownsConstruction = explicitCompile || controlledConstruction;
         var canTierUp = !controlledConstruction && (sharedBranchTier || !Utf8ConstructionScope.IsActive) &&
-            (options & RegexOptions.Compiled) == 0;
+            ((options & RegexOptions.Compiled) == 0 || !token.CanBeCanceled);
         using var construction = !ownsConstruction ? Utf8ConstructionScope.Enter() : account is null
             ? Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token)
             : Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token, account);

@@ -349,15 +349,18 @@ profile scopes.
 Managed code performs parsing, preparation and execution. Immutable instructions
 drive each invocation. Shipped matching and result publication are owned by the
 library and use managed bounds checks. Actual `Unsafe.SizeOf<T>()` is permitted.
-`Compiled` affects strategy only. When dynamic code is available, Core emits
-IL at construction for eligible bounded forward programs. The existing search
+`Compiled` affects strategy only. When dynamic code is available, Core can
+emit IL at construction for bounded forward programs. The existing search
 admits each origin and applies invocation limits. Emitted code can verify
 Boolean, whole-range and Count results. Eligible long capture searches can
 use a ready proof to select the starting byte. The scalar interpreter
 publishes capture results and handles other programs.
-An eligible ordinary Core program can also publish one emitted proof after
+An eligible Core program can also publish one emitted proof after
 repeated interpreted checks at an absolute or contiguous origin on short
 inputs, or at unanchored candidate starts admitted for the complete proof.
+Some absolute-origin checks under `Compiled` defer emission until repeated
+use. Their greedy ASCII range and dot runs share a bounded scan allowance
+across retries and resume interpreted checking if it runs out.
 At a contiguous origin, eager and tiered proofs use the admitted short byte
 suffix in unlimited, unfunded calls without cancelable tokens or deadlines.
 This automatic tier applies to unlimited, unfunded calls without a cancelable

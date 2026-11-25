@@ -30,13 +30,16 @@ internal static class Utf8OwnedTreeSliceLowerer
         var hasCaptureWritingLazyRange = false;
         var caseBehavior = Utf8SliceCaseEquivalences.GetBehavior(tree.Culture, options);
         var root = TryConvertRoot(tree.Root, catalog, arena, caseBehavior, ref hasBalancing, ref hasCaptureWritingLazyRange);
+        if ((options & RegexOptions.Compiled) != 0)
+            proofCompilation = proofCompilation == Utf8BoundedProgramEmitter.Compilation.Tiered
+                ? Utf8BoundedProgramEmitter.Compilation.EagerOrTiered : Utf8BoundedProgramEmitter.Compilation.Eager;
         var program = root is null ? null : Utf8SliceLowerer.Lower(root, catalog.GroupNames,
             hasBalancing, tree.UsesIgnoreCase || (options & RegexOptions.IgnoreCase) != 0,
             (options & RegexOptions.RightToLeft) != 0, catalog,
             (options & RegexOptions.Compiled) != 0 && hasCaptureWritingLazyRange,
             tree.UsesLiteralClassBracketSyntax, caseBehavior,
             (options & RegexOptions.NonBacktracking) != 0, prepareUnbranchedSearch: true,
-            proofCompilation: (options & RegexOptions.Compiled) != 0 ? Utf8BoundedProgramEmitter.Compilation.Eager : proofCompilation);
+            proofCompilation: proofCompilation);
         if (program is not null) { arena.Complete(); construction.Complete(); }
         return program;
     }

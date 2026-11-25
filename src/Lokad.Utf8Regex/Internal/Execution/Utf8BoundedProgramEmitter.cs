@@ -10,16 +10,21 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal static class Utf8BoundedProgramEmitter
 {
     internal delegate int Match(ReadOnlySpan<byte> input, Span<Utf8CaptureRange> captures = default);
-    internal enum Compilation : byte { None, Eager, Tiered, TieredBranches, TieredLiteralExistence }
+    internal enum Compilation : byte { None, Eager, EagerOrTiered, Tiered, TieredBranches, TieredLiteralExistence }
 
     private const int MaxUnsplitInstructions = 64;
     private const int MaxExpandedVisits = Utf8SliceRunner.BranchedPrefixInstructionLimit;
     private const int Unsupported = MaxExpandedVisits + 1;
+    // Only the tiered absolute-origin span proof can reach its scan limit.
+    internal const int Incomplete = -2;
+    private const int DotRun = 256;
     internal const int MaxHistoryCaptures = 8;
     private static readonly MethodInfo s_spanLength = typeof(ReadOnlySpan<byte>).GetProperty(nameof(ReadOnlySpan<byte>.Length))!.GetMethod!;
     private static readonly MethodInfo s_spanItem = typeof(ReadOnlySpan<byte>).GetProperty("Item")!.GetMethod!;
     private static readonly MethodInfo s_matchDecimalRun = typeof(Utf8SliceRunner).GetMethod(
         nameof(Utf8SliceRunner.MatchBoundedDecimalRun), BindingFlags.Static | BindingFlags.NonPublic)!;
+    private static readonly MethodInfo s_matchSpanRun = typeof(Utf8BoundedProgramEmitter).GetMethod(
+        nameof(MatchSpanRun), BindingFlags.Static | BindingFlags.NonPublic)!;
     private static readonly MethodInfo s_captureLength = typeof(Span<Utf8CaptureRange>).GetProperty(nameof(Span<Utf8CaptureRange>.Length))!.GetMethod!;
     private static readonly MethodInfo s_storeCapture = typeof(Utf8BoundedProgramEmitter).GetMethod(
         nameof(StoreCapture), BindingFlags.Static | BindingFlags.NonPublic)!;
@@ -108,19 +113,24 @@ internal static class Utf8BoundedProgramEmitter
                         Utf8SliceInstructionKind.Accept or Utf8SliceInstructionKind.Fail }))
                     return false;
         }
-        if (program.Instructions[0].Kind == Utf8SliceInstructionKind.Anchor)
-            return entry == 1 && program.Instructions[0].D == 1 && program.Instructions.Length <= MaxUnsplitInstructions &&
-                CountExpandedVisits(program, entry, program.Instructions.Length, budget) <= MaxExpandedVisits;
+        var code = program.Instructions;
+        if (compilation == Compilation.EagerOrTiered)
+            return HasLongAbsoluteOrigin(code) && code.Length <= MaxUnsplitInstructions &&
+                CountExpandedVisits(program, entry, code.Length, budget, spanRuns: true) <= MaxExpandedVisits;
+        if (code[0].Kind == Utf8SliceInstructionKind.Anchor)
+            return entry == 1 && code[0].D == 1 && code.Length <= MaxUnsplitInstructions &&
+                CountExpandedVisits(program, entry, code.Length, budget) <= MaxExpandedVisits;
         Span<int> splits = stackalloc int[MaxExpandedVisits];
         return TryPlan(program, entry, budget, splits, out _);
     }
 
-    internal static Match? TryEmit(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+    internal static Match? TryEmit(Utf8SliceProgram program, Utf8ConstructionBudget budget, bool allowSpanRuns = false)
     {
         var code = program.Instructions;
         if (!TryGetEntry(program, out var entry)) return null;
+        var spanRuns = allowSpanRuns && HasLongAbsoluteOrigin(code);
         Span<int> splits = stackalloc int[MaxExpandedVisits];
-        if (!TryPlan(program, entry, budget, splits, out var splitCount)) return null;
+        if (!TryPlan(program, entry, budget, splits, out var splitCount, spanRuns)) return null;
 
         using var method = Utf8DynamicIlBuilder.Create(entry != 0 ? "Utf8Regex_AnchoredProgram" : "Utf8Regex_CandidateProgram",
             typeof(int), typeof(Utf8BoundedProgramEmitter), typeof(ReadOnlySpan<byte>), typeof(Span<Utf8CaptureRange>));
@@ -135,6 +145,8 @@ internal static class Utf8BoundedProgramEmitter
         il.LoadInputLength();
         il.StoreLocal(length);
         var fail = il.DefineLabel();
+        Utf8IlLocal? scanned = null;
+        Utf8IlLabel? incomplete = null;
         Utf8IlLocal? start = null;
         foreach (var split in splits[..splitCount])
         {
@@ -149,6 +161,12 @@ internal static class Utf8BoundedProgramEmitter
         il.MarkLabel(fail);
         il.LdcI4(-1);
         il.Emit(OpCodes.Ret);
+        if (incomplete is { } exhausted)
+        {
+            il.MarkLabel(exhausted);
+            il.LdcI4(Incomplete);
+            il.Emit(OpCodes.Ret);
+        }
         return method.CreateDelegate<Match>().Callback;
 
         void EmitPath(int pc, Utf8IlLocal? origin, int offset, Utf8IlLabel retry,
@@ -194,6 +212,13 @@ internal static class Utf8BoundedProgramEmitter
                         case Utf8SliceInstructionKind.RepeatLazy:
                             var min = (int)instruction.RepeatMinimum;
                             var max = EmittedRepeatMaximum(instruction);
+                            if (spanRuns && GetSpanRunFirst(program, pc - 1, instruction, out var last) is >= 0 and var first)
+                            {
+                                origin = EmitSpanRun(origin, offset, min, first, last, retry);
+                                offset = 0;
+                                pc = instruction.A + 1;
+                                break;
+                            }
                             if (code[pc].IsDecimalDigitSet)
                             {
                                 var end = il.DeclareLocal<int>();
@@ -234,9 +259,9 @@ internal static class Utf8BoundedProgramEmitter
                                 EmitPath(instruction.A + 1, origin, offset + width, next, continuation);
                                 il.MarkLabel(next);
                             }
-                            var last = lazy ? max : min;
-                            EmitRun(code[pc], origin, offset, last, retry);
-                            offset += last;
+                            var lastWidth = lazy ? max : min;
+                            EmitRun(code[pc], origin, offset, lastWidth, retry);
+                            offset += lastWidth;
                             pc = instruction.A + 1;
                             break;
                         case Utf8SliceInstructionKind.Anchor:
@@ -335,6 +360,28 @@ internal static class Utf8BoundedProgramEmitter
                 il.StoreLocal(end);
             }
             il.MarkLabel(done);
+            return end;
+        }
+
+        Utf8IlLocal EmitSpanRun(Utf8IlLocal? origin, int offset, int minimum, int first, byte last, Utf8IlLabel retry)
+        {
+            scanned ??= il.DeclareLocal<int>();
+            incomplete ??= il.DefineLabel();
+            var end = il.DeclareLocal<int>();
+            il.LoadArg(0);
+            LoadPosition(origin, offset);
+            il.LdcI4(minimum);
+            il.LdcI4(first);
+            il.LdcI4(last);
+            method.Emit(OpCodes.Ldloca, scanned.Value);
+            il.Emit(OpCodes.Call, s_matchSpanRun);
+            il.StoreLocal(end);
+            il.LoadLocal(end);
+            il.LdcI4(Incomplete);
+            il.Emit(OpCodes.Beq, incomplete.Value);
+            il.LoadLocal(end);
+            il.LdcI4(0);
+            il.Emit(OpCodes.Blt, retry);
             return end;
         }
 
@@ -451,16 +498,16 @@ internal static class Utf8BoundedProgramEmitter
     }
 
     private static bool TryPlan(Utf8SliceProgram program, int entry, Utf8ConstructionBudget budget,
-        Span<int> splits, out int splitCount)
+        Span<int> splits, out int splitCount, bool spanRuns = false)
     {
         splitCount = 0;
         var length = program.Instructions.Length;
-        return length <= MaxUnsplitInstructions && CountExpandedVisits(program, entry, length, budget) <= MaxExpandedVisits ||
-            TrySplitAtDelimiters(program, entry, budget, splits, out splitCount);
+        return length <= MaxUnsplitInstructions && CountExpandedVisits(program, entry, length, budget, spanRuns) <= MaxExpandedVisits ||
+            TrySplitAtDelimiters(program, entry, budget, splits, out splitCount, spanRuns);
     }
 
     private static bool TrySplitAtDelimiters(Utf8SliceProgram program, int entry,
-        Utf8ConstructionBudget budget, Span<int> splits, out int count)
+        Utf8ConstructionBudget budget, Span<int> splits, out int count, bool spanRuns)
     {
         var code = program.Instructions;
         var total = 0;
@@ -486,15 +533,16 @@ internal static class Utf8BoundedProgramEmitter
             }
             if (consumesDelimiter) break;
             var end = literal.Instruction + 1;
-            total += CountExpandedVisits(program, entry, end, budget);
+            total += CountExpandedVisits(program, entry, end, budget, spanRuns);
             if (total > MaxExpandedVisits) return false;
             splits[count++] = end;
             entry = end;
         }
-        return count != 0 && total + CountExpandedVisits(program, entry, code.Length, budget) <= MaxExpandedVisits;
+        return count != 0 && total + CountExpandedVisits(program, entry, code.Length, budget, spanRuns) <= MaxExpandedVisits;
     }
 
-    private static int CountExpandedVisits(Utf8SliceProgram program, int entry, int end, Utf8ConstructionBudget budget)
+    private static int CountExpandedVisits(Utf8SliceProgram program, int entry, int end, Utf8ConstructionBudget budget,
+        bool spanRuns = false)
     {
         var code = program.Instructions;
         var shortOrigin = code[0] is { Kind: Utf8SliceInstructionKind.Anchor,
@@ -525,6 +573,9 @@ internal static class Utf8BoundedProgramEmitter
                     instruction.HasSingleAtomBody && instruction.A + 1 < end && code[pc + 1].IsDecimalDigitSet &&
                     CanEmitDecimalRepeat(program, pc, instruction, shortOrigin)
                     => 1 + EmittedRepeatMaximum(instruction) + visits[instruction.A + 1],
+                Utf8SliceInstructionKind.RepeatGreedy when spanRuns && instruction.A + 1 < end &&
+                    GetSpanRunFirst(program, pc, instruction, out _) >= 0
+                    => 2 + visits[instruction.A + 1],
                 // A loop emits its consuming test once. Its runtime work is
                 // bounded by the caller's suffix and the expanded paths.
                 Utf8SliceInstructionKind.RepeatGreedy when shortContiguousOrigin &&
@@ -581,6 +632,36 @@ internal static class Utf8BoundedProgramEmitter
     private static bool CanSkipRepeatRetries(Utf8SliceProgram program, int pc, in Utf8SliceInstruction repeat)
         => program.Instructions[repeat.A].RepeatExitRejectsShorterEndpoints ||
            repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy && program.SkipsTerminalRewind(pc);
+
+    private static bool HasLongAbsoluteOrigin(ReadOnlySpan<Utf8SliceInstruction> code)
+        => code[0] is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: < 0 };
+
+    private static int GetSpanRunFirst(Utf8SliceProgram program, int pc, in Utf8SliceInstruction repeat, out byte last)
+    {
+        last = 0;
+        if (repeat is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true,
+            RepeatMaximum: long.MaxValue, RepeatMinimum: <= Utf8SliceRunner.ShortSingleOriginProofInputLimit } ||
+            !CanSkipRepeatRetries(program, pc, repeat)) return -1;
+
+        ref readonly var atom = ref program.Instructions[pc + 1];
+        return atom is { Kind: Utf8SliceInstructionKind.Dot, A: 0 } && repeat.RepeatMinimum <= 1
+            ? DotRun : Utf8SliceRunner.GetUnfoldedAsciiRange(atom, out last);
+    }
+
+    private static int MatchSpanRun(ReadOnlySpan<byte> input, int start, int minimum, int first, byte last, ref int scanned)
+    {
+        var limit = Utf8SliceRunner.GetLongSingleOriginProofLimit(input.Length);
+        if (input.Length > limit) return Incomplete;
+        // Retries share one allowance. A clipped suffix can prove a stop,
+        // but only the real end can prove that an unlimited run is complete.
+        var suffix = input[start..];
+        var window = suffix[..Math.Min(suffix.Length, limit - scanned)];
+        var stop = first == DotRun ? window.IndexOf((byte)'\n') : window.IndexOfAnyExceptInRange((byte)first, last);
+        if (stop < 0 && window.Length < suffix.Length) return Incomplete;
+        var consumed = stop < 0 ? window.Length : stop;
+        scanned += stop < 0 ? consumed : consumed + 1;
+        return consumed < minimum ? -1 : start + consumed;
+    }
 
     private static bool IsAsciiAtom(Utf8SliceProgram program, in Utf8SliceInstruction instruction)
         => instruction.Kind is Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set &&

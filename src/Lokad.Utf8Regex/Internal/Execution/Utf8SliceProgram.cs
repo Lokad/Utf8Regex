@@ -623,18 +623,20 @@ internal sealed class Utf8SliceProgram
         }
         if (proofCompilation == Utf8BoundedProgramEmitter.Compilation.TieredBranches && !HasCaptureFreeAsciiBranch)
             proofCompilation = Utf8BoundedProgramEmitter.Compilation.None;
-        if (proofCompilation is Utf8BoundedProgramEmitter.Compilation.Eager or Utf8BoundedProgramEmitter.Compilation.Tiered)
+        var eager = proofCompilation is Utf8BoundedProgramEmitter.Compilation.Eager or Utf8BoundedProgramEmitter.Compilation.EagerOrTiered;
+        if (eager || proofCompilation == Utf8BoundedProgramEmitter.Compilation.Tiered)
             EmittedHistoryOffsets = Utf8BoundedProgramEmitter.PrepareHistoryOffsets(this, Utf8ConstructionScope.CurrentBudget);
-        if (proofCompilation == Utf8BoundedProgramEmitter.Compilation.Eager)
+        if (eager)
             EmittedMatch = Utf8BoundedProgramEmitter.TryEmit(this, Utf8ConstructionScope.CurrentBudget);
-        else if (proofCompilation != Utf8BoundedProgramEmitter.Compilation.None)
+        if (EmittedMatch is null && proofCompilation is not
+            (Utf8BoundedProgramEmitter.Compilation.None or Utf8BoundedProgramEmitter.Compilation.Eager))
         {
             var budget = Utf8ConstructionScope.CurrentBudget;
             if (Utf8BoundedProgramEmitter.CanTierUp(this, budget, proofCompilation))
             {
                 // Branch-only consumers recover compilation cost on searches
                 // that have more than a single candidate's bounded work.
-                var minimumVisits = proofCompilation == Utf8BoundedProgramEmitter.Compilation.Tiered
+                var minimumVisits = proofCompilation is Utf8BoundedProgramEmitter.Compilation.Tiered or Utf8BoundedProgramEmitter.Compilation.EagerOrTiered
                     ? 1 : Utf8SliceRunner.BranchedPrefixInstructionLimit + 1;
                 _proofTier = budget.AllocateObject(minimumVisits, static visits => new ProofTier(visits));
             }
@@ -920,7 +922,7 @@ internal sealed class Utf8SliceProgram
         using var construction = Utf8ConstructionScope.Enter();
         try
         {
-            var emitted = Utf8BoundedProgramEmitter.TryEmit(this, construction.Budget);
+            var emitted = Utf8BoundedProgramEmitter.TryEmit(this, construction.Budget, allowSpanRuns: true);
             construction.Complete();
             tier.Emitted = emitted;
         }

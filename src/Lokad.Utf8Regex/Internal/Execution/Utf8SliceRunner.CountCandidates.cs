@@ -342,7 +342,7 @@ internal static partial class Utf8SliceRunner
             : 64 + BitOperations.TrailingZeroCount(set.High);
     }
 
-    private static int GetUnfoldedAsciiRange(Utf8SliceInstruction instruction, out byte last)
+    internal static int GetUnfoldedAsciiRange(Utf8SliceInstruction instruction, out byte last)
     {
         last = 0;
         if (instruction is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal && (uint)literal.A < 128)
@@ -2691,6 +2691,9 @@ internal static partial class Utf8SliceRunner
     internal const int BranchedPrefixInstructionLimit = 96;
     internal const int ShortSingleOriginProofInputLimit = 32;
     private const int SingleOriginPrefixInstructionLimit = 256;
+
+    internal static int GetLongSingleOriginProofLimit(int length)
+        => length > BranchedPrefixInstructionLimit ? SingleOriginPrefixInstructionLimit : BranchedPrefixInstructionLimit;
 
     private static Utf8BoundedProgramEmitter.Match? GetCandidateProof(Utf8SliceProgram program, bool allowTier,
         ref Utf8SliceInvocation invocation, out int interpretedVisits)
