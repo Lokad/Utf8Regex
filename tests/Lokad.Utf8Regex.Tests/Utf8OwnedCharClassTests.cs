@@ -336,6 +336,19 @@ public sealed class Utf8OwnedCharClassTests
     }
 
     [Fact]
+    public void DigitAndSpaceShorthandsMatchBclAcrossBmp()
+    {
+        for (var value = 0; value <= char.MaxValue; value++)
+        {
+            if (!Rune.IsValid(value)) continue;
+            var character = (char)value;
+            var scalar = new Rune(value);
+            Assert.Equal(char.IsDigit(character), Utf8SliceScalarClasses.MatchesShorthand(scalar, Utf8SliceShorthand.Digit));
+            Assert.Equal(char.IsWhiteSpace(character), Utf8SliceScalarClasses.MatchesShorthand(scalar, Utf8SliceShorthand.Space));
+        }
+    }
+
+    [Fact]
     public void BoundaryPredicateMatchesWordExceptJoiners()
     {
         // Joiners are boundary word characters without being word characters;
