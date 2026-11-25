@@ -515,12 +515,15 @@ internal static partial class Utf8SearchExecutor
         var tail1 = Vector512.Create(second[anchor]);
         var limit = Math.Min(starts, input.Length - anchor) - Vector512<byte>.Count;
         var position = 0;
-        while (position <= limit)
+        for (; position <= limit; position += Vector512<byte>.Count)
         {
             var heads = MemoryMarshal.Read<Vector512<byte>>(input[position..]);
+            var firstHeads = Vector512.Equals(heads, head0);
+            var secondHeads = Vector512.Equals(heads, head1);
+            if ((firstHeads | secondHeads) == Vector512<byte>.Zero) continue;
             var tails = MemoryMarshal.Read<Vector512<byte>>(input[(position + anchor)..]);
-            var candidates = AsciiSearch.CorrelateExactPairs(heads, tails, head0, tail0, head1, tail1)
-                .ExtractMostSignificantBits();
+            var candidates = ((firstHeads & Vector512.Equals(tails, tail0)) |
+                (secondHeads & Vector512.Equals(tails, tail1))).ExtractMostSignificantBits();
             while (candidates != 0)
             {
                 var lane = BitOperations.TrailingZeroCount(candidates);
@@ -535,7 +538,6 @@ internal static partial class Utf8SearchExecutor
                 { literalId = 1; return candidate; }
                 candidates &= candidates - 1;
             }
-            position += Vector512<byte>.Count;
         }
         var remaining = input[position..];
         var a = remaining.IndexOf(first);
