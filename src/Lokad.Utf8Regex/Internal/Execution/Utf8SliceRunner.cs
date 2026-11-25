@@ -1068,6 +1068,7 @@ internal static partial class Utf8SliceRunner
             program.Instructions[proofRepeatIndex] is
                 { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true, RepeatMaximum: > 4 } prefixRepeat &&
             (program.Instructions[prefixRepeat.A].RepeatExitRejectsShorterEndpoints ||
+                program.Instructions[prefixRepeat.A].RepeatExitSharesTerminalRun ||
                 program.Instructions[prefixRepeat.A].RepeatExitAcceptsEmptyTail) &&
             (program.Instructions[proofRepeatIndex + 1] is
                 { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } ||

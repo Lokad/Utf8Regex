@@ -1369,7 +1369,24 @@ internal static partial class Utf8SliceRunner
             {
                 // Every successful rewind must start with this exact byte.
                 var starts = FindRepeatRewindStarts(code, setMasks, continuation, budget);
-                code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C, starts);
+                var flags = exit.C;
+                if (afterLiteral == continuation + 1 && repeat is { RepeatMinimum: 1, RepeatMaximum: long.MaxValue } &&
+                    code[afterLiteral] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1,
+                        RepeatMaximum: long.MaxValue } following && following.A == code.Length - 2 &&
+                    code[^1].Kind == Utf8SliceInstructionKind.Accept && IsSingleAtomRepeat(code, afterLiteral, following))
+                {
+                    budget.ChargeWork(5);
+                    var terminalAtom = code[afterLiteral + 1];
+                    if (Utf8SliceProgram.GetCompleteAsciiCategoryMask(terminalAtom, categories) ==
+                        Utf8SliceProgram.GetCompleteAsciiCategoryMask(atom, categories) &&
+                        setMasks[atom.A].AsSpan().SequenceEqual(setMasks[terminalAtom.A]))
+                    {
+                        // Both runs consume the same alphabet. A delimiter
+                        // inside a single complete run proves the whole suffix.
+                        flags |= Utf8SliceInstruction.RepeatExitSharesTerminalRunFlag;
+                    }
+                }
+                code[repeat.A] = new(exit.Kind, exit.A, exit.B, flags, starts);
             }
         }
     }

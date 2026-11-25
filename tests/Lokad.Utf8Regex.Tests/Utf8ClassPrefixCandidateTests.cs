@@ -71,6 +71,28 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Fact]
+    public void EqualTerminalClassesRequireAScalarOnBothSidesOfTheDelimiter()
+    {
+        const string pattern = @"[\w.+-]+@[\p{L}.]+\.[\p{L}.]+";
+        var reference = new Regex(pattern);
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+        using var source = new CancellationTokenSource();
+        foreach (var suffix in new[] { "a@.β", "a@β.", "a@β..", "a@β.γ", "a@" + new string('β', 48) + ".γ" })
+        {
+            var text = new string('!', 260) + suffix;
+            var input = Encoding.UTF8.GetBytes(text);
+            var expected = reference.Match(text);
+            Assert.Equal(expected.Success, regex.IsMatch(input, source.Token));
+            var range = expected.Success
+                ? new Utf8CaptureRange(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)),
+                    Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index + expected.Length)))
+                : default;
+            Assert.Equal(range, regex.Match(input, cancellationToken: source.Token));
+            Assert.Equal(reference.Count(text), regex.Count(input, source.Token));
+        }
+    }
+
+    [Fact]
     public void VerifiedClassDelimiterKeepsWorkBoundAndWideLabelEndpoints()
     {
         using var regex = new Utf8Regex(@"[\w.+-]+@[\w-]+\.[\w.-]+", policy: new()

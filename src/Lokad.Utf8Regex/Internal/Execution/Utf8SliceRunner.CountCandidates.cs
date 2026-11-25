@@ -2494,6 +2494,7 @@ internal static partial class Utf8SliceRunner
                             : TryMatchSmallPrefixRepeat(program, input, position, index, in entry, ref remaining, out continueProof);
                         if (end >= 0 && continueProof)
                         {
+                            if (code[entry.A].RepeatExitSharesTerminalRun) return end;
                             position = end;
                             index = entry.A + 1;
                             continue;
@@ -2565,8 +2566,8 @@ internal static partial class Utf8SliceRunner
     // The caller resumes at a returned byte position when continueProof is set.
     // Competing endpoints can already have proved an outcome for the caller.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    // A nonnegative result is the endpoint of the run. The caller still
-    // verifies its continuation, including capture markers and end anchors.
+    // A nonnegative result is the endpoint of the run. A prepared terminal
+    // pair proves both runs here. Other continuations are verified by the caller.
     private static int TryMatchLongPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
         int atomIndex, in Utf8SliceInstruction repeat, ref int remaining)
     {
@@ -2597,7 +2598,7 @@ internal static partial class Utf8SliceRunner
             available > remaining && (remaining < repeat.RepeatMinimum || !completeCategory &&
                 atom is not ({ Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
                     { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })) ||
-            !(exit.RepeatExitRejectsShorterEndpoints ||
+            !(exit.RepeatExitRejectsShorterEndpoints || exit.RepeatExitSharesTerminalRun ||
                 repeatMaximum == long.MaxValue && (exit.RepeatExitAcceptsEmptyTail ||
                     completeCategory && repeat.A + 2 == program.Instructions.Length &&
                     program.Instructions[^1].Kind == Utf8SliceInstructionKind.Accept) ||
@@ -2656,6 +2657,17 @@ internal static partial class Utf8SliceRunner
         }
         if (length < repeat.RepeatMinimum) return BranchedPrefixRejected;
         remaining -= Math.Min(candidate.Length, length + 1);
+        if (exit.RepeatExitSharesTerminalRun)
+        {
+            // An ASCII delimiter cannot start inside a wider scalar. Keep
+            // at least one scalar on each side, even at the UTF-8 edges.
+            var inner = length - 2;
+            if (inner <= 0) return BranchedPrefixRejected;
+            if (inner >= remaining) return BranchedPrefixUndecided;
+            remaining -= inner + 1;
+            if (!candidate.Slice(1, inner).Contains((byte)program.Instructions[repeat.A + 1].A))
+                return BranchedPrefixRejected;
+        }
         return position + length;
     }
 
