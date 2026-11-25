@@ -1610,11 +1610,15 @@ internal static partial class Utf8SliceRunner
         var straightPrefixBytes = straightPrefixStart != 0 ? leadingPrefix.Length : 0;
         var (prefixRepeatAscii, prefixRepeatFollower, prefixRepeatMinimum) = GetExactPrefixRepeatHead(program, prefixContinuation);
         var terminalRepeat = 0;
+        var terminalPrefixAccept = 0;
         if (prefixRepeatAscii.HasValue && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures)
         {
             var code = program.Instructions;
             var index = prefixContinuation + 5;
-            if (code.Length - index == 5 && IsSingleClassRepeat(code, index) &&
+            if (code.Length - index == 1 && code[index].Kind == Utf8SliceInstructionKind.Accept &&
+                program.Assertions.Length == 0 && !program.HasBalancing)
+                terminalPrefixAccept = index;
+            else if (code.Length - index == 5 && IsSingleClassRepeat(code, index) &&
                 code[index + 1] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } &&
                 code[^1].Kind == Utf8SliceInstructionKind.Accept)
             {
@@ -1861,6 +1865,14 @@ internal static partial class Utf8SliceRunner
                 Utf8SliceMatchOutcome outcome;
                 if (provedEnd >= 0)
                     outcome = new(true, provedEnd, invocation.TryReserveWorking(0));
+                else if (terminalPrefixAccept != 0 && verifiedPrefix.Item1 == terminalPrefixAccept && workspace.Initialized)
+                {
+                    // The first attempt admits the workspace. Accept reads no
+                    // attempt state, so later proved ranges only debit that step.
+                    var acceptance = invocation.TryChargeStep();
+                    outcome = acceptance == Utf8ExecutionLimitKind.None
+                        ? new(true, position + verifiedPrefix.Item2, acceptance) : new(false, -1, acceptance);
+                }
                 else if (terminalRepeat != 0 && verifiedPrefix.Item1 == terminalRepeat)
                 {
                     // An admitted prefix has reached a terminal repeat with no
