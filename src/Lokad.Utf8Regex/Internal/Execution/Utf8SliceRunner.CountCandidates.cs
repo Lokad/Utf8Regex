@@ -66,12 +66,12 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static (Utf8SearchAsciiSet Repeated, Utf8SearchAsciiSet Follower) GetExactPrefixRepeatHead(
+    private static (Utf8SearchAsciiSet Repeated, Utf8SearchAsciiSet Follower, int Minimum) GetExactPrefixRepeatHead(
         Utf8SliceProgram program, int index)
     {
         var code = program.Instructions.AsSpan();
         if (index == 0 || code.Length - index < 5 || !IsSingleClassRepeat(code, index) ||
-            code[index] is not { RepeatMinimum: 1, RepeatMaximum: long.MaxValue } ||
+            code[index] is not { RepeatMinimum: 0 or 1, RepeatMaximum: long.MaxValue } ||
             !program.TryGetUnfoldedAsciiSet(code[index + 4], out var follower, out var asciiOnly) || !asciiOnly)
             return default;
 
@@ -88,7 +88,7 @@ internal static partial class Utf8SliceRunner
             return default;
 
         return ((repeated.Low & follower.Low) | (repeated.High & follower.High)) == 0
-            ? (repeated, follower) : default;
+            ? (repeated, follower, (int)code[index].RepeatMinimum) : default;
     }
 
     // Keep the family proof's stack storage out of general first-match discovery.
@@ -176,14 +176,14 @@ internal static partial class Utf8SliceRunner
     // run can prove the following scalar's unique start. Wider or longer runs
     // leave the existing scalar attempt in charge.
     private static int ScanExactPrefixRepeatHead(ReadOnlySpan<byte> input, Utf8SearchAsciiSet ascii,
-        Utf8SearchAsciiSet follower)
+        Utf8SearchAsciiSet follower, int minimum)
     {
         var length = Math.Min(16, input.Length);
         for (var offset = 0; offset < length; offset++)
         {
             var next = input[offset];
             if (next >= 128) return 0;
-            if (!ascii.Contains(next)) return offset > 0 && follower.Contains(next) ? offset + 1 : -1;
+            if (!ascii.Contains(next)) return offset >= minimum && follower.Contains(next) ? offset + 1 : -1;
         }
         return length == input.Length ? -1 : 0;
     }

@@ -1484,7 +1484,7 @@ internal static partial class Utf8SliceRunner
         // Keep a leading boundary in the original verification order.
         var straightPrefixStart = reuseLeadingPrefix && leadingScalarIndex == 0 ? prefixContinuation : 0;
         var straightPrefixBytes = straightPrefixStart != 0 ? leadingPrefix.Length : 0;
-        var (prefixRepeatAscii, prefixRepeatFollower) = GetExactPrefixRepeatHead(program, prefixContinuation);
+        var (prefixRepeatAscii, prefixRepeatFollower, prefixRepeatMinimum) = GetExactPrefixRepeatHead(program, prefixContinuation);
         var terminalRepeat = 0;
         if (prefixRepeatAscii.HasValue && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
             invocation.IsUnmetered && invocation.CheckpointHook is null)
@@ -1700,7 +1700,7 @@ internal static partial class Utf8SliceRunner
                 if (prefixRepeatAscii.HasValue)
                 {
                     var extra = ScanExactPrefixRepeatHead(input[(position + prefixBytes)..],
-                        prefixRepeatAscii, prefixRepeatFollower);
+                        prefixRepeatAscii, prefixRepeatFollower, prefixRepeatMinimum);
                     if (extra < 0)
                     {
                         position++;

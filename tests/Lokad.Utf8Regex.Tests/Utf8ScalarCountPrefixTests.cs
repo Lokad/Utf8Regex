@@ -73,6 +73,27 @@ public sealed class Utf8ScalarCountPrefixTests
     }
 
     [Fact]
+    public void ExactFamilyCountAdmitsEmptyRepeatsBeforeDisjointFollowers()
+    {
+        const string pattern = @"\b(?:LogError|LogWarning|LogInformation)\s*\(";
+        const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+        var text = new string(' ', 2044) + "LogError( | LogInformation \t( | LogError\u2003( | LogWarning" +
+            new string(' ', 16) + "( | éLogWarning( | XLogError( | LogInformation[ | LogError";
+        var storage = Encoding.UTF8.GetBytes("unused" + text + "(unused");
+        var input = storage.AsSpan(6, Encoding.UTF8.GetByteCount(text));
+        using var ordinary = new Utf8Regex(pattern, options);
+        using var finite = new Utf8Regex(pattern, options, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxDepth = 128, MaxWorkingBytes = 1 << 16 }
+        });
+        using var source = new CancellationTokenSource();
+
+        Assert.Equal(4, new Regex(pattern, options).Count(text));
+        Assert.Equal(4, ordinary.Count(input));
+        Assert.Equal(4, finite.Count(input, source.Token));
+    }
+
+    [Fact]
     public void MultilineLiteralPrefixKeepsAnchorsAndCaptureReads()
     {
         const string pattern = @"^import\s+(?<path>[^=\r\n]+)=\k<path>\r?$";
