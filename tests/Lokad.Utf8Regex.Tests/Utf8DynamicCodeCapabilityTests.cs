@@ -215,6 +215,10 @@ public sealed class Utf8DynamicCodeCapabilityTests
         var expected = new Utf8CaptureRange(first, last);
         var expectedHistory = new Utf8CaptureRange[] { new(first, firstClose), new(firstClose, firstClose + 5), new(firstClose + 5, firstClose + 10) };
         var slots = new Utf8CaptureRange[2];
+        Assert.True(regex.IsMatch(bytes));
+        Assert.Equal(expected, regex.Match(bytes));
+        Assert.Equal(new Utf8CaptureRange(last + 1 + first, bytes.Length), regex.Match(bytes, startOffsetInBytes: last + 1));
+        Assert.False(regex.IsMatch(bytes.AsSpan(0, last - 2)));
         Assert.Equal(expected, regex.Match(bytes, captures: slots));
         Assert.Equal(expectedHistory[^1], slots[1]);
         using var source = new CancellationTokenSource();

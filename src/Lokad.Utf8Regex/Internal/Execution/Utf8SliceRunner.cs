@@ -581,15 +581,21 @@ internal static partial class Utf8SliceRunner
                 ref workspace, ref invocation, countAll: false, existenceOnly, out _);
         }
 
-        if (remaining >= 256 && (collectHistory || !captureStarts.IsEmpty) && !program.ReadsCaptures &&
-            program.HasShortDecimalHead && (program.EmittedMatch ?? program.TieredProof) is { } captureProof &&
+        if (remaining >= 256 && !program.ReadsCaptures &&
+            program.HasShortDecimalHead && (program.EmittedMatch ?? program.TieredProof) is { } decimalProof &&
             invocation.CheckpointHook is null && invocation.IsUnmetered &&
             TryGetFixedDecimalFollower(program, out var digits, out var firstFollower, out var lastFollower))
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
-            if (!TryFindFixedDecimalMatch(input, fromByte, digits, firstFollower, lastFollower, captureProof, out var start, out _))
+            if (!TryFindFixedDecimalMatch(input, fromByte, digits, firstFollower, lastFollower, decimalProof, out var start, out var end))
                 return new(false, -1, -1, Utf8ExecutionLimitKind.None);
+            if (!collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty)
+            {
+                breach = invocation.TryChargeInputStep();
+                return breach == Utf8ExecutionLimitKind.None
+                    ? new(true, start, end, breach) : new(false, -1, -1, breach);
+            }
 
             // The complete proof selects the ordered origin. Publish all
             // captures using the original input and the invocation's workspace.
