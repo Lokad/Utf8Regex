@@ -99,6 +99,33 @@ public sealed class Utf8ClassPrefixCandidateTests
             Encoding.UTF8.GetByteCount(text.AsSpan(0, group.Index + group.Length)));
     }
 
+    [Theory]
+    [InlineData("Holmes")]
+    [InlineData("Holmesx")]
+    [InlineData("Watson")]
+    public void AlignedFamilyKeepsTheWinningAlternativeAndCaptureHistory(string suffix)
+    {
+        const string pattern = @"(\w+)\s+(Holmesx|Holmes|Watson)";
+        var text = "aΩ\u2003" + suffix + "!" + new string('!', 256);
+        var input = Encoding.UTF8.GetBytes(text);
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+        const int start = 1; // The first byte and UTF-16 code unit are both ASCII.
+        var expected = new Regex(pattern, RegexOptions.CultureInvariant).Match(text, start);
+        Assert.True(expected.Success);
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];
+        Assert.Equal(Range(expected), regex.Match(input, start, slots, source.Token));
+        Assert.Equal(Range(expected.Groups[1]), slots[1]);
+        Assert.Equal(Range(expected.Groups[2]), slots[2]);
+        using var cursor = regex.CreateMatchCursor(input, start, source.Token);
+        Assert.True(cursor.MoveNext(out var captured));
+        Assert.Equal(slots[1], Assert.Single(captured.GetCaptures(1).ToArray()));
+        Assert.Equal(slots[2], Assert.Single(captured.GetCaptures(2).ToArray()));
+
+        Utf8CaptureRange Range(Group group) => new(Encoding.UTF8.GetByteCount(text.AsSpan(0, group.Index)),
+            Encoding.UTF8.GetByteCount(text.AsSpan(0, group.Index + group.Length)));
+    }
+
     [Fact]
     public void EqualTerminalClassesRequireAScalarOnBothSidesOfTheDelimiter()
     {
