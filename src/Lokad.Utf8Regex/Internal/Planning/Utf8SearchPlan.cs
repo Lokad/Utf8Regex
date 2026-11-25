@@ -69,7 +69,7 @@ internal readonly struct Utf8SearchPlan
             fixedDistanceSets,
             fallbackStartTransform,
             leadingBoundary, trailingBoundary, trailingLiteralUtf8,
-            exactRequiredLength, maxPossibleLength);
+            exactRequiredLength);
         StructuralSearchPlan = structuralSearchPlan;
         Distance = distance;
         MinRequiredLength = minRequiredLength;

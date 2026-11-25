@@ -14,7 +14,6 @@ internal readonly struct Utf8StructuralSearchPlan
         public Utf8BoundaryRequirement TrailingBoundary { get; init; }
         public byte[]? TrailingLiteral { get; init; }
         public int ExactLength { get; init; }
-        public int MaxLength { get; init; }
 
         public Data(in PreparedSearcher searcher)
         {
@@ -36,13 +35,12 @@ internal readonly struct Utf8StructuralSearchPlan
 
     public ref readonly Data Payload => ref (_storage is { } storage ? ref storage.Payload : ref s_empty);
     public bool HasValue => _storage is not null;
-    public bool RequiresCandidateEndCoverage => Payload.ExactLength > 0;
 
     public static Utf8StructuralSearchPlan Create(
         Utf8SearchKind kind, int distance, bool canGuideFallbackStarts, in PreparedSearcher preparedSearcher,
         Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform,
         Utf8BoundaryRequirement leadingBoundary = default, Utf8BoundaryRequirement trailingBoundary = default,
-        byte[]? trailingLiteralUtf8 = null, int? exactLength = null, int? maxLength = null)
+        byte[]? trailingLiteralUtf8 = null, int? exactLength = null)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
@@ -69,7 +67,6 @@ internal readonly struct Utf8StructuralSearchPlan
                 TrailingBoundary = trailingBoundary,
                 TrailingLiteral = trailingLiteralUtf8,
                 ExactLength = Math.Max(0, exactLength.GetValueOrDefault()),
-                MaxLength = exactLength > 0 ? 0 : Math.Max(0, maxLength.GetValueOrDefault()),
             };
             var bytes = Utf8ConstructionBudget.ObjectBytes<Data>();
             budget.CheckBytes(bytes);
@@ -82,5 +79,3 @@ internal readonly struct Utf8StructuralSearchPlan
         finally { budget.LeaveDepth(); }
     }
 }
-
-internal readonly record struct Utf8StructuralCandidate(int StartIndex, int EndIndex, int MatchLength, int LiteralId);

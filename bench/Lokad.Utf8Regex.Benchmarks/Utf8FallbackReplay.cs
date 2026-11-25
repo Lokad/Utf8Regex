@@ -28,7 +28,7 @@ internal static class Utf8FallbackReplay
         var minimumStart = startIndex;
         while (plan.TryFindNextCandidate(input, ref state, out var candidate))
         {
-            if (candidate.StartIndex < minimumStart || !Utf8CandidateVerificationReplay.IsBoundary(input, candidate.StartIndex))
+            if (candidate.Index < minimumStart || !Utf8CandidateVerificationReplay.IsBoundary(input, candidate.Index))
                 continue;
 
             var breach = Utf8CandidateVerificationReplay.TryVerifyCandidate(prepared, input, candidate, ref invocation, out verification);
@@ -39,7 +39,7 @@ internal static class Utf8FallbackReplay
                 return true;
             }
 
-            minimumStart = candidate.StartIndex + 1;
+            minimumStart = candidate.Index + 1;
         }
 
         return false;
@@ -52,7 +52,7 @@ internal static class Utf8FallbackReplay
         var count = 0;
         while (plan.TryFindNextCandidate(input, ref state, out var candidate))
         {
-            if (!requireScalarBoundary || Utf8CandidateVerificationReplay.IsBoundary(input, candidate.StartIndex))
+            if (!requireScalarBoundary || Utf8CandidateVerificationReplay.IsBoundary(input, candidate.Index))
                 count++;
         }
 

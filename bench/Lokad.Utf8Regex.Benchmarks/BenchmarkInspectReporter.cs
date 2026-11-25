@@ -2761,7 +2761,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var benchmarkCase = DotNetPerformanceReplicaBenchmarkCatalog.Get(caseId);
         var context = new DotNetPerformanceReplicaBenchmarkContext(benchmarkCase);
-        WriteStructuralSearchDump(caseId, benchmarkCase.Origin, context.Pattern, benchmarkCase.Options, context.Utf8Regex.Inspection.StructuralSearchPlan);
+        WriteStructuralSearchDump(caseId, benchmarkCase.Origin, context.Pattern, benchmarkCase.Options, context.Utf8Regex.Inspection.SearchPlan);
         return 0;
     }
 
@@ -2801,7 +2801,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"PortfolioKind     : {regex.Inspection.SearchPortfolioKind}");
         Console.WriteLine($"PreparedSearcher  : {regex.Inspection.SearchPlan.PreparedSearcher.Kind}");
         Console.WriteLine($"RequiredPrefilter : {(regex.Inspection.SearchPlan.RequiredPrefilterSearcher.HasValue ? regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind : "None")}");
-        WriteStructuralSearchPlan(regex.Inspection.StructuralSearchPlan);
+        WriteStructuralSearchPlan(regex.Inspection.SearchPlan);
         Console.WriteLine($"FallbackReason    : {regex.Inspection.FallbackReason ?? "<native>"}");
     }
 
@@ -2810,7 +2810,7 @@ internal static partial class BenchmarkInspectReporter
         string? origin,
         string pattern,
         RegexOptions options,
-        Utf8StructuralSearchPlan plan)
+        Utf8SearchPlan plan)
     {
         Console.WriteLine($"CaseId            : {caseId}");
         if (origin is not null)
@@ -2823,8 +2823,9 @@ internal static partial class BenchmarkInspectReporter
         WriteStructuralSearchPlan(plan);
     }
 
-    private static void WriteStructuralSearchPlan(Utf8StructuralSearchPlan plan)
+    private static void WriteStructuralSearchPlan(Utf8SearchPlan search)
     {
+        var plan = search.StructuralSearchPlan;
         ref readonly var data = ref plan.Payload;
         Console.WriteLine($"StructuralSource  : {DescribeStructuralSource(plan)}");
         if (data.StartTransform.HasValue)
@@ -2843,9 +2844,9 @@ internal static partial class BenchmarkInspectReporter
         {
             Console.WriteLine($"ExactLength       : {data.ExactLength}");
         }
-        if (data.MaxLength > 0)
+        else if (plan.HasValue && search.MaxPossibleLength is > 0 and var maximum)
         {
-            Console.WriteLine($"MaximumLength     : {data.MaxLength}");
+            Console.WriteLine($"MaximumLength     : {maximum}");
         }
     }
 

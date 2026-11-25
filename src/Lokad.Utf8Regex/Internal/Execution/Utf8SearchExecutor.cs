@@ -144,10 +144,10 @@ internal static partial class Utf8SearchExecutor
             var state = new PreparedSearchScanState(startIndex, default);
             while (plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate))
             {
-                if (candidate.StartIndex >= startIndex)
+                if (candidate.Index >= startIndex)
                 {
                     Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                    return candidate.StartIndex;
+                    return candidate.Index;
                 }
             }
 
@@ -192,7 +192,7 @@ internal static partial class Utf8SearchExecutor
             if (plan.StructuralSearchPlan.TryFindLastCandidate(input, startIndex, out var candidate))
             {
                 Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                return candidate.StartIndex;
+                return candidate.Index;
             }
 
             return -1;
@@ -218,12 +218,12 @@ internal static partial class Utf8SearchExecutor
             var candidateState = new PreparedSearchScanState(startIndex, default);
             while (plan.StructuralSearchPlan.TryFindNextCandidate(input, ref candidateState, out var candidate))
             {
-                if (candidate.StartIndex < startIndex)
+                if (candidate.Index < startIndex)
                 {
                     continue;
                 }
 
-                match = new PreparedSearchMatch(candidate.StartIndex, candidate.MatchLength, candidate.LiteralId);
+                match = candidate;
                 Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
                 return true;
             }
@@ -307,7 +307,7 @@ internal static partial class Utf8SearchExecutor
         {
             if (plan.StructuralSearchPlan.TryFindLastCandidate(input, startIndex, out var candidate))
             {
-                match = new PreparedSearchMatch(candidate.StartIndex, candidate.MatchLength, candidate.LiteralId);
+                match = candidate;
                 Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
                 return true;
             }

@@ -1,6 +1,7 @@
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Benchmarks;
 
@@ -11,7 +12,7 @@ internal static class Utf8CandidateVerificationReplay
     // Scratch belongs to the caller's invocation and is released on every exit.
     internal static Utf8ExecutionLimitKind TryVerifyCandidate(
         Utf8PreparedRegex prepared, ReadOnlySpan<byte> input,
-        Utf8StructuralCandidate candidate,
+        PreparedSearchMatch candidate,
         ref Utf8SliceInvocation invocation, out Utf8ScalarVerificationResult result)
     {
         result = default;
@@ -19,9 +20,11 @@ internal static class Utf8CandidateVerificationReplay
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         var program = prepared.ScalarProgram ??
             throw new InvalidOperationException("Candidate verification requires the prepared scalar program.");
-        var attempt = program.RightToLeft && candidate.EndIndex >= 0
-            ? candidate.EndIndex : candidate.StartIndex;
-        if (!IsBoundary(input, candidate.StartIndex) || !IsBoundary(input, attempt))
+        var plan = prepared.SearchPlan;
+        var exactLength = plan.StructuralSearchPlan.Payload.ExactLength;
+        var end = GetCandidateEnd(candidate.Index, input.Length, exactLength, plan.MaxPossibleLength.GetValueOrDefault());
+        var attempt = program.RightToLeft && end >= 0 ? end : candidate.Index;
+        if (!IsBoundary(input, candidate.Index) || !IsBoundary(input, attempt))
             return Utf8ExecutionLimitKind.None;
 
         var bytes = checked(2 * Utf8ConstructionBudget.ArrayBytes<int>(program.GroupCount));
@@ -44,11 +47,10 @@ internal static class Utf8CandidateVerificationReplay
             var low = program.RightToLeft ? match.EndIndex : attempt;
             var high = program.RightToLeft ? attempt : match.EndIndex;
             if (!IsBoundary(input, low) || !IsBoundary(input, high) || high < low ||
-                program.RightToLeft && candidate.EndIndex >= 0 && low != candidate.StartIndex)
+                program.RightToLeft && end >= 0 && low != candidate.Index)
                 return Utf8ExecutionLimitKind.None;
 
-            var plan = prepared.SearchPlan.StructuralSearchPlan;
-            if (plan.RequiresCandidateEndCoverage && candidate.EndIndex >= 0 && high < candidate.EndIndex)
+            if (exactLength > 0 && end >= 0 && high < end)
                 return Utf8ExecutionLimitKind.None;
             breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
@@ -61,6 +63,13 @@ internal static class Utf8CandidateVerificationReplay
             if (ends is not null) Utf8ExactStatePool<int>.Return(ends, invocation.HasUnlimitedWorkingMemory);
             invocation.Ledger.Release(bytes);
         }
+    }
+
+    private static int GetCandidateEnd(int start, int inputLength, int exactLength, int maxLength)
+    {
+        var available = inputLength - start;
+        if (exactLength > 0) return exactLength <= available ? start + exactLength : -1;
+        return maxLength > 0 ? start + Math.Min(maxLength, available) : -1;
     }
 
     internal static bool IsBoundary(ReadOnlySpan<byte> input, int offset)

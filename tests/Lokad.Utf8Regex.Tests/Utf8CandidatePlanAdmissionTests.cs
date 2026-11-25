@@ -43,7 +43,7 @@ public sealed class Utf8CandidatePlanAdmissionTests
         Assert.Equal(PlanBytes, owner.Budget.ReservedBytes);
         Assert.Equal(owner.Budget.ReservedBytes, owner.Budget.PeakBytes);
         var state = default(PreparedSearchScanState);
-        Assert.True(plan.StructuralSearchPlan.TryFindNextCandidate("😀xb"u8, ref state, out var candidate)); Assert.Equal(5, candidate.StartIndex);
+        Assert.True(plan.StructuralSearchPlan.TryFindNextCandidate("😀xb"u8, ref state, out var candidate)); Assert.Equal(5, candidate.Index);
         Assert.Equal(0ul, owner.Budget.Depth);
 
         // Close the measured owner before the next independent finite owners.

@@ -9,7 +9,7 @@ internal static class Utf8StructuralSearchExecutor
         this Utf8StructuralSearchPlan plan,
         ReadOnlySpan<byte> input,
         int endIndex,
-        out Utf8StructuralCandidate candidate)
+        out PreparedSearchMatch candidate)
     {
         candidate = default;
 
@@ -26,7 +26,7 @@ internal static class Utf8StructuralSearchExecutor
         this Utf8StructuralSearchPlan plan,
         ReadOnlySpan<byte> input,
         ref PreparedSearchScanState searchState,
-        out Utf8StructuralCandidate candidate)
+        out PreparedSearchMatch candidate)
     {
         candidate = default;
         if (!plan.HasValue)
@@ -77,8 +77,7 @@ internal static class Utf8StructuralSearchExecutor
                 continue;
             }
 
-            var endIndex = GetCandidateEnd(in data, startIndex, input.Length);
-            candidate = new(startIndex, endIndex, matchedLength, literalId);
+            candidate = new(startIndex, matchedLength, literalId);
             return true;
         }
     }
@@ -87,7 +86,7 @@ internal static class Utf8StructuralSearchExecutor
         ReadOnlySpan<byte> input,
         in Utf8StructuralSearchPlan.Data plan,
         int endIndex,
-        out Utf8StructuralCandidate candidate)
+        out PreparedSearchMatch candidate)
     {
         candidate = default;
         ref readonly var searcher = ref plan.Searcher;
@@ -109,8 +108,7 @@ internal static class Utf8StructuralSearchExecutor
                     var requirementBaseIndex = GetRequirementBaseIndex(input, startIndex, startTransform);
                     if (SatisfiesStartRequirements(input, in plan, requirementBaseIndex, match.Length))
                     {
-                        var candidateEndIndex = GetCandidateEnd(in plan, startIndex, input.Length);
-                        candidate = new(startIndex, candidateEndIndex, match.Length, match.LiteralId);
+                        candidate = new(startIndex, match.Length, match.LiteralId);
                         return true;
                     }
                 }
@@ -143,8 +141,7 @@ internal static class Utf8StructuralSearchExecutor
 
         if (lastStart >= 0)
         {
-            var candidateEndIndex = GetCandidateEnd(in plan, lastStart, input.Length);
-            candidate = new(lastStart, candidateEndIndex, 1, 0);
+            candidate = new(lastStart, 1, 0);
             return true;
         }
 
@@ -244,16 +241,5 @@ internal static class Utf8StructuralSearchExecutor
         }
 
         return startIndex;
-    }
-
-    private static int GetCandidateEnd(in Utf8StructuralSearchPlan.Data plan, int startIndex, int inputLength)
-    {
-        var available = inputLength - startIndex;
-        if (plan.ExactLength > 0)
-        {
-            return plan.ExactLength <= available ? startIndex + plan.ExactLength : -1;
-        }
-
-        return plan.MaxLength > 0 ? startIndex + Math.Min(plan.MaxLength, available) : -1;
     }
 }

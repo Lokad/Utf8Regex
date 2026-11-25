@@ -127,9 +127,9 @@ public sealed class Utf8SearchPlanTests
         var state = default(PreparedSearchScanState);
 
         Assert.True(regex.Inspection.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var first));
-        Assert.Equal(firstExpected, first.StartIndex);
+        Assert.Equal(firstExpected, first.Index);
         Assert.True(regex.Inspection.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var second));
-        Assert.Equal(secondExpected, second.StartIndex);
+        Assert.Equal(secondExpected, second.Index);
         Assert.False(regex.Inspection.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out _));
     }
 
@@ -141,7 +141,7 @@ public sealed class Utf8SearchPlanTests
         var expected = Encoding.UTF8.GetByteCount("xcafé café niñoz ");
 
         Assert.True(regex.Inspection.StructuralSearchPlan.TryFindLastCandidate(input, input.Length, out var candidate));
-        Assert.Equal(expected, candidate.StartIndex);
+        Assert.Equal(expected, candidate.Index);
     }
 
     [Fact]
@@ -479,9 +479,8 @@ public sealed class Utf8SearchPlanTests
         var state = default(PreparedSearchScanState);
 
         Assert.True(regex.Inspection.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate));
-        Assert.Equal(3, candidate.StartIndex);
-        Assert.Equal(-1, candidate.EndIndex);
-        Assert.Equal(1, candidate.MatchLength);
+        Assert.Equal(3, candidate.Index);
+        Assert.Equal(1, candidate.Length);
         Assert.Equal(0, candidate.LiteralId);
     }
 
@@ -508,8 +507,7 @@ public sealed class Utf8SearchPlanTests
         var state = default(PreparedSearchScanState);
 
         Assert.True(analysis.SearchPlan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate));
-        Assert.Equal(0, candidate.StartIndex);
-        Assert.Equal(-1, candidate.EndIndex);
+        Assert.Equal(0, candidate.Index);
     }
 
     [Fact]
@@ -528,7 +526,7 @@ public sealed class Utf8SearchPlanTests
         var state = default(PreparedSearchScanState);
 
         Assert.True(plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate));
-        Assert.Equal("xfood bar ".Length, candidate.StartIndex);
+        Assert.Equal("xfood bar ".Length, candidate.Index);
         Assert.False(plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out _));
     }
 
@@ -562,12 +560,12 @@ public sealed class Utf8SearchPlanTests
         var state = default(PreparedSearchScanState);
 
         Assert.True(plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate));
-        Assert.Equal("fooqux ".Length, candidate.StartIndex);
+        Assert.Equal("fooqux ".Length, candidate.Index);
         Assert.False(plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out _));
     }
 
     [Fact]
-    public void StructuralStartPlanKeepsExactLength()
+    public void StructuralSearchRejectsCandidatesWithoutRoomForExactLength()
     {
         var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
                                               Utf8SearchKind.ExactAsciiLiteral,
@@ -578,64 +576,14 @@ public sealed class Utf8SearchPlanTests
                                                   ExactRequiredLength = 5
                                               }));
 
-        Assert.True(plan.StructuralSearchPlan.HasValue);
-        Assert.True(plan.StructuralSearchPlan.RequiresCandidateEndCoverage);
-        Assert.Equal(5, plan.StructuralSearchPlan.Payload.ExactLength);
-    }
-
-    [Fact]
-    public void StructuralSearchPlanCanProduceBoundedStartCandidatesFromExactLength()
-    {
-        var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
-                                              Utf8SearchKind.ExactAsciiLiteral,
-                                              new Utf8SearchFactData
-                                              {
-                                                  LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
-                                                  CanGuideFallbackStarts = true,
-                                                  ExactRequiredLength = 5
-                                              }));
-        var input = Encoding.UTF8.GetBytes("xxfoozzyy");
+        var input = "xxfoozz foo"u8;
         var state = default(PreparedSearchScanState);
-
+        var expected = new PreparedSearchMatch(2, 3, 0);
         Assert.True(plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate));
-        Assert.Equal(2, candidate.StartIndex);
-        Assert.Equal(7, candidate.EndIndex);
-    }
-
-    [Fact]
-    public void StructuralStartPlanKeepsMaxLength()
-    {
-        var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
-                                              Utf8SearchKind.ExactAsciiLiteral,
-                                              new Utf8SearchFactData
-                                              {
-                                                  LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
-                                                  CanGuideFallbackStarts = true,
-                                                  MaxPossibleLength = 6
-                                              }));
-
-        Assert.True(plan.StructuralSearchPlan.HasValue);
-        Assert.False(plan.StructuralSearchPlan.RequiresCandidateEndCoverage);
-        Assert.Equal(6, plan.StructuralSearchPlan.Payload.MaxLength);
-    }
-
-    [Fact]
-    public void StructuralSearchPlanCanBoundStartCandidatesByMaxLength()
-    {
-        var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
-                                              Utf8SearchKind.ExactAsciiLiteral,
-                                              new Utf8SearchFactData
-                                              {
-                                                  LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
-                                                  CanGuideFallbackStarts = true,
-                                                  MaxPossibleLength = 6
-                                              }));
-        var input = Encoding.UTF8.GetBytes("xxfoozzyy");
-        var state = default(PreparedSearchScanState);
-
-        Assert.True(plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate));
-        Assert.Equal(2, candidate.StartIndex);
-        Assert.Equal(8, candidate.EndIndex);
+        Assert.Equal(expected, candidate);
+        Assert.False(plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out _));
+        Assert.True(plan.StructuralSearchPlan.TryFindLastCandidate(input, input.Length, out var reverse));
+        Assert.Equal(expected, reverse);
     }
 
     [Fact]

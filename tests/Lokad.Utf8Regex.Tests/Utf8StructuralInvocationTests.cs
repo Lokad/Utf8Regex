@@ -277,7 +277,7 @@ public sealed class Utf8StructuralInvocationTests
         var found = reverse ? plan.TryFindLastCandidate(input, input.Length, out var candidate)
             : plan.TryFindNextCandidate(input, ref state, out candidate);
         Assert.True(found);
-        Assert.Equal(new Utf8StructuralCandidate(8, -1, 6, 0), candidate);
+        Assert.Equal(new PreparedSearchMatch(8, 6, 0), candidate);
     }
 
     public static IEnumerable<object[]> FixedCases()
@@ -304,7 +304,7 @@ public sealed class Utf8StructuralInvocationTests
             : plan.TryFindNextCandidate(input, ref state, out candidate);
         var start = reverse ? offset + hit.Length + 5 : offset;
         Assert.True(found);
-        Assert.Equal(new Utf8StructuralCandidate(start, -1, set ? 1 : 6, 0), candidate);
+        Assert.Equal(new PreparedSearchMatch(start, set ? 1 : 6, 0), candidate);
     }
 
     [Fact]
@@ -315,7 +315,7 @@ public sealed class Utf8StructuralInvocationTests
         var plan = Utf8SearchPlan.Prepare(facts).StructuralSearchPlan;
         var input = "😀aaa!"u8;
         var state = default(PreparedSearchScanState);
-        var expected = new Utf8StructuralCandidate(4, -1, 2, 0);
+        var expected = new PreparedSearchMatch(4, 2, 0);
 
         Assert.True(plan.TryFindNextCandidate(input, ref state, out var first));
         Assert.Equal(expected, first);
