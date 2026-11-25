@@ -1145,17 +1145,21 @@ internal static partial class Utf8SliceRunner
                 continue;
             }
 
-            var proofPosition = followingEnd > 0 ? followingEnd : windowEnd;
-            var proofStart = followingEnd > 0 ? continuation.Index : delimiterInstruction;
-            var proofLimit = followingEnd > 0
-                ? BranchedPrefixInstructionLimit - program.FollowingDecimalLiteralWindow.Max - 3
-                : BranchedPrefixInstructionLimit;
             int provedEnd;
-            var possible = followingEnd > 0 && continuation.TerminalMax != 0
-                ? (provedEnd = MatchTerminalDecimalBoundary(input, followingEnd,
-                    continuation.TerminalMin, continuation.TerminalMax)) >= 0
-                : MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out provedEnd,
+            bool possible;
+            if (followingEnd > 0 && continuation.TerminalMax != 0)
+                possible = (provedEnd = MatchTerminalDecimalBoundary(input, followingEnd,
+                    continuation.TerminalMin, continuation.TerminalMax)) >= 0;
+            else
+            {
+                var proofPosition = followingEnd > 0 ? followingEnd : windowEnd;
+                var proofStart = followingEnd > 0 ? continuation.Index : delimiterInstruction;
+                var proofLimit = followingEnd > 0
+                    ? BranchedPrefixInstructionLimit - program.FollowingDecimalLiteralWindow.Max - 3
+                    : BranchedPrefixInstructionLimit;
+                possible = MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out provedEnd,
                     proveMatch: true, instructionLimit: proofLimit);
+            }
             if (!possible)
             {
                 if (!countAll && followingEnd > 0 && program.FollowingDecimalLiteralWindow.Literal == delimiter)
