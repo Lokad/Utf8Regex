@@ -1056,6 +1056,16 @@ internal static partial class Utf8SliceRunner
         // Only a forward, instruction-zero run can enter the VM directly.
         var verifiedLeadingPrefix = !leadingPrefix.IsEmpty && leadingScalarIndex == 0 &&
             !program.RightToLeft && !program.HasContiguousAnchor ? (leadingPrefix.Length, leadingPrefix.Length) : default;
+        var provedPrefixLength = verifiedLeadingPrefix.Item1 != 0 && canProveValue && captureEnds.IsEmpty &&
+            // Each nested proof branch spends a visit. Tight depth limits
+            // stay with the VM's exact admission of individual choices.
+            invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
+            program.Instructions[verifiedLeadingPrefix.Item1] is
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true, RepeatMaximum: > 4 } prefixRepeat &&
+            program.Instructions[prefixRepeat.A].RepeatExitRejectsShorterEndpoints &&
+            program.Instructions[verifiedLeadingPrefix.Item1 + 1] is
+                ({ Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
+            ? verifiedLeadingPrefix.Item1 : 0;
         if ((leading >= 0 || seekLiteral || hasClassWindow) && invocation.Ledger.ReservedBytes != 0)
         {
             // An enclosing loan still counts when candidate discovery needs no storage.
@@ -1177,18 +1187,19 @@ internal static partial class Utf8SliceRunner
                 continue;
             if (shortRepeatWindow.Min != 0 && !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal))
                 continue;
-            if (checkBranchedPrefix || checkStraightRepeat || shortDecimalHead || proveDecimalWindow && input[position] < 128)
+            if (checkBranchedPrefix || checkStraightRepeat || shortDecimalHead || provedPrefixLength != 0 ||
+                proveDecimalWindow && input[position] < 128)
             {
                 // Starts only advance in these forward searches. The
                 // input step above also covers stopping after the last one.
                 if (position > lastProbedStart) break;
                 var proveDecimalPrefix = shortDecimalHead || proveDecimalWindow;
-                // A conclusive proof from instruction zero already gives the
-                // first ordered range when nothing can read or publish its captures.
-                var proveMatch = proveDecimalPrefix || proveBranchedMatch;
-                var proofStart = proveMatch ? 0 : leadingScalarIndex;
-                var proofPosition = position;
-                var proofLimit = BranchedPrefixInstructionLimit;
+                // The exact search already proved the literal prefix. Verify
+                // only the remaining instructions inside the same allowance.
+                var proveMatch = proveDecimalPrefix || proveBranchedMatch || provedPrefixLength != 0;
+                var proofStart = proveMatch ? provedPrefixLength : leadingScalarIndex;
+                var proofPosition = position + provedPrefixLength;
+                var proofLimit = BranchedPrefixInstructionLimit - provedPrefixLength;
                 if (reuseRewoundDigits)
                 {
                     // Rewind already admitted a nonempty decimal run ending at

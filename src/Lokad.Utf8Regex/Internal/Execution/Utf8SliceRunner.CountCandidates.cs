@@ -2552,13 +2552,16 @@ internal static partial class Utf8SliceRunner
         ref readonly var exit = ref program.Instructions[repeat.A];
         // A greedy run with an unconditional empty tail can keep its
         // longest endpoint. Verify the tail in order for the final range.
-        if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || available > remaining ||
+        if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy ||
+            available > remaining && (remaining < repeat.RepeatMinimum ||
+                atom is not ({ Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+                    { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })) ||
             !(exit.RepeatExitRejectsShorterEndpoints ||
                 repeatMaximum == long.MaxValue && exit.RepeatExitAcceptsEmptyTail ||
                 program.SkipsTerminalRewind(atomIndex - 1)))
             return BranchedPrefixUnhandledRepeat;
 
-        var candidate = input.Slice(position, (int)available);
+        var candidate = input.Slice(position, (int)Math.Min(remaining, available));
         int stop;
         if (atom.Kind == Utf8SliceInstructionKind.Dot && repeat.RepeatMinimum <= 1 && repeatMaximum == long.MaxValue)
             stop = atom.A == 0 ? candidate.IndexOf((byte)'\n') : -1;
@@ -2592,6 +2595,13 @@ internal static partial class Utf8SliceRunner
         // The dot proof needs at most one scalar. A LF stop is aligned in
         // UTF-8, and a nonempty run suffices for that minimum.
         var length = stop < 0 ? candidate.Length : stop;
+        // A short run can end within this window even on a long subject.
+        // If every admitted byte matched, let the VM finish the run.
+        if (length == candidate.Length && length < available)
+        {
+            remaining = 0;
+            return BranchedPrefixUndecided;
+        }
         if (length < repeat.RepeatMinimum) return BranchedPrefixRejected;
         remaining -= Math.Min(candidate.Length, length + 1);
         return position + length;

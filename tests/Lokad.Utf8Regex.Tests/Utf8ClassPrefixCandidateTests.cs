@@ -8,6 +8,31 @@ namespace Lokad.Utf8Regex.Tests;
 [Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8ClassPrefixCandidateTests
 {
+    [Fact]
+    public void VerifiedPrefixKeepsWorkBoundAndWideRepeatEndpoints()
+    {
+        using var regex = new Utf8Regex(@"Sherlock\s+Holmes", policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 400 }
+        });
+        using var source = new CancellationTokenSource();
+        var prefix = "Ω " + string.Concat(Enumerable.Repeat("Sherlock Holmer! ", 128));
+        const string matchText = "Sherlock \nHolmes";
+        var input = Encoding.UTF8.GetBytes(prefix + matchText);
+        Assert.True(regex.IsMatch(input, source.Token));
+        Assert.Equal(new Utf8CaptureRange(Encoding.UTF8.GetByteCount(prefix), input.Length),
+            regex.Match(input, cancellationToken: source.Token));
+
+        // Move a wider whitespace scalar across the bounded proof's edge.
+        foreach (var spaces in new[] { 86, 87, 88 })
+        {
+            var value = "Sherlock" + new string(' ', spaces) + "\u2003Holmes";
+            var bytes = Encoding.UTF8.GetBytes("Ω " + value + new string('!', 256));
+            Assert.Equal(new Utf8CaptureRange(3, 3 + Encoding.UTF8.GetByteCount(value)),
+                regex.Match(bytes, cancellationToken: source.Token));
+        }
+    }
+
     [Theory]
     [InlineData(@"(?:ab[0-9]|a[a-z][0-4]|a[a-z]?[0-9][0-9])\.OK", "éab2.X ab8.OK a22.OK")]
     [InlineData(@"(?:ab[0-9]|a[a-z][0-4]|a[a-z]??[0-9][0-9])\.OK", "😀ab2.X ab8.OK a22.OK")]
