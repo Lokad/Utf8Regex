@@ -1215,7 +1215,8 @@ internal static partial class Utf8SliceRunner
     // LF is one byte and cannot occur inside a scalar. The caller establishes
     // valid UTF-8; this filter neither restricts a match's end nor its body.
     internal static Utf8ExecutionLimitKind TrySeekBeginning(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, ref int position, ref Utf8SliceInvocation invocation)
+        ReadOnlySpan<byte> input, ref int position, ref Utf8SliceInvocation invocation,
+        scoped ReadOnlySpan<byte> linePrefix = default)
     {
         var anchor = program.Instructions[0];
         var leadingLiteral = anchor.C - 1;
@@ -1240,24 +1241,24 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             invocation.Budget.ThrowIfCancellationRequested();
             if (position < input.Length && (position == 0 || input[position - 1] == (byte)'\n') &&
-                input[position] == leadingLiteral) return Utf8ExecutionLimitKind.None;
+                (linePrefix.IsEmpty ? input[position] == leadingLiteral : input[position..].StartsWith(linePrefix[1..])))
+                return Utf8ExecutionLimitKind.None;
 
-            // The same required first scalar admits a checked byte-pair search.
-            // Only candidate discovery changes; the original VM verifies each
-            // survivor. One-byte overlap preserves pairs crossing block edges.
-            Span<byte> pair = stackalloc byte[2];
-            pair[0] = (byte)'\n';
-            pair[1] = (byte)leadingLiteral;
-            while (input.Length - position >= 2)
+            // A Count caller can supply LF and its proved exact prefix together.
+            // Retain enough overlap to discover starts across charged blocks.
+            ReadOnlySpan<byte> pair = stackalloc byte[] { (byte)'\n', (byte)leadingLiteral };
+            scoped ReadOnlySpan<byte> needle = linePrefix.IsEmpty ? pair : linePrefix;
+            var overlap = needle.Length - 1;
+            while (input.Length - position > overlap)
             {
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var length = Math.Min(2048, input.Length - position);
-                var relative = input.Slice(position, length).IndexOf(pair);
+                var relative = input.Slice(position, length).IndexOf(needle);
                 invocation.Budget.ThrowIfCancellationRequested();
                 if (relative >= 0)
                 { position += relative + 1; return Utf8ExecutionLimitKind.None; }
-                position += length - 1;
+                position += length - overlap;
             }
             position = -1;
             return Utf8ExecutionLimitKind.None;
@@ -1464,14 +1465,21 @@ internal static partial class Utf8SliceRunner
             leadingFirst = '0';
             leadingLast = (byte)'9';
         }
-        Span<byte> prefixStorage = stackalloc byte[16];
+        Span<byte> prefixStorage = stackalloc byte[17];
         var leadingPrefix = input.Length - fromByte >= 256 && whitespaceLiteral < 0 && leadingSecond >= 0
-            ? GetExactLeadingLiteral(program, leadingScalarIndex, prefixStorage)
+            ? GetExactLeadingLiteral(program, leadingScalarIndex, prefixStorage[..16])
             : default;
-        // Borrow the prefix buffer when the line seek owns candidate discovery.
-        var linePrefix = leadingPrefix.IsEmpty && verifiedLinePrefix.Item1 != 0 && input.Length - fromByte >= 256
-            ? GetExactLeadingLiteral(program, 1, prefixStorage)
-            : default;
+        scoped ReadOnlySpan<byte> linePrefix = default;
+        if (leadingPrefix.IsEmpty && verifiedLinePrefix.Item1 != 0 && input.Length - fromByte >= 256)
+        {
+            var literal = GetExactLeadingLiteral(program, 1, prefixStorage[1..]);
+            if (!literal.IsEmpty)
+            {
+                prefixStorage[0] = (byte)'\n';
+                linePrefix = prefixStorage[..(literal.Length + 1)];
+                verifiedLinePrefix = (1 + literal.Length, literal.Length);
+            }
+        }
         byte tailFirst = 0, tailLast = 0;
         var vectorBranchWindow = Vector512.IsHardwareAccelerated &&
             !program.RightToLeft && !includeKelvin && !seekDecimal && leadingFirst is >= 0 and < 128 &&
@@ -1640,7 +1648,7 @@ internal static partial class Utf8SliceRunner
                 }
                 if (seekBeginning)
                 {
-                    var seekBreach = TrySeekBeginning(program, input, ref position, ref invocation);
+                    var seekBreach = TrySeekBeginning(program, input, ref position, ref invocation, linePrefix);
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0) break;
                 }
@@ -1682,17 +1690,6 @@ internal static partial class Utf8SliceRunner
                     continue;
                 }
                 var verifiedPrefix = candidateContinuation == 0 ? verifiedLinePrefix : (candidateContinuation, prefixBytes);
-                if (!linePrefix.IsEmpty)
-                {
-                    // The seek has checked the boundary and first literal.
-                    // Verify the rest within the current candidate's charge.
-                    if (!input[position..].StartsWith(linePrefix))
-                    {
-                        position++;
-                        continue;
-                    }
-                    verifiedPrefix = (1 + linePrefix.Length, linePrefix.Length);
-                }
                 // The rewind proved this nonempty class run up to the
                 // excluded delimiter. Continue with the original suffix.
                 if (verifiedClassLiteralLength != 0 && position < whitespaceWindowEnd)

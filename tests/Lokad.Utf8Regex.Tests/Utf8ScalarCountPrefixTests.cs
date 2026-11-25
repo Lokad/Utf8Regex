@@ -98,8 +98,9 @@ public sealed class Utf8ScalarCountPrefixTests
     {
         const string pattern = @"^import\s+(?<path>[^=\r\n]+)=\k<path>\r?$";
         const RegexOptions options = RegexOptions.Compiled | RegexOptions.Multiline;
-        var text = "import x=x\n" + new string(' ', 2046) + "\n" +
-            "imports x=x\nimportx y=y\nitem q=q\nimport\u2003α=α\r\nimport y=z\nimport\talpha=alpha";
+        // The second match's LF-plus-prefix crosses the first charged scan block.
+        var text = "import x=x\n" + new string(' ', 2044) + "\n" +
+            "import\u2003α=α\r\nimports x=x\nimportx y=y\nitem q=q\nimport y=z\nimport\talpha=alpha";
         var storage = Encoding.UTF8.GetBytes("unused" + text + "unused");
         var input = storage.AsSpan(6, storage.Length - 12);
         using var ordinary = new Utf8Regex(pattern, options);
