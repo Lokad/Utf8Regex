@@ -2517,9 +2517,7 @@ internal static class Pcre2MatchPublication
             Success = true,
             StartOffsetInBytes = start,
             EndOffsetInBytes = end,
-            Utf8SliceIsWellFormed = start <= end &&
-                new Utf8BytePosition(start).IsScalarBoundary(input) &&
-                new Utf8BytePosition(end).IsScalarBoundary(input)
+            Utf8SliceIsWellFormed = Pcre2CaptureRanges.IsWellFormed(input, start, end, scalarRanges: false)
         };
     }
 }

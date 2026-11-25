@@ -5,8 +5,7 @@ namespace Lokad.Utf8Regex.Pcre2;
 
 internal static partial class Pcre2Runner
 {
-    // Same compiled programs and native finders; only final capture shaping
-    // differs from MatchDetailed. No UTF-16 coordinate projection is requested.
+    // Match and memory cursors share discovery and byte-range publication.
     internal static Pcre2BacktrackingMatch MatchByteRanges(Pcre2CompiledProgram compiled,
         ReadOnlySpan<byte> input, Utf8BytePosition start, Utf8BytePosition firstMatchingPosition,
         Pcre2MatchOptions options, ref Pcre2ResourceBudget budget,
