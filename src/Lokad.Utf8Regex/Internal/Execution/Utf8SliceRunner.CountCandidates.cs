@@ -1096,12 +1096,12 @@ internal static partial class Utf8SliceRunner
 
     private static Utf8SliceCountOutcome CountAlignedDecimalWindows(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int position, byte delimiter, int delimiterInstruction,
-        in Utf8SliceInstruction boundary, ref Utf8SliceInvocation invocation)
+        ref Utf8SliceInvocation invocation)
     {
         var workspace = new AttemptWorkspace();
         try
         {
-            var outcome = ScanAlignedDecimalWindows(program, input, position, delimiter, delimiterInstruction, boundary,
+            var outcome = ScanAlignedDecimalWindows(program, input, position, delimiter, delimiterInstruction,
                 ref workspace, ref invocation, countAll: true, existenceOnly: false, out var count);
             return new(count, outcome.Breach);
         }
@@ -1110,7 +1110,7 @@ internal static partial class Utf8SliceRunner
 
     private static Utf8SliceSearchOutcome ScanAlignedDecimalWindows(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int position, byte delimiter, int delimiterInstruction,
-        in Utf8SliceInstruction boundary, ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation,
+        ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation,
         bool countAll, bool existenceOnly, out int count)
     {
         count = 0;
@@ -1133,7 +1133,12 @@ internal static partial class Utf8SliceRunner
             breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
             invocation.Budget.ThrowIfCancellationRequested();
-            if (!MatchesBoundary(program, boundary, input, position))
+            // Rewind proved a decimal scalar at the start. Its right side
+            // is a Unicode word character, so only the preceding scalar matters.
+            if (position != 0 && (input[position - 1] is < 128 and var previous
+                ? Utf8AsciiBytePredicates.IsWord(previous)
+                : TryReadScalar(input, position, true, out var scalar, out _) &&
+                  Utf8SliceScalarClasses.IsWord(scalar, includeJoiners: true, ecma: false)))
             {
                 // No interior start has a word boundary within a decimal run.
                 position = windowEnd + 1;

@@ -600,7 +600,7 @@ internal static partial class Utf8SliceRunner
                 var admission = invocation.TryReserveWorking(0);
                 if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
             }
-            return ScanAlignedDecimalWindows(program, input, fromByte, delimiter, window.LiteralIndex, first,
+            return ScanAlignedDecimalWindows(program, input, fromByte, delimiter, window.LiteralIndex,
                 ref workspace, ref invocation, countAll: false, existenceOnly, out _);
         }
 
@@ -1567,7 +1567,7 @@ internal static partial class Utf8SliceRunner
             program.FollowingDecimalContinuation.Index != 0 && program.Instructions[1].RepeatMinimum == 1 &&
             program.SkipsTerminalRewind(1))
             return CountAlignedDecimalWindows(program, input, position, (byte)whitespaceLiteral,
-                whitespaceLiteralIndex, first, ref invocation);
+                whitespaceLiteralIndex, ref invocation);
         // Keep the existing literal and delimiter searches. A required decimal
         // starter can also skip unrelated bytes on a long forward search.
         if (whitespaceLiteral >= 0 && leadingFirst >= 128) leadingFirst = -1;
