@@ -93,7 +93,7 @@ public sealed partial class Utf8Pcre2Regex
                 // when an earlier line's body failed. Keep the original subject
                 // and first-position authority for every attempt.
                 if (_anchored || !canRetry || !Pcre2CharacterRunner.TryAdvanceCandidate(compiled.Request,
-                    null, _input, startOffsetInBytes, allowAcceleration: false, out var next))
+                    null, _input, startOffsetInBytes, ref _budget, out var next))
                     return NoMatch();
                 _budget.ChargeWorkspaceStep();
                 startOffsetInBytes = next;
@@ -953,7 +953,7 @@ public sealed partial class Utf8Pcre2Regex
         {
             _budget.ChargeWorkspaceStep();
             if (!Pcre2CharacterRunner.TryAdvanceCandidate(_compiled.Request, null, _input,
-                _candidateScan, allowAcceleration: false, out var next))
+                _candidateScan, ref _budget, out var next))
             {
                 _candidateLimit = _candidateScan;
                 return false;

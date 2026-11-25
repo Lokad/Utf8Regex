@@ -375,7 +375,7 @@ internal static class Pcre2BacktrackingRunner
                     program.LeadingAsciiByte,
                     input,
                     candidate,
-                    !budget.RequiresCandidateMetering,
+                    ref budget,
                     out var nextCandidate))
             {
                 break;

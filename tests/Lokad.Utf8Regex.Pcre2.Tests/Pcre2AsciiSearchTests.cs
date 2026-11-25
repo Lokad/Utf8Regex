@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
@@ -82,6 +83,32 @@ public sealed class Pcre2AsciiSearchTests
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch(input)).ErrorKind);
+    }
+
+    [Theory]
+    [InlineData("abbb", true)]
+    [InlineData("xx", false)]
+    public void TokenOnlyFallbackPollsBetweenLeadingByteSearchBlocks(string tail, bool expected)
+    {
+        using var regex = CreateMetered("(a)b+", 0);
+        using var cancellation = new CancellationTokenSource();
+        const Pcre2MatchOptions options = Pcre2MatchOptions.NotEmpty;
+        var shortInput = Encoding.UTF8.GetBytes("éx" + tail);
+        var longInput = Encoding.UTF8.GetBytes("é" + new string('x', 8193) + tail);
+
+        Assert.Equal(expected, regex.IsMatch(longInput, 2, options, cancellation.Token));
+        var shortSteps = SearchSteps(shortInput);
+        var longSteps = SearchSteps(longInput);
+        Assert.InRange(longSteps - shortSteps, 4UL, 6UL);
+
+        ulong SearchSteps(byte[] input)
+        {
+            var compiled = regex.DebugCompiledProgram;
+            var budget = new Pcre2ResourceBudget(compiled.Request, cancellation.Token);
+            Assert.True(Pcre2Runner.TryIsMatch(compiled, input, new Utf8BytePosition(2), options, ref budget, out var found));
+            Assert.Equal(expected, found);
+            return budget.WorkingInvocation.Budget.Steps;
+        }
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>

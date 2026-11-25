@@ -1286,7 +1286,7 @@ internal static class Pcre2CharacterRunner
         byte? leadingAsciiByte,
         ReadOnlySpan<byte> input,
         int candidate,
-        bool allowAcceleration,
+        ref Pcre2ResourceBudget budget,
         out int next)
     {
         if ((request.Options & Pcre2CompileOptions.FirstLine) != 0 &&
@@ -1296,20 +1296,30 @@ internal static class Pcre2CharacterRunner
             return false;
         }
 
-        if (allowAcceleration &&
-            (request.Options & Pcre2CompileOptions.FirstLine) == 0 &&
+        if ((request.Options & Pcre2CompileOptions.FirstLine) == 0 &&
             leadingAsciiByte is { } leading &&
-            candidate < input.Length)
+            candidate < input.Length && !budget.RequiresCandidateMetering)
         {
-            var relative = input[(candidate + 1)..].IndexOf(leading);
-            if (relative < 0)
+            var start = candidate + 1;
+            var blockLength = input.Length - start;
+            // Preserve byte search for token-only calls. Poll between bounded
+            // blocks without switching to a scalar VM attempt at every byte.
+            if (blockLength > 2048 && !budget.IsUnmetered) blockLength = 2048;
+            while (start < input.Length)
             {
-                next = 0;
-                return false;
+                var count = Math.Min(blockLength, input.Length - start);
+                var relative = input.Slice(start, count).IndexOf(leading);
+                if (relative >= 0)
+                {
+                    next = start + relative;
+                    return true;
+                }
+                start += count;
+                if (start < input.Length) budget.ChargeWorkspaceStep();
             }
 
-            next = candidate + relative + 1;
-            return true;
+            next = 0;
+            return false;
         }
 
         var candidatePosition = new Utf8BytePosition(candidate);
