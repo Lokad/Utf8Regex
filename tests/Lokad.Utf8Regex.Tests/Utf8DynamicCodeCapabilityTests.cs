@@ -602,6 +602,35 @@ public sealed class Utf8DynamicCodeCapabilityTests
         Assert.Equal(new Utf8CaptureRange(retry.Length - 4, retry.Length), Assert.Single(match.GetCaptures(3).ToArray()));
     }
 
+    [Fact]
+    public void CompiledDelimitedLoopFallsBackIfAnotherIterationCanMatch()
+    {
+        using var regex = new Utf8Regex(@"\A([a-z_]+)@(([a-z0-9]+\.)+)([a-zA-Z]{2,9})\z", RegexOptions.Compiled);
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        var dynamicCode = RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
+        var oneLabel = "ops@domain.org"u8;
+        var twoLabels = "ops@one.two.org"u8;
+
+        Assert.Null(program.EmittedMatch);
+        for (var i = 0; i < 32_768 && program.ObservesProofWork; i++)
+            Assert.True(regex.IsMatch(oneLabel));
+        var proof = program.TieredProof;
+        Assert.Equal(dynamicCode, proof is not null);
+        if (proof is not null)
+        {
+            Assert.Equal(oneLabel.Length, proof(oneLabel));
+            Assert.Equal(Utf8BoundedProgramEmitter.Incomplete, proof(twoLabels));
+        }
+
+        Assert.False(regex.IsMatch("ops@one.org!"u8));
+        Assert.True(regex.IsMatch(twoLabels));
+        Assert.Equal(1, regex.Count(twoLabels));
+        Assert.Equal(new Utf8CaptureRange(0, twoLabels.Length), regex.Match(twoLabels));
+        using var cursor = regex.CreateMatchCursor(twoLabels.ToArray());
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(new[] { new Utf8CaptureRange(4, 8), new Utf8CaptureRange(8, 12) }, match.GetCaptures(3).ToArray());
+    }
+
     [Theory]
     [InlineData("abc|xyz", "é😀 xyz abc", 2)]
     [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", 1)]

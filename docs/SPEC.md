@@ -359,8 +359,11 @@ An eligible Core program can also publish one emitted proof after
 repeated interpreted checks at an absolute or contiguous origin on short
 inputs, or at unanchored candidate starts admitted for the complete proof.
 Some absolute-origin checks under `Compiled` defer emission until repeated
-use. Their greedy ASCII range and dot runs share a bounded scan allowance
+use. Their greedy ASCII class and dot runs share a bounded scan allowance
 across retries and resume interpreted checking if it runs out.
+A proof can skip another iteration of a delimited loop when the admitted
+suffix has no delimiter. A remaining delimiter sends the check back to the
+interpreter at the original origin.
 At a contiguous origin, eager and tiered proofs use the admitted short byte
 suffix in unlimited, unfunded calls without cancelable tokens or deadlines.
 This automatic tier applies to unlimited, unfunded calls without a cancelable

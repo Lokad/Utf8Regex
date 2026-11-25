@@ -2341,7 +2341,7 @@ internal static partial class Utf8SliceRunner
         return (position, Utf8ExecutionLimitKind.None);
     }
 
-    private static int ScanAsciiMask(ReadOnlySpan<byte> window, ReadOnlySpan<byte> mask, bool category, bool negated = false)
+    internal static int ScanAsciiMask(ReadOnlySpan<byte> window, ReadOnlySpan<byte> mask, bool category, bool negated = false)
     {
         if (window.Length >= Vector128<byte>.Count && !category && PreparedByteSetState.CanScanAsciiMask)
             return PreparedByteSetState.ScanAsciiMaskPrefix(window, mask, negated);
