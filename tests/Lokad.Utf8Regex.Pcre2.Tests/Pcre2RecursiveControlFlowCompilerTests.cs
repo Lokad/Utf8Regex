@@ -202,6 +202,27 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
     }
 
     [Theory]
+    [InlineData(@"(?J)\A(a)(?:(?(+1)c|b)(d)){2}\z", "abdcd", true)]
+    [InlineData(@"(?J)\A(a)(?:(?(+1)c|b)(d)){2}\z", "acdcd", false)]
+    [InlineData(@"(?J)\A(a)(b)?(?(-1)c|d)\z", "abc", true)]
+    [InlineData(@"(?J)\A(a)(b)?(?(-1)c|d)\z", "ad", true)]
+    [InlineData(@"(?J)\A(a)(b)?(?(-1)c|d)\z", "ac", false)]
+    public void SignedCaptureConditionsUseSlotsRelativeToTheCondition(string pattern, string subject, bool expected)
+    {
+        using var regex = new Utf8Pcre2Regex(pattern);
+
+        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(subject)));
+    }
+
+    [Fact]
+    public void RelativeCaptureConditionRequiresADeclaredTarget()
+    {
+        var error = Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex(@"(?J)\A(a)(?(+1)b|c)\z"));
+
+        Assert.Equal(Pcre2ErrorKind.UnrecognizedEscape, error.ErrorKind);
+    }
+
+    [Theory]
     [InlineData(@"\A(?&g)\z(?(DEFINE)(?<g>(?=(?(R&g)a|b)).))", "a", "b")]
     [InlineData(@"\A(?&g)\z(?(DEFINE)(?<g>(?=(?(R)a|b)).))", "a", "b")]
     [InlineData(@"\A(?&g)\z(?(DEFINE)(?<g>.(?<=(?(R&g)a|b))))", "a", "b")]

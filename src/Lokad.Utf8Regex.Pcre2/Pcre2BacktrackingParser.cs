@@ -1198,15 +1198,16 @@ internal sealed class Pcre2BacktrackingParser
             return true;
         }
 
-        if (content[0] == '<' && content[^1] == '>' || content[0] == '\'' && content[^1] == '\'')
+        var delimitedName = content[0] == '<' && content[^1] == '>' || content[0] == '\'' && content[^1] == '\'';
+        if (delimitedName)
         {
             content = content[1..^1];
         }
 
-        if (TryParseSignedReference(content, out var number) && number > 0)
+        if (!delimitedName && TryParseSignedReference(content, out var number) && number != 0)
         {
             target = new Pcre2BackreferenceTarget(
-                Pcre2BackreferenceTargetKind.Absolute,
+                content[0] is '+' or '-' ? Pcre2BackreferenceTargetKind.Relative : Pcre2BackreferenceTargetKind.Absolute,
                 number,
                 string.Empty,
                 _captureCount);
