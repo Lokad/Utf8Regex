@@ -189,7 +189,7 @@ public sealed class Pcre2ResultControlTests
         var compiled = regex.DebugCompiledProgram;
         var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Match);
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(direct.Program,
-            new Pcre2CandidateSearchPlan(compiled.CandidateSearch), "aa"u8,
+            compiled.CandidateSearchPlan, "aa"u8,
             new Utf8BytePosition(0), Pcre2MatchOptions.None, compiled.Request);
         Assert.True(cursor.MoveNext());
         var first = cursor.ProjectCurrentCaptures();
