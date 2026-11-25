@@ -2132,12 +2132,18 @@ internal static partial class Utf8SliceRunner
                         // instructions before the failed-body target.
                         checkedInlineAssertion = true;
                         var depth = (uint)stacks.FrameCount + 1;
-                        var assertionBreach = instruction.C < 0
-                            ? TryMatchInlineRepeatAssertion(program, programIndex + 1, instruction.A - 2,
-                                input, inputIndex, depth, ref invocation, out var matched)
-                            : TryMatchInlineLiteralAssertion(instructions, programIndex + 1, instruction.A - 2,
+                        bool matched;
+                        var assertionBreach = instruction.C switch
+                        {
+                            Utf8SliceInstruction.InlineClassAssertion => TryMatchInlineClassAssertion(program,
+                                instructions[programIndex + 1], input, inputIndex, false, null, depth,
+                                ref invocation, out matched, checkExitDeadline: false),
+                            Utf8SliceInstruction.InlineRepeatAssertion => TryMatchInlineRepeatAssertion(program,
+                                programIndex + 1, instruction.A - 2, input, inputIndex, depth, ref invocation, out matched),
+                            _ => TryMatchInlineLiteralAssertion(instructions, programIndex + 1, instruction.A - 2,
                                 instruction.C - 1, input, inputIndex, false, null, depth, ref invocation,
-                                out matched, checkExitDeadline: false);
+                                out matched, checkExitDeadline: false),
+                        };
                         if (assertionBreach != Utf8ExecutionLimitKind.None)
                             { failure = assertionBreach; goto Failure; }
                         failed = matched != (instruction.D != 0);

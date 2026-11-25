@@ -220,6 +220,8 @@ internal readonly struct Utf8SliceInstruction
     internal bool IsLiteralChoice { get; }
     // A positive Nd category with no other members has exact ASCII digits.
     internal bool IsDecimalDigitSet { get; }
+    internal bool IsInlineAssertionClass => Kind is Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
+        Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.CategorySet;
     internal bool HasSingleAtomBody { get; init; }
     internal int A { get; }
     // RepeatExit uses a positive B as an exclusive byte bound to the input end.
@@ -247,9 +249,13 @@ internal readonly struct Utf8SliceInstruction
     // With negative Fork C, D can hold the packed captured prefix plus one.
     // A proved backward Jump can hold the negated ASCII body mask index plus one.
     // A Beginning or Contiguous anchor stores 1 for the short repeat proof.
-    // An absolute Beginning can also store the negated start of a longer proof.
+    // A Beginning anchor can also store the negated start of a longer proof.
     // A RepeatEnd can pack the first instruction and byte length of a dot-tail prefix.
     internal int D { get; }
+
+    // Inline lookahead forks use negative C for a scalar or repeat body.
+    internal const int InlineRepeatAssertion = -1;
+    internal const int InlineClassAssertion = -2;
 
     internal int AsciiIntervalStart => D & 255;
     internal int AsciiIntervalWidth => (D >> 8) & 255;
@@ -2388,8 +2394,12 @@ internal static class Utf8SliceLowerer
                 Emit(new(Utf8SliceInstructionKind.Lookahead, index, positive ? 1 : 0, 0, 0));
                 return false;
             }
+            var first = frame.Mark + 1;
             var inlinePrefixLength = Utf8SliceAssertion.FindInlineLiteralPrefixLength(Instructions.Span,
-                frame.Mark + 1, Instructions.Count, Budget);
+                first, Instructions.Count, Budget);
+            var inlineBody = inlinePrefixLength >= 0 ? inlinePrefixLength + 1 : 0;
+            if (Instructions.Count - first == 1 && Instructions[first].IsInlineAssertionClass)
+                inlineBody = Utf8SliceInstruction.InlineClassAssertion;
             Emit(new(Utf8SliceInstructionKind.Commit, 0, 0, 0, 0));
             if (positive)
             {
@@ -2407,11 +2417,11 @@ internal static class Utf8SliceLowerer
             }
             // Preserve the emitted edges for program analyses. The runner can
             // evaluate a proved body at the fork without materializing its frame.
-            if (inlinePrefixLength >= 0)
+            if (inlineBody != 0)
             {
                 var target = Instructions[frame.Mark].A;
                 Instructions[frame.Mark] = new(Utf8SliceInstructionKind.Fork, target, 1,
-                    inlinePrefixLength + 1, positive ? 1 : 0);
+                    inlineBody, positive ? 1 : 0);
             }
             return false;
         }

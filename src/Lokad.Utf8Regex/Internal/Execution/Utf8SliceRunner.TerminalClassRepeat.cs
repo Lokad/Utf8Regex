@@ -1333,7 +1333,7 @@ internal static partial class Utf8SliceRunner
         }
         else if (next is not ({ Kind: Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Literal, B: 0 } or
                   { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
-                  { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: 0 }) &&
+                  { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: 0 or Utf8SliceInstruction.InlineClassAssertion }) &&
             !(repeat is { RepeatMinimum: 0, RepeatMaximum: 1 } &&
               (optionalAsciiLiteral || atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 }) &&
               next is { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy, RepeatMinimum: > 0 }))
@@ -1750,7 +1750,8 @@ internal static partial class Utf8SliceRunner
                 case { Kind: Utf8SliceInstructionKind.Fork, B: 0 } when entry.A > index:
                     if (!ExcludesShorterRepeatEnds(instructions, setMasks, entry.A, consumedAscii, asciiOnly, ref remaining)) return false;
                     continue;
-                case { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: 0 } when asciiOnly && remaining >= 4 &&
+                case { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: 0 or Utf8SliceInstruction.InlineClassAssertion }
+                    when asciiOnly && remaining >= 4 &&
                     instructions.Length - index >= 6 && entry.A == index + 4:
                 {
                     // A positive one-class lookahead tests the next scalar.

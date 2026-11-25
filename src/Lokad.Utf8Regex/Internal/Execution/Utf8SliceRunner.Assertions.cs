@@ -210,9 +210,7 @@ internal static partial class Utf8SliceRunner
         var code = body.Instructions;
         var prefixLength = assertion.InlineLiteralPrefixLength;
         var singleClass = prefixLength < 0 && code is
-            [{ Kind: Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
-                Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.CategorySet },
-             { Kind: Utf8SliceInstructionKind.Accept }];
+            [{ IsInlineAssertionClass: true }, { Kind: Utf8SliceInstructionKind.Accept }];
         if (prefixLength < 0 && !singleClass) return false;
         // Fixed-forward lookbehind keeps its original scalar rewind and end
         // constraint, without suspending the parent for this bounded body.
@@ -227,19 +225,29 @@ internal static partial class Utf8SliceRunner
             return true;
         }
 
-        breach = invocation.TryChargeInputStep();
+        breach = TryMatchInlineClassAssertion(body, code[0], input, start, body.RightToLeft,
+            requiredEnd, depth, ref invocation, out matched);
+        return true;
+    }
+
+    private static Utf8ExecutionLimitKind TryMatchInlineClassAssertion(Utf8SliceProgram program,
+        in Utf8SliceInstruction atom, ReadOnlySpan<byte> input, int start, bool reverse,
+        int? requiredEnd, uint depth, ref Utf8SliceInvocation invocation, out bool matched,
+        bool checkExitDeadline = true)
+    {
+        matched = false;
+        var breach = invocation.TryChargeInputStep();
         if (breach == Utf8ExecutionLimitKind.None) breach = invocation.Budget.TryNoteDepth(depth);
-        if (breach != Utf8ExecutionLimitKind.None) return true;
-        var reverse = body.RightToLeft;
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
         if (TryReadScalar(input, start, reverse, out var scalar, out var width) &&
             (requiredEnd is null || requiredEnd == start + (reverse ? -width : width)))
         {
-            breach = TryMatchScalarClass(body, code[0], scalar, ref invocation, out matched);
-            if (breach != Utf8ExecutionLimitKind.None) return true;
+            breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out matched);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
         }
-        breach = invocation.TryChargeInputStep();
+        breach = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
         invocation.Budget.ThrowIfCancellationRequested();
-        return true;
+        return breach;
     }
 
     private static void PrepareInlineRepeatAssertion(Span<Utf8SliceInstruction> code, int repeatIndex,
@@ -259,7 +267,7 @@ internal static partial class Utf8SliceRunner
 
         // The repeat excludes the first tail literal. Its last endpoint is
         // the only one that can match, and the body has no capture effects.
-        code[fork] = new(guard.Kind, guard.A, guard.B, -1, positive ? 1 : 0);
+        code[fork] = new(guard.Kind, guard.A, guard.B, Utf8SliceInstruction.InlineRepeatAssertion, positive ? 1 : 0);
     }
 
     private static Utf8ExecutionLimitKind TryMatchInlineRepeatAssertion(Utf8SliceProgram program,
@@ -287,7 +295,7 @@ internal static partial class Utf8SliceRunner
     {
         var code = program.Instructions;
         guard = code[continuation];
-        return guard is { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: < 0 } &&
+        return guard is { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: Utf8SliceInstruction.InlineRepeatAssertion } &&
             guard.A + guard.D == code.Length - 1 && code[^1].Kind == Utf8SliceInstructionKind.Accept;
     }
 

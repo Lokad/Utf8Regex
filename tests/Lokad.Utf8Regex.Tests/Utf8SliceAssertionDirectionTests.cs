@@ -180,6 +180,9 @@ public sealed class Utf8SliceAssertionDirectionTests
     [InlineData(@"(?<=\p{Nd})B", "𐒠B", 4)]
     [InlineData(@"(?<!\s)B", "😀B", 4)]
     [InlineData(@"(?<!\s)B", "B", 0)]
+    [InlineData(@"B(?=\p{Nd})", "B𐒠", 0)]
+    [InlineData(@"B(?!\s)", "B😀", 0)]
+    [InlineData(@"B(?!\s)", "B", 0)]
     [InlineData(@"B(?=\p{Nd})", "B𐒠", 0, RegexOptions.RightToLeft)]
     public void SingleScalarAssertionsKeepTheirEdgeAndNeedOnlyLogicalDepth(
         string pattern, string text, int start, RegexOptions options = RegexOptions.None)
