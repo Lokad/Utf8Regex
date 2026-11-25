@@ -741,9 +741,30 @@ internal static partial class Utf8SliceRunner
         var literal = alignedWindow ? program.LeadingClassDelimiter.LiteralIndex : 0;
         var continuation = literal + needle.Length;
         if (!(alignedWindow && proof.CanAcceptAfterPair) &&
-            (program.GroupCount != 0 || !CanProveRepeatPrefix(program, continuation))) return 0;
+            (program.GroupCount != 0 || !CanProveRepeatPrefix(program, continuation) &&
+                (alignedWindow || !CanProveOptionalLiteralThenHybrid(program.Instructions, continuation, budget)))) return 0;
         budget.ChargeWork((ulong)needle.Length);
         return LiteralStartsAtInstruction(program, literal, needle) ? continuation : 0;
+    }
+
+    private static bool CanProveOptionalLiteralThenHybrid(ReadOnlySpan<Utf8SliceInstruction> code, int index,
+        Utf8ConstructionBudget budget)
+    {
+        if ((uint)index >= (uint)code.Length ||
+            code[index] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: 1 } optional ||
+            !IsSingleAtomRepeat(code, index, optional) ||
+            code[index + 1] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }) return false;
+
+        for (var next = optional.A + 1; next < code.Length && next - optional.A <= 8; next++)
+        {
+            budget.ChargeWork(1);
+            var entry = code[next];
+            if (entry is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }) continue;
+            return entry is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 } &&
+                IsSingleAtomRepeat(code, next, entry) && code[entry.A].RepeatExitAcceptsEmptyTail &&
+                code[next + 1] is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 };
+        }
+        return false;
     }
 
     private static bool CanProveRepeatPrefix(Utf8SliceProgram program, int index)
@@ -1433,7 +1454,7 @@ internal static partial class Utf8SliceRunner
         }
         if (breach == Utf8ExecutionLimitKind.None && start >= 0 &&
             MayMatchBranchedAsciiPrefix(program, input, screenedLiteral + search.Length, continuation,
-                out var end, proveMatch: true, BranchedPrefixInstructionLimit - continuation))
+                out var end, proveMatch: true, BranchedPrefixInstructionLimit - continuation, existenceOnly: true))
         {
             if (end < 0) return false;
             breach = invocation.TryChargeInputStep();
@@ -2224,7 +2245,7 @@ internal static partial class Utf8SliceRunner
     private const int BranchedPrefixUnhandledRepeat = -3;
 
     private static int ProbeBranchedAsciiPrefix(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int position, int index, ref int remaining, bool proveMatch)
+        ReadOnlySpan<byte> input, int position, int index, ref int remaining, bool proveMatch, bool existenceOnly = false)
     {
         var code = program.Instructions;
         while (remaining > 0 && (uint)index < (uint)code.Length)
@@ -2364,7 +2385,7 @@ internal static partial class Utf8SliceRunner
                                 }
                                 if (possible)
                                 {
-                                    var end = ProbeBranchedAsciiPrefix(program, input, edge, next, ref remaining, proveMatch);
+                                    var end = ProbeBranchedAsciiPrefix(program, input, edge, next, ref remaining, proveMatch, existenceOnly);
                                     if (end != BranchedPrefixRejected) return end;
                                 }
                                 if (afterSibling == 0 || remaining < 2) break;
@@ -2417,7 +2438,7 @@ internal static partial class Utf8SliceRunner
                                 continue;
                             }
                         }
-                        var end = ProbeBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch);
+                        var end = ProbeBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch, existenceOnly);
                         if (end != BranchedPrefixRejected) return end;
                     }
                     index = entry.A;
@@ -2437,6 +2458,18 @@ internal static partial class Utf8SliceRunner
                     var minimum = entry.RepeatMinimum;
                     var maximum = entry.RepeatMaximum;
                     var singleAtom = entry.HasSingleAtomBody;
+                    if (existenceOnly && proveMatch && singleAtom && minimum == 1 &&
+                        code[entry.A].RepeatExitAcceptsEmptyTail &&
+                        code[index] is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } required)
+                    {
+                        // One admitted member reaches the proved empty tail.
+                        // The scalar verifier handles non-ASCII here.
+                        if (position == input.Length) return BranchedPrefixRejected;
+                        if (remaining == 0 || input[position] >= 128) return BranchedPrefixUndecided;
+                        remaining--;
+                        return MatchesAsciiHybridClass(program.SetMasks[required.A], required.B != 0, input[position])
+                            ? position + 1 : BranchedPrefixRejected;
+                    }
                     if (!singleAtom && proveMatch && entry.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
                         code[entry.A].RepeatExitUnobservedDecimal)
                     {
@@ -2554,7 +2587,7 @@ internal static partial class Utf8SliceRunner
                         }
                         else
                         {
-                            var end = ProbeBranchedAsciiPrefix(program, input, preferred, index, ref remaining, proveMatch);
+                            var end = ProbeBranchedAsciiPrefix(program, input, preferred, index, ref remaining, proveMatch, existenceOnly);
                             if (end != BranchedPrefixRejected) return end;
                         }
                         if (lazy) position++;
@@ -2970,12 +3003,12 @@ internal static partial class Utf8SliceRunner
 
     internal static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int position, int index, out int acceptedEnd, bool proveMatch = false,
-        int instructionLimit = BranchedPrefixInstructionLimit)
+        int instructionLimit = BranchedPrefixInstructionLimit, bool existenceOnly = false)
     {
         // Share one instruction and scalar allowance across the arms. The
         // caller meters this bounded check with each candidate search step.
         var remaining = instructionLimit;
-        var end = ProbeBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch);
+        var end = ProbeBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch, existenceOnly);
         acceptedEnd = Math.Max(BranchedPrefixUndecided, end);
         return end != BranchedPrefixRejected;
     }
