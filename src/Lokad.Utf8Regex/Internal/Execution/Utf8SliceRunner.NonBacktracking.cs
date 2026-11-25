@@ -480,11 +480,20 @@ internal static partial class Utf8SliceRunner
     internal static bool MatchesNonBacktrackingAtom(Utf8SliceProgram program, Utf8SliceInstruction instruction, Rune scalar,
         ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
     {
-        // Admit bulk classes before their first block. Constant-size predicates
-        // still charge work and check cancellation on the VM clock cadence.
-        breach = instruction.Kind is Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.CategorySet
-            ? invocation.TryChargeInputStep()
-            : invocation.TryChargeStep();
+        if (instruction.Kind is Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.CategorySet)
+        {
+            if (scalar.IsAscii && (instruction is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } ||
+                program.GetCompleteAsciiCategoryMask(instruction) != 0))
+            {
+                // Lowering has already included every ASCII member in the mask.
+                breach = invocation.TryChargeBoundedCheck();
+                return breach == Utf8ExecutionLimitKind.None &&
+                    MatchesAsciiHybridClass(program.SetMasks[instruction.A], instruction.B != 0, (byte)scalar.Value);
+            }
+            breach = invocation.TryChargeInputStep();
+        }
+        else breach = invocation.TryChargeStep();
+
         if (breach != Utf8ExecutionLimitKind.None) return false;
         return MatchesRegularAtom(program, instruction, scalar, ref invocation, out breach);
     }
