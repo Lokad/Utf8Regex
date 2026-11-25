@@ -469,7 +469,13 @@ public sealed partial class Utf8Regex : IDisposable
         {
             return invariantCyrillicLiteralCountStrategy.Count(input);
         }
-        if (CanStartNativeLiteralInvocation(cancellationToken, forCount: true))
+        // The prepared boundary counter admits at most eight alternatives.
+        // For short automaton families the shared finder can reject a start
+        // on its leading boundary before comparing any literals.
+        if (CanStartNativeLiteralInvocation(cancellationToken, forCount: true) ||
+            !cancellationToken.CanBeCanceled && _scalarBoundaryLiteralFamilyCounter is not null &&
+            _preparedRegex.SearchPlan.MultiLiteralSearch is
+                { Kind: PreparedMultiLiteralKind.ExactAutomaton, AutomatonSearch.LongestLength: <= 8 })
         {
             var invocation = Utf8SliceInvocation.CreateExclusive(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
             Utf8SliceBufferWork.Checkpoint(ref invocation);
