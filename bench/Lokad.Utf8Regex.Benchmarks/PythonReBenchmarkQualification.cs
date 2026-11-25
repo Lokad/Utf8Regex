@@ -38,15 +38,6 @@ internal static partial class PythonReBenchmarkReporter
     private const double PythonReQualificationMaximumSpread = 1.10;
     private static readonly TimeSpan s_cpythonResponseTimeout = TimeSpan.FromSeconds(10);
 
-    // Unknown untracked source, data and documents block snapshot writes.
-    private static string? ReadPythonReQualificationWorktree() => RunGit(
-        "status", "--porcelain=v1", "--untracked-files=all", "--", ".",
-        ":(exclude)README.md",
-        ":(exclude)src/Lokad.Utf8Regex.Pcre2/README.md",
-        ":(exclude)bench/Snapshots",
-        ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md",
-        ":(exclude)src/Lokad.Utf8Regex.Posix/README.md");
-
     // The producer revision checks build inputs; matched portable PDB document
     // checksums also reject code built from a dirty tree and later reverted.
     // Existing compiler evidence is used without another measurement identity.
@@ -72,7 +63,7 @@ internal static partial class PythonReBenchmarkReporter
         var producer = plus >= 0 && hash > plus ? identity[(plus + 1)..hash] : string.Empty;
         if (producer.Length != 40 || !producer.All(char.IsAsciiHexDigit))
             throw new InvalidOperationException($"Benchmark qualification cannot verify the {label} producer. Rebuild matching Release binaries.");
-        var changes = RunGit("diff", "--name-only", producer, "--",
+        var changes = BenchmarkInspectReporter.RunGit("diff", "--name-only", producer, "--",
             "Directory.Build.props", "Directory.Build.targets", "src/Directory.Build.props", "global.json",
             $":(glob){project}/**/*.cs", $":(glob){project}/*.csproj");
         if (changes is null)
@@ -153,7 +144,7 @@ internal static partial class PythonReBenchmarkReporter
             return 1;
         }
 
-        var worktreeState = ReadPythonReQualificationWorktree();
+        var worktreeState = BenchmarkInspectReporter.ReadSourceWorktree(includeUntracked: true);
         if (worktreeState is null)
         {
             Console.Error.WriteLine("Could not verify the worktree before PythonRe paired measurement.");

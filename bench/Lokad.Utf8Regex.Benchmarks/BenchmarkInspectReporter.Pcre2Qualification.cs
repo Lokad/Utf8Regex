@@ -101,19 +101,7 @@ internal static partial class BenchmarkInspectReporter
             return 1;
         }
 
-        var unexpectedWorktreeState = RunGit(
-            "status",
-            "--porcelain=v1",
-            "--untracked-files=all",
-            "--",
-            ".",
-            // A combined refresh dirties other profiles' generated outputs too.
-            // Code, build inputs, corpus data and unknown files remain gated.
-            ":(exclude)README.md",
-            ":(exclude)bench/Snapshots",
-            ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md",
-            ":(exclude)src/Lokad.Utf8Regex.Pcre2/README.md",
-            ":(exclude)src/Lokad.Utf8Regex.Posix/README.md");
+        var unexpectedWorktreeState = ReadSourceWorktree(includeUntracked: true);
         if (unexpectedWorktreeState is null)
         {
             Console.Error.WriteLine("Could not verify the worktree before PCRE2 qualification.");

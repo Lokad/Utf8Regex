@@ -3729,18 +3729,8 @@ internal static partial class BenchmarkInspectReporter
             CoreAssembly = GetAssemblyIdentity(typeof(Utf8Regex).Assembly),
             Pcre2Assembly = GetAssemblyIdentity(typeof(Utf8Pcre2Regex).Assembly),
             PythonReAssembly = GetAssemblyIdentity(typeof(PythonRe.Utf8PythonRegex).Assembly),
-            TrackedDirty = !string.IsNullOrWhiteSpace(RunGit(
-                "status",
-                "--porcelain=v1",
-                "--untracked-files=no",
-                "--",
-                ".",
-                ":(exclude)README.md",
-                ":(exclude)bench/Snapshots",
-                ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md",
-                ":(exclude)src/Lokad.Utf8Regex.Pcre2/README.md",
-                ":(exclude)src/Lokad.Utf8Regex.Posix/README.md")),
-            HasUntrackedFiles = !string.IsNullOrWhiteSpace(RunGit("ls-files", "--others", "--exclude-standard")),
+            TrackedDirty = ReadSourceWorktree(includeUntracked: false) is not "",
+            HasUntrackedFiles = RunGit("ls-files", "--others", "--exclude-standard") is not "",
             Runtime = RuntimeInformation.FrameworkDescription,
             OperatingSystem = RuntimeInformation.OSDescription,
             Processor = Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER") ?? RuntimeInformation.ProcessArchitecture.ToString(),
@@ -3778,7 +3768,17 @@ internal static partial class BenchmarkInspectReporter
         public required string TieredPgo { get; set; }
     }
 
-    private static string? RunGit(params string[] arguments)
+    // A combined refresh can already have updated another profile's tables.
+    // The remaining tracked source and unknown untracked files stay visible.
+    internal static string? ReadSourceWorktree(bool includeUntracked) => RunGit(
+        "status", "--porcelain=v1", includeUntracked ? "--untracked-files=all" : "--untracked-files=no", "--", ".",
+        ":(exclude)README.md",
+        ":(exclude)bench/Snapshots",
+        ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md",
+        ":(exclude)src/Lokad.Utf8Regex.Pcre2/README.md",
+        ":(exclude)src/Lokad.Utf8Regex.Posix/README.md");
+
+    internal static string? RunGit(params string[] arguments)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -3796,19 +3796,25 @@ internal static partial class BenchmarkInspectReporter
         try
         {
             using var process = Process.Start(startInfo);
-            if (process is null || !process.WaitForExit(2000))
+            if (process is null) return null;
+
+            // A long status listing can fill the redirected pipe before Git exits.
+            var output = process.StandardOutput.ReadToEndAsync();
+            var errors = process.StandardError.ReadToEndAsync();
+            try
             {
-                process?.Kill(entireProcessTree: true);
+                Task.WhenAll(output, errors, process.WaitForExitAsync())
+                    .WaitAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();
+            }
+            catch (TimeoutException)
+            {
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
                 return null;
             }
 
-            return process.ExitCode == 0 ? process.StandardOutput.ReadToEnd().Trim() : null;
+            return process.ExitCode == 0 ? output.GetAwaiter().GetResult().Trim() : null;
         }
-        catch (InvalidOperationException)
-        {
-            return null;
-        }
-        catch (System.ComponentModel.Win32Exception)
+        catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception or IOException)
         {
             return null;
         }

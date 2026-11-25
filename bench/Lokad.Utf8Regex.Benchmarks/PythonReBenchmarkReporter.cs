@@ -1160,18 +1160,8 @@ internal static partial class PythonReBenchmarkReporter
 
     private static PythonReBenchmarkEnvironment CaptureEnvironment()
     {
-        var trackedStatus = RunGit(
-            "status",
-            "--porcelain=v1",
-            "--untracked-files=no",
-            "--",
-            ".",
-            ":(exclude)README.md",
-            ":(exclude)src/Lokad.Utf8Regex.Pcre2/README.md",
-            ":(exclude)bench/Snapshots",
-            ":(exclude)src/Lokad.Utf8Regex.PythonRe/README.md",
-            ":(exclude)src/Lokad.Utf8Regex.Posix/README.md");
-        var untrackedStatus = RunGit(
+        var trackedStatus = BenchmarkInspectReporter.ReadSourceWorktree(includeUntracked: false);
+        var untrackedStatus = BenchmarkInspectReporter.RunGit(
             "ls-files",
             "--others",
             "--exclude-standard",
@@ -1180,12 +1170,12 @@ internal static partial class PythonReBenchmarkReporter
         return new PythonReBenchmarkEnvironment
         {
             // Checkout provenance and actual loaded bytes are distinct.
-            SourceCommit = RunGit("rev-parse", "--short=12", "HEAD") ?? "<unknown>",
+            SourceCommit = BenchmarkInspectReporter.RunGit("rev-parse", "--short=12", "HEAD") ?? "<unknown>",
             BenchmarkAssembly = BenchmarkInspectReporter.GetAssemblyIdentity(typeof(PythonReBenchmarkReporter).Assembly),
             CoreAssembly = BenchmarkInspectReporter.GetAssemblyIdentity(typeof(Utf8Regex).Assembly),
             PythonReAssembly = BenchmarkInspectReporter.GetAssemblyIdentity(typeof(Utf8PythonRegex).Assembly),
-            TrackedDirty = !string.IsNullOrWhiteSpace(trackedStatus),
-            HasUntrackedFiles = !string.IsNullOrWhiteSpace(untrackedStatus),
+            TrackedDirty = trackedStatus is not "",
+            HasUntrackedFiles = untrackedStatus is not "",
             Runtime = RuntimeInformation.FrameworkDescription,
             OperatingSystem = RuntimeInformation.OSDescription,
             Processor = Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER") ??
@@ -1224,31 +1214,6 @@ internal static partial class PythonReBenchmarkReporter
         }
 
         throw new FileNotFoundException($"Could not locate repository file '{relativePath}'.");
-    }
-
-    private static string? RunGit(params string[] arguments)
-    {
-        var startInfo = new ProcessStartInfo("git")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-        foreach (var argument in arguments)
-        {
-            startInfo.ArgumentList.Add(argument);
-        }
-
-        using var process = Process.Start(startInfo);
-        if (process is null)
-        {
-            return null;
-        }
-
-        var output = process.StandardOutput.ReadToEnd();
-        process.WaitForExit();
-        return process.ExitCode == 0 ? output.Trim() : null;
     }
 
     private static int ParsePositive(string[] args, int index, int defaultValue)
