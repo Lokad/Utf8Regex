@@ -301,7 +301,8 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         // copied span cursor or result receipt retains them after transfer.
         _status = status;
         _input = default; _regex = null; _program = null; _catalog = null;
-        _slots = Utf8SliceSlots.Empty; _workspace = new(); _nonBacktracking = null;
+        if (_workspace.NeedsRelease) _workspace.Release(ref _invocation);
+        _slots = Utf8SliceSlots.Empty; _nonBacktracking = null;
         _invocation.Ledger.Release(_invocation.Ledger.ReservedBytes);
         var use = _programUse; _programUse = null; use?.Dispose();
     }

@@ -96,4 +96,24 @@ public sealed class Utf8ExactStatePoolOwnershipTests
         }
         finally { Utf8ExactStatePool.Clear(); }
     }
+
+    [Fact]
+    public void MemoryCursorReturnsItsFrameLeafAndKeepsPublishedCaptures()
+    {
+        Utf8ExactStatePool.Clear();
+        try
+        {
+            using var regex = new Utf8Regex(@"\A(?<prefix>.*)(?<end>[bc])\z");
+            using var cursor = regex.CreateMatchCursor("é😀b"u8.ToArray());
+            var alias = cursor;
+            Assert.True(cursor.MoveNext(out var result));
+
+            alias.Dispose();
+
+            Assert.Equal(Utf8SliceRunner.FrameReserveBytes, Utf8ExactStatePool<Utf8SliceFrame>.RetainedBytes);
+            Assert.Equal(new Utf8CaptureRange(6, 7), Assert.Single(result.GetCaptures(2).ToArray()));
+            Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
+        }
+        finally { Utf8ExactStatePool.Clear(); }
+    }
 }

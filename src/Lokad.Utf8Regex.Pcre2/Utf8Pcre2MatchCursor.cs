@@ -171,7 +171,8 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
     private void Close(Pcre2CursorStatus status)
     {
         _status = status; _input = default; _program = null; _progress = default;
-        _sliceSlots = Utf8SliceSlots.Empty; _sliceWorkspace = new();
+        if (_sliceWorkspace.NeedsRelease) _sliceWorkspace.Release(ref _budget.WorkingInvocation);
+        _sliceSlots = Utf8SliceSlots.Empty;
         _budget.WorkingInvocation.Ledger.Release(_budget.WorkingInvocation.Ledger.ReservedBytes);
         var use = _programUse; _programUse = null; use?.Dispose();
     }

@@ -325,6 +325,28 @@ public sealed class Pcre2InvocationWorkspaceTests
         finally { Utf8ExactStatePool.Clear(); }
     }
 
+    [Fact]
+    public void SliceMemoryCursorReturnsItsFrameLeafAndKeepsPublishedCaptures()
+    {
+        Utf8ExactStatePool.Clear();
+        try
+        {
+            using var regex = new Utf8Pcre2Regex(@"\A(?<prefix>.*)(?<end>[bc])\z");
+            Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Enumerate);
+            using var cursor = regex.CreateMatchCursor("é😀b"u8.ToArray());
+            var alias = cursor;
+            Assert.True(cursor.MoveNext(out var result));
+
+            alias.Dispose();
+
+            Assert.Equal(Utf8SliceRunner.FrameReserveBytes, Utf8ExactStatePool<Utf8SliceFrame>.RetainedBytes);
+            var end = result.Groups[2];
+            Assert.Equal((6, 7), (end.StartOffsetInBytes, end.EndOffsetInBytes));
+            Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
+        }
+        finally { Utf8ExactStatePool.Clear(); }
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static long MeasureVmBatch(Utf8Pcre2Regex regex, out bool correct)
     {
