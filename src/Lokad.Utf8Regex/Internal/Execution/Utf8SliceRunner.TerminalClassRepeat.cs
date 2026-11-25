@@ -1036,9 +1036,7 @@ internal static partial class Utf8SliceRunner
             return true;
         }
         if (following.Kind is Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid &&
-            TryGetPositiveCategorySet(program, atom, out var ownCategories, out var ownLow, out var ownHigh) &&
-            TryGetPositiveCategorySet(program, following, out var nextCategories, out var nextLow, out var nextHigh) &&
-            (ownCategories & nextCategories) == 0 && (ownLow & nextLow) == 0 && (ownHigh & nextHigh) == 0)
+            AreDisjointPositiveCategorySets(program.SetMasks, program.CategorySetMembers, atom, following))
         {
             outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             return true;
@@ -1213,9 +1211,7 @@ internal static partial class Utf8SliceRunner
         }
         var optionalAsciiLiteral = repeat is { RepeatMinimum: 0, RepeatMaximum: 1 } &&
             atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 };
-        var completeAsciiCategory = atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
-            categories[atom.D] is [{ Negated: false, Table: {
-                Mask: not 0, Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } }];
+        var completeAsciiCategory = Utf8SliceProgram.GetCompleteAsciiCategoryMask(atom, categories) != 0;
         var prepareRequiredEmptyTail = repeat is { RepeatMinimum: 1, RepeatMaximum: long.MaxValue } &&
             (atom.IsDecimalDigitSet || atom is { Kind: Utf8SliceInstructionKind.Hybrid, B: 1, D: 0 } ||
              atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } && continuation == code.Length - 1);
@@ -1248,6 +1244,26 @@ internal static partial class Utf8SliceRunner
         }
         if (continuation >= code.Length) return;
         var next = code[continuation];
+        if (atom.Kind is Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid)
+        {
+            var nextAtom = next;
+            if (next is { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy, RepeatMinimum: > 0 })
+            {
+                budget.ChargeWork(1);
+                // The following repeat has not been prepared yet.
+                if (IsSingleAtomRepeat(code, continuation, next)) nextAtom = code[continuation + 1];
+            }
+            if (nextAtom.Kind is Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid)
+            {
+                budget.ChargeWork(4);
+                if (AreDisjointPositiveCategorySets(setMasks, categories, atom, nextAtom))
+                {
+                    // Shortening this run exposes a scalar excluded by the required follower.
+                    code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitRejectsShorterFlag, exit.D);
+                    return;
+                }
+            }
+        }
         // Lowering completes the positive category's ASCII mask. That mask
         // can settle exclusion of a following exact ASCII literal in advance.
         if (completeAsciiCategory && next is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }) return;
@@ -1769,11 +1785,22 @@ internal static partial class Utf8SliceRunner
         return false;
     }
 
+    private static bool AreDisjointPositiveCategorySets(byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categories,
+        in Utf8SliceInstruction first, in Utf8SliceInstruction second)
+        => TryGetPositiveCategorySet(setMasks, categories, first, out var firstCategories, out var firstLow, out var firstHigh) &&
+            TryGetPositiveCategorySet(setMasks, categories, second, out var secondCategories, out var secondLow, out var secondHigh) &&
+            (firstCategories & secondCategories) == 0 && (firstLow & secondLow) == 0 && (firstHigh & secondHigh) == 0;
+
     private static bool TryGetPositiveCategorySet(Utf8SliceProgram program,
+        in Utf8SliceInstruction atom, out uint unicodeCategories, out ulong asciiLow, out ulong asciiHigh)
+        => TryGetPositiveCategorySet(program.SetMasks, program.CategorySetMembers, atom,
+            out unicodeCategories, out asciiLow, out asciiHigh);
+
+    private static bool TryGetPositiveCategorySet(byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categories,
         in Utf8SliceInstruction atom, out uint unicodeCategories, out ulong asciiLow, out ulong asciiHigh)
     {
         asciiLow = asciiHigh = 0;
-        unicodeCategories = program.GetCompleteAsciiCategoryMask(atom);
+        unicodeCategories = Utf8SliceProgram.GetCompleteAsciiCategoryMask(atom, categories);
         if (unicodeCategories == 0)
         {
             if (atom is not { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } ||
@@ -1787,7 +1814,7 @@ internal static partial class Utf8SliceRunner
             asciiLow = (1UL << ' ') | 0x3e00UL; // U+0009..U+000D and U+0020
         }
 
-        ReadOnlySpan<byte> mask = program.SetMasks[atom.A];
+        ReadOnlySpan<byte> mask = setMasks[atom.A];
         asciiLow |= BinaryPrimitives.ReadUInt64LittleEndian(mask);
         asciiHigh = BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]);
         return true;

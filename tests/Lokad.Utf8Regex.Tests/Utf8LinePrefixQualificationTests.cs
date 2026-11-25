@@ -78,6 +78,50 @@ public sealed class Utf8LinePrefixQualificationTests
         Assert.Equal(1, new Utf8Regex(@"^a\na.*$", options: RegexOptions.Multiline).Count("a\na\na\n"u8));
     }
 
+    [Theory]
+    [InlineData(@"^(\s*)(\w+):")]
+    [InlineData(@"^(\s*)([\w ]+):")]
+    public void AnchoredRepeatProofPreservesWideCapturesAndOffsetSearch(string pattern)
+    {
+        var text = "é junk: not anchored\r\n\n\u2003\u0085αβ: tail\r\n" +
+            new string('\u2003', 32) + "next: tail\n :\n";
+        var input = Encoding.UTF8.GetBytes(text);
+        var reference = new Regex(pattern, RegexOptions.Multiline);
+        using var cancellation = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, RegexOptions.Multiline, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 10_000, MaxDepth = 256 }
+        });
+
+        Assert.True(regex.IsMatch(input, cancellation.Token));
+        Assert.Equal(reference.Count(text), regex.Count(input, cancellation.Token));
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];
+        foreach (var origin in new[] { 0, text.IndexOf('\n') + 1, text.IndexOf('β') })
+        {
+            var expected = reference.Matches(text, origin);
+            var fromByte = Encoding.UTF8.GetByteCount(text.AsSpan(0, origin));
+            Assert.Equal(Range(expected[0]), regex.Match(input, fromByte, slots, cancellation.Token));
+            for (var group = 1; group < slots.Length; group++)
+                Assert.Equal(Range(expected[0].Groups[group]), slots[group]);
+
+            using var cursor = regex.CreateMatchCursor(input, fromByte, cancellation.Token);
+            foreach (Match match in expected)
+            {
+                Assert.True(cursor.MoveNext(out var actual));
+                Assert.Equal(Range(match), actual.Value);
+                Assert.Equal(Range(match.Groups[1]), Assert.Single(actual.GetCaptures(1).ToArray()));
+                Assert.Equal(Range(match.Groups[2]), Assert.Single(actual.GetCaptures(2).ToArray()));
+            }
+            Assert.False(cursor.MoveNext(out _));
+        }
+
+        cancellation.Cancel();
+        Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, cancellation.Token)).CancellationToken);
+
+        Utf8CaptureRange Range(Group group) => new(Encoding.UTF8.GetByteCount(text.AsSpan(0, group.Index)),
+            Encoding.UTF8.GetByteCount(text.AsSpan(0, group.Index + group.Length)));
+    }
+
     [Fact]
     public void PublicQuotedLinesUseExactPrefixesAndCompleteUnicodeWhitespaceAndBody()
     {

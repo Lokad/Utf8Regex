@@ -1072,7 +1072,8 @@ internal static partial class Utf8SliceRunner
             (program.Instructions[proofRepeatIndex + 1] is
                 { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } ||
                 program.GetCompleteAsciiCategoryMask(program.Instructions[proofRepeatIndex + 1]) != 0);
-        if ((leading >= 0 || seekLiteral || hasClassWindow) && invocation.Ledger.ReservedBytes != 0)
+        var lineProofStart = GetAnchoredLineProofStart(seekBeginning, first, ref invocation);
+        if ((leading >= 0 || seekLiteral || hasClassWindow || lineProofStart != 0) && invocation.Ledger.ReservedBytes != 0)
         {
             // An enclosing loan still counts when candidate discovery needs no storage.
             var admission = invocation.TryReserveWorking(0);
@@ -1161,6 +1162,20 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, -1, breach);
             invocation.Budget.ThrowIfCancellationRequested();
+            if (lineProofStart != 0)
+            {
+                // Candidate discovery already verified the line anchor. The
+                // existing bounded proof can now start at its continuation.
+                if (!MayMatchBranchedAsciiPrefix(program, input, position, lineProofStart, out var lineEnd, proveMatch: true))
+                    continue;
+                if (lineEnd >= 0 && canProveValue && captureEnds.IsEmpty)
+                {
+                    breach = invocation.TryChargeInputStep();
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    return breach == Utf8ExecutionLimitKind.None
+                        ? new(true, position, lineEnd, breach) : new(false, -1, -1, breach);
+                }
+            }
             // Charge even rejected neighbours: dense false heads must retain
             // bounded work and the original interruption authority.
             if (leadingPrefix.IsEmpty && leading >= 0 && second >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
@@ -1467,6 +1482,7 @@ internal static partial class Utf8SliceRunner
         var first = program.Instructions[0];
         var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.Beginning;
+        var lineProofStart = GetAnchoredLineProofStart(seekBeginning, first, ref invocation);
         if (seekBeginning && first is { B: 1, C: > 0 } && captureStarts.IsEmpty && captureEnds.IsEmpty &&
             TryCountAnchoredLine(program, input, fromByte, ref invocation, out var anchoredLineCount))
             return anchoredLineCount;
@@ -1801,6 +1817,17 @@ internal static partial class Utf8SliceRunner
                 if (breach != Utf8ExecutionLimitKind.None)
                     return new Utf8SliceCountOutcome(count, breach);
                 invocation.Budget.ThrowIfCancellationRequested();
+                if (lineProofStart != 0)
+                {
+                    if (!MayMatchBranchedAsciiPrefix(program, input, position, lineProofStart, out var lineEnd, proveMatch: true))
+                    {
+                        position = AdvancePastScalar(input, position, reverse: false);
+                        if (position < 0) break;
+                        continue;
+                    }
+                    if (lineEnd >= 0 && captureStarts.IsEmpty && captureEnds.IsEmpty)
+                        provedEnd = lineEnd;
+                }
                 if (requiresEqualScalars && !HasEqualLeadingScalars(input[position..]))
                 {
                     position = AdvancePastScalar(input, position, false);

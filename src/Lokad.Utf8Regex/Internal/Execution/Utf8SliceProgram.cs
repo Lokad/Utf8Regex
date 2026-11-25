@@ -498,7 +498,7 @@ internal sealed class Utf8SliceProgram
                     instructions[1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } literal
                     ? literal.A + 1 : 0;
                 var proof = first.D;
-                if (proof == 0 && first.B == 0 && repeatCount != 0)
+                if (proof == 0 && repeatCount != 0)
                     proof = Utf8SliceRunner.PrepareAnchoredRepeatProof(this, Utf8ConstructionScope.CurrentBudget);
                 if (proof == -1 && first.B == 0 && instructions.Length == 8 &&
                     instructions[6] is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd, B: 0 } &&
@@ -1001,8 +1001,12 @@ internal sealed class Utf8SliceProgram
 
     // The lowerer includes every ASCII member for this single positive table.
     internal uint GetCompleteAsciiCategoryMask(in Utf8SliceInstruction atom)
+        => GetCompleteAsciiCategoryMask(atom, CategorySetMembers);
+
+    internal static uint GetCompleteAsciiCategoryMask(in Utf8SliceInstruction atom,
+        Utf8SliceNode.CategorySetMember[][] categories)
         => atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
-            CategorySetMembers[atom.D] is [{ Negated: false, Table: {
+            categories[atom.D] is [{ Negated: false, Table: {
                 Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }] ? table.Mask : 0;
 
     internal bool TryGetUnfoldedAsciiSet(in Utf8SliceInstruction atom, out Utf8SearchAsciiSet ascii, out bool asciiOnly)

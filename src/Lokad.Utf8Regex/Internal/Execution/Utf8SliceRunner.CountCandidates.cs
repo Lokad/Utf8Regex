@@ -2588,7 +2588,8 @@ internal static partial class Utf8SliceRunner
         }
 
         var available = Math.Min(input.Length - position, repeatMaximum);
-        var completeCategory = program.GetCompleteAsciiCategoryMask(atom) != 0;
+        var categories = program.GetCompleteAsciiCategoryMask(atom);
+        var completeCategory = categories != 0;
         ref readonly var exit = ref program.Instructions[repeat.A];
         // A greedy run with an unconditional empty tail can keep its
         // longest endpoint. Verify the tail in order for the final range.
@@ -2619,7 +2620,16 @@ internal static partial class Utf8SliceRunner
                 var value = candidate[stop];
                 if (completeCategory || atom.Kind == Utf8SliceInstructionKind.Hybrid)
                 {
-                    if (value >= 128) return BranchedPrefixUnhandledRepeat;
+                    if (value >= 128)
+                    {
+                        // A byte offset suffices for the minimum only when
+                        // the unbounded repeat needs at most one scalar.
+                        if (repeatMaximum != long.MaxValue || repeat.RepeatMinimum > 1 ||
+                            !completeCategory && atom.C != 1 << (int)Utf8SliceShorthand.Space)
+                            return BranchedPrefixUnhandledRepeat;
+                        stop = ContinueUnfoldedClassPrefix(candidate, stop, mask, categories);
+                        if (stop < 0) return BranchedPrefixUndecided;
+                    }
                 }
                 else if (atom.C != 0 && (value >= 128 ||
                     Utf8SliceScalarClasses.MatchesMask(new Rune(value), mask, true, program.CaseBehavior)))
@@ -2647,6 +2657,27 @@ internal static partial class Utf8SliceRunner
         if (length < repeat.RepeatMinimum) return BranchedPrefixRejected;
         remaining -= Math.Min(candidate.Length, length + 1);
         return position + length;
+    }
+
+    private static int ContinueUnfoldedClassPrefix(ReadOnlySpan<byte> input, int offset,
+        ReadOnlySpan<byte> asciiMask, uint categories)
+    {
+        while (offset < input.Length)
+        {
+            var value = input[offset];
+            if (value < 128)
+            {
+                if ((asciiMask[value >> 3] & (1 << (value & 7))) == 0) break;
+                offset++;
+                continue;
+            }
+            if (Rune.DecodeFromUtf8(input[offset..], out var scalar, out var width) != OperationStatus.Done)
+                return -1;
+            if (categories == 0 ? !Rune.IsWhiteSpace(scalar) : (categories & (1u << (int)Rune.GetUnicodeCategory(scalar))) == 0)
+                break;
+            offset += width;
+        }
+        return offset;
     }
 
     private static int TryMatchSmallPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
@@ -2750,6 +2781,11 @@ internal static partial class Utf8SliceRunner
 
     internal static int GetLongSingleOriginProofLimit(int length)
         => length > BranchedPrefixInstructionLimit ? SingleOriginPrefixInstructionLimit : BranchedPrefixInstructionLimit;
+
+    private static int GetAnchoredLineProofStart(bool seekBeginning, in Utf8SliceInstruction anchor,
+        ref Utf8SliceInvocation invocation)
+        => seekBeginning && anchor is { B: 1, D: < 0 } &&
+            invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit ? -anchor.D : 0;
 
     private static Utf8BoundedProgramEmitter.Match? GetCandidateProof(Utf8SliceProgram program, bool allowTier,
         ref Utf8SliceInvocation invocation, out int interpretedVisits)
