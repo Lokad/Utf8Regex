@@ -282,6 +282,21 @@ internal static partial class Utf8SliceRunner
         return breach;
     }
 
+    private static Utf8SliceMatchOutcome MatchTerminalInlineRepeatAssertion(Utf8SliceProgram program,
+        int repeatIndex, in Utf8SliceInstruction guard, ReadOnlySpan<byte> input, int position,
+        ref Utf8SliceInvocation invocation)
+    {
+        var breach = invocation.TryChargeStep();
+        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, breach);
+        breach = TryMatchInlineRepeatAssertion(program, repeatIndex, guard.A - 2, input, position, depth: 1,
+            ref invocation, out var assertion);
+        var accepted = breach == Utf8ExecutionLimitKind.None && assertion == (guard.D != 0);
+        if (accepted) breach = invocation.TryChargeStep();
+        invocation.Budget.CheckDeadline();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return accepted && breach == Utf8ExecutionLimitKind.None ? new(true, position, breach) : new(false, -1, breach);
+    }
+
     private static Utf8ExecutionLimitKind TryMatchInlineLiteralAssertion(ReadOnlySpan<Utf8SliceInstruction> code,
         int first, int end, int prefixLength, ReadOnlySpan<byte> input, int start, bool reverse,
         int? requiredEnd, uint depth, ref Utf8SliceInvocation invocation, out bool matched,

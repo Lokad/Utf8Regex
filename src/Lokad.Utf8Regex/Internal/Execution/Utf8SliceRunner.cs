@@ -351,6 +351,17 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, breach);
         }
+        workspace.Stacks.ResetAttempt();
+        if (verifiedPrefix.Bytes > 0 && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+            !collectHistory && !requireFullInput && !program.RightToLeft &&
+            program.Instructions[verifiedPrefix.Instruction] is { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: < 0 } guard &&
+            guard.A + guard.D == program.Instructions.Length - 1 && program.Instructions[^1].Kind == Utf8SliceInstructionKind.Accept)
+        {
+            // No instruction after this capture-free guard observes an
+            // assertion endpoint. Its result belongs to the verified prefix.
+            return MatchTerminalInlineRepeatAssertion(program, verifiedPrefix.Instruction + 1, guard,
+                input, start + verifiedPrefix.Bytes, ref invocation);
+        }
         var counts = workspace.Counts;
         var positions = workspace.Positions;
         var heads = workspace.Heads;
@@ -359,7 +370,6 @@ internal static partial class Utf8SliceRunner
         if (captureStarts.Length != 0) captureStarts.Fill(-1);
         if (captureEnds.Length != 0) captureEnds.Fill(-1);
         if (heads.Length != 0) Array.Fill(heads, -1);
-        workspace.Stacks.ResetAttempt();
         var completed = false;
         try
         {
