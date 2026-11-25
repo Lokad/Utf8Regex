@@ -166,6 +166,34 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         }
     }
 
+    [Fact]
+    public void BoundaryFamilyCaptureSlotsKeepThePrefixAndClippedEndWithoutScratch()
+    {
+        using var regex = new Utf8Regex(@"\b(?:the|the-re|and|that|for)\b", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
+        });
+        using var cancellation = new CancellationTokenSource();
+        var loan = new NoWorkingStorage();
+        var input = "𐐀the 😀that\u200d !and! foré"u8;
+        var andStart = "𐐀the 😀that\u200d !"u8.Length;
+        var forStart = andStart + "and! "u8.Length;
+        var sentinel = new Utf8CaptureRange(100, 101);
+        Span<Utf8CaptureRange> slots = [sentinel, sentinel];
+
+        var match = regex.Match(input, "𐐀"u8.Length, slots, cancellation.Token, loan);
+        Assert.Equal(new Utf8CaptureRange(andStart, andStart + 3), match);
+        Assert.Equal(match, slots[0]);
+        Assert.False(regex.Match(input, forStart, slots, cancellation.Token, loan).Success);
+        Assert.False(slots[0].Success);
+        match = regex.Match(input, forStart, slots, cancellation.Token, loan, endOffsetInBytes: forStart + 3);
+        Assert.Equal(new Utf8CaptureRange(forStart, forStart + 3), match);
+        Assert.Equal(match, slots[0]);
+        Assert.Equal(new Utf8CaptureRange(0, 3), regex.Match("the-re"u8, 0, slots, cancellation.Token, loan));
+        Assert.Equal(new Utf8CaptureRange(0, 3), slots[0]);
+        Assert.Equal(sentinel, slots[1]);
+    }
+
     [Theory]
     [InlineData(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", "𐐀Task Taské 😀Task😀 ValueTask", RegexOptions.None, 2)]
     [InlineData(@"\b(?:a-b|a|b)\b", "a-b", RegexOptions.None, 1)]
@@ -216,13 +244,28 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         Assert.False(cursor.MoveNext(out _));
     }
 
-    [Fact]
-    public void ControlledWordFamilyBooleanChecksItsBudgetAndOriginalToken()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ControlledWordFamilySearchChecksItsBudgetAndOriginalToken(bool writeSlots)
     {
         const string pattern = @"\b(?:the|and|that|have|for)\b";
         using var denied = new Utf8Regex(pattern, policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1 } });
+        var sentinel = new Utf8CaptureRange(100, 101);
+        Utf8CaptureRange[] slots = [sentinel, sentinel];
+
+        void Search(Utf8Regex regex, ReadOnlySpan<byte> input, CancellationToken token = default,
+            IUtf8MemoryAllowance? loan = null)
+        {
+            if (writeSlots) regex.Match(input, 0, slots, token, loan);
+            else if (loan is null) regex.IsMatch(input, token);
+            else regex.IsMatch(input, token, loan);
+        }
+
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.IsMatch("the"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => Search(denied, "the"u8)).ResourceKind);
+        if (writeSlots) Assert.False(slots[0].Success);
+        slots[0] = sentinel;
 
         using var token = new CancellationTokenSource();
         using var regex = new Utf8Regex(pattern, policy: new()
@@ -235,7 +278,9 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         try
         {
             Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
-                regex.IsMatch(input, token.Token, new NoWorkingStorage())).CancellationToken);
+                Search(regex, input, token.Token, new NoWorkingStorage())).CancellationToken);
+            if (writeSlots) Assert.False(slots[0].Success);
+            Assert.Equal(sentinel, slots[1]);
         }
         finally { session.Complete(); }
     }

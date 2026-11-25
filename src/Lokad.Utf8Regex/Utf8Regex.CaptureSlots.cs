@@ -58,9 +58,13 @@ public sealed partial class Utf8Regex
                 return MatchEmittedCaptureSlots(subject, startOffsetInBytes, output, offsets, digits, first, last, proof);
 
             Utf8CaptureRange result;
-            if (program.GroupCount == 0 && CanUseNativeLiteralSearch(program, maximumAlternatives: 8))
+            if (program.GroupCount == 0 &&
+                (_preparedRegex.SearchPlan.HasBoundaryRequirements
+                    ? CanUseControlledScalarBoundaryLiteralSearch(program)
+                    : CanUseNativeLiteralSearch(program, maximumAlternatives: 8)))
             {
-                // Reuse bounded literal-family search for explicit byte matches.
+                // The bounded finder sees the prefix before the byte floor.
+                // The selected end still clips the subject's right context.
                 var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan,
                     subject, startOffsetInBytes, subject.Length, false, ref invocation, out var selected, out var found);
                 if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
