@@ -15,6 +15,7 @@ public sealed class Utf8FundedCountFactsTests
     [InlineData(@"(?:\b)(?:[\w]){10,}(?:\b)", "𐐀𐐀𐐀𐐀𐐀𐐀𐐀𐐀𐐀𐐀 abc", 1)]
     [InlineData("needle", "é😀needle needle", 2)]
     [InlineData("([A-Z]{2})([0-9]{4})", "é😀AB1234 CD5678 A😀1234", 2)]
+    [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", "😀 class A0😀record R1𐐀class Wrong struct B2", 3)]
     [InlineData(@"(a+)\1", "é😀aaaa aa", 2)]
     public void EachFundedCounterKeepsRequiredFactsAndOneValidation(string pattern, string text, int expected)
     {

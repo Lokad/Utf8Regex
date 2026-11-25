@@ -21,6 +21,7 @@ public sealed class Utf8FiniteIdentifierCountTests
     [InlineData(KeywordPattern, "class Alpha struct Beta record Gamma", 3)]
     [InlineData(KeywordPattern, "classstruct Wrong xclass Wrong class lower record Good", 1)]
     [InlineData(KeywordPattern, "class A struct Z record A1", 1)]
+    [InlineData(@"\b(?:record|struct|class)\s+([A-Z][A-Za-z0-9_]+):\1", "😀class Ax:Ax record Bye:No struct C3:C3", 2)]
     [InlineData(@"\b(?:ab|ba)\s+[A-Z][A-Za-z0-9_]+", "aba Wrong ab Good ba Right", 2)]
     [InlineData(@"\b(?:foobar|bar)\s+[A-Z][A-Za-z0-9_]+", "foobar Good bar Right", 2)]
     public void FiniteCountPreservesValuesWithAdmittedScalarScratch(string pattern, string text, int expected)
@@ -106,6 +107,35 @@ public sealed class Utf8FiniteIdentifierCountTests
                 using var cursor = tiny.CreateMatchCursor(input);
                 _ = cursor.MoveNext(out _);
             }).ResourceKind);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TerminalIdentifierScanKeepsOriginalInterruption(bool expire)
+    {
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var cancellation = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes("😀class A" + new string('x', 320000) + "😀");
+        using var regex = new Utf8Regex(KeywordPattern, RegexOptions.Compiled, new()
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 1, MaxWorkingBytes = 1 }
+        });
+        Assert.Equal(1, regex.Count(input, cancellation.Token));
+
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (expire) clock.Advance(250);
+            else cancellation.Cancel();
+        });
+        try
+        {
+            if (expire) Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input, cancellation.Token));
+            else Assert.Equal(cancellation.Token,
+                Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancellation.Token)).CancellationToken);
+        }
+        finally { session.Complete(); }
     }
 
     [Theory]

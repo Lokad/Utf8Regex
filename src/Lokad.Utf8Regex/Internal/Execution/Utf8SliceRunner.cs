@@ -1552,15 +1552,20 @@ internal static partial class Utf8SliceRunner
         var straightPrefixBytes = straightPrefixStart != 0 ? leadingPrefix.Length : 0;
         var (prefixRepeatAscii, prefixRepeatFollower, prefixRepeatMinimum) = GetExactPrefixRepeatHead(program, prefixContinuation);
         var terminalRepeat = 0;
-        if (prefixRepeatAscii.HasValue && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
-            invocation.IsUnmetered && invocation.CheckpointHook is null)
+        if (prefixRepeatAscii.HasValue && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures)
         {
             var code = program.Instructions;
             var index = prefixContinuation + 5;
             if (code.Length - index == 5 && IsSingleClassRepeat(code, index) &&
                 code[index + 1] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } &&
                 code[^1].Kind == Utf8SliceInstructionKind.Accept)
+            {
+                // The complete tail needs no retry frame or rented state.
+                // Its scan still uses the original invocation and working ledger.
+                var admission = invocation.TryReserveWorking(0);
+                if (admission != Utf8ExecutionLimitKind.None) return new(count, admission);
                 terminalRepeat = index;
+            }
         }
         var remaining = program.RightToLeft ? fromByte : input.Length - fromByte;
         if (CanSearchOrdinaryOrdered(program, remaining, candidatePlan, ref invocation) &&
