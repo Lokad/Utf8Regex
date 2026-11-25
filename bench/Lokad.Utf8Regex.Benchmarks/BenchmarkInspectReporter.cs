@@ -2794,7 +2794,7 @@ internal static partial class BenchmarkInspectReporter
 
         Console.WriteLine($"CompiledEngine    : {regex.Inspection.CompiledEngineKind}");
         Console.WriteLine($"ExecutionKind     : {regex.Inspection.ExecutionKind}");
-        Console.WriteLine($"AnchoredLiteral   : {regex.Inspection.DebugAnchoredLiteralKind}");
+        Console.WriteLine($"AnchoredLiteral   : {regex.Inspection.PreparedRegex.AnchoredLiteral.Kind}");
         Console.WriteLine($"OwnedScalarPlan   : {regex.Inspection.AvailableOwnedSliceProgram is not null}");
         Console.WriteLine($"ScalarPrepared    : {regex.Inspection.PreparedRegex.ScalarProgram is not null}");
         Console.WriteLine($"SearchKind        : {regex.Inspection.SearchPlan.Kind}");

@@ -47,10 +47,6 @@ public sealed partial class Utf8Regex
         public bool HasEmittedLiteralFamily => CompiledRuntime?._emittedLiteralFamilyCounter is not null;
 
         public string DebugCompiledEngineRuntimeType => CompiledRuntime?.GetType().Name ?? "None";
-
-
-        public string DebugAnchoredLiteralKind => _owner._preparedRegex.AnchoredLiteral.Kind.ToString();
-
         public bool DebugHasInvariantCyrillicLiteralCountStrategy =>
             _owner._invariantCyrillicLiteralCountStrategy is not null;
 

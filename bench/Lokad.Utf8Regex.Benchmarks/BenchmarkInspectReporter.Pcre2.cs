@@ -6,6 +6,7 @@ using System.Text.Json;
 using global::Lokad.Utf8Regex;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Pcre2;
 
@@ -589,10 +590,10 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"DiagnosticsB      : {Unsafe.SizeOf<Pcre2ExecutionDiagnostics>()}");
         Console.WriteLine($"CandidateSearchB  : {Unsafe.SizeOf<Pcre2CandidateSearchProgram>()}");
         Console.WriteLine($"SliceCursorB      : {Unsafe.SizeOf<Pcre2SliceGlobalMatchCursor>()}");
-        Console.WriteLine($"Utf8OperationCurB : {Utf8OperationMatchCursor.DebugSizeInBytes}");
-        Console.WriteLine($"Utf8SearchPlanB   : {Utf8OperationMatchCursor.DebugSearchPlanSizeInBytes}");
-        Console.WriteLine($"Utf8SmallFamilyB  : {Utf8OperationMatchCursor.DebugSmallLiteralFamilySizeInBytes}");
-        Console.WriteLine($"Utf8SearchOpB     : {Utf8OperationMatchCursor.DebugSearchOperationPlanSizeInBytes}");
+        Console.WriteLine($"Utf8OperationCurB : {Unsafe.SizeOf<Utf8OperationMatchCursor>()}");
+        Console.WriteLine($"Utf8SearchPlanB   : {Unsafe.SizeOf<Utf8SearchPlan>()}");
+        Console.WriteLine($"Utf8SmallFamilyB  : {Unsafe.SizeOf<PreparedSmallAsciiLiteralFamilySearch>()}");
+        Console.WriteLine($"Utf8SearchOpB     : {Unsafe.SizeOf<Utf8SearchOperationPlan>()}");
         Console.WriteLine($"ValueDataB        : {Utf8Pcre2ValueMatchEnumerator.DebugValueDataSizeInBytes}");
         Console.WriteLine($"GroupDataB        : {Unsafe.SizeOf<Pcre2GroupData>()}");
         Console.WriteLine($"LiteralFamilyCurB : {Unsafe.SizeOf<Pcre2LiteralFamilyGlobalMatchCursor>()}");

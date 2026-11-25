@@ -3,15 +3,12 @@ using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 using System.Buffers;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal ref partial struct Utf8OperationMatchCursor
 {
-    internal static int DebugSizeInBytes => Unsafe.SizeOf<Utf8OperationMatchCursor>();
-
     [UnscopedRef]
     internal Utf8InvocationBufferControl WorkingBufferControl => new(ref _sliceInvocation);
 
@@ -38,12 +35,6 @@ internal ref partial struct Utf8OperationMatchCursor
     internal bool IsRightToLeft => _sliceProgram is { RightToLeft: true } ||
         _mode is EnumeratorMode.RtlExactAsciiLiteral or EnumeratorMode.RtlExactUtf8Literal or EnumeratorMode.RtlAsciiLiteralIgnoreCase;
     internal int DebugConsumed => _consumed;
-
-    internal static int DebugSearchPlanSizeInBytes => Unsafe.SizeOf<Utf8SearchPlan>();
-
-    internal static int DebugSmallLiteralFamilySizeInBytes => Unsafe.SizeOf<PreparedSmallAsciiLiteralFamilySearch>();
-
-    internal static int DebugSearchOperationPlanSizeInBytes => Unsafe.SizeOf<Utf8SearchOperationPlan>();
 
     private bool _hasAnchoredLiteralInvocation;
     private readonly EnumeratorMode _mode;

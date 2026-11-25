@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
@@ -31,8 +32,7 @@ public sealed class Pcre2ExecutionArchitectureTests
     public void CoreMatchCursorReferencesRegexOwnedPlansInsteadOfEmbeddingThem()
     {
         Assert.True(
-            Utf8OperationMatchCursor.DebugSizeInBytes <
-            Utf8OperationMatchCursor.DebugSearchPlanSizeInBytes);
+            Unsafe.SizeOf<Utf8OperationMatchCursor>() < Unsafe.SizeOf<Utf8SearchPlan>());
     }
 
     [Fact]
