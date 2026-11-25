@@ -53,4 +53,47 @@ public sealed class Utf8ExactStatePoolOwnershipTests
         }
         finally { buffer.Release(ref invocation); }
     }
+
+    [Fact]
+    public void FirstFrameLeafReusesStorageOnlyAfterAdmission()
+    {
+        var leafBytes = Utf8SliceRunner.FrameReserveBytes;
+        var bytes = (ulong)leafBytes + Utf8ConstructionBudget.ArrayBytes<Utf8SliceFrame[]>(Utf8SliceRunner.ChunkTableCapacity);
+        var stacks = new Utf8SliceRunner.ChunkedStacks();
+        Utf8ExactStatePool.Clear();
+        try
+        {
+            var ordinary = Utf8SliceInvocation.CreateExclusive(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
+            try
+            {
+                Assert.True(stacks.PushFrame(default, ref ordinary));
+                Assert.Equal(bytes, ordinary.Ledger.ReservedBytes);
+            }
+            finally { stacks.ReleaseAll(ref ordinary); }
+            Assert.Equal(0UL, ordinary.Ledger.ReservedBytes);
+            Assert.Equal(leafBytes, Utf8ExactStatePool<Utf8SliceFrame>.RetainedBytes);
+
+            var denied = Utf8SliceInvocation.CreateExclusive(new(0, 0, bytes - 1), Regex.InfiniteMatchTimeout, default);
+            try
+            {
+                Assert.False(stacks.PushFrame(default, ref denied));
+                Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, stacks.Breach);
+                Assert.Equal(0UL, denied.Ledger.ReservedBytes);
+            }
+            finally { stacks.ReleaseAll(ref denied); }
+            Assert.Equal(leafBytes, Utf8ExactStatePool<Utf8SliceFrame>.RetainedBytes);
+
+            var finite = Utf8SliceInvocation.CreateExclusive(new(0, 0, bytes), Regex.InfiniteMatchTimeout, default);
+            try
+            {
+                Assert.True(stacks.PushFrame(default, ref finite));
+                Assert.Equal(bytes, finite.Ledger.ReservedBytes);
+                Assert.Equal(0, Utf8ExactStatePool<Utf8SliceFrame>.RetainedBytes);
+            }
+            finally { stacks.ReleaseAll(ref finite); }
+            Assert.Equal(0UL, finite.Ledger.ReservedBytes);
+            Assert.Equal(0, Utf8ExactStatePool<Utf8SliceFrame>.RetainedBytes);
+        }
+        finally { Utf8ExactStatePool.Clear(); }
+    }
 }

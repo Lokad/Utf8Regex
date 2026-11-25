@@ -3401,7 +3401,10 @@ internal static partial class Utf8SliceRunner
                 _reservedBytes = 0;
             }
 
+            var frames = _frameTables;
             _frameTables = Array.Empty<Utf8SliceFrame[]>();
+            if (frames is { Length: > 0 } && frames[0] is { } first)
+                Utf8ExactStatePool<Utf8SliceFrame>.Return(first, invocation.HasUnlimitedWorkingMemory);
             _trailTables = Array.Empty<Utf8SliceTrailEntry[]>();
             _journalTables = Array.Empty<Utf8SliceCountMutation[]>();
             _balanceTables = Array.Empty<Utf8SliceBalanceEntry[]>();
@@ -3461,7 +3464,11 @@ internal static partial class Utf8SliceRunner
                 }
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return false;
-                var leaf = new T[chunkCapacity];
+                // Keep the common first frame leaf within the shared retention
+                // bounds. The table and all other chunks stay invocation-owned.
+                var leaf = typeof(T) == typeof(Utf8SliceFrame) && chunk == 0
+                    ? Utf8ExactStatePool<T>.Rent(chunkCapacity, invocation.HasUnlimitedWorkingMemory)
+                    : new T[chunkCapacity];
                 // Publish only after acquisition and copy complete. Failed growth
                 // leaves the original table, count and parent reservation intact.
                 var oldBytes = replaceTable ? Utf8ConstructionBudget.ArrayBytes<T[]>(oldCapacity) : 0;
