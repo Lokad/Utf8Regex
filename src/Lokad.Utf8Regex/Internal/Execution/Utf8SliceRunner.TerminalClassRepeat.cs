@@ -603,7 +603,7 @@ internal static partial class Utf8SliceRunner
                     if (terminal.Kind == Utf8SliceInstructionKind.Anchor && instruction.Kind == Utf8SliceInstructionKind.Dot &&
                         repeat is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: long.MaxValue } &&
                         Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, pc + 1) == end)
-                        MarkOptionalBeforeTerminalDot(code, repeatIndex, budget);
+                        rewindFree |= MarkGreedyBeforeTerminalDot(code, repeatIndex, end, budget);
                 }
 
                 // An adjacent alternative may jump over this repeat to the
@@ -632,7 +632,7 @@ internal static partial class Utf8SliceRunner
         return (rewindFree, end);
     }
 
-    private static void MarkOptionalBeforeTerminalDot(Span<Utf8SliceInstruction> code, int dot,
+    private static ulong MarkGreedyBeforeTerminalDot(Span<Utf8SliceInstruction> code, int dot, int end,
         Utf8ConstructionBudget budget)
     {
         var continuation = dot;
@@ -644,15 +644,23 @@ internal static partial class Utf8SliceRunner
         }
 
         var exitIndex = continuation - 1;
-        var optionalIndex = exitIndex - 3;
-        if (optionalIndex < 0 || code[optionalIndex] is not
-            { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: 1 } optional ||
-            !IsSingleAtomRepeat(code, optionalIndex, optional) || !IsScalarRepeatAtom(code[optionalIndex + 1])) return;
+        var repeatIndex = exitIndex - 3;
+        if (repeatIndex < 0 || code[repeatIndex] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy } repeat ||
+            !IsSingleAtomRepeat(code, repeatIndex, repeat) || !IsScalarRepeatAtom(code[repeatIndex + 1])) return 0;
+
+        // A shorter endpoint that can finish through the terminal dot and
+        // absolute end leaves no internal LF. Moving forward still allows the
+        // same end or the end after a consumed final LF. The greedy run keeps
+        // its preferred endpoint, and the VM still publishes both captures.
+        if (repeat.RepeatMaximum > 1)
+            return end - repeatIndex < 64 ? 1UL << (end - repeatIndex) : 0;
+        if (repeat.RepeatMinimum != 0 || repeat.RepeatMaximum != 1) return 0;
 
         // The prepared terminal dot reaches the same end on either side of
         // one non-LF scalar. The VM still publishes the greedy captures.
         var exit = code[exitIndex];
         code[exitIndex] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitBeforeTerminalDotFlag, exit.D);
+        return 0;
     }
 
     private static bool IsScalarRepeatAtom(in Utf8SliceInstruction atom)

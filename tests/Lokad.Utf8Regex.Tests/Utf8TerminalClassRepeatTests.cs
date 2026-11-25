@@ -73,6 +73,30 @@ public sealed class Utf8TerminalClassRepeatTests
     }
 
     [Theory]
+    [InlineData("!é😀 rest\n", "$", 12, 7)]
+    [InlineData("!é😀 rest\n", @"\z", -1, -1)]
+    [InlineData("!é😀 rest\nx", "$", -1, -1)]
+    [InlineData("!é😀\n", "$", 8, 8)]
+    [InlineData("!é😀\n", @"\z", 8, 8)]
+    public void GreedyRepeatBeforeTerminalDotPreservesFinalNewlineAndCaptures(
+        string text, string anchor, int end, int headEnd)
+    {
+        using var regex = Utf8Regex.Compile(@"\A!(?<head>[^ ]+)(?<rest>.*)" + anchor, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 32, MaxWorkingBytes = 4096 }
+        });
+        using var token = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes(text);
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[3];
+        var expected = end < 0 ? default : new Utf8CaptureRange(0, end);
+
+        Assert.Equal(expected, regex.Match(input, captures: captures, cancellationToken: token.Token));
+        Assert.Equal(expected, captures[0]);
+        Assert.Equal(headEnd < 0 ? default : new Utf8CaptureRange(1, headEnd), captures[1]);
+        Assert.Equal(headEnd < 0 ? default : new Utf8CaptureRange(headEnd, end), captures[2]);
+    }
+
+    [Theory]
     [InlineData("Af029C", true)]
     [InlineData("Af029C\n", true)]
     [InlineData("Af029C\n\n", false)]
