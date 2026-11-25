@@ -1,10 +1,11 @@
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Posix;
 
-/// <summary>Matches the invariant POSIX ERE subset over strict UTF-8 Unicode scalars.</summary>
+/// <summary>Matches the invariant POSIX ERE subset over caller-valid UTF-8 text.</summary>
 /// <remarks>Selected matches are leftmost-longest with hierarchical subpattern priority. Instances are immutable and reusable; there is no native or BCL matcher fallback.</remarks>
 public sealed class Utf8PosixRegex : IDisposable
 {
@@ -202,9 +203,11 @@ public sealed class Utf8PosixRegex : IDisposable
 
     internal static void CheckStart(ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
     {
-        if ((uint)start > (uint)input.Length) throw new ArgumentOutOfRangeException("startOffsetInBytes");
-        if (start < input.Length && (input[start] & 0xc0) == 0x80)
+        if (!Utf8BytePosition.IsScalarBoundary(input, start))
+        {
+            if ((uint)start > (uint)input.Length) throw new ArgumentOutOfRangeException("startOffsetInBytes");
             throw new ArgumentOutOfRangeException("startOffsetInBytes", "The start must be a Unicode scalar boundary.");
+        }
         PosixWorkspace.Finish(ref invocation);
     }
 

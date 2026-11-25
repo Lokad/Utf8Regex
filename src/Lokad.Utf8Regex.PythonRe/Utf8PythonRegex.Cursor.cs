@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.Input;
+
 namespace Lokad.Utf8Regex.PythonRe;
 
 public sealed partial class Utf8PythonRegex
@@ -27,7 +29,7 @@ public sealed partial class Utf8PythonRegex
     private static int GetScalarEndOffset(ReadOnlySpan<byte> input, int? endOffsetInBytes)
     {
         var end = endOffsetInBytes ?? input.Length;
-        if ((uint)end > (uint)input.Length || end < input.Length && (input[end] & 0xc0) == 0x80)
+        if (!Utf8BytePosition.IsScalarBoundary(input, end))
             throw new ArgumentOutOfRangeException(nameof(endOffsetInBytes));
         return end;
     }

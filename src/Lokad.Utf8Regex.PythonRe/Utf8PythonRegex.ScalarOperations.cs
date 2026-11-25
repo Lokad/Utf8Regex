@@ -18,10 +18,8 @@ public sealed partial class Utf8PythonRegex
 
     private static void ValidateScalarStartOffset(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
-        if ((uint)startOffsetInBytes > (uint)input.Length ||
-            startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
+        if (!Utf8BytePosition.IsScalarBoundary(input, startOffsetInBytes))
             throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
-        // The cursor borrows the existing valid-text input contract.
     }
 
     private bool IsMatchScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
