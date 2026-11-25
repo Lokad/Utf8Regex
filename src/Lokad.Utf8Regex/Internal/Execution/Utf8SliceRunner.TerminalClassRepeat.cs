@@ -1209,10 +1209,14 @@ internal static partial class Utf8SliceRunner
         }
         var optionalAsciiLiteral = repeat is { RepeatMinimum: 0, RepeatMaximum: 1 } &&
             atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 };
+        var completeAsciiCategory = atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
+            categories[atom.D] is [{ Negated: false, Table: {
+                Mask: not 0, Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } }];
         var prepareRequiredEmptyTail = repeat is { RepeatMinimum: 1, RepeatMaximum: long.MaxValue } &&
             (atom.IsDecimalDigitSet || atom is { Kind: Utf8SliceInstructionKind.Hybrid, B: 1, D: 0 } ||
              atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } && continuation == code.Length - 1);
-        if (!optionalAsciiLiteral && !prepareRequiredEmptyTail && atom is not ({ Kind: Utf8SliceInstructionKind.Dot } or
+        if (!optionalAsciiLiteral && !prepareRequiredEmptyTail && !completeAsciiCategory &&
+            atom is not ({ Kind: Utf8SliceInstructionKind.Dot } or
                          { Kind: Utf8SliceInstructionKind.Set, B: 0 } or { Kind: Utf8SliceInstructionKind.Set, C: 0 } or
                          { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }))
             return;
@@ -1239,6 +1243,9 @@ internal static partial class Utf8SliceRunner
         }
         if (continuation >= code.Length) return;
         var next = code[continuation];
+        // Lowering completes the positive category's ASCII mask. That mask
+        // can settle exclusion of a following exact ASCII literal in advance.
+        if (completeAsciiCategory && next is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }) return;
         if (atom.Kind == Utf8SliceInstructionKind.Dot && repeat.RepeatMaximum is >= 8 and <= 511)
         {
             // Capture markers and a leading boundary consume no input.
