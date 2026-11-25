@@ -2346,18 +2346,34 @@ internal static partial class Utf8SliceRunner
                                     }
                                     failed = true;
                                 }
-                                if (run.EndIndex > minimumEnd && !stacks.PushFrame(new Utf8SliceFrame
+                                var endpoint = run.EndIndex;
+                                var rewindStarts = exit.RepeatExitRewindStarts;
+                                if (rewindStarts != 0)
+                                {
+                                    var firstByte = endpoint < input.Length ? input[endpoint] : -1;
+                                    if (firstByte != (byte)rewindStarts && firstByte != (byte)(rewindStarts >> 8) &&
+                                        firstByte != (byte)(rewindStarts >> 16))
+                                    {
+                                        // The continuation needs one of these starters at every endpoint.
+                                        // Select the first viable one before opening captures or saving a rewind frame.
+                                        failure = FindPreviousRepeatStart(input, minimumEnd, endpoint, rewindStarts,
+                                            ref invocation, out endpoint);
+                                        if (failure != Utf8ExecutionLimitKind.None) goto Failure;
+                                        if (endpoint < 0) { failed = true; break; }
+                                    }
+                                }
+                                if (endpoint > minimumEnd && !stacks.PushFrame(new Utf8SliceFrame
                                 {
                                     ResumeKind = Utf8SliceResumeKind.ScalarRepeatRewind,
                                     Target = continuation,
-                                    InputIndex = run.EndIndex,
+                                    InputIndex = endpoint,
                                     TrailCount = stacks.TrailCount,
                                     Aux = minimumEnd,
-                                    Count = instructions[instruction.A].RepeatExitRewindStarts,
+                                    Count = rewindStarts,
                                     JournalCount = stacks.JournalCount,
                                 }, ref invocation))
                                 { failure = stacks.Breach; goto Failure; }
-                                inputIndex = run.EndIndex;
+                                inputIndex = endpoint;
                                 programIndex = continuation;
                                 break;
                             }
