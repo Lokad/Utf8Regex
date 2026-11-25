@@ -192,14 +192,7 @@ internal static partial class Pcre2PartialProbeCompiler
             }
             length = checked(length + token.Literal.Utf8SequenceLength);
         }
-        literal = budget.AllocateArray<byte>(length, false);
-        var written = 0;
-        budget.ChargeWork((ulong)nodes.Length + 1);
-        for (var index = 0; index < nodes.Length; index++)
-        {
-            if ((index & 255) == 0) budget.ChargeWork(0);
-            written += ((Pcre2TokenBacktrackingNode)nodes[index]).Token.Literal.EncodeToUtf8(literal.AsSpan(written));
-        }
+        literal = Pcre2LiteralCompiler.EncodeLiteralTokens(nodes, length, budget);
         return true;
     }
 

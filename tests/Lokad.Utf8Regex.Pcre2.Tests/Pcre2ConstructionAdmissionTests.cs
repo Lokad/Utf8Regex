@@ -1,3 +1,4 @@
+using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Pcre2;
 
@@ -87,6 +88,68 @@ public sealed class Pcre2ConstructionAdmissionTests
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(1, program.Searcher.FindFirst(new byte[] { 128, 64, 255 }));
         Assert.Equal(-1, program.Searcher.FindFirst(new byte[] { 128, 255 }));
+    }
+
+    [Fact]
+    public void CandidateBranchesReserveTheTableAndLiteralBeforeEncoding()
+    {
+        const int scalarCount = 513;
+        var scalar = new Rune(0x1f600);
+        var root = new Pcre2AlternationBacktrackingNode([LiteralBranch(scalar, scalarCount), LiteralBranch(new Rune('x'), 2)]);
+        const ulong parentBytes = 48;
+        var tableBytes = Utf8ConstructionBudget.ArrayBytes<byte[]>(2);
+        var limit = parentBytes + tableBytes;
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, limit, ulong.MaxValue, ulong.MaxValue);
+        var parent = owner.Budget.AllocateArray<byte>(1, false);
+        parent[0] = 17;
+        var request = new Pcre2CompileRequest("", default, default, default, Timeout.InfiniteTimeSpan);
+
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Pcre2CandidateSearchAnalyzer.Compile(root, request));
+
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
+        Assert.Equal(limit + Utf8ConstructionBudget.ArrayBytes<byte>(scalarCount * scalar.Utf8SequenceLength), failure.Requested);
+        Assert.Equal(parentBytes, owner.Budget.ReservedBytes);
+        Assert.Equal(limit, owner.Budget.PeakBytes);
+        Assert.Equal(17, parent[0]);
+    }
+
+    [Fact]
+    public void DeclinedCandidateFamilyReleasesItsScratchAndKeepsWorkSpent()
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        var root = new Pcre2AlternationBacktrackingNode([LiteralBranch(new Rune('é'), 300), Pcre2EmptyBacktrackingNode.Instance]);
+        var request = new Pcre2CompileRequest("", default, default, default, Timeout.InfiniteTimeSpan);
+
+        Assert.False(Pcre2CandidateSearchAnalyzer.Compile(root, request).HasValue);
+        Assert.Equal(0UL, owner.Budget.ReservedBytes);
+        Assert.True(owner.Budget.PeakBytes >= Utf8ConstructionBudget.ArrayBytes<byte>(600));
+        Assert.True(owner.Budget.WorkSteps >= 300);
+    }
+
+    [Fact]
+    public void CandidateEncodingObservesTheOriginalTokenAndRefundsScratch()
+    {
+        var root = new Pcre2AlternationBacktrackingNode([LiteralBranch(new Rune('é'), 513), LiteralBranch(new Rune('x'), 2)]);
+        var request = new Pcre2CompileRequest("", default, default, default, Timeout.InfiniteTimeSpan);
+        using var source = new CancellationTokenSource();
+        using var owner = Utf8ConstructionScope.Enter();
+        owner.Budget.CancellationToken = source.Token;
+        var reserved = Utf8ConstructionBudget.ArrayBytes<byte[]>(2) + Utf8ConstructionBudget.ArrayBytes<byte>(1026);
+        var encodeCheckpoints = 0;
+        owner.Budget.CheckpointHook = _ =>
+        {
+            if (owner.Budget.ReservedBytes == reserved && ++encodeCheckpoints == 3) source.Cancel();
+        };
+
+        var failure = Assert.Throws<OperationCanceledException>(() => Pcre2CandidateSearchAnalyzer.Compile(root, request));
+        Assert.Equal(source.Token, failure.CancellationToken);
+        Assert.Equal(0UL, owner.Budget.ReservedBytes);
+    }
+
+    private static Pcre2SequenceBacktrackingNode LiteralBranch(Rune scalar, int count)
+    {
+        var token = new Pcre2TokenBacktrackingNode(Pcre2CharacterToken.CreateLiteral(scalar, default));
+        return new(Enumerable.Repeat<IPcre2BacktrackingNode>(token, count).ToArray());
     }
 
     [Fact]

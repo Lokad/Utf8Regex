@@ -103,6 +103,20 @@ internal static class Pcre2LiteralCompiler
         Pcre2CompileOptions.ExtendedMore |
         Pcre2CompileOptions.FirstLine;
 
+    internal static byte[] EncodeLiteralTokens(ReadOnlySpan<IPcre2BacktrackingNode> nodes, int byteCount,
+        Utf8ConstructionBudget budget)
+    {
+        var literal = budget.AllocateArray<byte>(byteCount, false);
+        var written = 0;
+        budget.ChargeWork((ulong)nodes.Length + 1);
+        for (var index = 0; index < nodes.Length; index++)
+        {
+            if ((index & 255) == 0) budget.ChargeWork(0);
+            written += ((Pcre2TokenBacktrackingNode)nodes[index]).Token.Literal.EncodeToUtf8(literal.AsSpan(written));
+        }
+        return literal;
+    }
+
     // A whole nonempty folded literal can discover ranges without the VM
     // when each token's PCRE2 case fiber is exactly its ASCII fold.
     internal static Pcre2LiteralProgram? CompileCaselessLiteral(IPcre2BacktrackingNode root, in Pcre2CompileRequest request)

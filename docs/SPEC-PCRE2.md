@@ -171,6 +171,10 @@ compilation owns its scope. Byte patterns are validated and copied under
 admission. Invalid UTF-8 reports its byte offset. `Pattern` decodes byte
 source on request.
 
+Construction admission covers candidate-search literal bytes and branch
+tables. A declined candidate plan releases its temporary capacity while
+its construction work remains charged.
+
 PCRE2 caps backtracking and lexical construction at 256 live frames. A
 caller can tighten that bound. A funded build with no explicit `MaxBytes`
 uses the account for covered bytes, subject to the other construction

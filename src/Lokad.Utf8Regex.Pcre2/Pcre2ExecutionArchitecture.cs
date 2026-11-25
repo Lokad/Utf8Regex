@@ -396,12 +396,10 @@ internal readonly struct Pcre2CandidateSearchProgram
 
     internal bool HasValue => Kind != Pcre2CandidateSearchKind.None;
 
-    internal static Pcre2CandidateSearchProgram FromBranchLeadingLiterals(byte[][] literals, int maximumPrefixLength) =>
+    internal static Pcre2CandidateSearchProgram FromBranchLeadingLiterals(PreparedSearcher searcher, int maximumPrefixLength) =>
         new(
             Pcre2CandidateSearchKind.BranchLeadingLiterals,
-            literals.Length == 1
-                ? new PreparedSearcher(new PreparedSubstringSearch(literals[0], ignoreCase: false), ignoreCase: false)
-                : new PreparedSearcher(new PreparedMultiLiteralSearch(literals, ignoreCase: false)),
+            searcher,
             [],
             default,
             0,
@@ -983,22 +981,29 @@ internal static class Pcre2CandidateSearchAnalyzer
         IPcre2BacktrackingNode root,
         out Pcre2CandidateSearchProgram plan)
     {
-        var branches = root is Pcre2AlternationBacktrackingNode alternation
-            ? alternation.Alternatives
-            : [root];
-        var literals = new byte[branches.Length][];
+        plan = default;
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        var branches = (root as Pcre2AlternationBacktrackingNode)?.Alternatives;
+        if (branches is null || branches.Length == 1)
+        {
+            if (!TryGetBranchLeadingLiteral(branches is null ? root : branches[0], budget, out var literal)) return false;
+            var searcher = new PreparedSearcher(new PreparedSubstringSearch(literal, ignoreCase: false), ignoreCase: false);
+            plan = Pcre2CandidateSearchProgram.FromBranchLeadingLiterals(searcher, literal.Length);
+            return true;
+        }
+
+        using var attempt = Utf8ConstructionScope.Enter();
+        var literals = budget.AllocateArray<byte[]>(branches.Length, false);
         var maximumPrefixLength = 0;
         for (var i = 0; i < branches.Length; i++)
         {
-            if (!TryGetBranchLeadingLiteral(branches[i], out literals[i]))
-            {
-                plan = default;
-                return false;
-            }
+            if (!TryGetBranchLeadingLiteral(branches[i], budget, out literals[i])) return false;
             maximumPrefixLength = Math.Max(maximumPrefixLength, literals[i].Length);
         }
 
-        plan = Pcre2CandidateSearchProgram.FromBranchLeadingLiterals(literals, maximumPrefixLength);
+        plan = Pcre2CandidateSearchProgram.FromBranchLeadingLiterals(
+            new PreparedSearcher(new PreparedMultiLiteralSearch(literals, ignoreCase: false)), maximumPrefixLength);
+        attempt.Complete();
         return true;
     }
 
@@ -1012,7 +1017,8 @@ internal static class Pcre2CandidateSearchAnalyzer
             return false;
         }
 
-        var runTokens = new List<Pcre2CharacterToken>();
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        var previous = default(Pcre2CharacterToken);
         var childIndex = 0;
         // Discovery retreats to the first scalar in each run. A finite
         // maximum can make that start fail while a later start succeeds.
@@ -1025,36 +1031,29 @@ internal static class Pcre2CandidateSearchAnalyzer
                } &&
                IsRetreatableRunToken(runToken))
         {
-            if (runTokens.Count != 0 && !AreKnownDisjoint(runTokens[^1], runToken))
+            budget.ChargeWork(1);
+            if (childIndex != 0 && !AreKnownDisjoint(previous, runToken))
             {
                 return false;
             }
 
-            runTokens.Add(runToken);
+            previous = runToken;
             childIndex++;
         }
 
-        if (runTokens.Count == 0)
+        if (childIndex == 0 || !TryEncodeLeadingLiteral(sequence.Children.AsSpan(childIndex), 1, budget, out var literal))
         {
             return false;
         }
 
-        var builder = new StringBuilder();
-        for (var i = childIndex; i < sequence.Children.Length &&
-             sequence.Children[i] is Pcre2TokenBacktrackingNode { Token: var token } &&
-             token.Kind == Pcre2CharacterTokenKind.Literal &&
-             token.Options == Pcre2CharacterOptions.None; i++)
+        var runTokens = budget.AllocateArray<Pcre2CharacterToken>(childIndex, false);
+        budget.ChargeWork((ulong)childIndex);
+        for (var i = 0; i < runTokens.Length; i++)
         {
-            builder.Append(token.Literal.ToString());
+            if ((i & 255) == 0) budget.ChargeWork(0);
+            runTokens[i] = ((Pcre2TokenBacktrackingNode)((Pcre2RepeatBacktrackingNode)sequence.Children[i]).Body).Token;
         }
-
-        if (builder.Length == 0)
-        {
-            return false;
-        }
-
-        var literal = Encoding.UTF8.GetBytes(builder.ToString());
-        plan = Pcre2CandidateSearchProgram.FromLeadingRunThenLiteral([.. runTokens], literal);
+        plan = Pcre2CandidateSearchProgram.FromLeadingRunThenLiteral(runTokens, literal);
         return true;
     }
 
@@ -1154,28 +1153,16 @@ internal static class Pcre2CandidateSearchAnalyzer
 
         var minimumOffset = 0;
         var maximumOffset = 0;
+        var budget = Utf8ConstructionScope.CurrentBudget;
         for (var childIndex = 0; childIndex < sequence.Children.Length; childIndex++)
         {
+            budget.ChargeWork(1);
             var child = sequence.Children[childIndex];
             if (minimumOffset > 0 &&
-                child is Pcre2TokenBacktrackingNode { Token: var token } &&
-                token.Kind == Pcre2CharacterTokenKind.Literal &&
-                token.Options == Pcre2CharacterOptions.None)
+                TryEncodeLeadingLiteral(sequence.Children.AsSpan(childIndex), 1, budget, out var literal))
             {
-                var literal = new StringBuilder();
-                for (var literalIndex = childIndex; literalIndex < sequence.Children.Length &&
-                     sequence.Children[literalIndex] is Pcre2TokenBacktrackingNode { Token: var literalToken } &&
-                     literalToken.Kind == Pcre2CharacterTokenKind.Literal &&
-                     literalToken.Options == Pcre2CharacterOptions.None; literalIndex++)
-                {
-                    literal.Append(literalToken.Literal.ToString());
-                }
-
-                constraint = new Pcre2CandidateWindowConstraint(
-                    Encoding.UTF8.GetBytes(literal.ToString()),
-                    minimumOffset,
-                    maximumOffset);
-                return maximumOffset <= 64;
+                constraint = new Pcre2CandidateWindowConstraint(literal, minimumOffset, maximumOffset);
+                return true;
             }
 
             if (!IsAsciiOnlyRegularNode(child))
@@ -1335,29 +1322,37 @@ internal static class Pcre2CandidateSearchAnalyzer
             Pcre2CharacterClassTermKind.HorizontalSpace or
             Pcre2CharacterClassTermKind.VerticalSpace;
 
-    private static bool TryGetBranchLeadingLiteral(IPcre2BacktrackingNode branch, out byte[] literal)
+    private static bool TryGetBranchLeadingLiteral(IPcre2BacktrackingNode branch, Utf8ConstructionBudget budget, out byte[] literal)
     {
-        var children = branch is Pcre2SequenceBacktrackingNode sequence
+        ReadOnlySpan<IPcre2BacktrackingNode> children = branch is Pcre2SequenceBacktrackingNode sequence
             ? sequence.Children
             : [branch];
         var index = 0;
         while (index < children.Length && IsSkippableZeroWidthPrefix(children[index]))
         {
+            budget.ChargeWork(1);
             index++;
         }
+        return TryEncodeLeadingLiteral(children[index..], 2, budget, out literal);
+    }
 
-        var builder = new StringBuilder();
-        while (index < children.Length &&
-               children[index] is Pcre2TokenBacktrackingNode { Token: var token } &&
+    private static bool TryEncodeLeadingLiteral(ReadOnlySpan<IPcre2BacktrackingNode> nodes, int minimumBytes,
+        Utf8ConstructionBudget budget, out byte[] literal)
+    {
+        var count = 0;
+        var length = 0;
+        while (count < nodes.Length &&
+               nodes[count] is Pcre2TokenBacktrackingNode { Token: var token } &&
                token.Kind == Pcre2CharacterTokenKind.Literal &&
                token.Options == Pcre2CharacterOptions.None)
         {
-            builder.Append(token.Literal.ToString());
-            index++;
+            budget.ChargeWork(1);
+            length = checked(length + token.Literal.Utf8SequenceLength);
+            count++;
         }
 
-        literal = builder.Length == 0 ? [] : Encoding.UTF8.GetBytes(builder.ToString());
-        return literal.Length >= 2;
+        literal = length >= minimumBytes ? Pcre2LiteralCompiler.EncodeLiteralTokens(nodes[..count], length, budget) : [];
+        return length >= minimumBytes;
     }
 
     private static bool IsSkippableZeroWidthPrefix(IPcre2BacktrackingNode node) =>
@@ -1369,6 +1364,7 @@ internal static class Pcre2CandidateSearchAnalyzer
 
     private static bool ContainsUnsafeCandidateSemantics(IPcre2BacktrackingNode node, ref bool containsCodeUnit)
     {
+        Utf8ConstructionScope.ChargeWork(1);
         switch (node)
         {
             // Later backreferences leave necessary leading bytes intact.
