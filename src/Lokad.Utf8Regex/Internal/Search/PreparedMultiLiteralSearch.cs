@@ -117,7 +117,8 @@ internal readonly partial struct PreparedMultiLiteralSearch
 
         if (Kind == PreparedMultiLiteralKind.ExactAutomaton)
         {
-            return AutomatonSearch.TryFindNextNonOverlappingMatch(input, ref state, out index, out matchedLength, out literalId);
+            return AutomatonSearch.TryFindNextNonOverlappingMatch(input, ref state, out index, out matchedLength, out literalId,
+                TrieSearch.RootSearch);
         }
 
         if (Kind == PreparedMultiLiteralKind.ExactPacked)
@@ -172,7 +173,8 @@ internal readonly partial struct PreparedMultiLiteralSearch
 
         if (Kind == PreparedMultiLiteralKind.ExactAutomaton)
         {
-            return AutomatonSearch.TryFindNextNonOverlappingMatch(input, ref state, out index, out matchedLength, out _);
+            return AutomatonSearch.TryFindNextNonOverlappingMatch(input, ref state, out index, out matchedLength, out _,
+                TrieSearch.RootSearch);
         }
 
         if (Kind == PreparedMultiLiteralKind.ExactPacked)
@@ -1517,7 +1519,8 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
         ref PreparedMultiLiteralScanState state,
         out int index,
         out int matchedLength,
-        out int literalId)
+        out int literalId,
+        in PreparedByteSearch rootSearch = default)
     {
         index = -1;
         matchedLength = 0;
@@ -1550,6 +1553,7 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
         var bestOrder = int.MaxValue;
         var bestReportedLength = 0;
         var bestLiteralId = -1;
+        var canSeekRoot = rootSearch.Count is > 0 and <= 5;
         for (var i = scanIndex; i < input.Length; i++)
         {
             automatonState = Transitions[(automatonState * 256) + input[i]];
@@ -1571,6 +1575,15 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
             if (bestOrder >= 0 && i - bestStart >= LongestLength - 1)
             {
                 break;
+            }
+
+            // At the root, discarded bytes cannot start or extend a literal.
+            // Once a result exists, keep the original lookahead for priority.
+            if (canSeekRoot && automatonState == 0 && bestLiteralId < 0 && input.Length - i > 16)
+            {
+                var next = rootSearch.IndexOf(input[(i + 1)..]);
+                if (next < 0) break;
+                i += next;
             }
         }
 
