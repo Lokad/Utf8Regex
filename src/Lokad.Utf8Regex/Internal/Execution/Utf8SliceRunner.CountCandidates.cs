@@ -935,11 +935,11 @@ internal static partial class Utf8SliceRunner
         var classMaximum = leadingClass >= 0 ? program.Instructions[leadingClass - 1].RepeatMaximum : 0;
         var ascii = default(Utf8SearchAsciiSet);
         var hasAsciiMask = false;
-        if (directClassLiteral && (classMaximum == long.MaxValue || classMaximum <= 4))
+        if (leadingClass >= 0 && (classMaximum == long.MaxValue || classMaximum <= 4))
         {
             if (program.LeadingScalarIsDecimal && leadingClass == program.LeadingByteCandidate.InstructionIndex)
             {
-                if (gapMaximum == 0 && classMaximum <= 4 && code[leadingClass - 1].RepeatMinimum > 0 &&
+                if (directClassLiteral && gapMaximum == 0 && classMaximum <= 4 && code[leadingClass - 1].RepeatMinimum > 0 &&
                     windowEnd < input.Length && input[windowEnd] is < 128 and var delimiter &&
                     !Utf8AsciiBytePredicates.IsDigit(delimiter) &&
                     FindShortAsciiDecimalStart(input, floor, windowEnd, (int)classMaximum) is >= 0 and var asciiStart)
