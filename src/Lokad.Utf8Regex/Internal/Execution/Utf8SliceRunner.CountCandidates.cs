@@ -1184,6 +1184,76 @@ internal static partial class Utf8SliceRunner
         return count < minimum ? BranchedPrefixRejected : end;
     }
 
+    private static bool TryGetFixedDecimalFollower(Utf8SliceProgram program, out int digits, out byte first, out byte last)
+    {
+        digits = first = last = 0;
+        var code = program.Instructions.AsSpan();
+        var atomIndex = program.LeadingByteCandidate.InstructionIndex;
+        var repeatIndex = atomIndex - 1;
+        if (Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, 0) != repeatIndex ||
+            !code[atomIndex].IsDecimalDigitSet || !IsSingleClassRepeat(code, repeatIndex)) return false;
+
+        ref readonly var repeat = ref code[repeatIndex];
+        if (repeat.RepeatMinimum != repeat.RepeatMaximum || repeat.RepeatMinimum is < 1 or > 4 || repeat.A + 1 >= code.Length ||
+            !program.TryGetUnfoldedAsciiSet(code[repeat.A + 1], out var follower, out var asciiOnly) || !asciiOnly ||
+            !TryGetAsciiBytePair(follower, out first, out last) ||
+            Utf8AsciiBytePredicates.IsDigit(first) || Utf8AsciiBytePredicates.IsDigit(last)) return false;
+
+        digits = (int)repeat.RepeatMinimum;
+        return true;
+    }
+
+    private static Utf8SliceCountOutcome CountFromFixedDecimalFollowers(ReadOnlySpan<byte> input, int floor,
+        int digits, byte first, byte last, Utf8BoundedProgramEmitter.Match emitted, ref Utf8SliceInvocation invocation)
+    {
+        var count = 0;
+        while (input.Length - floor > digits)
+        {
+            // Fixed scalar width gives one increasing candidate start per follower.
+            var search = floor + digits;
+            var relative = IndexOfLeadingByte(input[search..], first, last, decimalSet: false,
+                sparsePair: first != last, includeKelvin: false);
+            if (relative < 0) break;
+            var follower = search + relative;
+            var start = follower - digits;
+            var prefix = input.Slice(start, digits);
+            var nonDigit = prefix.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+            if (nonDigit >= 0)
+                start = prefix[nonDigit] < 128 ? -1 : FindFixedDecimalStart(input, floor, follower, digits);
+
+            // No decimal prefix can cross this follower. After a false prefix,
+            // skip runs of non-starters before seeking the next follower.
+            floor = follower + 1;
+            if (start < 0)
+            {
+                var next = Utf8AsciiBytePredicates.DecimalOrScalarLead.IndexOf(input[floor..]);
+                if (next < 0) break;
+                floor += next;
+                continue;
+            }
+            var end = emitted(input[start..]);
+            if (end < 0) continue;
+
+            var breach = invocation.TryReserveWorking(0);
+            if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+            count++;
+            floor = start + end;
+            invocation.AnchorOriginByte = floor;
+        }
+        return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+    }
+
+    private static int FindFixedDecimalStart(ReadOnlySpan<byte> input, int floor, int edge, int digits)
+    {
+        for (var i = 0; i < digits; i++)
+        {
+            if (edge <= floor || !TryReadScalar(input, edge, true, out var scalar, out var width) || !Rune.IsDigit(scalar))
+                return -1;
+            edge -= width;
+        }
+        return edge >= floor ? edge : -1;
+    }
+
     private static int MatchTerminalDecimalBoundary(ReadOnlySpan<byte> input, int start, int minimum, int maximum)
     {
         // The admitted continuation has at most four digits and one boundary.

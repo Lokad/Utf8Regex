@@ -1484,6 +1484,10 @@ internal static partial class Utf8SliceRunner
             !program.ReadsCaptures && first.Kind != Utf8SliceInstructionKind.Anchor;
         var emitted = GetCandidateProof(program, proveBranchedMatch || proveDecimalMatch || shortDecimalHead,
             ref invocation, out var interpretedVisits);
+        if (shortDecimalHead && emitted is not null && input.Length - fromByte >= 256 &&
+            invocation.CheckpointHook is null && invocation.IsUnmetered &&
+            TryGetFixedDecimalFollower(program, out var digits, out var firstFollower, out var lastFollower))
+            return CountFromFixedDecimalFollowers(input, fromByte, digits, firstFollower, lastFollower, emitted, ref invocation);
         // The prepared decimal starter establishes the original candidate.
         // Keep the existing proof routes for controlled invocations.
         proveDecimalMatch |= shortDecimalHead && (interpretedVisits >= 0 || emitted is not null &&

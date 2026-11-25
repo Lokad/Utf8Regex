@@ -186,6 +186,22 @@ public sealed class Utf8DynamicCodeCapabilityTests
             Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token)).CancellationToken);
     }
 
+    [Fact]
+    public void FixedDecimalFollowerCountPreservesOrderedScalarProgress()
+    {
+        using var regex = new Utf8Regex(@"\d{2}[.-]\d{2}", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        Assert.Equal(RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled,
+            program.EmittedMatch is not null);
+
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("012.3456-78!٧٨.𝟡٠𝟜١-٢3!123.X!", 32)) + "0000-45");
+        using var source = new CancellationTokenSource();
+        Assert.Equal(129, regex.Count(input));
+        Assert.Equal(129, regex.Count(input, source.Token));
+        Assert.Equal(128, regex.Count(input.AsSpan(0, input.Length - 1)));
+        Assert.Equal(1, regex.Count("0000-45"u8));
+    }
+
     [Theory]
     [InlineData("a12", 1)]
     [InlineData("Ab1 2", 2)]
