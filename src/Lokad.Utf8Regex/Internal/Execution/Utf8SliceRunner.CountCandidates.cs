@@ -2263,18 +2263,18 @@ internal static partial class Utf8SliceRunner
                 case Utf8SliceInstructionKind.RepeatGreedy:
                 case Utf8SliceInstructionKind.RepeatLazy:
                     var minimum = entry.RepeatMinimum;
+                    var maximum = entry.RepeatMaximum;
                     var singleAtom = entry.HasSingleAtomBody;
                     if (!singleAtom && proveMatch && entry.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
                         code[entry.A].RepeatExitUnobservedDecimal)
                     {
-                        var end = TryMatchPrefixRepeat(program, input, position, index + 1, in entry, ref remaining,
-                            out var continueProof);
-                        if (!continueProof) return end == BranchedPrefixUnhandledRepeat ? BranchedPrefixUndecided : end;
+                        var end = TryMatchLongPrefixRepeat(program, input, position, index + 1, in entry, ref remaining);
+                        if (end < 0) return end == BranchedPrefixUnhandledRepeat ? BranchedPrefixUndecided : end;
                         position = end;
                         index = entry.A + 1;
                         continue;
                     }
-                    if (singleAtom && minimum == 0 && entry.RepeatMaximum == 1 && code[index] is var optionalAtom &&
+                    if (singleAtom && minimum == 0 && maximum == 1 && code[index] is var optionalAtom &&
                         optionalAtom is ({ Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } or
                             { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
                             { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }))
@@ -2367,7 +2367,6 @@ internal static partial class Utf8SliceRunner
                     }
                     // A fixed ASCII set repeat has one endpoint. Verify its
                     // byte mask below without trying competing repeat lengths.
-                    var maximum = entry.RepeatMaximum;
                     if (proveMatch && singleAtom && (minimum != maximum ||
                         code[index] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }))
                     {
@@ -2411,9 +2410,11 @@ internal static partial class Utf8SliceRunner
                             index = entry.A + 1;
                             continue;
                         }
-                        var end = TryMatchPrefixRepeat(program, input, position, index, in entry, ref remaining,
-                            out var continueProof);
-                        if (continueProof)
+                        var continueProof = true;
+                        var end = maximum > 4
+                            ? TryMatchLongPrefixRepeat(program, input, position, index, in entry, ref remaining)
+                            : TryMatchSmallPrefixRepeat(program, input, position, index, in entry, ref remaining, out continueProof);
+                        if (end >= 0 && continueProof)
                         {
                             position = end;
                             index = entry.A + 1;
@@ -2424,7 +2425,7 @@ internal static partial class Utf8SliceRunner
                     if (minimum == 0) return BranchedPrefixUndecided;
                     // A required body always starts here. After a nontrivial loop,
                     // its end stays unknown. Skip only a proved fixed-width atom.
-                    if (minimum != entry.RepeatMaximum || minimum > remaining || !singleAtom)
+                    if (minimum != maximum || minimum > remaining || !singleAtom)
                     {
                         proveMatch = false;
                         continue;
@@ -2486,10 +2487,11 @@ internal static partial class Utf8SliceRunner
     // The caller resumes at a returned byte position when continueProof is set.
     // Competing endpoints can already have proved an outcome for the caller.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int TryMatchPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
-        int atomIndex, in Utf8SliceInstruction repeat, ref int remaining, out bool continueProof)
+    // A nonnegative result is the endpoint of the run. The caller still
+    // verifies its continuation, including capture markers and end anchors.
+    private static int TryMatchLongPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
+        int atomIndex, in Utf8SliceInstruction repeat, ref int remaining)
     {
-        continueProof = false;
         ref readonly var atom = ref program.Instructions[atomIndex];
         var repeatMaximum = repeat.RepeatMaximum;
         if (atom.IsDecimalDigitSet && repeatMaximum == long.MaxValue && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
@@ -2504,63 +2506,56 @@ internal static partial class Utf8SliceRunner
             else if (suffix[digits] >= 128) return BranchedPrefixUndecided;
             if (digits < repeat.RepeatMinimum) return BranchedPrefixRejected;
             remaining -= Math.Min(suffix.Length, digits + 1);
-            continueProof = true;
             return position + digits;
         }
 
-        if (repeatMaximum > 4)
-        {
-            var available = Math.Min(input.Length - position, repeatMaximum);
-            ref readonly var exit = ref program.Instructions[repeat.A];
-            // A greedy run with an unconditional empty tail can keep its
-            // longest endpoint. Verify the tail in order for the final range.
-            if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || available > remaining ||
-                !(exit.RepeatExitRejectsShorterEndpoints ||
-                    repeatMaximum == long.MaxValue && exit.RepeatExitAcceptsEmptyTail ||
-                    program.SkipsTerminalRewind(atomIndex - 1)))
-                return BranchedPrefixUnhandledRepeat;
+        var available = Math.Min(input.Length - position, repeatMaximum);
+        ref readonly var exit = ref program.Instructions[repeat.A];
+        // A greedy run with an unconditional empty tail can keep its
+        // longest endpoint. Verify the tail in order for the final range.
+        if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || available > remaining ||
+            !(exit.RepeatExitRejectsShorterEndpoints ||
+                repeatMaximum == long.MaxValue && exit.RepeatExitAcceptsEmptyTail ||
+                program.SkipsTerminalRewind(atomIndex - 1)))
+            return BranchedPrefixUnhandledRepeat;
 
-            var suffix = input.Slice(position, (int)available);
-            int stop;
-            if (atom.Kind == Utf8SliceInstructionKind.Dot && repeat.RepeatMinimum <= 1 && repeatMaximum == long.MaxValue)
-                stop = atom.A == 0 ? suffix.IndexOf((byte)'\n') : -1;
-            else if (GetUnfoldedAsciiRange(atom, out var last) is >= 0 and var first)
-                stop = suffix.IndexOfAnyExceptInRange((byte)first, last);
-            else if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
-                { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
+        var candidate = input.Slice(position, (int)available);
+        int stop;
+        if (atom.Kind == Utf8SliceInstructionKind.Dot && repeat.RepeatMinimum <= 1 && repeatMaximum == long.MaxValue)
+            stop = atom.A == 0 ? candidate.IndexOf((byte)'\n') : -1;
+        else if (GetUnfoldedAsciiRange(atom, out var last) is >= 0 and var first)
+            stop = candidate.IndexOfAnyExceptInRange((byte)first, last);
+        else if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
+            { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
+        {
+            var mask = program.SetMasks[atom.A];
+            stop = ScanAsciiMask(candidate, mask, category: false);
+            if ((uint)stop < (uint)candidate.Length)
             {
-                var mask = program.SetMasks[atom.A];
-                stop = ScanAsciiMask(suffix, mask, category: false);
-                if ((uint)stop < (uint)suffix.Length)
+                var value = candidate[stop];
+                if (atom.Kind == Utf8SliceInstructionKind.Hybrid)
                 {
-                    var value = suffix[stop];
-                    if (atom.Kind == Utf8SliceInstructionKind.Hybrid)
-                    {
-                        if (value >= 128) return BranchedPrefixUnhandledRepeat;
-                    }
-                    else if (atom.C != 0 && (value >= 128 ||
-                        Utf8SliceScalarClasses.MatchesMask(new Rune(value), mask, true, program.CaseBehavior)))
-                    {
-                        // The complete suffix is already within the proof's byte
-                        // allowance. With no upper count and at most one required
-                        // scalar, these byte endpoints suffice after folding.
-                        if (repeatMaximum != long.MaxValue || repeat.RepeatMinimum > 1) return BranchedPrefixUnhandledRepeat;
-                        stop = ContinueFoldedAsciiMask(suffix, stop, mask, program.CaseBehavior);
-                    }
+                    if (value >= 128) return BranchedPrefixUnhandledRepeat;
+                }
+                else if (atom.C != 0 && (value >= 128 ||
+                    Utf8SliceScalarClasses.MatchesMask(new Rune(value), mask, true, program.CaseBehavior)))
+                {
+                    // The complete suffix is already within the proof's byte
+                    // allowance. With no upper count and at most one required
+                    // scalar, these byte endpoints suffice after folding.
+                    if (repeatMaximum != long.MaxValue || repeat.RepeatMinimum > 1) return BranchedPrefixUnhandledRepeat;
+                    stop = ContinueFoldedAsciiMask(candidate, stop, mask, program.CaseBehavior);
                 }
             }
-            else return BranchedPrefixUnhandledRepeat;
-
-            // The dot proof needs at most one scalar. A LF stop is aligned in
-            // UTF-8, and a nonempty run suffices for that minimum.
-            var length = stop < 0 ? suffix.Length : stop;
-            if (length < repeat.RepeatMinimum) return BranchedPrefixRejected;
-            remaining -= Math.Min(suffix.Length, length + 1);
-            continueProof = true;
-            return position + length;
         }
+        else return BranchedPrefixUnhandledRepeat;
 
-        return TryMatchSmallPrefixRepeat(program, input, position, atomIndex, in repeat, ref remaining, out continueProof);
+        // The dot proof needs at most one scalar. A LF stop is aligned in
+        // UTF-8, and a nonempty run suffices for that minimum.
+        var length = stop < 0 ? candidate.Length : stop;
+        if (length < repeat.RepeatMinimum) return BranchedPrefixRejected;
+        remaining -= Math.Min(candidate.Length, length + 1);
+        return position + length;
     }
 
     private static int TryMatchSmallPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
