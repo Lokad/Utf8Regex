@@ -196,7 +196,18 @@ internal static class Utf8BoundedProgramEmitter
                     {
                         case Utf8SliceInstructionKind.Literal:
                         case Utf8SliceInstructionKind.Set:
-                            EmitRun(instruction, origin, offset++, 1, retry);
+                            var runStart = pc - 1;
+                            // A straight run of byte tests shares a retry. Admit it
+                            // before the first checked span index.
+                            while (pc < code.Length && pc != continuation.Index && code[pc].Kind is
+                                Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set)
+                            {
+                                budget.ChargeWork(1);
+                                pc++;
+                            }
+                            EmitByteLimit(origin, offset + pc - runStart, retry);
+                            for (var atom = runStart; atom < pc; atom++)
+                                EmitMember(code[atom], origin, offset++, retry);
                             break;
                         case Utf8SliceInstructionKind.CaptureStart:
                             if (openings is not null) openings[instruction.A] = SavePosition(origin, offset);
@@ -456,10 +467,15 @@ internal static class Utf8BoundedProgramEmitter
         void EmitRun(in Utf8SliceInstruction atom, Utf8IlLocal? origin, int offset, int width, Utf8IlLabel retry)
         {
             if (width == 0) return;
-            il.LoadLocal(length);
-            LoadPosition(origin, offset + width);
-            il.Emit(OpCodes.Blt_Un, retry);
+            EmitByteLimit(origin, offset + width, retry);
             for (var step = 0; step < width; step++) EmitMember(atom, origin, offset + step, retry);
+        }
+
+        void EmitByteLimit(Utf8IlLocal? origin, int end, Utf8IlLabel retry)
+        {
+            il.LoadLocal(length);
+            LoadPosition(origin, end);
+            il.Emit(OpCodes.Blt_Un, retry);
         }
 
         void EmitMember(in Utf8SliceInstruction atom, Utf8IlLocal? origin, int offset, Utf8IlLabel retry)
