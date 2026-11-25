@@ -93,6 +93,15 @@ public sealed class Utf8CoreWorkingPolicyTests
     }
 
     [Fact]
+    public void FixedCompoundWithShortDecimalRunsFitsOneWorkingByte()
+    {
+        using var regex = Create(@"\b(?:\d{1,3}\.){3}\d{1,3}\b", 1, RegexOptions.None);
+        using var source = new CancellationTokenSource();
+        Assert.True(regex.IsMatch("Ω 12.3.45.6"u8, source.Token));
+        Assert.True(regex.IsMatch("𐐀 𝟘.١.2.３"u8, source.Token));
+    }
+
+    [Fact]
     public void SmallFixedCapturedRepeatNeedsNoStorageForBooleanMatch()
     {
         using var regex = Create(@"(?<part>\d{4}[- ]){3}\d{3,4}", 1, RegexOptions.Compiled);

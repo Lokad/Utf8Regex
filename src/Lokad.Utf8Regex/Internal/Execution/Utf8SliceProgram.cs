@@ -1973,7 +1973,8 @@ internal static class Utf8SliceLowerer
                             candidateBody = capture.Body;
                         }
                         if (candidateBody is Utf8SliceNode.ConcatNode or Utf8SliceNode.AlternationNode &&
-                            !Facts[candidateBody].CanMatchEmpty && IsSmallPureBody(candidateBody, ref remaining)) frame.Stage = 2;
+                            !Facts[candidateBody].CanMatchEmpty && IsSmallPureBody(candidateBody, ref remaining, fixedOuter: true))
+                            frame.Stage = 2;
                     }
                     if (frame.Stage == 2)
                     {
@@ -2312,7 +2313,7 @@ internal static class Utf8SliceLowerer
             return first;
         }
 
-        private bool IsSmallPureBody(Utf8SliceNode node, ref int remaining)
+        private bool IsSmallPureBody(Utf8SliceNode node, ref int remaining, bool fixedOuter = false)
         {
             if (--remaining < 0) return false;
             Budget.ChargeWork(1);
@@ -2323,7 +2324,7 @@ internal static class Utf8SliceLowerer
                     return true;
                 case Utf8SliceNode.ConcatNode concat:
                     foreach (var child in concat.Children)
-                        if (!IsSmallPureBody(child, ref remaining)) return false;
+                        if (!IsSmallPureBody(child, ref remaining, fixedOuter)) return false;
                     return true;
                 case Utf8SliceNode.AlternationNode alternate:
                     foreach (var branch in alternate.Branches)
@@ -2332,13 +2333,14 @@ internal static class Utf8SliceLowerer
                         remaining -= 2;
                         if (remaining < 0) return false;
                         foreach (var child in branch)
-                            if (!IsSmallPureBody(child, ref remaining)) return false;
+                            if (!IsSmallPureBody(child, ref remaining, fixedOuter)) return false;
                     }
                     return true;
                 case Utf8SliceNode.RepeatNode { Maximum: <= 8, Body:
                     Utf8SliceNode.LiteralNode or Utf8SliceNode.SetNode or Utf8SliceNode.ShorthandNode or
                     Utf8SliceNode.CategorySetNode or Utf8SliceNode.DotNode } repeat
-                    when repeat.Minimum == repeat.Maximum || repeat is { Minimum: 0, Maximum: 1 }:
+                    when repeat.Minimum == repeat.Maximum || repeat is { Minimum: 0, Maximum: 1 } ||
+                        fixedOuter && repeat is { Minimum: > 0, Maximum: <= 4 }:
                     remaining -= 3;
                     return remaining >= 0;
                 default:
