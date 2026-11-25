@@ -181,7 +181,11 @@ internal static partial class PythonReBenchmarkReporter
                 Source = summary.AddSource(new
                 {
                     Managed = pair?.ManagedEnvironment ?? row.Environment,
-                    CPython = (object?)pair?.CpythonEnvironment ?? row.Cpython?.Environment,
+                    CPython = pair?.CpythonEnvironment is { } pairedEnvironment
+                        ? DescribeCpython(pairedEnvironment)
+                        : row.Cpython?.Environment is { } environment
+                            ? new { environment.Implementation, environment.Version, environment.Platform }
+                            : null,
                     ProductSha256 = pair?.ManagedProductSha256,
                 }),
                 InputSha256 = row.InputSha256,
@@ -201,7 +205,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             summary.Lifecycle[id] = new()
             {
-                Source = summary.AddSource(new { Managed = row.ManagedEnvironment, CPython = row.CpythonEnvironment }),
+                Source = summary.AddSource(new { Managed = row.ManagedEnvironment, CPython = DescribeCpython(row.CpythonEnvironment) }),
                 Managed = Timing(row.AdapterConstruction),
                 Reference = Timing(row.CpythonCompile),
                 ManagedFirst = Timing(row.ConstructFirstSearch),
@@ -212,7 +216,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             summary.Scaling[id] = new()
             {
-                Source = summary.AddSource(new { Managed = row.ManagedEnvironment, CPython = row.CpythonEnvironment }),
+                Source = summary.AddSource(new { Managed = row.ManagedEnvironment, CPython = DescribeCpython(row.CpythonEnvironment) }),
                 Operation = row.Operation,
                 Dimension = row.Dimension,
                 Points = row.Points.Count,
@@ -221,6 +225,18 @@ internal static partial class PythonReBenchmarkReporter
             };
         }
         summary.Write(repository);
+
+        // Installation paths and worker diagnostics belong to the raw snapshot.
+        static object DescribeCpython(CpythonStreamEnvironment environment) => new
+        {
+            environment.Implementation,
+            environment.Version,
+            environment.ExecutableSha256,
+            environment.RuntimeLibrarySha256,
+            environment.RunnerSha256,
+            environment.Platform,
+            environment.Architecture
+        };
 
         static BenchmarkSummaryTiming Timing(PythonReLifecycleTiming row) => new()
         {
