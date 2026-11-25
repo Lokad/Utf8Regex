@@ -12,6 +12,26 @@ public sealed class Utf8BeginningSearchTests
         => new() { MaxWorkSteps = work, MaxDepth = 1024, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 };
 
     [Theory]
+    [InlineData(0)] [InlineData(76)] [InlineData(77)] [InlineData(78)]
+    [InlineData(236)] [InlineData(237)] [InlineData(238)]
+    public void ContiguousLineMatchConsumesTheFirstNewlineWithinTheSelectedExtent(int padding)
+    {
+        using var regex = new Utf8Regex(@"\G///[^\n]*\n", RegexOptions.Compiled | RegexOptions.Multiline,
+            new Utf8RegexPolicy { ResourcePolicy = Policy(4096) });
+        using var source = new CancellationTokenSource();
+        const string head = "é";
+        var line = "///" + new string('x', padding) + "😀\r\n";
+        var input = Encoding.UTF8.GetBytes(head + line + "///next\n");
+        var start = Encoding.UTF8.GetByteCount(head);
+        var end = start + Encoding.UTF8.GetByteCount(line);
+        Assert.Equal(new Utf8CaptureRange(start, end), regex.Match(input, start, cancellationToken: source.Token));
+        Assert.False(regex.Match(input, start, endOffsetInBytes: end - 1).Success);
+        Assert.False(regex.Match(input).Success);
+        Assert.Equal(new Utf8CaptureRange(0, 4), regex.Match("///\n///next\n"u8));
+        Assert.Equal(2, regex.Count("///\n///next\n"u8));
+    }
+
+    [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2047)] [InlineData(2048)]
     [InlineData(2049)] [InlineData(4095)] [InlineData(4096)] [InlineData(4097)]
     public void ScalarLineStartsOffsetsAndChunkTails(int padding)

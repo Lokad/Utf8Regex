@@ -757,7 +757,15 @@ internal static partial class Utf8SliceRunner
                 emitted = program.EmittedMatch ?? program.TieredProof;
                 tiered = emitted is null && program.ObservesProofWork;
             }
-            if (emitted is not null)
+            // Allow the same visits as the bounded interpreter, including
+            // entering the repeat, consuming its LF delimiter and accepting.
+            if (first is { A: (int)Utf8SliceAnchorKind.Contiguous, C: > 0 } && input.Length - fromByte <= proofLimit - 3)
+            {
+                var length = MatchLiteralLine(input[fromByte..], program.Instructions.AsSpan(1, first.C));
+                possible = length >= 0;
+                acceptedEnd = possible ? fromByte + length : -1;
+            }
+            else if (emitted is not null)
             {
                 var end = emitted(fromByte == 0 ? input : input[fromByte..]);
                 possible = end >= 0;
@@ -790,6 +798,16 @@ internal static partial class Utf8SliceRunner
         }
         result = default;
         return false;
+    }
+
+    private static int MatchLiteralLine(ReadOnlySpan<byte> input, ReadOnlySpan<Utf8SliceInstruction> prefix)
+    {
+        if (input.Length <= prefix.Length) return -1;
+        for (var i = 0; i < prefix.Length; i++)
+            if (input[i] != prefix[i].A) return -1;
+        // LF cannot occur inside a multibyte scalar. It ends the first line.
+        var newline = input[prefix.Length..].IndexOf((byte)'\n');
+        return newline < 0 ? -1 : prefix.Length + newline + 1;
     }
 
     private static Utf8SliceSearchOutcome MatchSingleOrigin(

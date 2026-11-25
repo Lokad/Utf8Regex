@@ -234,6 +234,7 @@ internal readonly struct Utf8SliceInstruction
     // A negative Literal C holds the complemented jump of a fixed arm with a common delimiter.
     // A RepeatEnd can mark a proved consuming body for ordered discovery.
     // A leading Beginning anchor records a required first ASCII byte plus one.
+    // A Contiguous anchor can record the exact literal width before a terminal LF-delimited line.
     // Capture markers can record where a consecutive marker run ends.
     internal int C { get; }
     // For a positive unfolded Set, the low byte is the first ASCII byte
@@ -501,6 +502,7 @@ internal sealed class Utf8SliceProgram
                 !readsCaptures && repeatCount != 0 && instructions.Length <= 32)
             {
                 var index = 1;
+                var exactPrefix = true;
                 if (groupCount == 0)
                 {
                     // These atoms can share the bounded walk with a repeat
@@ -510,6 +512,7 @@ internal sealed class Utf8SliceProgram
                             { Kind: Utf8SliceInstructionKind.Set, B: 0, C: not 0 }))
                     {
                         Utf8ConstructionScope.ChargeWork(1);
+                        exactPrefix &= instructions[index].Kind == Utf8SliceInstructionKind.Literal;
                         index++;
                     }
                 }
@@ -518,7 +521,15 @@ internal sealed class Utf8SliceProgram
                     (instructions[repeat.A].RepeatExitRejectsShorterEndpoints ||
                         (index == 1 || repeat.RepeatMaximum == long.MaxValue) &&
                         instructions[repeat.A].RepeatExitAcceptsEmptyTail))
-                    instructions[0] = new(first.Kind, first.A, first.B, first.C, index == 1 ? 1 : -1);
+                {
+                    var linePrefixWidth = exactPrefix && index > 1 && instructions.AsSpan(index) is
+                    [
+                        { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: long.MaxValue, HasSingleAtomBody: true },
+                        { Kind: Utf8SliceInstructionKind.Dot, A: 0 }, _, _,
+                        { Kind: Utf8SliceInstructionKind.Literal, A: '\n', B: 0 }, { Kind: Utf8SliceInstructionKind.Accept }
+                    ] ? index - 1 : 0;
+                    instructions[0] = new(first.Kind, first.A, first.B, linePrefixWidth, index == 1 ? 1 : -1);
+                }
             }
             else if (!canMatchEmpty && !hasContiguousAnchor)
             {
