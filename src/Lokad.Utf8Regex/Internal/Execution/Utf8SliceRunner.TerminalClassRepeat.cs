@@ -1254,16 +1254,17 @@ internal static partial class Utf8SliceRunner
         var optionalAsciiLiteral = repeat is { RepeatMinimum: 0, RepeatMaximum: 1 } &&
             atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 };
         var completeAsciiCategory = Utf8SliceProgram.GetCompleteAsciiCategoryMask(atom, categories) != 0;
-        var prepareRequiredEmptyTail = repeat is { RepeatMinimum: 1, RepeatMaximum: long.MaxValue } &&
-            (atom.IsDecimalDigitSet || atom is { Kind: Utf8SliceInstructionKind.Hybrid, B: 1, D: 0 } ||
-             atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } && continuation == code.Length - 1);
-        if (!optionalAsciiLiteral && !prepareRequiredEmptyTail && !completeAsciiCategory &&
+        var prepareEmptyTailOnly = repeat.RepeatMaximum == long.MaxValue &&
+            (repeat.RepeatMinimum is 0 or 1 && atom is { Kind: Utf8SliceInstructionKind.Hybrid, B: 1, D: 0 } ||
+             repeat.RepeatMinimum == 1 && (atom.IsDecimalDigitSet ||
+                atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } && continuation == code.Length - 1));
+        if (!optionalAsciiLiteral && !prepareEmptyTailOnly && !completeAsciiCategory &&
             atom is not ({ Kind: Utf8SliceInstructionKind.Dot } or
                          { Kind: Utf8SliceInstructionKind.Set, B: 0 } or { Kind: Utf8SliceInstructionKind.Set, C: 0 } or
                          { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }))
             return;
 
-        if (prepareRequiredEmptyTail || completeAsciiCategory && repeat.RepeatMaximum == long.MaxValue &&
+        if (prepareEmptyTailOnly || completeAsciiCategory && repeat.RepeatMaximum == long.MaxValue &&
             code[continuation].Kind == Utf8SliceInstructionKind.CaptureEnd || atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 } &&
             (repeat.RepeatMinimum != 0 && atom.C == 0 ||
                 repeat.RepeatMaximum == long.MaxValue && continuation == code.Length - 1))
@@ -1277,7 +1278,7 @@ internal static partial class Utf8SliceRunner
                 code[repeat.A] = exit;
             }
         }
-        if (prepareRequiredEmptyTail) return;
+        if (prepareEmptyTailOnly) return;
         for (var remaining = 32; continuation < code.Length && remaining > 0 &&
             code[continuation].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd; remaining--)
         {
