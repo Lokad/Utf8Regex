@@ -2202,14 +2202,14 @@ internal static partial class Utf8SliceRunner
 
     private static int ScanScalarAsciiMask(ReadOnlySpan<byte> window, ReadOnlySpan<byte> mask, bool category, bool negated = false)
     {
+        var members = ReadAsciiSet(mask);
         var consumed = 0;
         foreach (var value in window)
         {
             // A wider candidate still needs the scalar predicate. An earlier
             // ASCII miss already ends a repeat with a complete ASCII mask.
             if (value >= 128) return category ? -1 : consumed;
-            var member = (mask[value >> 3] & (1 << (value & 7))) != 0;
-            if (member == negated) break;
+            if (members.Contains(value) == negated) break;
             consumed++;
         }
         return consumed;
