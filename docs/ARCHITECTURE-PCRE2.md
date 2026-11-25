@@ -10,36 +10,25 @@ PCRE2 backtracking program. Construction derives candidate search, capture
 metadata and an optional program for the supported partial probes.
 [Compile and program selection](../src/Lokad.Utf8Regex.Pcre2/Pcre2ExecutionArchitecture.cs)
 
-The compiled program selects a typed route for each operation. Compatible
-operations can share a scalar program or an exact literal family. A family
-that uses Core owns its Core instance directly. A shared scalar route owns
-its instruction payload and the PCRE2 fallback it uses for unsupported
-option combinations. Only partial probing can retain the original syntax
-tree. Preparation admits bounded work and major storage before allocation.
+The compiled program selects a typed executor for each operation. A literal
+family that uses Core owns its Core instance directly. A shared scalar executor
+owns the lowered instructions and the managed PCRE2 program used for match
+options that require it. Partial probing can retain the original syntax tree.
 [Construction policy](SPEC-PCRE2.md#interruption-and-resource-controls)
 
 ## Invocation and results
 
-An invocation admits the requested byte start on the caller-valid, unchanged
-UTF-8 subject. The runner sees the original bytes, including any prefix that
-assertions can inspect. Candidate search can rule out starts or reject a
-miss. The selected matcher verifies acceptance and fills capture slots as
-needed. Probe and replacement use the profile's own rules for partial matches,
-MARK and substitution. [Input contract](SPEC-PCRE2.md#subject-input-contract) ·
-[Matching and reporting](SPEC-PCRE2.md#operations-and-results)
+Candidate search passes byte starts to the selected matcher, which retains
+the original subject context for assertions and fills the requested outputs.
+The adapter advances global operations from the consumed range and applies
+the profile's empty-match retry. [Matching and reporting](SPEC-PCRE2.md#operations-and-results) ·
+[Progression rules](SPEC-PCRE2.md#reported-ranges-and-global-progress)
 
-Global operations advance from the consumed range. They retry an empty
-match at the same byte position under anchored, nonempty options before
-advancing by a scalar. This preserves PCRE2 progression when `\K` changes
-the reported start. [Progression rules](SPEC-PCRE2.md#reported-ranges-and-global-progress)
-
-The original invocation owns work, depth, working-byte and result-byte
-admission and observes cancellation and the deadline. A search or Count
-can reuse admitted retry storage across candidates. Assertions and buffer
-growth account for simultaneous capacity. Span enumerator copies share the
-original limits and carry independent positions. Memory-cursor aliases share
-position and disposal, and the cursor releases its exclusive workspace at
-completion, failure or disposal. [Cursor and result lifetimes](SPEC-PCRE2.md#cursor-and-result-lifetimes)
+Search and Count can reuse retry storage across candidates under the original
+invocation. Assertions and buffer growth account for simultaneous capacity.
+A memory cursor owns that workspace across advances and releases it at
+completion, failure or disposal. [Interruption and limits](SPEC-PCRE2.md#interruption-and-resource-controls) ·
+[Cursor and result lifetimes](SPEC-PCRE2.md#cursor-and-result-lifetimes)
 
 ## Dependency boundary
 

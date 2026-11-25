@@ -4,13 +4,13 @@ The README tables describe the measured public workloads. A change to a
 quantifier, capture or delimiter can change the cost. Use the generality catalog
 to check nearby patterns and ordinary workloads under the same controls.
 
-The representative generality catalog covers structural neighbors and everyday
-patterns. Its primary operations are `IsMatch`, captures from a byte offset, and
-cursor advance. The mode matrix includes a live token, deadline, finite resource
+The Core generality catalog covers structural neighbors and everyday patterns.
+Its primary operations are `IsMatch`, captures from a byte offset and cursor
+advance. The mode matrix includes a live token, a deadline, finite resource
 limits, their combination with caller-owned working storage, and `Compiled`.
-Unmetered `Count` and construction are secondary measurements. This first catalog
-has 24 Core patterns; exhaustive catalog neighbors and adapter catalogs remain
-work in progress.
+Unmetered `Count` and construction are secondary measurements. The refresh
+also measures POSIX longest extent and PCRE2 JIT and empty-match controls.
+Each profile has its own public benchmark catalog.
 
 Inputs are caller-valid, unchanged UTF-8 across all profiles; regex operations
 expose no validation mode. .NET receives predecoded text; a separate
