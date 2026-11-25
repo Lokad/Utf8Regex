@@ -326,6 +326,34 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.Equal(1, regex.Count(input, source.Token));
     }
 
+    [Fact]
+    public void MediumOrderedRepeatAlternativesPreservePriorityUnderWorkLimit()
+    {
+        var prefix = new string('a', 116) + "😀!";
+        var input = Encoding.UTF8.GetBytes(prefix + "thingedly");
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        using var regex = new Utf8Regex("(?<before>[a-z]+)ing|(?<other>[a-z]+)ly", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1024, MaxDepth = 64, MaxWorkingBytes = 4096 }
+        });
+        using var source = new CancellationTokenSource();
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];
+
+        Assert.True(regex.IsMatch(input, source.Token));
+        Assert.Equal(new Utf8CaptureRange(start, start + 5), regex.Match(input, captures: slots, cancellationToken: source.Token));
+        Assert.Equal(new Utf8CaptureRange(start, start + 2), slots[1]);
+        Assert.False(slots[2].Success);
+        Assert.Equal(2, regex.Count(input, source.Token));
+
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: source.Token);
+        Assert.True(cursor.MoveNext(out var first));
+        Assert.Equal(new Utf8CaptureRange(start, start + 5), first.Value);
+        Assert.True(cursor.MoveNext(out var second));
+        Assert.Equal(new Utf8CaptureRange(start + 5, input.Length), second.Value);
+        Assert.Equal(new Utf8CaptureRange(start + 5, start + 7), Assert.Single(second.GetCaptures(2).ToArray()));
+        Assert.False(cursor.MoveNext(out _));
+    }
+
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]

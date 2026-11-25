@@ -132,9 +132,11 @@ internal static partial class Utf8SliceRunner
         if (remaining < 64 || program.NonBacktrackingOrderedClosures.Length == 0) return false;
         var depth = invocation.Budget.Limits.MaxDepth;
         var preferOrdered = program.RightToLeft || search.Kind == Utf8SearchKind.None;
-        // Counterless loops without a preferred forward search can already
-        // retry overlapping starts on subjects below the general threshold.
-        if (remaining < 256 && (!preferOrdered || program.RepeatCount != 0)) return false;
+        // Root alternatives with several forward repeats can retry the same
+        // starts across branches. Ordered search already admits their graph.
+        if (remaining < 256 && (!preferOrdered || program.RepeatCount != 0 &&
+            (program.RepeatCount == 1 || program.RightToLeft || program.Instructions[0].Kind != Utf8SliceInstructionKind.Fork)))
+            return false;
         // A tighter cap can still admit the scalar path. Keep selective
         // prepared starts when admitting a new depth-limited route.
         if (depth != 0 && (!preferOrdered || depth < (uint)(program.NonBacktrackingOrderedLeaves.Length - 1)))
