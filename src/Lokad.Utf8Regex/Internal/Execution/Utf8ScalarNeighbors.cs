@@ -51,13 +51,6 @@ internal static class Utf8ScalarNeighbors // PCRE2-INTEGRATION-POINT
     }
 }
 
-internal static class Utf8ScalarWordChar
-{
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsWord(Rune scalar) =>
-        Utf8SliceScalarClasses.IsWord(scalar, includeJoiners: false, ecma: false);
-}
-
 internal static class Utf8ScalarWordBoundary
 {
     /// <summary>
