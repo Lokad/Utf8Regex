@@ -202,6 +202,37 @@ public sealed class Utf8DynamicCodeCapabilityTests
         Assert.Equal(1, regex.Count("0000-45"u8));
     }
 
+    [Fact]
+    public void FixedDecimalFollowerSearchPublishesLaterCapturesAndRetainsTheirHistory()
+    {
+        using var regex = new Utf8Regex(@"(\d{4}[- ]){3}\d{3,4}", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var prefix = string.Concat(Enumerable.Repeat("1234-5678-1234-45X!a ", 16));
+        var item = "𝟙2٣4-5678-1234-𝟜5٦";
+        var bytes = Encoding.UTF8.GetBytes(prefix + item + "!" + prefix + item);
+        var first = Encoding.UTF8.GetByteCount(prefix);
+        var last = first + Encoding.UTF8.GetByteCount(item);
+        var firstClose = first + Encoding.UTF8.GetByteCount("𝟙2٣4-");
+        var expected = new Utf8CaptureRange(first, last);
+        var expectedHistory = new Utf8CaptureRange[] { new(first, firstClose), new(firstClose, firstClose + 5), new(firstClose + 5, firstClose + 10) };
+        var slots = new Utf8CaptureRange[2];
+        Assert.Equal(expected, regex.Match(bytes, captures: slots));
+        Assert.Equal(expectedHistory[^1], slots[1]);
+        using var source = new CancellationTokenSource();
+        Assert.Equal(expected, regex.Match(bytes, captures: slots, cancellationToken: source.Token));
+        Assert.False(regex.Match(bytes, captures: slots, endOffsetInBytes: last - 2).Success);
+
+        Utf8RangeMatch retained;
+        using (var cursor = regex.CreateMatchCursor(bytes))
+        {
+            Assert.True(cursor.MoveNext(out retained));
+            Assert.True(cursor.MoveNext(out var later));
+            Assert.Equal(new Utf8CaptureRange(last + 1 + first, bytes.Length), later.Value);
+            Assert.False(cursor.MoveNext(out _));
+        }
+        Assert.Equal(expected, retained.Value);
+        Assert.Equal(expectedHistory, retained.GetCaptures(1).ToArray());
+    }
+
     [Theory]
     [InlineData("a12", 1)]
     [InlineData("Ab1 2", 2)]

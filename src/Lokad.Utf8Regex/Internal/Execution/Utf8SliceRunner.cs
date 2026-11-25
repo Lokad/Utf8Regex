@@ -581,6 +581,24 @@ internal static partial class Utf8SliceRunner
                 ref workspace, ref invocation, countAll: false, existenceOnly, out _);
         }
 
+        if (remaining >= 256 && (collectHistory || !captureStarts.IsEmpty) && !program.ReadsCaptures &&
+            program.HasShortDecimalHead && (program.EmittedMatch ?? program.TieredProof) is { } captureProof &&
+            invocation.CheckpointHook is null && invocation.IsUnmetered &&
+            TryGetFixedDecimalFollower(program, out var digits, out var firstFollower, out var lastFollower))
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+            if (!TryFindFixedDecimalMatch(input, fromByte, digits, firstFollower, lastFollower, captureProof, out var start, out _))
+                return new(false, -1, -1, Utf8ExecutionLimitKind.None);
+
+            // The complete proof selects the ordered origin. Publish all
+            // captures using the original input and the invocation's workspace.
+            var replay = TryMatchAt(program, input, start, captureStarts, captureEnds,
+                collectHistory, false, true, ref workspace, ref invocation);
+            if (replay.Breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, replay.Breach);
+            if (replay.IsMatch) return new(true, start, replay.EndIndex, Utf8ExecutionLimitKind.None, replay.CaptureHistory);
+        }
+
         var emitted = GetCandidateProof(program, !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty &&
             first.Kind != Utf8SliceInstructionKind.Anchor, ref invocation, out var interpretedVisits);
 

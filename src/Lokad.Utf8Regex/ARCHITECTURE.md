@@ -25,7 +25,8 @@ parse -> analyze -> prepare -> immutable instructions -> invoke
   the lowered program fields immutable. One caller claims bounded
   compilation and publishes the delegate for future eligible calls.
   Funded and interruptible calls retain their original paths.
-  The scalar interpreter handles capture output. The supported
+  A ready proof can select a fixed-decimal candidate before the scalar
+  interpreter publishes its captures on the original subject. The supported
   `NonBacktracking` subset uses its own ordered traversal. Eligible literal
   families also use emitted delegates.
 

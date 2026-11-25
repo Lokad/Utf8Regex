@@ -1207,6 +1207,20 @@ internal static partial class Utf8SliceRunner
         int digits, byte first, byte last, Utf8BoundedProgramEmitter.Match emitted, ref Utf8SliceInvocation invocation)
     {
         var count = 0;
+        while (TryFindFixedDecimalMatch(input, floor, digits, first, last, emitted, out _, out var end))
+        {
+            var breach = invocation.TryReserveWorking(0);
+            if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+            count++;
+            floor = end;
+            invocation.AnchorOriginByte = floor;
+        }
+        return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+    }
+
+    private static bool TryFindFixedDecimalMatch(ReadOnlySpan<byte> input, int floor,
+        int digits, byte first, byte last, Utf8BoundedProgramEmitter.Match emitted, out int start, out int end)
+    {
         while (input.Length - floor > digits)
         {
             // Fixed scalar width gives one increasing candidate start per follower.
@@ -1215,32 +1229,30 @@ internal static partial class Utf8SliceRunner
                 sparsePair: first != last, includeKelvin: false);
             if (relative < 0) break;
             var follower = search + relative;
-            var start = follower - digits;
-            var prefix = input.Slice(start, digits);
+            var candidate = follower - digits;
+            var prefix = input.Slice(candidate, digits);
             var nonDigit = prefix.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
             if (nonDigit >= 0)
-                start = prefix[nonDigit] < 128 ? -1 : FindFixedDecimalStart(input, floor, follower, digits);
+                candidate = prefix[nonDigit] < 128 ? -1 : FindFixedDecimalStart(input, floor, follower, digits);
 
             // No decimal prefix can cross this follower. After a false prefix,
             // skip runs of non-starters before seeking the next follower.
             floor = follower + 1;
-            if (start < 0)
+            if (candidate < 0)
             {
                 var next = Utf8AsciiBytePredicates.DecimalOrScalarLead.IndexOf(input[floor..]);
                 if (next < 0) break;
                 floor += next;
                 continue;
             }
-            var end = emitted(input[start..]);
-            if (end < 0) continue;
-
-            var breach = invocation.TryReserveWorking(0);
-            if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
-            count++;
-            floor = start + end;
-            invocation.AnchorOriginByte = floor;
+            var relativeEnd = emitted(input[candidate..]);
+            if (relativeEnd < 0) continue;
+            start = candidate;
+            end = candidate + relativeEnd;
+            return true;
         }
-        return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+        start = end = -1;
+        return false;
     }
 
     private static int FindFixedDecimalStart(ReadOnlySpan<byte> input, int floor, int edge, int digits)
