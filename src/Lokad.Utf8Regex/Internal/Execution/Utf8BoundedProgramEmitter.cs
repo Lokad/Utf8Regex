@@ -9,16 +9,85 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // can leave its offset in a local without changing the offset at a retry.
 internal static class Utf8BoundedProgramEmitter
 {
-    internal delegate int Match(ReadOnlySpan<byte> input);
+    internal delegate int Match(ReadOnlySpan<byte> input, Span<Utf8CaptureRange> captures = default);
     internal enum Compilation : byte { None, Eager, Tiered }
 
     private const int MaxUnsplitInstructions = 64;
     private const int MaxExpandedVisits = Utf8SliceRunner.BranchedPrefixInstructionLimit;
     private const int Unsupported = MaxExpandedVisits + 1;
+    internal const int MaxHistoryCaptures = 8;
     private static readonly MethodInfo s_spanLength = typeof(ReadOnlySpan<byte>).GetProperty(nameof(ReadOnlySpan<byte>.Length))!.GetMethod!;
     private static readonly MethodInfo s_spanItem = typeof(ReadOnlySpan<byte>).GetProperty("Item")!.GetMethod!;
     private static readonly MethodInfo s_matchDecimalRun = typeof(Utf8SliceRunner).GetMethod(
         nameof(Utf8SliceRunner.MatchBoundedDecimalRun), BindingFlags.Static | BindingFlags.NonPublic)!;
+    private static readonly MethodInfo s_captureLength = typeof(Span<Utf8CaptureRange>).GetProperty(nameof(Span<Utf8CaptureRange>.Length))!.GetMethod!;
+    private static readonly MethodInfo s_storeCapture = typeof(Utf8BoundedProgramEmitter).GetMethod(
+        nameof(StoreCapture), BindingFlags.Static | BindingFlags.NonPublic)!;
+
+    private static void StoreCapture(Span<Utf8CaptureRange> captures, int index, int start, int end)
+        => captures[index] = new(start, end);
+
+    internal static int[]? PrepareHistoryOffsets(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+    {
+        // The emitted history has a fixed shape only when every capture
+        // closes on the sole path and none of the repeats retries it.
+        if (program.GroupCount is 0 or > MaxHistoryCaptures || !TryGetEntry(program, out var entry) || entry != 0 ||
+            !program.HasShortDecimalHead || !Utf8SliceRunner.TryGetFixedDecimalFollower(program, out _, out _, out _)) return null;
+
+        var code = program.Instructions;
+        Span<int> counts = stackalloc int[MaxHistoryCaptures];
+        counts.Clear();
+        var opened = 0;
+        var captures = 0;
+        budget.ChargeWork((ulong)code.Length);
+        for (var pc = 0; pc < code.Length - 1; pc++)
+        {
+            ref readonly var instruction = ref code[pc];
+            switch (instruction.Kind)
+            {
+                case Utf8SliceInstructionKind.CaptureStart:
+                    var bit = 1 << instruction.A;
+                    if ((opened & bit) != 0) return null;
+                    opened |= bit;
+                    break;
+                case Utf8SliceInstructionKind.CaptureEnd:
+                    bit = 1 << instruction.A;
+                    if ((opened & bit) == 0 || ++captures > MaxHistoryCaptures) return null;
+                    opened &= ~bit;
+                    counts[instruction.A]++;
+                    break;
+                case Utf8SliceInstructionKind.RepeatGreedy:
+                case Utf8SliceInstructionKind.RepeatLazy:
+                    if (!instruction.HasSingleAtomBody || instruction.A + 1 >= code.Length) return null;
+                    if (code[pc + 1].IsDecimalDigitSet)
+                    {
+                        if (!CanEmitDecimalRepeat(program, pc, instruction, shortOrigin: false)) return null;
+                    }
+                    else if (instruction.RepeatMinimum != instruction.RepeatMaximum || !IsAsciiAtom(program, code[pc + 1]))
+                        return null;
+                    pc = instruction.A;
+                    break;
+                case Utf8SliceInstructionKind.Literal:
+                case Utf8SliceInstructionKind.Set:
+                    if (!IsAsciiAtom(program, instruction)) return null;
+                    break;
+                default:
+                    return null;
+            }
+        }
+        if (opened != 0 || captures == 0 || code[^1].Kind != Utf8SliceInstructionKind.Accept ||
+            CountExpandedVisits(program, entry, code.Length, budget) > MaxExpandedVisits) return null;
+
+        var offsets = budget.AllocateArray<int>(program.GroupCount + 2, false);
+        var next = 1;
+        for (var group = 0; group < program.GroupCount; group++)
+        {
+            offsets[group + 1] = next;
+            next += counts[group];
+        }
+        offsets[^1] = next;
+        return offsets;
+    }
 
     internal static bool CanTierUp(Utf8SliceProgram program, Utf8ConstructionBudget budget)
     {
@@ -38,8 +107,13 @@ internal static class Utf8BoundedProgramEmitter
         if (!TryPlan(program, entry, budget, splits, out var splitCount)) return null;
 
         using var method = Utf8DynamicIlBuilder.Create(entry != 0 ? "Utf8Regex_AnchoredProgram" : "Utf8Regex_CandidateProgram",
-            typeof(int), typeof(Utf8BoundedProgramEmitter), typeof(ReadOnlySpan<byte>));
+            typeof(int), typeof(Utf8BoundedProgramEmitter), typeof(ReadOnlySpan<byte>), typeof(Span<Utf8CaptureRange>));
         var il = new Utf8IlEmitter(method, s_spanLength, s_spanItem, inputArgument: 0);
+        var layout = program.EmittedHistoryOffsets;
+        var captures = layout is null ? null : il.AllocateScratch<(Utf8IlLocal Start, Utf8IlLocal End)>(layout[^1] - 1);
+        var openings = layout is null ? null : il.AllocateScratch<Utf8IlLocal>(program.GroupCount);
+        var nextCapture = layout is null ? null : il.AllocateScratch<int>(program.GroupCount);
+        if (layout is not null) layout.AsSpan(1, program.GroupCount).CopyTo(nextCapture);
         var length = il.DeclareLocal<int>();
         var value = il.DeclareLocal<int>();
         il.LoadInputLength();
@@ -85,7 +159,11 @@ internal static class Utf8BoundedProgramEmitter
                             EmitRun(instruction, origin, offset++, 1, retry);
                             break;
                         case Utf8SliceInstructionKind.CaptureStart:
+                            if (openings is not null) openings[instruction.A] = SavePosition(origin, offset);
+                            break;
                         case Utf8SliceInstructionKind.CaptureEnd:
+                            if (captures is not null)
+                                captures[nextCapture![instruction.A]++ - 1] = (openings![instruction.A], SavePosition(origin, offset));
                             break;
                         case Utf8SliceInstructionKind.Jump:
                             pc = instruction.A;
@@ -142,6 +220,22 @@ internal static class Utf8BoundedProgramEmitter
                             EmitEnd(origin, offset, instruction.A == (int)Utf8SliceAnchorKind.VeryEnd, retry);
                             break;
                         case Utf8SliceInstructionKind.Accept:
+                            if (captures is not null)
+                            {
+                                var done = il.DefineLabel();
+                                method.Emit(OpCodes.Ldarga_S, (byte)1);
+                                il.Emit(OpCodes.Call, s_captureLength);
+                                il.Emit(OpCodes.Brfalse, done);
+                                for (var capture = 0; capture < captures.Length; capture++)
+                                {
+                                    il.LoadArg(1);
+                                    il.LdcI4(capture);
+                                    il.LoadLocal(captures[capture].Start);
+                                    il.LoadLocal(captures[capture].End);
+                                    il.Emit(OpCodes.Call, s_storeCapture);
+                                }
+                                il.MarkLabel(done);
+                            }
                             LoadPosition(origin, offset);
                             il.Emit(OpCodes.Ret);
                             return;
@@ -154,6 +248,15 @@ internal static class Utf8BoundedProgramEmitter
                 }
             }
             finally { budget.LeaveDepth(); }
+        }
+
+        Utf8IlLocal SavePosition(Utf8IlLocal? origin, int offset)
+        {
+            if (origin is { } local && offset == 0) return local;
+            var result = il.DeclareLocal<int>();
+            LoadPosition(origin, offset);
+            il.StoreLocal(result);
+            return result;
         }
 
         void LoadPosition(Utf8IlLocal? origin, int offset)

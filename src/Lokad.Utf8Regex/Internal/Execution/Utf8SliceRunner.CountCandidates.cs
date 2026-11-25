@@ -1184,7 +1184,7 @@ internal static partial class Utf8SliceRunner
         return count < minimum ? BranchedPrefixRejected : end;
     }
 
-    private static bool TryGetFixedDecimalFollower(Utf8SliceProgram program, out int digits, out byte first, out byte last)
+    internal static bool TryGetFixedDecimalFollower(Utf8SliceProgram program, out int digits, out byte first, out byte last)
     {
         digits = first = last = 0;
         var code = program.Instructions.AsSpan();
@@ -1218,8 +1218,9 @@ internal static partial class Utf8SliceRunner
         return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
     }
 
-    private static bool TryFindFixedDecimalMatch(ReadOnlySpan<byte> input, int floor,
-        int digits, byte first, byte last, Utf8BoundedProgramEmitter.Match emitted, out int start, out int end)
+    internal static bool TryFindFixedDecimalMatch(ReadOnlySpan<byte> input, int floor,
+        int digits, byte first, byte last, Utf8BoundedProgramEmitter.Match emitted, out int start, out int end,
+        Span<Utf8CaptureRange> captures = default)
     {
         while (input.Length - floor > digits)
         {
@@ -1245,7 +1246,7 @@ internal static partial class Utf8SliceRunner
                 floor += next;
                 continue;
             }
-            var relativeEnd = emitted(input[candidate..]);
+            var relativeEnd = emitted(input[candidate..], captures);
             if (relativeEnd < 0) continue;
             start = candidate;
             end = candidate + relativeEnd;

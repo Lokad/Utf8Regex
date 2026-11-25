@@ -214,6 +214,10 @@ Core cursors shape accepted capture history directly into the published
 range and group-offset arrays. Admission covers heap shaping scratch and
 any compacted range buffer needed by balancing captures. Small group
 catalogs use fixed-capacity stack scratch outside the modeled byte limits.
+Eligible bounded compiled matches can publish captures from the accepted
+proof and share an immutable group layout admitted with the program.
+Invocations with limits, deadlines, cancellation or shared working
+allowances use the metered cursor path.
 A shared or temporary allocation may count more than once.
 Fixed scalar values, borrowed inputs and programs, caller destinations,
 incidental helpers, standalone getters and host retention fall outside these

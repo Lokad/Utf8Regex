@@ -380,7 +380,7 @@ internal sealed class Utf8SliceProgram
 
     // Conservative carrier allowance; major children have separate admission.
     internal static ulong ObjectBytes =>
-        512 + 3UL * (ulong)IntPtr.Size + (ulong)Unsafe.SizeOf<(int, byte, byte, byte)>() +
+        512 + 4UL * (ulong)IntPtr.Size + (ulong)Unsafe.SizeOf<(int, byte, byte, byte)>() +
         (ulong)Unsafe.SizeOf<(long, Utf8SliceClassWindowProof)>() - sizeof(long);
 
     private Utf8SliceProgram(
@@ -586,6 +586,8 @@ internal sealed class Utf8SliceProgram
             RequiredFinalAscii = FindRequiredFinalAscii(Utf8ConstructionScope.CurrentBudget, out var unanchoredByte);
             RequiredUnanchoredFinalByte = unanchoredByte;
         }
+        if (proofCompilation != Utf8BoundedProgramEmitter.Compilation.None)
+            EmittedHistoryOffsets = Utf8BoundedProgramEmitter.PrepareHistoryOffsets(this, Utf8ConstructionScope.CurrentBudget);
         if (proofCompilation == Utf8BoundedProgramEmitter.Compilation.Eager)
             EmittedMatch = Utf8BoundedProgramEmitter.TryEmit(this, Utf8ConstructionScope.CurrentBudget);
         else if (proofCompilation == Utf8BoundedProgramEmitter.Compilation.Tiered)
@@ -813,6 +815,7 @@ internal sealed class Utf8SliceProgram
     internal (int Min, int Max, byte Literal) FollowingDecimalLiteralWindow { get; }
     internal (int Index, byte TerminalMin, byte TerminalMax) FollowingDecimalContinuation { get; }
     internal Utf8BoundedProgramEmitter.Match? EmittedMatch { get; }
+    internal int[]? EmittedHistoryOffsets { get; }
     internal const int ProofTierThreshold = 512 * 1024;
     // Construction admits a separate state object only for eligible roots.
     // Published instructions and their metadata remain immutable.

@@ -237,6 +237,40 @@ public sealed class Utf8DynamicCodeCapabilityTests
         Assert.Equal(expectedHistory, retained.GetCaptures(1).ToArray());
     }
 
+    [Fact]
+    public void EmittedHistoryPublishesSparseGroupsAndLeavesRejectedOutputAlone()
+    {
+        using var regex = new Utf8Regex(@"(?<7>(?<2>\d{2}[.-])(?<9>\d{2}))", RegexOptions.Compiled);
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        var dynamicCode = RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
+        Assert.Equal(dynamicCode, program.EmittedHistoryOffsets is not null);
+        var bytes = "é!𝟙2-٣4!56.78"u8.ToArray();
+        var expected = new[] { (2, 3, 9), (7, 3, 12), (9, 9, 12) };
+        using var source = new CancellationTokenSource();
+        using var cursor = regex.CreateMatchCursor(bytes, startOffsetInBytes: 2);
+        Assert.True(cursor.MoveNext(out var first));
+        // A per-advance token selects the controlled path on the same cursor.
+        Assert.True(cursor.MoveNext(out var second, source.Token));
+        Assert.Equal(new Utf8CaptureRange(13, 18), second.Value);
+        Assert.False(cursor.MoveNext(out _));
+        Assert.Equal([0, 2, 7, 9], first.GroupNumbers.ToArray());
+        Assert.Equal(new Utf8CaptureRange(3, 12), first.Value);
+        foreach (var (number, start, end) in expected)
+            Assert.Equal(new Utf8CaptureRange(start, end), Assert.Single(first.GetCaptures(number).ToArray()));
+
+        if (program.EmittedMatch is { } proof)
+        {
+            Span<Utf8CaptureRange> storage = stackalloc Utf8CaptureRange[3];
+            var sentinel = new Utf8CaptureRange(42, 43);
+            storage.Fill(sentinel);
+            Assert.Equal(-1, proof("𝟙2-X4"u8, storage));
+            foreach (var capture in storage) Assert.Equal(sentinel, capture);
+            Assert.Equal(9, proof(bytes.AsSpan(3), storage));
+            for (var slot = 0; slot < expected.Length; slot++)
+                Assert.Equal(new Utf8CaptureRange(expected[slot].Item2 - 3, expected[slot].Item3 - 3), storage[slot]);
+        }
+    }
+
     [Theory]
     [InlineData("a12", 1)]
     [InlineData("Ab1 2", 2)]

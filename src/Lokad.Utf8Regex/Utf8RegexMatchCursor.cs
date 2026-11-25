@@ -122,7 +122,12 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             var useCaptureSlots = program.IsNonBacktracking || program.HasSingleCapturePerGroup;
             var collectHistory = program.GroupCount != 0 && !useCaptureSlots;
             _invocation.AnchorOriginByte = _origin;
-            if (program.GroupCount == 0 && _regex!.TryFindNativeLiteralForResult(_input.Span, _position,
+            Utf8RangeMatch completed = default;
+            if (program.EmittedHistoryOffsets is { } offsets && (program.EmittedMatch ?? program.TieredProof) is { } proof &&
+                _invocation.IsUnmetered && _invocation.CheckpointHook is null &&
+                Utf8SliceRunner.TryGetFixedDecimalFollower(program, out var digits, out var first, out var last))
+                outcome = FindEmittedHistory(proof, offsets, digits, first, last, ref results, out completed);
+            else if (program.GroupCount == 0 && _regex!.TryFindNativeLiteralForResult(_input.Span, _position,
                     ref _invocation, out var found, out var start, out var end, forCoreCursor: true))
                 outcome = new(found, start, end, Utf8ExecutionLimitKind.None);
             else outcome = program.IsNonBacktracking
@@ -138,10 +143,11 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             }
 
             // Snapshot checks during capture shaping and before allocating each result array.
-            var completed = collectHistory
-                ? _workspace.Stacks.SnapshotHistory(_input, _catalog!.GroupNumbers, outcome.StartByte, outcome.EndByte,
-                    ref results, ref _invocation)
-                : SnapshotSlots(outcome, ref results);
+            if (!completed.Success)
+                completed = collectHistory
+                    ? _workspace.Stacks.SnapshotHistory(_input, _catalog!.GroupNumbers, outcome.StartByte, outcome.EndByte,
+                        ref results, ref _invocation)
+                    : SnapshotSlots(outcome, ref results);
             Utf8RetainedRangeMatch? receipt = null;
             if (retain)
             {
@@ -180,6 +186,28 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             // Close only after transient reservations/roots have finished.
             if (exhausted) Close(Status.Ended);
         }
+    }
+
+    private Utf8SliceSearchOutcome FindEmittedHistory(Utf8BoundedProgramEmitter.Match proof, int[] offsets,
+        int digits, byte first, byte last, ref Utf8InvocationResultLedger results, out Utf8RangeMatch match)
+    {
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[Utf8BoundedProgramEmitter.MaxHistoryCaptures];
+        if (!Utf8SliceRunner.TryFindFixedDecimalMatch(_input.Span, _position, digits, first, last, proof,
+                out var start, out var end, captures))
+        {
+            match = default;
+            return new(false, -1, -1, Utf8ExecutionLimitKind.None);
+        }
+
+        var ranges = results.AllocateArray<Utf8CaptureRange>(offsets[^1], ref _invocation);
+        ranges[0] = new(start, end);
+        for (var slot = 1; slot < ranges.Length; slot++)
+        {
+            var capture = captures[slot - 1];
+            ranges[slot] = new(start + capture.StartOffsetInBytes, start + capture.EndOffsetInBytes);
+        }
+        match = new(_input, ranges, offsets, _catalog!.GroupNumbers);
+        return new(true, start, end, Utf8ExecutionLimitKind.None);
     }
 
     private Utf8SliceSearchOutcome FindNonBacktracking(Utf8SliceProgram program)
