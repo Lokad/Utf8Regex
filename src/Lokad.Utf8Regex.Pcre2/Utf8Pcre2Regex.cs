@@ -389,7 +389,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         try
         {
             var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation);
-            return EnumerateMatchesAdmitted(input, start, matchOptions, invocation);
+            return EnumerateMatchesAdmitted(input, start, matchOptions, in invocation);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -399,26 +399,10 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
 
     private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesAdmitted(ReadOnlySpan<byte> input,
         Utf8BytePosition start, Pcre2MatchOptions matchOptions,
-        Utf8SliceInvocation invocation)
+        scoped in Utf8SliceInvocation invocation)
     {
-        var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
-        if (Pcre2GlobalOperationDriver.TryCreateCursor(_program, input, start, matchOptions, out var directCursor, budget))
-            return new Utf8Pcre2ValueMatchEnumerator(input, directCursor, _programMemory);
-        return EnumerateMatchesViaConfiguredBackend(input, start, matchOptions, invocation);
-    }
-
-    private static NotSupportedException CreateUnsupportedPatternException() =>
-        new("SPEC-PCRE2 does not support this pattern in the managed profile.");
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesViaConfiguredBackend(
-        ReadOnlySpan<byte> input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        Utf8SliceInvocation invocation)
-    {
-        if (matchOptions == Pcre2MatchOptions.None &&
-            _program.Operations.Enumerate is Pcre2SliceDirectProgram slice)
+        var slice = _program.Operations.Enumerate as Pcre2SliceDirectProgram;
+        if (slice is not null && matchOptions == Pcre2MatchOptions.None)
         {
             var leadingAsciiByte = slice.SliceProgram.CanMatchEmpty ||
                 (_program.Request.Options & Pcre2CompileOptions.Anchored) != 0
@@ -437,24 +421,28 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                 _programMemory);
         }
 
-        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Pcre2Slice)
+        var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
+        if (slice is not null)
         {
-            var fallback = (_program.Operations.Enumerate as Pcre2SliceDirectProgram)?.Fallback
-                ?? throw new InvalidOperationException(
-                    "The PCRE2 slice enumerator has no execution program.");
             var fallbackCursor = Pcre2GlobalMatchCursor.CreateBacktracking(
-                fallback,
+                slice.Fallback,
                 _program.CandidateSearchPlan,
                 input,
                 start,
                 matchOptions,
                 _program.Request,
-                new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false));
+                budget);
             return new Utf8Pcre2ValueMatchEnumerator(input, fallbackCursor, _programMemory);
         }
 
+        if (Pcre2GlobalOperationDriver.TryCreateCursor(_program, input, start, matchOptions, out var directCursor, budget))
+            return new Utf8Pcre2ValueMatchEnumerator(input, directCursor, _programMemory);
+
         return new Utf8Pcre2ValueMatchEnumerator(_programMemory);
     }
+
+    private static NotSupportedException CreateUnsupportedPatternException() =>
+        new("SPEC-PCRE2 does not support this pattern in the managed profile.");
 
     /// <summary>Creates a match cursor using an explicit start byte offset and per-operation options, retaining cancellation and cumulative limits through every advance.</summary>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
