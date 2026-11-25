@@ -91,7 +91,9 @@ or scaling evidence on selective refreshes.
 Use Release with warm throughput, typically `-Job Short`. The Dry job serves
 smoke tests. Custom commands default to a 120-second process-tree cap. The
 benchmark code sets affinity after runtime startup so it sees the ordinary .NET
-processor count. Start it without an outer `taskset`.
+processor count. Start it without an outer `taskset`. A benchmark CPU mask and
+the runtime's startup processor count can differ. PCRE2 qualification logs
+both because the startup count can affect generated code and throughput.
 
 Select public workloads, a time bound and the unchanged control up front.
 Use one ordinary producer per process. Stage the exact DLL and PDB together for

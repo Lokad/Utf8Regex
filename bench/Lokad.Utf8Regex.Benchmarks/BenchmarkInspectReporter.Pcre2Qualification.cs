@@ -127,7 +127,9 @@ internal static partial class BenchmarkInspectReporter
             return 1;
         }
 
+        var startupProcessorCount = Environment.ProcessorCount;
         using var processorSet = BenchmarkProcessorScope.EnterSingleHighestEfficiencyProcessor();
+        Console.WriteLine($"Runtime startup processor count: {startupProcessorCount}");
         Console.WriteLine($"Qualification CPU set: {processorSet.Description}");
         Console.WriteLine(
             $"Initial paired lane: {(comparatorFirst ? "PCRE.NET / PCRE2 NFA" : "Utf8Pcre2")}");
