@@ -245,6 +245,24 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
     }
 
     [Theory]
+    [InlineData(2046)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    public void ControlledFamilyRetainsMatchesAcrossAReusedSearchWindow(int start)
+    {
+        var input = Encoding.UTF8.GetBytes("xand " + new string('z', start - 6) + " and!");
+        using var regex = new Utf8Regex(@"\b(?:the|and|that|have|for)\b", policy: new()
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1),
+            ResourcePolicy = new() { MaxWorkSteps = 32 }
+        });
+
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(new Utf8CaptureRange(start, start + 3), regex.Match(input));
+        Assert.Equal(1, regex.Count(input));
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void ControlledWordFamilySearchChecksItsBudgetAndOriginalToken(bool writeSlots)

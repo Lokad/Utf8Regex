@@ -362,19 +362,24 @@ internal static partial class Utf8SearchExecutor
         }
         if (literals.Length > 0)
         {
+            var admittedEnd = low;
             while (low <= high)
             {
                 // Search only one candidate window for every branch. Searching
                 // an absent branch to the subject end on every MoveNext would
                 // make a dense later branch quadratic over the enumeration.
-                var count = Math.Min(2048, high - low + 1);
+                var reusesWindow = low < admittedEnd;
+                var count = reusesWindow ? admittedEnd - low : Math.Min(2048, high - low + 1);
                 var blockStart = reverse ? high - count + 1 : low;
                 var block = input.Slice(blockStart, count);
                 var candidateByte = -1;
                 if (!reverse && firstByteSearch is { } search)
                 {
-                    breach = invocation.TryChargeInputStep();
+                    // False candidates resume within the same admitted window.
+                    // Each seek still charges work and checks cancellation.
+                    breach = reusesWindow ? invocation.TryChargeBoundedCheck() : invocation.TryChargeInputStep();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
+                    admittedEnd = low + count;
                     // Borrow the prepared union instead of rescanning this
                     // bounded window once per branch at every false candidate.
                     var relative = search.IndexOf(block);
