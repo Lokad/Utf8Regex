@@ -59,7 +59,7 @@ internal static class LokadReplicaScriptBenchmarkCatalog
             "\\G///[^\\n]*\\n",
             RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.CultureInvariant,
             "Anchored lexer loop for triple-slash documentation lines.",
-            sampleRelativePath: "Samples/lexer_docline.txt",
+            sampleRelativePath: "Samples/inline_doc_lines.txt",
             appendNewLineToSamples: true),
         new(
             "lokad/docs/inline-doc-prefix",

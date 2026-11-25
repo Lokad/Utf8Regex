@@ -29,7 +29,8 @@ internal sealed class ReplicaCountBenchmarkCase
         string? patternMode = null,
         string? group = null,
         string? intent = null,
-        bool requiresDedicatedMeasurement = false)
+        bool requiresDedicatedMeasurement = false,
+        int? inputByteCount = null)
     {
         Source = source;
         Id = id;
@@ -38,6 +39,7 @@ internal sealed class ReplicaCountBenchmarkCase
         Options = options;
         InputChars = inputChars;
         InputBytes = inputBytes;
+        InputByteCount = inputByteCount ?? inputBytes.Length;
         Utf8Regex = utf8Regex;
         Regex = regex;
         CompiledRegex = compiledRegex;
@@ -65,6 +67,8 @@ internal sealed class ReplicaCountBenchmarkCase
     public int InputChars { get; }
 
     public byte[] InputBytes { get; }
+
+    public int InputByteCount { get; }
 
     public Utf8Regex Utf8Regex { get; }
 
@@ -210,17 +214,18 @@ internal sealed class ReplicaCountBenchmarkCase
             context.Pattern,
             benchmarkCase.Utf8Options,
             context.InputChars,
-            context.BenchmarkCase.Model == LokadReplicaScriptBenchmarkModel.Count ? context.InputBytes : Array.Empty<byte>(),
+            context.InputBytes,
             context.Utf8Regex,
             context.Regex,
-            context.Regex,
+            context.CompiledRegex,
             context.ExecuteDecodeThenRegex,
             context.ExecuteDecodeThenCompiledRegex,
             context.ExecutePredecodedRegex,
             context.ExecutePredecodedCompiledRegex,
             group: benchmarkCase.Group,
             patternMode: benchmarkCase.Model.ToString(),
-            requiresDedicatedMeasurement: benchmarkCase.Model != LokadReplicaScriptBenchmarkModel.Count);
+            requiresDedicatedMeasurement: benchmarkCase.Model != LokadReplicaScriptBenchmarkModel.Count,
+            inputByteCount: context.TotalInputBytes);
     }
 
     private static void EnsureUniqueIds()

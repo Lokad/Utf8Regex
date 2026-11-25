@@ -62,7 +62,7 @@ internal static partial class BenchmarkInspectReporter
                 resolvedCase.Pattern,
                 resolvedCase.Options,
                 resolvedCase.InputChars,
-                resolvedCase.InputBytes.Length,
+                resolvedCase.InputByteCount,
                 BuildReplicaOrigin(resolvedCase),
                 resolvedCase.Utf8Regex);
             return 0;
