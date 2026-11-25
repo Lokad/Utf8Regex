@@ -396,6 +396,49 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
+    private static bool TryCountTerminalLiteralPair(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        ref Utf8SliceInvocation invocation, out Utf8SliceCountOutcome outcome)
+    {
+        outcome = default;
+        var code = program.Instructions.AsSpan();
+        if (program.RightToLeft || program.IsNonBacktracking || code.Length is < 6 or > 16 ||
+            code[^1].Kind != Utf8SliceInstructionKind.Accept) return false;
+        var head = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, 0);
+        if (head >= code.Length || code[head] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } first)
+            return false;
+        var index = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, head + 1);
+        if (index >= code.Length || code[index] is not { RepeatMinimum: 1, HasSingleAtomBody: true } repeat ||
+            repeat.Kind is not (Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy) ||
+            code[index + 1] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } last ||
+            first.A == last.A || Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, repeat.A + 1) != code.Length - 1)
+            return false;
+
+        // Every pair completes a match. Extra repetitions of the second
+        // literal cannot consume another start, so Count needs no endpoint.
+        ReadOnlySpan<byte> needle = stackalloc byte[] { (byte)first.A, (byte)last.A };
+        var breach = invocation.TryReserveWorking(0);
+        if (breach != Utf8ExecutionLimitKind.None) { outcome = new(0, breach); return true; }
+        if (invocation.IsUnmetered && invocation.CheckpointHook is null)
+        {
+            outcome = new(PreparedSubstringSearch.CountExactSequence(input, needle), Utf8ExecutionLimitKind.None);
+            return true;
+        }
+
+        var count = 0;
+        var control = new Utf8InvocationBufferControl(ref invocation);
+        while (input.Length >= needle.Length)
+        {
+            breach = control.TryChargeWorkspaceStep();
+            if (breach != Utf8ExecutionLimitKind.None) { outcome = new(count, breach); return true; }
+            // Each block owns its starts and borrows one byte of lookahead.
+            var starts = Math.Min(2048, input.Length - 1);
+            count += PreparedSubstringSearch.CountExactSequence(input[..(starts + 1)], needle);
+            input = input[starts..];
+        }
+        outcome = new(count, control.TryChargeWorkspaceStep());
+        return true;
+    }
+
     private static Utf8SliceCountOutcome CountTerminalClassRepeat(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int start, int repeatIndex, int atomIndex, ref Utf8SliceInvocation invocation)
     {

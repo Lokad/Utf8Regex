@@ -1353,6 +1353,9 @@ internal static partial class Utf8SliceRunner
         // Nullable roots retain the caller's empty-match progression below.
         if (TryCountTerminalScalar(program, input, fromByte, ref invocation, out var terminal))
             return terminal;
+        if (program.RepeatCount == 1 && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+            TryCountTerminalLiteralPair(program, input[fromByte..], ref invocation, out terminal))
+            return terminal;
         if (program.IsNonBacktracking)
         {
             captureStarts.Fill(-1);

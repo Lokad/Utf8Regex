@@ -1,4 +1,5 @@
 using System.Text;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 
@@ -38,6 +39,61 @@ public sealed class Pcre2LeadingSetCountTests
         var subject = Encoding.UTF8.GetBytes("ab😀" + new string('x', 65536) + "a ax ab abb aabc aa😀abbb");
 
         Assert.Equal(4, regex.Count(subject, startOffsetInBytes: 2, cancellationToken: source.Token));
+    }
+
+    [Theory]
+    [InlineData("(a)b+")]
+    [InlineData("((a)(b+?))")]
+    public void TerminalLiteralPairCountKeepsStartsAtBlockEdges(string pattern)
+    {
+        var subject = Encoding.UTF8.GetBytes("😀ab" + new string('x', 2045) + "abéabbb a");
+        using var token = new CancellationTokenSource();
+        using var regex = Create(pattern, working: 1, work: 10);
+        using var denied = Create(pattern, working: 1, work: 3);
+
+        Assert.Equal(3, regex.Count(subject, 4, cancellationToken: token.Token));
+        Assert.Equal(2, regex.Count(subject, 6, cancellationToken: token.Token));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit,
+            Assert.Throws<Pcre2MatchException>(() => denied.Count(subject, 4, cancellationToken: token.Token)).ErrorKind);
+    }
+
+    [Theory]
+    [InlineData("(a)a+", "aaaaa", 1)]
+    [InlineData("(a)b{2,}", "ab abb abbb", 2)]
+    [InlineData("(a)b+c", "abb abbc", 1)]
+    [InlineData("(?i)(a)b+", "AB ab", 2)]
+    [InlineData(@"\A(a)b+", "xab", 0)]
+    public void TerminalLiteralPairReductionRequiresIndependentCompleteHits(string pattern, string text, int expected)
+    {
+        using var regex = Create(pattern);
+        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TerminalLiteralPairScanKeepsOriginalInterruption(bool deadline)
+    {
+        var input = Encoding.UTF8.GetBytes("ab" + new string('x', 2048 * 70) + "ab");
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Pcre2Regex("(a)b+", policy: new() { MatchTimeout = TimeSpan.FromMilliseconds(20) });
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (deadline) ticks = 25;
+            else token.Cancel();
+        });
+        try
+        {
+            if (deadline)
+                Assert.Equal(Pcre2ErrorKind.Timeout,
+                    Assert.Throws<Pcre2MatchException>(() => regex.Count(input, cancellationToken: token.Token)).ErrorKind);
+            else
+                Assert.Equal(token.Token,
+                    Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancellationToken: token.Token)).CancellationToken);
+        }
+        finally { diagnostics.Complete(); }
     }
 
     [Theory]
