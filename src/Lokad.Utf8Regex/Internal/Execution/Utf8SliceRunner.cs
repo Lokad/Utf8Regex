@@ -556,7 +556,11 @@ internal static partial class Utf8SliceRunner
         if (CanSearchOrdinaryOrdered(program, remaining, candidatePlan, ref invocation) &&
             CanAdmitOrderedRows(program, ref invocation))
         {
-            var selected = FindOrderedRegularRange(program, input, fromByte, ref invocation);
+            var orderedStart = fromByte;
+            var breach = TrySeedOrderedClassFamily(program, input, candidatePlan.RequiredPrefilterSearcher,
+                ref orderedStart, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None || orderedStart < 0) return new(false, -1, -1, breach);
+            var selected = FindOrderedRegularRange(program, input, orderedStart, ref invocation);
             if (!selected.Found || captureStarts.Length == 0 && !collectHistory) return selected;
             // Captures never affect discovery for this graph. Run the chosen
             // start to publish ordinary capture history. With no anchors or

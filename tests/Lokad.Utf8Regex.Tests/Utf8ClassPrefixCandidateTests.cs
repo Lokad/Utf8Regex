@@ -71,6 +71,35 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Fact]
+    public void RequiredFamilyKeepsStartsBeforeAnUnalignedFirstLiteral()
+    {
+        const string pattern = @"(\w+)\s+(Holmes|Watson)";
+        var text = new string('a', 4096) + "!ΩHolmes\u2003Watson!é\u0085Holmes";
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = new Regex(pattern).Matches(text, 1);
+        Assert.Equal(2, expected.Count);
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = new() { MaxWorkSteps = 256 } });
+
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];
+        Assert.Equal(Range(expected[0]), regex.Match(input, 1, slots, source.Token));
+        Assert.Equal(Range(expected[0].Groups[1]), slots[1]);
+        Assert.Equal(Range(expected[0].Groups[2]), slots[2]);
+        using var cursor = regex.CreateMatchCursor(input, 1, source.Token);
+        foreach (Match match in expected)
+        {
+            Assert.True(cursor.MoveNext(out var actual));
+            Assert.Equal(Range(match), actual.Value);
+            Assert.Equal(Range(match.Groups[1]), Assert.Single(actual.GetCaptures(1).ToArray()));
+            Assert.Equal(Range(match.Groups[2]), Assert.Single(actual.GetCaptures(2).ToArray()));
+        }
+        Assert.False(cursor.MoveNext(out _));
+
+        Utf8CaptureRange Range(Group group) => new(Encoding.UTF8.GetByteCount(text.AsSpan(0, group.Index)),
+            Encoding.UTF8.GetByteCount(text.AsSpan(0, group.Index + group.Length)));
+    }
+
+    [Fact]
     public void EqualTerminalClassesRequireAScalarOnBothSidesOfTheDelimiter()
     {
         const string pattern = @"[\w.+-]+@[\p{L}.]+\.[\p{L}.]+";

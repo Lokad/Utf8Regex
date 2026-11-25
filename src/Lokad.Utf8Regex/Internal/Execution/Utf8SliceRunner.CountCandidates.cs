@@ -774,6 +774,28 @@ internal static partial class Utf8SliceRunner
         }
     }
 
+    private static Utf8ExecutionLimitKind TrySeedOrderedClassFamily(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, in PreparedSearcher search, ref int position, ref Utf8SliceInvocation invocation)
+    {
+        if (search.Kind != PreparedSearcherKind.MultiLiteral ||
+            program.LeadingClassDelimiter is not { Literal: < 0, LeadingClass: > 0, GapMaximum: 0, LiteralIndex: >= 0 } prefix ||
+            program.Instructions[prefix.LeadingClass].Kind == Utf8SliceInstructionKind.Dot)
+            return Utf8ExecutionLimitKind.None;
+
+        var breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None || GetAlignedDelimiterAlternatives(program, prefix.LiteralIndex, search) is null)
+            return breach;
+
+        var floor = position;
+        breach = search.TryFindMatch(input, position, input.Length, false, ref invocation, out var hit, out var found);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        position = found ? hit.Index : -1;
+        // Rewinding either class to its earliest possible start is monotone
+        // in the end position. Keep the whole subject for later alternatives.
+        return found ? TryRewindClassWhitespace(program, input, floor, prefix.LeadingClass, 0, false,
+            ref position, ref invocation) : Utf8ExecutionLimitKind.None;
+    }
+
     private static PreparedSubstringSearch? GetRepeatPrefixSearch(Utf8SliceProgram program,
         in Utf8SearchPlan candidatePlan, out (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) prefix)
     {
