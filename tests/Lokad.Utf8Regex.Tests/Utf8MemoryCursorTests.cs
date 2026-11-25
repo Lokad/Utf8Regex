@@ -453,7 +453,7 @@ public sealed class Utf8MemoryCursorTests
     }
 
     [Fact]
-    public void LongIterationKeepsLiveFundingBoundedAndDoesNotRevalidateTheSubject()
+    public void LongIterationKeepsLiveFundingBoundedAndWorkIncremental()
     {
         var root = new Root(); var working = new Account(root);
         var input = Encoding.UTF8.GetBytes(new string('x', 500000));

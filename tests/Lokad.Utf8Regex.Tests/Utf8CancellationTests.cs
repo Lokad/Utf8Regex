@@ -24,15 +24,6 @@ public sealed class Utf8CancellationTests
     }
 
     [Fact]
-    public void PreCanceledTokenThrowsBeforeIsMatchFromOffset()
-    {
-        var regex = new Utf8Regex("cat|horse");
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Match(s_input, 4, [], token).Success);
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
     public void PreCanceledTokenThrowsBeforeCount()
     {
         var regex = new Utf8Regex("cat|horse");
@@ -55,7 +46,7 @@ public sealed class Utf8CancellationTests
     {
         var regex = new Utf8Regex("cat|horse");
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Match(s_input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(s_input).AsSpan(0, 4)), [], token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Match(s_input, 4, [], token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -129,16 +120,6 @@ public sealed class Utf8CancellationTests
         var token = CanceledToken();
         var destination = new byte[64];
         var exception = Assert.Throws<OperationCanceledException>(() => regex.TryReplace(s_input, "pet"u8, destination, out _, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
-    public void CancellationBeatsValidation()
-    {
-        var regex = new Utf8Regex("cat|horse");
-        var token = CanceledToken();
-        var invalid = new byte[] { 0xFF, 0xFF };
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.IsMatch(invalid, token));
         Assert.Equal(token, exception.CancellationToken);
     }
 

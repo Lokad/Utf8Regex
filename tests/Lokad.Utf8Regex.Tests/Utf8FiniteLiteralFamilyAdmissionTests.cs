@@ -30,7 +30,7 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
 
     [Theory]
     [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
-    public void CompleteFamiliesNeedNoVmScratchAndValidateTheWholeSubject(int count)
+    public void CompleteFamiliesNeedNoVmScratchOnASlicedUnicodeSubject(int count)
     {
         string[] literals = ["猫猫猫", "狗狗狗", "猴猴猴", "兔兔兔", "马马马", "羊羊羊", "虎虎虎", "牛牛牛"];
         var pattern = string.Join('|', literals.Take(count));

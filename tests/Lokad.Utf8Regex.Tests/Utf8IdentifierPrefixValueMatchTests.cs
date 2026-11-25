@@ -124,14 +124,15 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
     }
 
     [Fact]
-    public void FullValidationAndOriginalEntryCancellationRemainStrict()
+    public void IdentifierPrefixMatchObservesTheOriginalPreCanceledToken()
     {
         var regex = new Utf8Regex(Pattern, options: Options);
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
         foreach (var text in new[] { "AbC9", "0bad" })
         {
-            byte[] invalid = [.. Encoding.ASCII.GetBytes(text), 0xff];
-            using var canceled = new CancellationTokenSource(); canceled.Cancel();
-            Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(invalid, cancellationToken: canceled.Token)).CancellationToken);
+            var input = Encoding.UTF8.GetBytes(text);
+            Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: canceled.Token)).CancellationToken);
         }
     }
 

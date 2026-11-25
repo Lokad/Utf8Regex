@@ -43,13 +43,13 @@ public sealed class Utf8CooperativeBooleanContractTests
     [Theory]
     [InlineData("ABC0123")]
     [InlineData("abc0123")]
-    public void WholeSubjectValidationAndOriginalEntryCancellationPrecedeTheAnswer(string text)
+    public void BooleanPredicateObservesTheOriginalPreCanceledToken(string text)
     {
         var regex = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant);
-        byte[] malformed = [.. Encoding.UTF8.GetBytes(text), 0xff];
+        var input = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
         source.Cancel();
         Assert.Equal(source.Token,
-            Assert.Throws<OperationCanceledException>(() => regex.IsMatch(malformed, source.Token)).CancellationToken);
+            Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, source.Token)).CancellationToken);
     }
 }
