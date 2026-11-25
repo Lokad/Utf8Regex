@@ -115,6 +115,9 @@ public sealed class Utf8ClassPrefixCandidateTests
         var input = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+        Assert.True(regex.IsMatch(input, source.Token));
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes("Holmes! " + text), source.Token));
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("Holmes!" + new string('!', 256)), source.Token));
         const int start = 1; // The first byte and UTF-16 code unit are both ASCII.
         var expected = new Regex(pattern, RegexOptions.CultureInvariant).Match(text, start);
         Assert.True(expected.Success);

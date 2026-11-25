@@ -854,11 +854,10 @@ internal static partial class Utf8SliceRunner
         out int acceptedEnd)
     {
         acceptedEnd = -1;
-        if (search.Kind != PreparedSearcherKind.MultiLiteral ||
-            program.LeadingClassDelimiter is not { Literal: < 0, LeadingClass: > 0, GapMaximum: 0, LiteralIndex: >= 0 } prefix ||
-            program.Instructions[prefix.LeadingClass].Kind == Utf8SliceInstructionKind.Dot)
+        if (!HasOrderedClassFamilyPrefix(program, search))
             return Utf8ExecutionLimitKind.None;
 
+        var prefix = program.LeadingClassDelimiter;
         var breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None || GetAlignedDelimiterAlternatives(program, prefix.LiteralIndex, search) is null)
             return breach;
@@ -869,38 +868,78 @@ internal static partial class Utf8SliceRunner
         position = found ? hit.Index : -1;
         if (!found) return Utf8ExecutionLimitKind.None;
 
-        var code = program.Instructions.AsSpan();
-        if (program.NonBacktrackingOrderedConditions == 0 &&
-            invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
-            code[prefix.LeadingClass - 1] is { RepeatMinimum: 1, RepeatMaximum: long.MaxValue } &&
-            input[position] is < 128 and var first && !Rune.IsWhiteSpace(new Rune(first)))
+        breach = TryProveOrderedClassFamily(program, input, floor, position, ref invocation, out var earliest, out acceptedEnd);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        if (earliest >= 0)
         {
-            var space = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, prefix.LeadingClass + 3);
-            if (space <= prefix.LiteralIndex - 4 &&
-                code[space] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1, RepeatMaximum: long.MaxValue } &&
-                Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, space + 4) == prefix.LiteralIndex &&
-                AreDisjointPositiveCategorySets(program.SetMasks, program.CategorySetMembers,
-                    code[prefix.LeadingClass], code[space + 1]))
-            {
-                breach = TryNarrowDisjointRepeatPrefix(program, input, floor, position, prefix.LiteralIndex,
-                    ref invocation, out var earliest, out _);
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
-                if (earliest >= 0)
-                {
-                    // Both nonempty runs are proved, and neither can move
-                    // the suffix past this first literal. Only the bounded
-                    // suffix proof can replace ordered discovery.
-                    MayMatchBranchedAsciiPrefix(program, input, position, prefix.LiteralIndex, out acceptedEnd,
-                        proveMatch: true, BranchedPrefixInstructionLimit - prefix.LiteralIndex);
-                    position = earliest;
-                    return acceptedEnd >= 0 ? invocation.TryChargeInputStep() : Utf8ExecutionLimitKind.None;
-                }
-            }
+            position = earliest;
+            return Utf8ExecutionLimitKind.None;
         }
         // Rewinding either class to its earliest possible start is monotone
         // in the end position. Keep the whole subject for later alternatives.
         return TryRewindClassWhitespace(program, input, floor, prefix.LeadingClass, 0, false,
             ref position, ref invocation);
+    }
+
+    private static bool HasOrderedClassFamilyPrefix(Utf8SliceProgram program, in PreparedSearcher search)
+        => search.Kind == PreparedSearcherKind.MultiLiteral &&
+            program.LeadingClassDelimiter is { Literal: < 0, LeadingClass: > 0, GapMaximum: 0, LiteralIndex: >= 0 } prefix &&
+            program.Instructions[prefix.LeadingClass].Kind != Utf8SliceInstructionKind.Dot;
+
+    internal static Utf8ExecutionLimitKind TryProveScreenedOrderedClassFamily(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, in PreparedSearcher search, int floor, int screenedLiteral,
+        ref Utf8SliceInvocation invocation, out bool found)
+    {
+        found = false;
+        if (screenedLiteral < floor || invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit ||
+            !HasOrderedClassFamilyPrefix(program, search))
+            return Utf8ExecutionLimitKind.None;
+
+        var breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None ||
+            GetAlignedDelimiterAlternatives(program, program.LeadingClassDelimiter.LiteralIndex, search) is null)
+            return breach;
+
+        breach = TryProveOrderedClassFamily(program, input, floor, screenedLiteral, ref invocation, out _, out var end);
+        if (breach != Utf8ExecutionLimitKind.None || end < 0) return breach;
+        breach = invocation.TryReserveWorking(0);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        invocation.Budget.ThrowIfCancellationRequested();
+        invocation.Budget.CheckDeadline();
+        found = true;
+        return Utf8ExecutionLimitKind.None;
+    }
+
+    private static Utf8ExecutionLimitKind TryProveOrderedClassFamily(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int floor, int position, ref Utf8SliceInvocation invocation,
+        out int earliest, out int acceptedEnd)
+    {
+        earliest = acceptedEnd = -1;
+        var prefix = program.LeadingClassDelimiter;
+        var code = program.Instructions.AsSpan();
+        if (program.NonBacktrackingOrderedConditions != 0 ||
+            invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit ||
+            code[prefix.LeadingClass - 1] is not { RepeatMinimum: 1, RepeatMaximum: long.MaxValue } ||
+            input[position] >= 128 || Rune.IsWhiteSpace(new Rune(input[position])))
+            return Utf8ExecutionLimitKind.None;
+
+        var space = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, prefix.LeadingClass + 3);
+        if (space > prefix.LiteralIndex - 4 ||
+            code[space] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1, RepeatMaximum: long.MaxValue } ||
+            Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, space + 4) != prefix.LiteralIndex ||
+            !AreDisjointPositiveCategorySets(program.SetMasks, program.CategorySetMembers,
+                code[prefix.LeadingClass], code[space + 1]))
+            return Utf8ExecutionLimitKind.None;
+
+        var breach = TryNarrowDisjointRepeatPrefix(program, input, floor, position, prefix.LiteralIndex,
+            ref invocation, out earliest, out _);
+        if (breach != Utf8ExecutionLimitKind.None || earliest < 0) return breach;
+
+        // Both nonempty runs end at the screened literal. The suffix must
+        // also succeed before this proof can replace state traversal.
+        MayMatchBranchedAsciiPrefix(program, input, position, prefix.LiteralIndex, out acceptedEnd,
+            proveMatch: true, BranchedPrefixInstructionLimit - prefix.LiteralIndex);
+        return acceptedEnd >= 0 ? invocation.TryChargeInputStep() : Utf8ExecutionLimitKind.None;
     }
 
     private static PreparedSubstringSearch? GetRepeatPrefixSearch(Utf8SliceProgram program,

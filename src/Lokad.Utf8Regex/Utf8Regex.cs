@@ -408,10 +408,18 @@ public sealed partial class Utf8Regex : IDisposable
                 if (suffix.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
                 return suffix.Count != 0;
             }
+            if (!program.IsNonBacktracking && search.RequiredPrefilterSearcher.Kind == PreparedSearcherKind.MultiLiteral && screenedLiteral >= startByte)
+            {
+                var proof = Utf8SliceRunner.TryProveScreenedOrderedClassFamily(program, input, search.RequiredPrefilterSearcher,
+                    startByte, screenedLiteral, ref invocation, out var proved);
+                if (proof != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+                if (proved) return true;
+            }
             var breach = Utf8SliceRunner.IsMatchPackedNonBacktracking(program, input, startByte, ref invocation, out var found);
             if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
             return found;
         }
+        if (search.RequiredPrefilterSearcher.Kind != PreparedSearcherKind.ExactLiteral) screenedLiteral = -1;
         if (screenedLiteral < startByte || _preparedRegex.RequiredLiteralContinuation is not (> 0 and var continuation) ||
             !Utf8SliceRunner.TryFindPreparedLiteralContinuation(program, input, ref startByte,
                 search.RequiredPrefilterSearcher.LiteralSearch, screenedLiteral, continuation, ref invocation, out var outcome))
@@ -460,8 +468,7 @@ public sealed partial class Utf8Regex : IDisposable
         var breach = prefilter.TryFindMatch(input, 0, input.Length, false, ref invocation, out var match, out var found);
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException("Required literal screening breached the invocation budget.");
-        if (found && prefilter.Kind == PreparedSearcherKind.ExactLiteral)
-            screenedLiteral = match.Index;
+        if (found) screenedLiteral = match.Index;
         return !found;
     }
 
@@ -600,6 +607,7 @@ public sealed partial class Utf8Regex : IDisposable
             }
         }
         if (RejectMissingRequiredInput(input, program, ref invocation, out var screenedLiteral)) return countedPrefix;
+        if (_preparedRegex.SearchPlan.RequiredPrefilterSearcher.Kind != PreparedSearcherKind.ExactLiteral) screenedLiteral = -1;
         var slots = Utf8SliceSlots.Empty;
         try
         {
