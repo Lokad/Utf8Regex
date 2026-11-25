@@ -379,13 +379,18 @@ public sealed partial class Utf8Regex : IDisposable
                 throw new InvalidOperationException("Native literal existence search breached the invocation budget.");
             return found;
         }
-        if (RejectMissingRequiredInput(input, program, ref invocation, out var screenedLiteral)) return false;
         ref readonly var search = ref _preparedRegex.SearchPlan;
-        if (screenedLiteral >= 0 && screenedLiteral >= startByte && _preparedRegex.RequiredLiteralProvesMatch)
+        if (_preparedRegex.RequiredLiteralProvesMatch && ReferenceEquals(program, _ownedSliceProgram))
         {
-            Utf8SliceBufferWork.Checkpoint(ref invocation);
-            return true;
+            // The prepared literal is sufficient for existence. The search
+            // already checks the invocation before returning a hit or miss.
+            var breach = search.RequiredPrefilterSearcher.TryFindMatch(input, startByte, input.Length, false,
+                ref invocation, out _, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Required literal proof breached the invocation budget.");
+            return found;
         }
+        if (RejectMissingRequiredInput(input, program, ref invocation, out var screenedLiteral)) return false;
         if (program.IsNonBacktracking && program.NonBacktrackingEpsilonAncestors.Length != 0 ||
             !program.RightToLeft &&
             Utf8SliceRunner.CanSearchOrdinaryOrdered(program, input.Length - startByte, search, ref invocation))
