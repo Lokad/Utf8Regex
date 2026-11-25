@@ -979,7 +979,8 @@ internal static partial class Utf8SliceRunner
                     {
                         var proof = program.LeadingClassWindowProof;
                         requiredClassSuffix = proof.SuffixAfter(aligned.Length);
-                        if (!collectHistory && proof.CanReusePrefix)
+                        if (!collectHistory && proof.CanReusePrefix &&
+                            (program.GroupCount == 0 || captureStarts.IsEmpty && captureEnds.IsEmpty))
                         {
                             verifiedClassLiteralLength = aligned.Length;
                             if (existenceOnly && captureStarts.IsEmpty && captureEnds.IsEmpty &&
@@ -1056,17 +1057,21 @@ internal static partial class Utf8SliceRunner
         // Only a forward, instruction-zero run can enter the VM directly.
         var verifiedLeadingPrefix = !leadingPrefix.IsEmpty && leadingScalarIndex == 0 &&
             !program.RightToLeft && !program.HasContiguousAnchor ? (leadingPrefix.Length, leadingPrefix.Length) : default;
-        var prefixContinuation = verifiedClassLiteralLength != 0 ? 4 + verifiedClassLiteralLength : verifiedLeadingPrefix.Item1;
+        var classContinuation = verifiedClassLiteralLength != 0 ? classDelimiter.LiteralIndex + verifiedClassLiteralLength : 0;
+        var prefixContinuation = classContinuation != 0 ? classContinuation : verifiedLeadingPrefix.Item1;
+        var proofRepeatIndex = classContinuation != 0 && program.GroupCount != 0
+            ? Utf8SliceInstruction.SkipLeadingCaptureMarkers(program.Instructions, classContinuation) : prefixContinuation;
         var prefixProof = prefixContinuation != 0 && canProveValue && captureEnds.IsEmpty &&
             // Each nested proof branch spends a visit. Tight depth limits
             // stay with the VM's exact admission of individual choices.
             invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
-            program.Instructions[prefixContinuation] is
+            program.Instructions[proofRepeatIndex] is
                 { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true, RepeatMaximum: > 4 } prefixRepeat &&
-            program.Instructions[prefixRepeat.A].RepeatExitRejectsShorterEndpoints &&
-            (program.Instructions[prefixContinuation + 1] is
+            (program.Instructions[prefixRepeat.A].RepeatExitRejectsShorterEndpoints ||
+                program.Instructions[prefixRepeat.A].RepeatExitAcceptsEmptyTail) &&
+            (program.Instructions[proofRepeatIndex + 1] is
                 { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } ||
-                program.GetCompleteAsciiCategoryMask(program.Instructions[prefixContinuation + 1]) != 0);
+                program.GetCompleteAsciiCategoryMask(program.Instructions[proofRepeatIndex + 1]) != 0);
         if ((leading >= 0 || seekLiteral || hasClassWindow) && invocation.Ledger.ReservedBytes != 0)
         {
             // An enclosing loan still counts when candidate discovery needs no storage.
@@ -1191,7 +1196,7 @@ internal static partial class Utf8SliceRunner
             // The metered rewind proved the nonempty leading class and its
             // aligned delimiter. Shorter endpoints cannot reach the literal.
             var verifiedPrefix = verifiedClassLiteralLength != 0 && position < classWindowEnd
-                ? (4 + verifiedClassLiteralLength, classWindowEnd - position + verifiedClassLiteralLength)
+                ? (classContinuation, classWindowEnd - position + verifiedClassLiteralLength)
                 : verifiedLeadingPrefix;
             var provePrefix = prefixProof && verifiedPrefix.Item1 == prefixContinuation;
             if (checkBranchedPrefix || checkStraightRepeat || shortDecimalHead || provePrefix ||
@@ -1555,7 +1560,7 @@ internal static partial class Utf8SliceRunner
                 {
                     var proof = program.LeadingClassWindowProof;
                     requiredClassSuffix = proof.SuffixAfter(aligned.Length);
-                    if (proof.CanReusePrefix)
+                    if (program.GroupCount == 0 && proof.CanReusePrefix)
                         verifiedClassLiteralLength = aligned.Length;
                 }
             }

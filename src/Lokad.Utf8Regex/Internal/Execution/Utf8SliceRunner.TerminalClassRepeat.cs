@@ -1225,7 +1225,8 @@ internal static partial class Utf8SliceRunner
                          { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }))
             return;
 
-        if (prepareRequiredEmptyTail || atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 } &&
+        if (prepareRequiredEmptyTail || completeAsciiCategory && repeat.RepeatMaximum == long.MaxValue &&
+            code[continuation].Kind == Utf8SliceInstructionKind.CaptureEnd || atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 } &&
             (repeat.RepeatMinimum != 0 && atom.C == 0 ||
                 repeat.RepeatMaximum == long.MaxValue && continuation == code.Length - 1))
         {

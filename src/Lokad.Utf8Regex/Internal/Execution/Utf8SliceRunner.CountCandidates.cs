@@ -690,10 +690,16 @@ internal static partial class Utf8SliceRunner
         }
         budget.ChargeWork(12);
         var (first, second) = GetRequiredHybridSuffix(code, index);
-        var canReuse = leadingClass == 1 && literalIndex == 4 && program.GroupCount == 0 &&
-            code[0] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 };
+        // A value-only call can also skip the capture markers around the
+        // proved run. The initial guard excludes programs that read them.
+        var capturesLeadingRun = leadingClass == 2 && literalIndex == 6 &&
+            code[0] is { Kind: Utf8SliceInstructionKind.CaptureStart } open &&
+            code[5] is { Kind: Utf8SliceInstructionKind.CaptureEnd } close &&
+            open.A == close.A && open.B == close.B;
+        var canReuse = (leadingClass == 1 && literalIndex == 4 && program.GroupCount == 0 || capturesLeadingRun) &&
+            code[leadingClass - 1] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 };
         var canAccept = false;
-        if (canReuse && second != 0 && second == first + 2 && code[second - 1].RepeatMinimum == 1)
+        if (canReuse && !capturesLeadingRun && second != 0 && second == first + 2 && code[second - 1].RepeatMinimum == 1)
         {
             budget.ChargeWork(1);
             canAccept = code[second + 2].RepeatExitAcceptsEmptyTail;

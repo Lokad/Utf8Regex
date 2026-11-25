@@ -9,6 +9,39 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ClassPrefixCandidateTests
 {
     [Fact]
+    public void VerifiedCapturedClassWindowKeepsSlotsHistoryAndBackreferences()
+    {
+        const string pattern = @"(\w+): (\w+)";
+        var prefix = "Ω " + string.Concat(Enumerable.Repeat("x:  /:; t: ! y: .; ", 64));
+        var input = Encoding.UTF8.GetBytes(prefix + "clé: result");
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var key = new Utf8CaptureRange(start, start + 4);
+        var value = new Utf8CaptureRange(start + 6, input.Length);
+        using var source = new CancellationTokenSource();
+        using var bounded = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 800 }
+        });
+        Assert.True(bounded.IsMatch(input, source.Token));
+        Assert.Equal(new Utf8CaptureRange(start, input.Length), bounded.Match(input, cancellationToken: source.Token));
+
+        using var regex = new Utf8Regex(pattern);
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];
+        Assert.Equal(new Utf8CaptureRange(start, input.Length), regex.Match(input, 0, slots, source.Token));
+        Assert.Equal(key, slots[1]);
+        Assert.Equal(value, slots[2]);
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: source.Token);
+        Assert.True(cursor.MoveNext(out var captured));
+        Assert.Equal(key, Assert.Single(captured.GetCaptures(1).ToArray()));
+        Assert.Equal(value, Assert.Single(captured.GetCaptures(2).ToArray()));
+        Assert.False(cursor.MoveNext(out _));
+
+        using var backreference = new Utf8Regex(@"(\w+): \1\b");
+        Assert.False(backreference.IsMatch(input, source.Token));
+        Assert.True(backreference.IsMatch("clé: clé"u8, source.Token));
+    }
+
+    [Fact]
     public void VerifiedClassDelimiterKeepsWorkBoundAndWideLabelEndpoints()
     {
         using var regex = new Utf8Regex(@"[\w.+-]+@[\w-]+\.[\w.-]+", policy: new()
