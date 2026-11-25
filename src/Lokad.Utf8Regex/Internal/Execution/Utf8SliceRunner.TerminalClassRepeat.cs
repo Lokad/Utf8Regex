@@ -1265,6 +1265,28 @@ internal static partial class Utf8SliceRunner
             return;
         }
 
+        if (continuation == repeat.A + 1 &&
+            atom is ({ Kind: Utf8SliceInstructionKind.Set, C: 0 } or
+                { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }) &&
+            next is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0 } &&
+            next.A < code.Length - 2 && code[continuation + 1].Kind == Utf8SliceInstructionKind.Dot)
+        {
+            budget.ChargeWork(6);
+            var tail = next.A + 1;
+            if (code[tail].Kind == Utf8SliceInstructionKind.Boundary) tail++;
+            if (IsSingleAtomRepeat(code, continuation, next) &&
+                code[tail] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } literal &&
+                ReadAsciiSet(setMasks[atom.A]).Contains((byte)literal.A) == (atom.B != 0))
+            {
+                // The literal cannot start inside the greedy run. Any dot path
+                // from a shorter endpoint to the literal can drop the part inside
+                // that run: it only gets shorter and cannot introduce a newline.
+                // There are no capture effects between the two repeat endpoints.
+                code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitRejectsShorterFlag, exit.D);
+                return;
+            }
+        }
+
         if (atom is { Kind: Utf8SliceInstructionKind.Set, C: not 0 })
         {
             // Case folding leaves LF unchanged, so the mask determines

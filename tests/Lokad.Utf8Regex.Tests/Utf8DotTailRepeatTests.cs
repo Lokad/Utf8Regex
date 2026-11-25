@@ -60,6 +60,32 @@ public sealed class Utf8DotTailRepeatTests
     }
 
     [Theory]
+    [InlineData(@"\A(P\s+.{0,8}\bTail)\z", "P \u2003\nx Tail", true)]
+    [InlineData(@"\AP[ab]+(?s:.{0,8})\bTail\z", "Pab\nTail", true)]
+    [InlineData(@"\AP[ab]+.{0,8}\bTail\z", "Pab\nTail", true)]
+    [InlineData(@"\AP[ab]{1,8}.{0,8}b!\z", "Paaab!", false)]
+    [InlineData(@"\AP\s+.{1,8}X\z", "P  X", false)]
+    [InlineData(@"\A(?<space>\s+).{0,8}X\k<space>\z", "  X ", false)]
+    public void GreedyRepeatKeepsOnlyDotEndpointsThatCanReachADisjointLiteral(string pattern, string text, bool prepared)
+    {
+        const RegexOptions options = RegexOptions.Compiled;
+        using var regex = new Utf8Regex(pattern, options, new() { ResourcePolicy = Policy() });
+        using var source = new CancellationTokenSource();
+        var oracle = new Regex(pattern, options);
+        var code = regex.Inspection.AvailableOwnedSliceProgram!.Instructions;
+        var firstRepeat = Array.FindIndex(code, entry => entry.Kind == Utf8SliceInstructionKind.RepeatGreedy);
+        Assert.Equal(prepared, code[code[firstRepeat].A].RepeatExitRejectsShorterEndpoints);
+
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = oracle.Match(text);
+        Assert.Equal(expected.Success, regex.IsMatch(input, source.Token));
+        Assert.Equal(oracle.Count(text), regex.Count(input, source.Token));
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token));
+        Assert.Equal(expected.Success, match.Success);
+        if (expected.Success) Utf8MatchSequence.AssertCaptures(expected, match, input, text);
+    }
+
+    [Theory]
     [InlineData(2047)]
     [InlineData(2048)]
     [InlineData(2049)]
