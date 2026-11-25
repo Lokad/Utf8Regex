@@ -1468,6 +1468,10 @@ internal static partial class Utf8SliceRunner
         var leadingPrefix = input.Length - fromByte >= 256 && whitespaceLiteral < 0 && leadingSecond >= 0
             ? GetExactLeadingLiteral(program, leadingScalarIndex, prefixStorage)
             : default;
+        // Borrow the prefix buffer when the line seek owns candidate discovery.
+        var linePrefix = leadingPrefix.IsEmpty && verifiedLinePrefix.Item1 != 0 && input.Length - fromByte >= 256
+            ? GetExactLeadingLiteral(program, 1, prefixStorage)
+            : default;
         byte tailFirst = 0, tailLast = 0;
         var vectorBranchWindow = Vector512.IsHardwareAccelerated &&
             !program.RightToLeft && !includeKelvin && !seekDecimal && leadingFirst is >= 0 and < 128 &&
@@ -1678,6 +1682,17 @@ internal static partial class Utf8SliceRunner
                     continue;
                 }
                 var verifiedPrefix = candidateContinuation == 0 ? verifiedLinePrefix : (candidateContinuation, prefixBytes);
+                if (!linePrefix.IsEmpty)
+                {
+                    // The seek has checked the boundary and first literal.
+                    // Verify the rest within the current candidate's charge.
+                    if (!input[position..].StartsWith(linePrefix))
+                    {
+                        position++;
+                        continue;
+                    }
+                    verifiedPrefix = (1 + linePrefix.Length, linePrefix.Length);
+                }
                 // The rewind proved this nonempty class run up to the
                 // excluded delimiter. Continue with the original suffix.
                 if (verifiedClassLiteralLength != 0 && position < whitespaceWindowEnd)

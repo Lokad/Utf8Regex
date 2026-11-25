@@ -73,6 +73,26 @@ public sealed class Utf8ScalarCountPrefixTests
     }
 
     [Fact]
+    public void MultilineLiteralPrefixKeepsAnchorsAndCaptureReads()
+    {
+        const string pattern = @"^import\s+(?<path>[^=\r\n]+)=\k<path>\r?$";
+        const RegexOptions options = RegexOptions.Compiled | RegexOptions.Multiline;
+        var text = "import x=x\n" + new string(' ', 2046) + "\n" +
+            "imports x=x\nimportx y=y\nitem q=q\nimport\u2003α=α\r\nimport y=z\nimport\talpha=alpha";
+        var storage = Encoding.UTF8.GetBytes("unused" + text + "unused");
+        var input = storage.AsSpan(6, storage.Length - 12);
+        using var ordinary = new Utf8Regex(pattern, options);
+        using var finite = new Utf8Regex(pattern, options, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxDepth = 128, MaxWorkingBytes = 1 << 16 }
+        });
+        using var source = new CancellationTokenSource();
+
+        Assert.Equal(3, ordinary.Count(input));
+        Assert.Equal(3, finite.Count(input, source.Token));
+    }
+
+    [Fact]
     public void ExactFamilyFollowerSkipsDecoysWithinFiniteWorkAllowance()
     {
         const string pattern = @"\b(?:public|private|internal)\s+class\b";
