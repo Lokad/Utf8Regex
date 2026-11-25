@@ -465,6 +465,12 @@ internal static partial class Utf8SliceRunner
         ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default,
         bool existenceOnly = false, int screenedLiteral = -1)
     {
+        // The prepared forward proof needs no attempt workspace at byte zero.
+        if (fromByte == 0 && program.TerminalRoot == Utf8SliceTerminalRootKind.AsciiSetThenRepeat &&
+            TryFindFirstShortAsciiRepeat(program, input, fromByte, candidatePlan.MinRequiredLength,
+                !existenceOnly && !collectHistory, ref invocation, out var shortMatch))
+            return shortMatch;
+
         // A complete single-origin proof can finish without initializing
         // an attempt workspace. The unresolved case keeps the same origin.
         var singleOrigin = false;
@@ -567,11 +573,9 @@ internal static partial class Utf8SliceRunner
                 : new(false, -1, -1, replay.Breach);
         }
         if (program.TerminalRoot == Utf8SliceTerminalRootKind.AsciiSetThenRepeat &&
-            remaining <= 64 && !existenceOnly && !collectHistory && program.GroupCount == 0 &&
-            program.LeadingByteCandidate is { First: >= 0 and < 128 } starter)
-            return TryFindFirstShortAsciiRepeat(program, input, fromByte,
-                input.Length - candidatePlan.MinRequiredLength, (byte)starter.First, starter.Last,
-                starter.SparsePair, ref invocation);
+            TryFindFirstShortAsciiRepeat(program, input, fromByte, candidatePlan.MinRequiredLength,
+                !existenceOnly && !collectHistory, ref invocation, out var shortMatch))
+            return shortMatch;
 
         ref readonly var first = ref program.Instructions[0];
         var seekBeginning = !reverse && first.Kind == Utf8SliceInstructionKind.Anchor &&
@@ -845,7 +849,21 @@ internal static partial class Utf8SliceRunner
             : new(false, -1, -1, outcome.Breach);
     }
 
-    private static Utf8SliceSearchOutcome TryFindFirstShortAsciiRepeat(
+    private static bool TryFindFirstShortAsciiRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int fromByte, int minimumLength, bool allowProof, ref Utf8SliceInvocation invocation, out Utf8SliceSearchOutcome result)
+    {
+        if (input.Length - fromByte <= 64 && allowProof && program.GroupCount == 0 &&
+            program.LeadingByteCandidate is { First: >= 0 and < 128 } starter)
+        {
+            result = FindFirstShortAsciiRepeat(program, input, fromByte, input.Length - minimumLength,
+                (byte)starter.First, starter.Last, starter.SparsePair, ref invocation);
+            return true;
+        }
+        result = default;
+        return false;
+    }
+
+    private static Utf8SliceSearchOutcome FindFirstShortAsciiRepeat(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte, int lastProbedStart,
         byte first, byte last, bool sparsePair, ref Utf8SliceInvocation invocation)
     {
