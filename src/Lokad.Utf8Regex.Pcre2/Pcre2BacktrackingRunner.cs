@@ -341,6 +341,7 @@ internal static class Pcre2BacktrackingRunner
                         default,
                         0,
                         false,
+                        enclosingSubroutineSlot: -1,
                         ref budget,
                         ref frames,
                         ref repeatMutations,
@@ -690,6 +691,7 @@ internal static class Pcre2BacktrackingRunner
         ReadOnlySpan<Pcre2CaptureState> initialCaptures,
         int depthBase,
         bool isAssertion,
+        int enclosingSubroutineSlot,
         ref Pcre2ResourceBudget budget,
         out Pcre2BacktrackingMatch match,
         out Pcre2BacktrackingFailure failure)
@@ -701,7 +703,8 @@ internal static class Pcre2BacktrackingRunner
         {
             return TryMatchAt(program, input, projectionInput, candidate, firstMatchingPosition,
                 matchOptions, captureMaterialization, initialCaptures,
-                depthBase, isAssertion, ref budget, ref frames, ref repeatMutations, ref workspace, out match, out failure);
+                depthBase, isAssertion, enclosingSubroutineSlot, ref budget,
+                ref frames, ref repeatMutations, ref workspace, out match, out failure);
         }
         finally { workspace.Dispose(ref budget); repeatMutations.Dispose(ref budget); frames.Dispose(ref budget); }
     }
@@ -717,6 +720,7 @@ internal static class Pcre2BacktrackingRunner
         ReadOnlySpan<Pcre2CaptureState> initialCaptures,
         int depthBase,
         bool isAssertion,
+        int enclosingSubroutineSlot,
         ref Pcre2ResourceBudget budget,
         scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
         scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
@@ -738,7 +742,7 @@ internal static class Pcre2BacktrackingRunner
         // and inherited capture state can need more writes before growing.
         var captureMutations = new Pcre2InvocationStateStack<Pcre2CaptureMutation>(int.MaxValue, collectsDiagnostics,
             initialCapacity: retainCaptures || budget.CanRetainWorkspace ? 16 : 8);
-        var subroutineCalls = new Pcre2SubroutineCalls(frameLimit, collectsDiagnostics);
+        var subroutineCalls = new Pcre2SubroutineCalls(frameLimit, collectsDiagnostics, enclosingSubroutineSlot);
         var atomicCheckpoints = new Pcre2InvocationStateStack<Pcre2AtomicCheckpoint>(frameLimit, collectsDiagnostics);
         var markMutations = new Pcre2InvocationStateStack<Pcre2MarkMutation>(int.MaxValue, collectsDiagnostics);
         var markTrail = new Pcre2InvocationStateStack<Pcre2MarkTrailEntry>(int.MaxValue, collectsDiagnostics);
@@ -1164,6 +1168,7 @@ internal static class Pcre2BacktrackingRunner
                                     matchOptions,
                                     captureState,
                                     depthBase + frames.Count + subroutineCalls.Count + 1,
+                                    subroutineCalls.CurrentSlot,
                                     ref budget,
                                     out assertionCaptures,
                                     out var assertionMark,
@@ -1280,10 +1285,10 @@ internal static class Pcre2BacktrackingRunner
                         var conditionMet = condition.Kind switch
                         {
                             Pcre2BacktrackingConditionKind.CaptureSet =>
-                                FindFirstParticipatingCapture(condition.CaptureSlots, captureState, ref budget) != 0,
-                            Pcre2BacktrackingConditionKind.RecursionAny => subroutineCalls.Count != 0,
+                                FindFirstParticipatingCapture(condition.Slots, captureState, ref budget) != 0,
+                            Pcre2BacktrackingConditionKind.RecursionAny => subroutineCalls.CurrentSlot >= 0,
                             Pcre2BacktrackingConditionKind.RecursionSlot =>
-                                subroutineCalls.Contains(condition.SubroutineSlot, ref budget),
+                                subroutineCalls.MatchesCurrentSlot(condition.Slots, ref budget),
                             _ => false,
                         };
                         Pcre2CaptureByteRange[] conditionalCaptures = [];
@@ -1301,6 +1306,7 @@ internal static class Pcre2BacktrackingRunner
                                     matchOptions,
                                     captureState,
                                     depthBase + frames.Count + subroutineCalls.Count + 1,
+                                    subroutineCalls.CurrentSlot,
                                     ref budget,
                                     out conditionalCaptures,
                                     out var conditionalMark,
@@ -1596,6 +1602,7 @@ internal static class Pcre2BacktrackingRunner
         Pcre2MatchOptions outerMatchOptions,
         ReadOnlySpan<Pcre2CaptureState> captureState,
         int depth,
+        int enclosingSubroutineSlot,
         ref Pcre2ResourceBudget budget,
         out Pcre2CaptureByteRange[] captures,
         out string? mark,
@@ -1633,6 +1640,7 @@ internal static class Pcre2BacktrackingRunner
                 captureState,
                 depth,
                 true,
+                enclosingSubroutineSlot,
                 ref budget,
                 out var assertionMatch,
                 out _);
@@ -1671,6 +1679,7 @@ internal static class Pcre2BacktrackingRunner
                     captureState,
                     depth,
                     true,
+                    enclosingSubroutineSlot,
                     ref budget,
                     out var assertionMatch,
                     out _))

@@ -105,6 +105,7 @@ Unsupported features fail with `NotSupportedException`. Grammar failures use
 | Option directives | At most one hyphen. A flag on both sides is disabled. `(?)`, `(?-)` and `(?-:...)` are no-ops. `(?^)` clears supported `i/m/n/s/x/xx/r`, retains `U/J` and disallows a hyphen. Scoped flags restore on exit. |
 | Duplicate names | `J` is lexical. Disabling it rejects later duplicate declarations and preserves earlier slots. A group exit restores inherited permission. Branch-reset names follow their same-number rule. |
 | Subroutines | `DEFINE` preserves local flags and declaration slots even when uncalled. Calls can backtrack. Ordinary or `ACCEPT` return restores the caller's captures, including unset slots. |
+| Recursion tests | `(?(R)...)` tests whether a call is active. Numbered and named tests use the innermost active call, including within assertions. A duplicate name can refer to any slot with that name. |
 
 Default settings forbid duplicate names, `\C` and lookaround `\K`, and
 select Default newline and BSR.

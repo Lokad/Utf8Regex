@@ -292,27 +292,24 @@ internal sealed class Pcre2BacktrackingCondition
 {
     internal Pcre2BacktrackingCondition(
         Pcre2BacktrackingConditionKind kind,
-        int[] captureSlots,
+        int[] slots,
         int assertionProgramId,
-        Pcre2AssertionKind assertionKind,
-        int subroutineSlot)
+        Pcre2AssertionKind assertionKind)
     {
         Kind = kind;
-        CaptureSlots = captureSlots;
+        Slots = slots;
         AssertionProgramId = assertionProgramId;
         AssertionKind = assertionKind;
-        SubroutineSlot = subroutineSlot;
     }
 
     internal Pcre2BacktrackingConditionKind Kind { get; }
 
-    internal int[] CaptureSlots { get; }
+    internal int[] Slots { get; }
 
     internal int AssertionProgramId { get; }
 
     internal Pcre2AssertionKind AssertionKind { get; }
 
-    internal int SubroutineSlot { get; }
 }
 
 internal sealed class Pcre2BacktrackingProgram

@@ -158,11 +158,47 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
     [InlineData("ba", true)]
     [InlineData("baaa", true)]
     [InlineData("a", false)]
-    public void RecursionConditionsObserveTheActiveSubroutineStack(string input, bool expected)
+    public void NamedRecursionConditionDistinguishesACallFromTopLevel(string input, bool expected)
     {
         var regex = new Utf8Pcre2Regex("^(?<r>(?(R&r)a|b)(?&r)?)$");
 
         Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(input)));
+    }
+
+    [Theory]
+    [InlineData("R&outer")]
+    [InlineData("R1")]
+    public void RecursionConditionTestsOnlyTheInnermostCall(string condition)
+    {
+        var pattern = $@"\A(?&outer)(?(R)u|v)\z(?(DEFINE)(?<outer>(?&inner)(?({condition})z|w))(?<inner>(?({condition})x|y)))";
+        using var regex = new Utf8Pcre2Regex(pattern);
+
+        Assert.True(regex.IsMatch("yzv"u8));
+        Assert.False(regex.IsMatch("xzv"u8));
+        Assert.False(regex.IsMatch("yzu"u8));
+    }
+
+    [Fact]
+    public void RecursionConditionRecognizesEverySlotWithADuplicateName()
+    {
+        using var regex = new Utf8Pcre2Regex(@"(?J)\A(?2)\z(?(DEFINE)(?<g>a)(?<g>(?(R&g)b|c)))");
+
+        Assert.True(regex.IsMatch("b"u8));
+        Assert.False(regex.IsMatch("c"u8));
+    }
+
+    [Theory]
+    [InlineData(@"\A(?&g)\z(?(DEFINE)(?<g>(?=(?(R&g)a|b)).))", "a", "b")]
+    [InlineData(@"\A(?&g)\z(?(DEFINE)(?<g>(?=(?(R)a|b)).))", "a", "b")]
+    [InlineData(@"\A(?&g)\z(?(DEFINE)(?<g>.(?<=(?(R&g)a|b))))", "a", "b")]
+    [InlineData(@"\A(?&g)\z(?(DEFINE)(?<g>(?(?=(?(R&g)a|b))a|c)))", "a", "b")]
+    [InlineData(@"\A(?&g)\z(?(DEFINE)(?<g>(?=(?&h)(?(R&g)z|w))..)(?<h>(?(R&g)x|y)))", "yz", "xz")]
+    public void AssertionsInheritTheCurrentCallAndUseLocalCallsWhenPresent(string pattern, string hit, string miss)
+    {
+        using var regex = new Utf8Pcre2Regex(pattern);
+
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(hit)));
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(miss)));
     }
 
     [Fact]

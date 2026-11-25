@@ -3,7 +3,7 @@ namespace Lokad.Utf8Regex.Pcre2;
 // One owner stores both active calls and earlier calls referenced by retries.
 // Parents precede their children. A retry retains the prefix it observed,
 // so discarding newer entries never requires replaying pushes and pops.
-internal ref struct Pcre2SubroutineCalls(int frameLimit, bool trackRents)
+internal ref struct Pcre2SubroutineCalls(int frameLimit, bool trackRents, int enclosingSlot)
 {
     // Call entries hold links as well as the return state. Start with a small
     // admitted buffer so a single deterministic call still fits a tight cap.
@@ -17,6 +17,7 @@ internal ref struct Pcre2SubroutineCalls(int frameLimit, bool trackRents)
     internal readonly int Count => _depth;
     internal readonly int RentCount => _entries.RentCount;
     internal readonly Pcre2SubroutineCallFrame Current => _entries[_head - 1].Call;
+    internal readonly int CurrentSlot => _head == 0 ? enclosingSlot : Current.SubroutineSlot;
     internal readonly (int Head, int Extent) Checkpoint => (_head, _entries.Count);
 
     internal void Push(Pcre2SubroutineCallFrame call, int depthBase, ref Pcre2ResourceBudget budget)
@@ -44,17 +45,18 @@ internal ref struct Pcre2SubroutineCalls(int frameLimit, bool trackRents)
         _depth = _head == 0 ? 0 : _entries[_head - 1].Depth;
     }
 
-    internal readonly bool Contains(int slot, ref Pcre2ResourceBudget budget)
+    internal readonly bool MatchesCurrentSlot(ReadOnlySpan<int> slots, ref Pcre2ResourceBudget budget)
     {
-        var visited = 0;
-        for (var head = _head; head != 0;)
+        var current = CurrentSlot;
+        if (current < 0) return false;
+        // Duplicate names can denote several slots. Only the current call is tested.
+        while (slots.Length > 64)
         {
-            if ((++visited & 63) == 0) budget.ChargeWorkspaceStep();
-            var entry = _entries[head - 1];
-            if (entry.Call.SubroutineSlot == slot) return true;
-            head = entry.Parent;
+            if (slots[..64].Contains(current)) return true;
+            slots = slots[64..];
+            budget.ChargeWorkspaceStep();
         }
-        return false;
+        return slots.Contains(current);
     }
 
     internal void Dispose(ref Pcre2ResourceBudget budget) => _entries.Dispose(ref budget);

@@ -762,8 +762,7 @@ internal sealed class Pcre2BacktrackingLowerer
                 conditional.ConditionKind,
                 [],
                 LowerAssertion(assertion),
-                assertion.AssertionKind,
-                0);
+                assertion.AssertionKind);
         }
 
         if (conditional.ConditionKind == Pcre2BacktrackingConditionKind.RecursionAny)
@@ -772,31 +771,22 @@ internal sealed class Pcre2BacktrackingLowerer
                 conditional.ConditionKind,
                 [],
                 0,
-                default,
-                0);
+                default);
         }
 
-        if (conditional.ConditionKind == Pcre2BacktrackingConditionKind.RecursionSlot)
-        {
-            return new Pcre2BacktrackingCondition(
-                conditional.ConditionKind,
-                [],
-                0,
-                default,
-                GetSubroutineSlot(conditional.Target));
-        }
-
-        var captureSlots = conditional.Target.Kind == Pcre2BackreferenceTargetKind.Named
+        var slots = conditional.Target.Kind == Pcre2BackreferenceTargetKind.Named
             ? _nameSlots[conditional.Target.Name]
             : [Pcre2BacktrackingAnalysis.ResolveReferenceSlot(conditional.Target)];
-        if (captureSlots.Length == 1) NoteCaptureRead(captureSlots[0]);
-        else _captureReadSlot = -1;
+        if (conditional.ConditionKind == Pcre2BacktrackingConditionKind.CaptureSet)
+        {
+            if (slots.Length == 1) NoteCaptureRead(slots[0]);
+            else _captureReadSlot = -1;
+        }
         return new Pcre2BacktrackingCondition(
             conditional.ConditionKind,
-            captureSlots,
+            slots,
             0,
-            default,
-            0);
+            default);
     }
 
     private void EmitBackreference(Pcre2BackreferenceBacktrackingNode backreference)
