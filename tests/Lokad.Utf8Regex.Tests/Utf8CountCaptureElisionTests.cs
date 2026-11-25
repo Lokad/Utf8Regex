@@ -160,7 +160,7 @@ public sealed class Utf8CountCaptureElisionTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void CountKeepsOriginalInterruptionAfterValidation(bool expire)
+    public void CountKeepsOriginalInterruption(bool expire)
     {
         const string pattern = "(?:(a)|b)+c";
         var input = Encoding.UTF8.GetBytes(new string('a', 32768) + "c");

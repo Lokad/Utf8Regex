@@ -10,7 +10,7 @@ public sealed class Utf8FiniteLiteralCountTests
 {
     [Theory]
     [InlineData(16)] [InlineData(17)] [InlineData(32)] [InlineData(33)]
-    public void MixedWidthPrefixCandidatesKeepWindowEdgesAndStrictWholeInput(int length)
+    public void MixedWidthPrefixCandidatesKeepWindowEdgesInBorrowedSlices(int length)
     {
         var literal = "夏洛克·" + new string('x', length - 11);
         var rejected = literal[..^1] + "y";

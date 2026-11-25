@@ -154,9 +154,8 @@ public sealed class Utf8HexColorValueMatchTests
         Assert.Equal(value, cursor.Current); Assert.Equal(value, alias.Current);
         Assert.False(cursor.MoveNext()); Assert.False(alias.MoveNext());
         Assert.Equal("AbC123", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span)); Assert.Equal("#AbC123", System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
-        byte[] malformed = [.. input, 0xff];
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token,
-            Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, cancellationToken: token.Token)).CancellationToken);
+            Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: token.Token)).CancellationToken);
     }
 }

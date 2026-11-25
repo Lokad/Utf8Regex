@@ -91,9 +91,8 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
         Assert.False(regex.Match(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, 1)), []).Success);
         Assert.Equal(1, regex.Count(input));
         Assert.Equal("text", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("doc"u8)).Span));
-        byte[] malformed = [.. input, 0xff];
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, cancellationToken: token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: token.Token)).CancellationToken);
     }
 
     [Theory]

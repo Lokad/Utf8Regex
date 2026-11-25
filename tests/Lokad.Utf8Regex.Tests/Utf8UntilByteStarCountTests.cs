@@ -131,7 +131,7 @@ public sealed class Utf8UntilByteStarCountTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void BoundedCounterObservesInterruptionAfterValidation(bool expire)
+    public void BoundedCounterObservesInterruption(bool expire)
     {
         long ticks = 0; var entered = false;
         using var token = new CancellationTokenSource();

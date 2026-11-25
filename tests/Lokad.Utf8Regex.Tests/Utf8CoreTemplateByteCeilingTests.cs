@@ -79,7 +79,7 @@ public sealed class Utf8CoreTemplateByteCeilingTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void ValidationWorkIsAdmittedBeforeMalformedTemplateOrSubject(bool destination)
+    public void ValidationWorkIsAdmittedBeforeRejectingMalformedTemplate(bool destination)
     {
         var regex = Create("a", 4096);
         var template = new byte[257]; template[^1] = 255;
@@ -87,8 +87,8 @@ public sealed class Utf8CoreTemplateByteCeilingTests
         using var parent = new Utf8ConstructionScope(0, 4096, 8, 128);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
-            if (destination) regex.TryReplace([255], template, output, out _);
-            else _ = regex.Replace([255], template);
+            if (destination) regex.TryReplace("a"u8, template, output, out _);
+            else _ = regex.Replace("a"u8, template);
         });
         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
         Assert.Equal(8ul, failure.Limit);

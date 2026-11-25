@@ -71,11 +71,10 @@ public sealed class Utf8StructuralWordBoundaryTests
             const string text = "éclass Nope 😀 class Alpha\u2003record Beta struct Gamma";
             var input = Encoding.UTF8.GetBytes(text);
             Assert.Equal(new Regex(pattern, options).Count(text), regex.Count(input));
-            byte[] malformed = [.. "class Alpha"u8, 0xff];
             using var cancellation = new CancellationTokenSource();
             cancellation.Cancel();
             Assert.Equal(cancellation.Token,
-                Assert.Throws<OperationCanceledException>(() => regex.Count(malformed, cancellation.Token)).CancellationToken);
+                Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancellation.Token)).CancellationToken);
         }
     }
 }

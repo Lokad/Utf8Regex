@@ -105,7 +105,7 @@ public sealed class Utf8BeginningSearchTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public void OriginalInterruptionCoversLongSearchAfterValidation(bool findFirst, bool expire)
+    public void OriginalInterruptionCoversLongSearch(bool findFirst, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();

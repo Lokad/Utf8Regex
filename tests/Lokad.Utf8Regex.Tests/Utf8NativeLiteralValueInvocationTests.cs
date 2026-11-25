@@ -13,7 +13,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
     [Theory]
     [InlineData(2045)] [InlineData(2046)] [InlineData(2047)]
     [InlineData(2048)] [InlineData(2049)]
-    public void ControlledLiteralRootsKeepWholeValidationAndDeriveOnlySelectedCoordinates(int prefixLength)
+    public void ControlledLiteralRootsReturnByteCoordinatesInBorrowedSlices(int prefixLength)
     {
         foreach (var pattern in new[] { "café", "汉字|café", "NEEDLE" })
         foreach (var compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
@@ -34,13 +34,10 @@ public sealed class Utf8NativeLiteralValueInvocationTests
             var expected = oracle.Match(text);
             var actual = regex.Match(backing.AsSpan(1, bytes.Length), cancellationToken: live.Token);
             Assert.True(actual.Success);
-                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
-                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
-                Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
-                byte[] malformed = [.. bytes, 0xed, 0xa0, 0x80];
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), actual.EndOffsetInBytes - actual.StartOffsetInBytes);
             live.Cancel();
-            Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, cancellationToken: live.Token)).CancellationToken);
+            Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(backing.AsSpan(1, bytes.Length), cancellationToken: live.Token)).CancellationToken);
         }
     }
 

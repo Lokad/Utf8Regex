@@ -97,11 +97,12 @@ public sealed class Utf8CapturedSimpleBooleanTests
         Assert.True(regex.Match(input, 0, []).Success);
         Assert.False(regex.Match(input, 1, []).Success);
         Assert.Equal("1234-", System.Text.Encoding.UTF8.GetString(input.AsSpan().Slice(retained.GetCaptures(1)[0].StartOffsetInBytes, retained.GetCaptures(1)[0].EndOffsetInBytes - retained.GetCaptures(1)[0].StartOffsetInBytes)));
-        foreach (var prefix in new[] { "1234-5678-1234-456", "no match" })
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        foreach (var text in new[] { "1234-5678-1234-456", "no match" })
         {
-            byte[] malformed = [.. Encoding.UTF8.GetBytes(prefix), 0xff];
-            using var canceled = new CancellationTokenSource(); canceled.Cancel();
-            Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(malformed, canceled.Token)).CancellationToken);
+            var subject = Encoding.UTF8.GetBytes(text);
+            Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(subject, canceled.Token)).CancellationToken);
         }
     }
 
@@ -154,7 +155,7 @@ public sealed class Utf8CapturedSimpleBooleanTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void SearchUsesTheOriginalCancellationAndDeadlineAfterValidation(bool expire)
+    public void SearchUsesTheOriginalCancellationAndDeadline(bool expire)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

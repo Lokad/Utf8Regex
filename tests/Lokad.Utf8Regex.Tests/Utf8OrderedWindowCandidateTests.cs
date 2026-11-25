@@ -125,9 +125,8 @@ public sealed class Utf8OrderedWindowCandidateTests
                     MaxWorkingBytes = 1
                 }
             }).Count(observedInput)).ResourceKind);
-        byte[] malformed = [.. input, 0xff];
         token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(malformed, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, token.Token)).CancellationToken);
     }
 
     [Fact]

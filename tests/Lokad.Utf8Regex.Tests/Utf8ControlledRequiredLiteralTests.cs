@@ -112,7 +112,7 @@ public sealed class Utf8ControlledRequiredLiteralTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public void ScreeningPollsOriginalAuthorityAfterValidation(bool count, bool expire)
+    public void ScreeningPollsOriginalInterruption(bool count, bool expire)
     {
         var input = Encoding.UTF8.GetBytes(new string('a', (1 << 20)));
         // Locate the next existing diagnostic interval after strict validation.

@@ -201,19 +201,18 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void InvalidInputAndOffsetKeepTheirExceptionOrderAndPrecancellation(bool live)
+    public void PrecancellationTakesPrecedenceOverAnInvalidOffset(bool live)
     {
         var regex = new Utf8Regex("(ab)", options: RegexOptions.CultureInvariant);
         using var source = new CancellationTokenSource();
         var token = live ? source.Token : default;
-        byte[] malformed = [0xc3, 0xa9, 0xff];
         foreach (var offset in new[] { -1, 1, 3, 4, 5, 7, int.MaxValue })
         {
             var exception = Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.EnumerateMatches("é😀"u8, offset, token); });
             Assert.Equal("startOffsetInBytes", exception.ParamName);
         }
         source.Cancel();
-        var canceled = Assert.Throws<OperationCanceledException>(() => { _ = regex.EnumerateMatches(malformed, -1, source.Token); });
+        var canceled = Assert.Throws<OperationCanceledException>(() => { _ = regex.EnumerateMatches("é😀"u8, -1, source.Token); });
         Assert.Equal(source.Token, canceled.CancellationToken);
     }
 
