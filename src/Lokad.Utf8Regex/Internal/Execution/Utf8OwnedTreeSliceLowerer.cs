@@ -293,17 +293,20 @@ internal static class Utf8OwnedTreeSliceLowerer
                 }
                 if (pendingLow >= 0) AppendRange(unicode, pendingLow, pendingHigh);
 
-                // A singleton such as Kelvin is already accepted by a folded
-                // mask containing K/k. Keep the complete class in the parser
-                // and omit its redundant Unicode table from the VM.
-                var needsUnicodeRanges = unicode.Count != 0;
-                if (foldCase && unicode.Count == 2 && unicode[1] == unicode[0] + 1 &&
-                    Rune.TryCreate(unicode[0], out var alias))
+                // The folded ASCII mask already covers each singleton in its
+                // case fibers. Drop the table only when it adds no members.
+                var covered = 0;
+                if (foldCase)
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
-                    needsUnicodeRanges = !Utf8SliceScalarClasses.MatchesMask(alias, mask, true, caseBehavior);
+                    for (; covered < unicode.Count; covered += 2)
+                    {
+                        if (unicode[covered + 1] != unicode[covered] + 1 ||
+                            !Rune.TryCreate(unicode[covered], out var alias)) break;
+                        Utf8ConstructionScope.ChargeWork(1);
+                        if (!Utf8SliceScalarClasses.MatchesMask(alias, mask, true, caseBehavior)) break;
+                    }
                 }
-                if (needsUnicodeRanges)
+                if (covered != unicode.Count)
                     categories.Add(Utf8SliceNode.CategorySetMember.Create(
                         Utf8SliceCategoryTable.ForScalarRanges(arena.Take(unicode, true)), false));
                 // Hybrid instructions consult the precomputed mask on ASCII;

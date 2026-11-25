@@ -131,6 +131,8 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData("(x{2})x", "xxxx")]
     [InlineData("(x)*-", "xxx-")]
     [InlineData("(?i:(x*))-", "XXX-")]
+    [InlineData(@"(?i)\A(?:([a-z0-9]+)/)?tail\z", "kK9/tail")]
+    [InlineData(@"(?i)\A(?:([a-z0-9é]+)/)?tail\z", "kKÉ9/tail")]
     [InlineData("(x*?)-", "xxx-")]
     [InlineData(@"(?=(x*))\1y", "xxxy")]
     [InlineData("(?<=(x{2}))y", "xxy")]
