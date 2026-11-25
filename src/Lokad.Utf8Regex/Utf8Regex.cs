@@ -512,7 +512,7 @@ public sealed partial class Utf8Regex : IDisposable
     private int OwnedSliceCountFromByte(
         ReadOnlySpan<byte> input, Utf8SliceProgram program, int startByte, CancellationToken token)
     {
-        var invocation = Utf8SliceInvocation.CreateExclusive(InvocationLimits, MatchTimeout, token);
+        Utf8SliceInvocation.InitializeExclusive(out var invocation, InvocationLimits, MatchTimeout, token, null);
         try
         {
             // Count consumes bytes only, without derived coordinate metadata.
