@@ -403,7 +403,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     {
         var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
         if (Pcre2GlobalOperationDriver.TryCreateCursor(_program, input, start, matchOptions, out var directCursor, budget))
-            return new Utf8Pcre2ValueMatchEnumerator(input, directCursor);
+            return new Utf8Pcre2ValueMatchEnumerator(input, directCursor, _programMemory);
         return EnumerateMatchesViaConfiguredBackend(input, start, matchOptions, invocation);
     }
 
@@ -433,7 +433,8 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                     _program.Request,
                     leadingAsciiByte,
                     slice.DisjointClassDelimiter,
-                    slice.Fallback.MinimumByteLength));
+                    slice.Fallback.MinimumByteLength),
+                _programMemory);
         }
 
         if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Pcre2Slice)
@@ -449,10 +450,10 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                 matchOptions,
                 _program.Request,
                 new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false));
-            return new Utf8Pcre2ValueMatchEnumerator(input, fallbackCursor);
+            return new Utf8Pcre2ValueMatchEnumerator(input, fallbackCursor, _programMemory);
         }
 
-        return default;
+        return new Utf8Pcre2ValueMatchEnumerator(_programMemory);
     }
 
     /// <summary>Creates a match cursor using an explicit start byte offset and per-operation options, retaining cancellation and cumulative limits through every advance.</summary>
@@ -467,7 +468,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var programUse = _programMemory?.Enter();
-        return EnumerateMatchesCore(input, startOffsetInBytes, matchOptions, cancellationToken).WithProgramMemory(_programMemory);
+        return EnumerateMatchesCore(input, startOffsetInBytes, matchOptions, cancellationToken);
     }
 
     private Utf8Pcre2ProbeResult ProbeCore(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,

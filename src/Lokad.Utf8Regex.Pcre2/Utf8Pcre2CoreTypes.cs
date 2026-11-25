@@ -337,7 +337,7 @@ public readonly ref struct Utf8Pcre2PartialMatchContext
 /// Closing the expression rejects later advances on every copy; Current remains valid. Use a persistent cursor to survive program close.</remarks>
 public ref struct Utf8Pcre2ValueMatchEnumerator
 {
-    private Utf8FundedStorage? _programMemory;
+    private readonly Utf8FundedStorage? _programMemory;
 
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Utf8Pcre2ValueMatchEnumerator>();
 
@@ -354,11 +354,16 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
     private Pcre2SliceGlobalMatchCursor _sliceMatches;
     private Pcre2ValueData _currentData;
 
+    internal Utf8Pcre2ValueMatchEnumerator(Utf8FundedStorage? programMemory)
+    {
+        _programMemory = programMemory;
+    }
+
     internal Utf8Pcre2ValueMatchEnumerator(
         ReadOnlySpan<byte> input,
-        Pcre2GlobalMatchCursor directMatches)
+        Pcre2GlobalMatchCursor directMatches,
+        Utf8FundedStorage? programMemory) : this(programMemory)
     {
-        this = default;
         _mode = Pcre2ValueMatchEnumeratorMode.Pcre2DirectGlobal;
         _input = input;
         _directMatches = directMatches;
@@ -366,9 +371,9 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
 
     internal Utf8Pcre2ValueMatchEnumerator(
         ReadOnlySpan<byte> input,
-        Pcre2SliceGlobalMatchCursor sliceMatches)
+        Pcre2SliceGlobalMatchCursor sliceMatches,
+        Utf8FundedStorage? programMemory) : this(programMemory)
     {
-        this = default;
         _mode = Pcre2ValueMatchEnumeratorMode.Pcre2Slice;
         _input = input;
         _sliceMatches = sliceMatches;
@@ -408,12 +413,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
             _sliceMatches.WorkingInvocation.Budget.ThrowIfCancellationRequested();
         using var use = _programMemory.Enter();
         return MoveNextCore();
-    }
-
-    internal Utf8Pcre2ValueMatchEnumerator WithProgramMemory(Utf8FundedStorage? memory)
-    {
-        _programMemory = memory;
-        return this;
     }
 
     private bool MoveNextCore()
