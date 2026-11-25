@@ -24,6 +24,9 @@ public sealed class Utf8ClassPrefixCandidateTests
         });
         Assert.True(bounded.IsMatch(input, source.Token));
         Assert.Equal(new Utf8CaptureRange(start, input.Length), bounded.Match(input, cancellationToken: source.Token));
+        Assert.False(bounded.IsMatch("Ω!: value clé: ."u8, source.Token));
+        Assert.False(bounded.IsMatch("clé: "u8, source.Token));
+        Assert.True(bounded.IsMatch("clé: . clé: β42"u8, source.Token));
 
         using var regex = new Utf8Regex(pattern);
         Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];

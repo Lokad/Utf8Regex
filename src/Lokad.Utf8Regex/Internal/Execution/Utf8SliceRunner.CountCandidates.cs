@@ -740,9 +740,18 @@ internal static partial class Utf8SliceRunner
             needle.Length == proof.LiteralLength;
         var literal = alignedWindow ? program.LeadingClassDelimiter.LiteralIndex : 0;
         var continuation = literal + needle.Length;
-        if (!(alignedWindow && proof.CanAcceptAfterPair) &&
+        if (alignedWindow && !proof.CanAcceptAfterPair)
+        {
+            // The prepared window cannot read captures. Look through its
+            // markers for the suffix shape; the verifier still meters them.
+            var code = program.Instructions;
+            var visits = Math.Clamp(code.Length - continuation, 0, Utf8SliceInstruction.LeadingCaptureMarkerLimit);
+            budget.ChargeWork((ulong)visits);
+            if (!CanProveRepeatPrefix(program, Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, continuation))) return 0;
+        }
+        else if (!alignedWindow &&
             (program.GroupCount != 0 || !CanProveRepeatPrefix(program, continuation) &&
-                (alignedWindow || !CanProveOptionalLiteralThenHybrid(program.Instructions, continuation, budget)))) return 0;
+                !CanProveOptionalLiteralThenHybrid(program.Instructions, continuation, budget))) return 0;
         budget.ChargeWork((ulong)needle.Length);
         return LiteralStartsAtInstruction(program, literal, needle) ? continuation : 0;
     }
