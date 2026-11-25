@@ -757,7 +757,7 @@ internal static partial class Utf8SliceRunner
     }
 
     private static bool CanProveOptionalLiteralThenHybrid(ReadOnlySpan<Utf8SliceInstruction> code, int index,
-        Utf8ConstructionBudget budget)
+        Utf8ConstructionBudget? budget = null)
     {
         if ((uint)index >= (uint)code.Length ||
             code[index] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: 1 } optional ||
@@ -766,7 +766,7 @@ internal static partial class Utf8SliceRunner
 
         for (var next = optional.A + 1; next < code.Length && next - optional.A <= 8; next++)
         {
-            budget.ChargeWork(1);
+            budget?.ChargeWork(1);
             var entry = code[next];
             if (entry is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }) continue;
             return entry is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 } &&
@@ -2778,13 +2778,14 @@ internal static partial class Utf8SliceRunner
         var available = Math.Min(input.Length - position, repeatMaximum);
         var categories = program.GetCompleteAsciiCategoryMask(atom);
         var completeCategory = categories != 0;
+        var negatedHybrid = atom is { Kind: Utf8SliceInstructionKind.Hybrid, B: not 0, D: 0 };
         ref readonly var exit = ref program.Instructions[repeat.A];
         // A greedy run with an unconditional empty tail can keep its
         // longest endpoint. Verify the tail in order for the final range.
         if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy ||
             available > remaining && (remaining < repeat.RepeatMinimum || !completeCategory &&
                 atom is not ({ Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
-                    { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })) ||
+                    { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 })) ||
             !(exit.RepeatExitRejectsShorterEndpoints || exit.RepeatExitSharesTerminalRun ||
                 repeatMaximum == long.MaxValue && (exit.RepeatExitAcceptsEmptyTail ||
                     completeCategory && repeat.A + 2 == program.Instructions.Length &&
@@ -2799,10 +2800,10 @@ internal static partial class Utf8SliceRunner
         else if (GetUnfoldedAsciiRange(atom, out var last) is >= 0 and var first)
             stop = candidate.IndexOfAnyExceptInRange((byte)first, last);
         else if (completeCategory || atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
-            { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
+            { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 })
         {
             var mask = program.SetMasks[atom.A];
-            stop = ScanAsciiMask(candidate, mask, category: false);
+            stop = ScanAsciiMask(candidate, mask, category: false, negated: negatedHybrid);
             if ((uint)stop < (uint)candidate.Length)
             {
                 var value = candidate[stop];
@@ -2810,6 +2811,7 @@ internal static partial class Utf8SliceRunner
                 {
                     if (value >= 128)
                     {
+                        if (negatedHybrid) return BranchedPrefixUndecided;
                         // A byte offset suffices for the minimum only when
                         // the unbounded repeat needs at most one scalar.
                         if (repeatMaximum != long.MaxValue || repeat.RepeatMinimum > 1 ||

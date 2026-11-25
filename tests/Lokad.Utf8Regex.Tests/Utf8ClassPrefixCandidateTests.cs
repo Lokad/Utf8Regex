@@ -269,6 +269,32 @@ public sealed class Utf8ClassPrefixCandidateTests
         if (found) Utf8MatchSequence.AssertRange(actual, text, expected.Index, expected.Length);
     }
 
+    [Fact]
+    public void PreparedNegatedRunsKeepGreedyEndpointsAndWideFallback()
+    {
+        const string pattern = @"https?://[^\s/?#]+[^\s?#]*(?:\?[^\s#]*)?";
+        var text = new string(' ', 260) + "http://?missing https://host/path?first?second#stop " +
+            "https://😀.test/path https://a/" + new string('v', 130) + "#tail";
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = new Regex(pattern).Matches(text);
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+
+        Assert.Equal(3, expected.Count);
+        Assert.Equal(expected.Count, regex.Count(input, source.Token));
+        var first = regex.Match(input, 0, slots, source.Token);
+        Utf8MatchSequence.AssertRange(first, text, expected[0].Index, expected[0].Length);
+        Assert.Equal(first, slots[0]);
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: source.Token);
+        foreach (Match match in expected)
+        {
+            Assert.True(cursor.MoveNext(out var result));
+            Utf8MatchSequence.AssertRange(result.Value, text, match.Index, match.Length);
+        }
+        Assert.False(cursor.MoveNext(out _));
+    }
+
     [Theory]
     [InlineData("None !Word? Valid next", true)]
     [InlineData("None !Word? Valid!", false)]

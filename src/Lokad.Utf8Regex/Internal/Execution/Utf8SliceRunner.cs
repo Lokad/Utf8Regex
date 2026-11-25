@@ -1081,7 +1081,9 @@ internal static partial class Utf8SliceRunner
             // Each nested proof branch spends a visit. Tight depth limits
             // stay with the VM's exact admission of individual choices.
             invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
-            CanProveRepeatPrefix(program, proofRepeatIndex);
+            (CanProveRepeatPrefix(program, proofRepeatIndex) ||
+                !existenceOnly && verifiedLeadingPrefix.Item1 == proofRepeatIndex &&
+                CanProveOptionalLiteralThenHybrid(program.Instructions, proofRepeatIndex));
         var lineProofStart = GetAnchoredLineProofStart(seekBeginning, first, ref invocation);
         if ((leading >= 0 || seekLiteral || hasClassWindow || lineProofStart != 0) && invocation.Ledger.ReservedBytes != 0)
         {
@@ -1666,6 +1668,9 @@ internal static partial class Utf8SliceRunner
         // Keep a leading boundary in the original verification order.
         var straightPrefixStart = reuseLeadingPrefix && leadingScalarIndex == 0 ? prefixContinuation : 0;
         var straightPrefixBytes = straightPrefixStart != 0 ? leadingPrefix.Length : 0;
+        var proveStraightSuffix = straightPrefixStart != 0 && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+            !program.ReadsCaptures && invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
+            CanProveOptionalLiteralThenHybrid(program.Instructions, straightPrefixStart);
         var terminalGuard = default(Utf8SliceInstruction);
         var terminalAssertion = prefixContinuation != 0 && !program.RightToLeft &&
             captureStarts.IsEmpty && captureEnds.IsEmpty &&
@@ -1940,11 +1945,13 @@ internal static partial class Utf8SliceRunner
                     continue;
                 }
                 Utf8SliceMatchOutcome outcome;
-                if (proveClassSuffix && position < whitespaceWindowEnd && verifiedPrefix.Item1 == classContinuation && provedEnd < 0 &&
-                    !MayMatchBranchedAsciiPrefix(program, input, position + verifiedPrefix.Item2, classContinuation,
-                        out provedEnd, proveMatch: true, BranchedPrefixInstructionLimit - classContinuation))
+                var proveSuffix = proveClassSuffix && position < whitespaceWindowEnd && verifiedPrefix.Item1 == classContinuation ||
+                    proveStraightSuffix && verifiedPrefix.Item1 == straightPrefixStart;
+                if (proveSuffix && provedEnd < 0 &&
+                    !MayMatchBranchedAsciiPrefix(program, input, position + verifiedPrefix.Item2, verifiedPrefix.Item1,
+                        out provedEnd, proveMatch: true, BranchedPrefixInstructionLimit - verifiedPrefix.Item1))
                 {
-                    // Every start in this window reaches the same suffix.
+                    // A class window shares the rejected suffix across its starts.
                     outcome = new(false, -1, Utf8ExecutionLimitKind.None);
                 }
                 else if (provedEnd >= 0)
