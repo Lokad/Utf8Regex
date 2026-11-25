@@ -763,10 +763,11 @@ internal static partial class Utf8SliceRunner
             }
             // Allow the same visits as the bounded interpreter, including
             // entering the repeat, consuming its LF delimiter and accepting.
-            if (seekBeginning && first.C < 0 && input.Length <= proofLimit - 3)
+            if (first.C < 0 && input.Length - fromByte <= proofLimit - 3)
             {
-                acceptedEnd = MatchAnchoredFoldedRepeat(program, input);
-                possible = acceptedEnd >= 0;
+                var length = MatchLeadingFoldedRepeat(program, input[fromByte..]);
+                possible = length >= 0;
+                acceptedEnd = possible ? fromByte + length : -1;
             }
             else if (first is { A: (int)Utf8SliceAnchorKind.Contiguous, C: > 0 } && input.Length - fromByte <= proofLimit - 3)
             {
@@ -809,7 +810,7 @@ internal static partial class Utf8SliceRunner
         return false;
     }
 
-    private static int MatchAnchoredFoldedRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input)
+    private static int MatchLeadingFoldedRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input)
     {
         if (input.IsEmpty) return -1;
         var code = program.Instructions;
@@ -821,6 +822,8 @@ internal static partial class Utf8SliceRunner
 
         var body = program.SetMasks[code[3].A];
         var end = width + ScanAsciiMask(input[width..], body, category: false);
+        if (code[6].Kind == Utf8SliceInstructionKind.Accept)
+            return end == input.Length ? end : ContinueFoldedAsciiMask(input, end, body, program.CaseBehavior);
         if (MatchesEndAnchor(input, end, code[6])) return end;
         end = ContinueFoldedAsciiMask(input, end, body, program.CaseBehavior);
         return MatchesEndAnchor(input, end, code[6]) ? end : -1;

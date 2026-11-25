@@ -236,6 +236,7 @@ internal readonly struct Utf8SliceInstruction
     // A leading Beginning anchor records a required first ASCII byte plus one,
     // or -1 for a folded scalar followed by a folded repeat and an end anchor.
     // A Contiguous anchor can record the exact literal width before a terminal LF-delimited line.
+    // It uses -1 for a folded scalar followed by a terminal folded repeat.
     // Capture markers can record where a consecutive marker run ends.
     internal int C { get; }
     // For a positive unfolded Set, the low byte is the first ASCII byte
@@ -496,13 +497,10 @@ internal sealed class Utf8SliceProgram
                 var proof = first.D;
                 if (proof == 0 && first.B == 0 && repeatCount != 0)
                     proof = Utf8SliceRunner.PrepareAnchoredRepeatProof(this, Utf8ConstructionScope.CurrentBudget);
-                if (proof == -1 && first.B == 0 && instructions is
-                    [_, { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 1 } head,
-                        { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true, RepeatMinimum: 0, RepeatMaximum: long.MaxValue },
-                        { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 1 } body, _, _,
-                        { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd, B: 0 },
-                        { Kind: Utf8SliceInstructionKind.Accept }] &&
-                    setMasks[head.A].Length == 16 && setMasks[body.A].Length == 16)
+                if (proof == -1 && first.B == 0 && instructions.Length == 8 &&
+                    instructions[6] is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd, B: 0 } &&
+                    instructions[7].Kind == Utf8SliceInstructionKind.Accept &&
+                    HasFoldedLeadingRepeat(instructions, setMasks))
                     ascii = -1;
                 if (ascii != 0 || proof != 0)
                     instructions[0] = new(first.Kind, first.A, first.B, ascii, proof);
@@ -531,13 +529,16 @@ internal sealed class Utf8SliceProgram
                         (index == 1 || repeat.RepeatMaximum == long.MaxValue) &&
                         instructions[repeat.A].RepeatExitAcceptsEmptyTail))
                 {
-                    var linePrefixWidth = exactPrefix && index > 1 && instructions.AsSpan(index) is
+                    var terminalPrefix = exactPrefix && index > 1 && instructions.AsSpan(index) is
                     [
                         { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: long.MaxValue, HasSingleAtomBody: true },
                         { Kind: Utf8SliceInstructionKind.Dot, A: 0 }, _, _,
                         { Kind: Utf8SliceInstructionKind.Literal, A: '\n', B: 0 }, { Kind: Utf8SliceInstructionKind.Accept }
                     ] ? index - 1 : 0;
-                    instructions[0] = new(first.Kind, first.A, first.B, linePrefixWidth, index == 1 ? 1 : -1);
+                    if (instructions.Length == 7 && instructions[6].Kind == Utf8SliceInstructionKind.Accept &&
+                        HasFoldedLeadingRepeat(instructions, setMasks))
+                        terminalPrefix = -1;
+                    instructions[0] = new(first.Kind, first.A, first.B, terminalPrefix, index == 1 ? 1 : -1);
                 }
             }
             else if (!canMatchEmpty && !hasContiguousAnchor)
@@ -636,6 +637,13 @@ internal sealed class Utf8SliceProgram
             }
         }
     }
+
+    private static bool HasFoldedLeadingRepeat(ReadOnlySpan<Utf8SliceInstruction> instructions, byte[][] setMasks)
+        => instructions is
+            [_, { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 1 } head,
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true, RepeatMinimum: 0, RepeatMaximum: long.MaxValue },
+                { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 1 } body, ..] &&
+            setMasks[head.A].Length == 16 && setMasks[body.A].Length == 16;
 
     internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings,
         bool isRoot, (ulong[]? Closures, byte[]? Leaves, uint Conditions) nonBacktrackingOrdered = default,
