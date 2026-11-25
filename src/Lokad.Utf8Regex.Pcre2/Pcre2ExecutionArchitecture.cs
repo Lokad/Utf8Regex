@@ -1725,8 +1725,8 @@ internal static class Pcre2GlobalOperationDriver
     {
         var program = compiledProgram.Operations.Count;
 
-        if (matchOptions == Pcre2MatchOptions.None && program is Pcre2BacktrackingDirectProgram categoryProgram &&
-            Pcre2SliceDriver.TryCountGeneralCategory(categoryProgram.Program, input[start.Value..], ref invocation, out result))
+        if (matchOptions == Pcre2MatchOptions.None && program is Pcre2BacktrackingDirectProgram tokenProgram &&
+            Pcre2SliceDriver.TryCountSingleToken(tokenProgram.Program, input[start.Value..], ref invocation, out result))
             return true;
 
         if (program is Pcre2FiniteLiteralLanguageDirectProgram finiteLiteralProgram &&

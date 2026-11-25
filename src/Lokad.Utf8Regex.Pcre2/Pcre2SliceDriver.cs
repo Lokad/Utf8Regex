@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -400,7 +401,7 @@ internal static class Pcre2SliceDriver
         finally { workspace.Release(ref invocation); }
     }
 
-    internal static bool TryCountGeneralCategory(Pcre2BacktrackingProgram program, ReadOnlySpan<byte> input,
+    internal static bool TryCountSingleToken(Pcre2BacktrackingProgram program, ReadOnlySpan<byte> input,
         scoped ref Utf8SliceInvocation invocation, out int count)
     {
         count = 0;
@@ -410,20 +411,49 @@ internal static class Pcre2SliceDriver
             code.Length is < 2 or > 64 || code[^1].Kind != Pcre2BacktrackingInstructionKind.Accept)
             return false;
 
-        // A complete one-scalar program needs no capture state for Count.
+        // A complete consuming token needs no capture state for Count.
         var index = 0;
         while (code[index].Kind == Pcre2BacktrackingInstructionKind.CaptureStart) index++;
         ref readonly var instruction = ref code[index++];
-        if (instruction.Kind is not (Pcre2BacktrackingInstructionKind.Token or Pcre2BacktrackingInstructionKind.CaptureToken) ||
-            instruction.Token.Kind != Pcre2CharacterTokenKind.CharacterClass ||
-            (instruction.Token.Options & Pcre2CharacterOptions.Caseless) != 0) return false;
+        if (instruction.Kind is not (Pcre2BacktrackingInstructionKind.Token or Pcre2BacktrackingInstructionKind.CaptureToken))
+            return false;
         while (code[index].Kind == Pcre2BacktrackingInstructionKind.CaptureEnd) index++;
-        var characterClass = instruction.Token.CharacterClass;
-        if (index != code.Length - 1 || !characterClass.TryGetGeneralCategories(out var categories)) return false;
+        if (index != code.Length - 1) return false;
 
-        ThrowIfSliceBreached(Utf8UnicodeCategoryExecutor.TryCount(input, categories,
-            characterClass.AsciiSet.ActualLowMask, characterClass.AsciiSet.ActualHighMask, ref invocation, out count));
+        var token = instruction.Token;
+        if (token.Kind == Pcre2CharacterTokenKind.CharacterClass &&
+            (token.Options & Pcre2CharacterOptions.Caseless) == 0 &&
+            token.CharacterClass.TryGetGeneralCategories(out var categories))
+        {
+            ThrowIfSliceBreached(Utf8UnicodeCategoryExecutor.TryCount(input, categories,
+                token.CharacterClass.AsciiSet.ActualLowMask, token.CharacterClass.AsciiSet.ActualHighMask, ref invocation, out count));
+            return true;
+        }
+
+        if (token.Kind != Pcre2CharacterTokenKind.ExtendedGraphemeCluster) return false;
+        count = CountGraphemeClusters(input, program.Request.DefaultLimits, ref invocation);
         return true;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CountGraphemeClusters(ReadOnlySpan<byte> input, Utf8Pcre2ExecutionLimits limits,
+        scoped ref Utf8SliceInvocation invocation)
+    {
+        ThrowIfSliceBreached(invocation.TryReserveWorking(0));
+        var budget = new Pcre2ResourceBudget(limits, invocation, false);
+        // Each cluster begins at the preceding match end. The existing width
+        // matcher polls inside long clusters under the same authority.
+        var count = 0;
+        var position = 0;
+        while (position < input.Length && Pcre2GraphemeClusterSemantics.TryGetWidth(input, position, ref budget, out var width))
+        {
+            count++;
+            position += width;
+        }
+        var hook = invocation.CheckpointHook;
+        invocation = budget.WorkingInvocation;
+        invocation.CheckpointHook = hook;
+        return count;
     }
 
     // The caller proves a non-empty left-to-right language, so no PCRE2 empty

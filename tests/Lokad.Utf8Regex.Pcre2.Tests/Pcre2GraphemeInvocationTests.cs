@@ -35,6 +35,11 @@ public sealed class Pcre2GraphemeInvocationTests
             if (start < bytes.Length && (bytes[start] & 0xc0) == 0x80) continue;
             Assert.Equal(start < bytes.Length, direct.IsMatch(storage.AsSpan(2, bytes.Length), start));
             Assert.Equal(start < bytes.Length, finite.IsMatch(storage.AsSpan(2, bytes.Length), start));
+            var cursor = direct.EnumerateMatches(storage.AsSpan(2, bytes.Length), start);
+            var count = 0;
+            while (cursor.MoveNext()) count++;
+            Assert.Equal(count, direct.Count(storage.AsSpan(2, bytes.Length), start));
+            Assert.Equal(count, finite.Count(storage.AsSpan(2, bytes.Length), start));
         }
     }
 
