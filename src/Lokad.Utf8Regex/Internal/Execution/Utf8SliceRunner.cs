@@ -1069,14 +1069,7 @@ internal static partial class Utf8SliceRunner
             // Each nested proof branch spends a visit. Tight depth limits
             // stay with the VM's exact admission of individual choices.
             invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
-            program.Instructions[proofRepeatIndex] is
-                { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true, RepeatMaximum: > 4 } prefixRepeat &&
-            (program.Instructions[prefixRepeat.A].RepeatExitRejectsShorterEndpoints ||
-                program.Instructions[prefixRepeat.A].RepeatExitSharesTerminalRun ||
-                program.Instructions[prefixRepeat.A].RepeatExitAcceptsEmptyTail) &&
-            (program.Instructions[proofRepeatIndex + 1] is
-                { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } ||
-                program.GetCompleteAsciiCategoryMask(program.Instructions[proofRepeatIndex + 1]) != 0);
+            CanProveRepeatPrefix(program, proofRepeatIndex);
         var lineProofStart = GetAnchoredLineProofStart(seekBeginning, first, ref invocation);
         if ((leading >= 0 || seekLiteral || hasClassWindow || lineProofStart != 0) && invocation.Ledger.ReservedBytes != 0)
         {

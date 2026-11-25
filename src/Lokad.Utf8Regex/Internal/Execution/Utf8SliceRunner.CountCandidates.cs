@@ -730,15 +730,29 @@ internal static partial class Utf8SliceRunner
             canReuse, canAccept, excludes);
     }
 
-    internal static bool PrepareRequiredClassPair(Utf8SliceProgram program, ReadOnlySpan<byte> needle,
+    internal static bool PrepareRequiredClassWindow(Utf8SliceProgram program, ReadOnlySpan<byte> needle,
         Utf8ConstructionBudget budget)
     {
         if (program.IsNonBacktracking || program.IgnoreCase ||
-            program.LeadingClassWindowProof is not { CanAcceptAfterPair: true, ExcludesDelimiter: true } proof ||
+            program.LeadingClassWindowProof is not { CanReusePrefix: true, ExcludesDelimiter: true } proof ||
             needle.Length != proof.LiteralLength) return false;
-        budget.ChargeWork((ulong)needle.Length);
-        return LiteralStartsAtInstruction(program, program.LeadingClassDelimiter.LiteralIndex, needle);
+        budget.ChargeWork((ulong)needle.Length + 1);
+        var literal = program.LeadingClassDelimiter.LiteralIndex;
+        return (proof.CanAcceptAfterPair || program.GroupCount == 0 &&
+                CanProveRepeatPrefix(program, literal + needle.Length)) &&
+            LiteralStartsAtInstruction(program, literal, needle);
     }
+
+    private static bool CanProveRepeatPrefix(Utf8SliceProgram program, int index)
+        => (uint)index < (uint)program.Instructions.Length &&
+            program.Instructions[index] is
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true, RepeatMaximum: > 4 } repeat &&
+            (program.Instructions[repeat.A].RepeatExitRejectsShorterEndpoints ||
+                program.Instructions[repeat.A].RepeatExitSharesTerminalRun ||
+                program.Instructions[repeat.A].RepeatExitAcceptsEmptyTail) &&
+            (program.Instructions[index + 1] is
+                { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } ||
+                program.GetCompleteAsciiCategoryMask(program.Instructions[index + 1]) != 0);
 
     private static byte[][]? GetAlignedDelimiterAlternatives(Utf8SliceProgram program, int index,
         in PreparedSearcher search)
@@ -1343,20 +1357,62 @@ internal static partial class Utf8SliceRunner
         return start == limit || input[start - 1] < 128 ? start : -1;
     }
 
-    internal static Utf8SliceSearchOutcome FindPreparedClassPair(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int position, in PreparedSubstringSearch search, int screenedDelimiter, ref Utf8SliceInvocation invocation)
+    internal static bool TryFindPreparedClassWindow(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        ref int position, in PreparedSubstringSearch search, int screenedDelimiter, ref Utf8SliceInvocation invocation,
+        out Utf8SliceSearchOutcome outcome)
     {
+        outcome = default;
+        var proof = program.LeadingClassWindowProof;
+        if (!proof.CanAcceptAfterPair && invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit)
+            return false;
         invocation.Budget.ThrowIfCancellationRequested();
         if ((uint)position > (uint)input.Length || position < input.Length && (input[position] & 0xC0) == 0x80)
-            return new(false, -1, -1, Utf8ExecutionLimitKind.None);
+        {
+            outcome = new(false, -1, -1, Utf8ExecutionLimitKind.None);
+            return true;
+        }
 
-        // Preparation established the same delimiter and complete pair as
-        // candidate discovery. Keep its single-window admission step.
-        var breach = invocation.TryChargeStep();
-        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
-        var (literal, leadingClass, _, _, _) = program.LeadingClassDelimiter;
-        return FindAlignedClassPair(program, input, position, leadingClass, (byte)literal, search,
-            program.LeadingClassWindowProof.SuffixAfter(search.Length), screenedDelimiter, ref invocation);
+        // Preparation established an exact, excluded delimiter after one
+        // required run. All its starts therefore reach the same continuation.
+        var breach = proof.CanAcceptAfterPair ? invocation.TryChargeStep() : invocation.TryChargeInputStep();
+        var (literal, leadingClass, instruction, _, _) = program.LeadingClassDelimiter;
+        if (breach == Utf8ExecutionLimitKind.None && proof.CanAcceptAfterPair)
+        {
+            outcome = FindAlignedClassPair(program, input, position, leadingClass, (byte)literal, search,
+                proof.SuffixAfter(search.Length), screenedDelimiter, ref invocation);
+            return true;
+        }
+        if (breach == Utf8ExecutionLimitKind.None && invocation.Ledger.ReservedBytes != 0)
+            breach = invocation.TryReserveWorking(0);
+        if (breach == Utf8ExecutionLimitKind.None && screenedDelimiter > position &&
+            TryReadScalar(input, screenedDelimiter, true, out var scalar, out var width))
+        {
+            breach = TryMatchScalarClass(program, program.Instructions[leadingClass], scalar, ref invocation, out var member);
+            if (breach == Utf8ExecutionLimitKind.None && member)
+            {
+                var continuation = instruction + search.Length;
+                if (MayMatchBranchedAsciiPrefix(program, input, screenedDelimiter + search.Length, continuation,
+                    out var end, proveMatch: true, BranchedPrefixInstructionLimit - continuation))
+                {
+                    if (end < 0) return false;
+                    breach = invocation.TryChargeInputStep();
+                    if (breach == Utf8ExecutionLimitKind.None)
+                    {
+                        outcome = new(true, screenedDelimiter - width, end, breach);
+                        return true;
+                    }
+                }
+            }
+        }
+        if (breach == Utf8ExecutionLimitKind.None)
+        {
+            // An excluded byte prevents any earlier start from reaching a
+            // later delimiter. Retain the next byte for overlapping needles.
+            position = screenedDelimiter + 1;
+            return false;
+        }
+        outcome = new(false, -1, -1, breach);
+        return true;
     }
 
     private static Utf8SliceSearchOutcome FindAlignedClassPair(Utf8SliceProgram program, ReadOnlySpan<byte> input,

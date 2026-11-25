@@ -130,6 +130,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         });
         using var source = new CancellationTokenSource();
         var prefix = "Ω " + string.Concat(Enumerable.Repeat("a@label! x@.bar; t@p.; ", 64));
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(prefix), source.Token));
         var input = Encoding.UTF8.GetBytes(prefix + "u@b.example");
         Assert.True(regex.IsMatch(input, source.Token));
         Assert.Equal(new Utf8CaptureRange(Encoding.UTF8.GetByteCount(prefix), input.Length),
@@ -140,9 +141,12 @@ public sealed class Utf8ClassPrefixCandidateTests
         {
             var value = "u@" + new string('a', length) + "β.γ";
             var bytes = Encoding.UTF8.GetBytes("Ω " + value + new string('!', 256));
+            Assert.True(regex.IsMatch(bytes, source.Token));
             Assert.Equal(new Utf8CaptureRange(3, 3 + Encoding.UTF8.GetByteCount(value)),
                 regex.Match(bytes, cancellationToken: source.Token));
         }
+
+        Assert.True(regex.IsMatch("é@@β! λ@b.cd"u8, source.Token));
     }
 
     [Fact]
