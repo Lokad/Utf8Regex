@@ -361,8 +361,6 @@ internal readonly record struct Pcre2CandidateWindowConstraint(
 
 internal readonly struct Pcre2CandidateSearchProgram
 {
-    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2CandidateSearchProgram>();
-
     private Pcre2CandidateSearchProgram(
         Pcre2CandidateSearchKind kind,
         PreparedSearcher searcher,
@@ -1948,8 +1946,6 @@ internal ref struct Pcre2GlobalMatchCursor
     internal Pcre2ResultControl WorkingBufferControl => _kind == Pcre2GlobalCursorKind.Direct
         ? _direct.WorkingBufferControl : _literalFamily.WorkingBufferControl;
 
-    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2GlobalMatchCursor>();
-
     private readonly Pcre2GlobalCursorKind _kind;
     private Pcre2LiteralFamilyGlobalMatchCursor _literalFamily;
     private Pcre2DirectGlobalMatchCursor _direct;
@@ -2079,8 +2075,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
 {
     [UnscopedRef]
     internal Pcre2ResultControl WorkingBufferControl => new(ref _budget);
-
-    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2DirectGlobalMatchCursor>();
 
     private readonly Pcre2DirectGlobalCursorKind _kind;
     private readonly Pcre2LiteralProgram? _literalProgram;
@@ -2356,8 +2350,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
 
 internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
 {
-    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2LiteralFamilyGlobalMatchCursor>();
-
     private Utf8PreparedValueMatchEnumerator _enumerator;
     private ReadOnlySpan<byte> _input;
     private readonly Pcre2FiniteLiteralBoundaryProjection? _boundaryProjection;
@@ -2408,8 +2400,6 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
 
 internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
 {
-    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2BacktrackingDetailedGlobalMatchCursor>();
-
     private readonly Pcre2BacktrackingProgram _program;
     private readonly Pcre2CandidateSearchPlan _candidateSearch;
     private ReadOnlySpan<byte> _input;
@@ -2733,10 +2723,6 @@ internal sealed class Pcre2ExecutionDiagnosticsCollector
 
 internal struct Pcre2ResourceBudget : IUtf8InvocationBufferControl
 {
-    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2ResourceBudget>();
-
-    internal static int DebugDiagnosticsSizeInBytes => Unsafe.SizeOf<Pcre2ExecutionDiagnostics>();
-
     // Controlled cursor copies share enforcement while their positions and
     // profile diagnostic counts stay local. Default unlimited runs stay inline.
     private Utf8SliceInvocation _invocation;

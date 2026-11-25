@@ -339,14 +339,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
 {
     private readonly Utf8FundedStorage? _programMemory;
 
-    internal static int DebugSizeInBytes => Unsafe.SizeOf<Utf8Pcre2ValueMatchEnumerator>();
-
-    internal static int DebugDirectCursorSizeInBytes => Unsafe.SizeOf<Pcre2GlobalMatchCursor>();
-    internal static int DebugSliceCursorSizeInBytes => Unsafe.SizeOf<Pcre2SliceGlobalMatchCursor>();
-
     internal static int DebugValueDataSizeInBytes => Unsafe.SizeOf<Pcre2ValueData>();
-
-    internal static int DebugGroupDataSizeInBytes => Unsafe.SizeOf<Pcre2GroupData>();
 
     private readonly Pcre2ValueMatchEnumeratorMode _mode;
     private readonly ReadOnlySpan<byte> _input;

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using global::Lokad.Utf8Regex;
@@ -581,21 +582,21 @@ internal static partial class BenchmarkInspectReporter
 
     private static void WritePcre2EnumeratorLayout()
     {
-        Console.WriteLine($"ValueEnumeratorB  : {Utf8Pcre2ValueMatchEnumerator.DebugSizeInBytes}");
-        Console.WriteLine($"GlobalCursorB     : {Pcre2GlobalMatchCursor.DebugSizeInBytes}");
-        Console.WriteLine($"DirectCursorB     : {Pcre2DirectGlobalMatchCursor.DebugSizeInBytes}");
-        Console.WriteLine($"ResourceBudgetB   : {Pcre2ResourceBudget.DebugSizeInBytes}");
-        Console.WriteLine($"DiagnosticsB      : {Pcre2ResourceBudget.DebugDiagnosticsSizeInBytes}");
-        Console.WriteLine($"CandidateSearchB  : {Pcre2CandidateSearchProgram.DebugSizeInBytes}");
-        Console.WriteLine($"SliceCursorB      : {Utf8Pcre2ValueMatchEnumerator.DebugSliceCursorSizeInBytes}");
+        Console.WriteLine($"ValueEnumeratorB  : {Unsafe.SizeOf<Utf8Pcre2ValueMatchEnumerator>()}");
+        Console.WriteLine($"GlobalCursorB     : {Unsafe.SizeOf<Pcre2GlobalMatchCursor>()}");
+        Console.WriteLine($"DirectCursorB     : {Unsafe.SizeOf<Pcre2DirectGlobalMatchCursor>()}");
+        Console.WriteLine($"ResourceBudgetB   : {Unsafe.SizeOf<Pcre2ResourceBudget>()}");
+        Console.WriteLine($"DiagnosticsB      : {Unsafe.SizeOf<Pcre2ExecutionDiagnostics>()}");
+        Console.WriteLine($"CandidateSearchB  : {Unsafe.SizeOf<Pcre2CandidateSearchProgram>()}");
+        Console.WriteLine($"SliceCursorB      : {Unsafe.SizeOf<Pcre2SliceGlobalMatchCursor>()}");
         Console.WriteLine($"Utf8OperationCurB : {Utf8OperationMatchCursor.DebugSizeInBytes}");
         Console.WriteLine($"Utf8SearchPlanB   : {Utf8OperationMatchCursor.DebugSearchPlanSizeInBytes}");
         Console.WriteLine($"Utf8SmallFamilyB  : {Utf8OperationMatchCursor.DebugSmallLiteralFamilySizeInBytes}");
         Console.WriteLine($"Utf8SearchOpB     : {Utf8OperationMatchCursor.DebugSearchOperationPlanSizeInBytes}");
         Console.WriteLine($"ValueDataB        : {Utf8Pcre2ValueMatchEnumerator.DebugValueDataSizeInBytes}");
-        Console.WriteLine($"GroupDataB        : {Utf8Pcre2ValueMatchEnumerator.DebugGroupDataSizeInBytes}");
-        Console.WriteLine($"LiteralFamilyCurB : {Pcre2LiteralFamilyGlobalMatchCursor.DebugSizeInBytes}");
-        Console.WriteLine($"DetailedCursorB   : {Pcre2BacktrackingDetailedGlobalMatchCursor.DebugSizeInBytes}");
+        Console.WriteLine($"GroupDataB        : {Unsafe.SizeOf<Pcre2GroupData>()}");
+        Console.WriteLine($"LiteralFamilyCurB : {Unsafe.SizeOf<Pcre2LiteralFamilyGlobalMatchCursor>()}");
+        Console.WriteLine($"DetailedCursorB   : {Unsafe.SizeOf<Pcre2BacktrackingDetailedGlobalMatchCursor>()}");
     }
 
     private static int ExecutePcre2DirectLiteralFamilyIndexSum(Utf8Pcre2BenchmarkContext context)

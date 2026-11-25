@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -21,21 +22,9 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Fact]
-    public void EnumeratorLayoutDiagnosticsReportEveryComponent()
+    public void ExecutionBudgetIsSmallerThanDiagnosticSnapshot()
     {
-        Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugSizeInBytes > 0);
-        Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugDirectCursorSizeInBytes > 0);
-        Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugSliceCursorSizeInBytes > 0);
-        Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugValueDataSizeInBytes > 0);
-        Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugGroupDataSizeInBytes > 0);
-        Assert.True(Utf8OperationMatchCursor.DebugSizeInBytes > 0);
-        Assert.True(Pcre2GlobalMatchCursor.DebugSizeInBytes > 0);
-        Assert.True(Pcre2DirectGlobalMatchCursor.DebugSizeInBytes > 0);
-        Assert.True(Pcre2ResourceBudget.DebugSizeInBytes > 0);
-        Assert.True(Pcre2ResourceBudget.DebugSizeInBytes < Pcre2ResourceBudget.DebugDiagnosticsSizeInBytes);
-        Assert.True(Pcre2CandidateSearchProgram.DebugSizeInBytes > 0);
-        Assert.True(Pcre2LiteralFamilyGlobalMatchCursor.DebugSizeInBytes > 0);
-        Assert.True(Pcre2BacktrackingDetailedGlobalMatchCursor.DebugSizeInBytes > 0);
+        Assert.True(Unsafe.SizeOf<Pcre2ResourceBudget>() < Unsafe.SizeOf<Pcre2ExecutionDiagnostics>());
     }
 
     [Fact]
@@ -56,17 +45,17 @@ public sealed class Pcre2ExecutionArchitectureTests
         }
         // Keep the actual cursor footprint bounded without prescribing a field
         // name or the class used to reference immutable candidate-search state.
-        Assert.InRange(Pcre2DirectGlobalMatchCursor.DebugSizeInBytes, 1, 64 * IntPtr.Size);
-        Assert.InRange(Pcre2BacktrackingDetailedGlobalMatchCursor.DebugSizeInBytes, 1, 64 * IntPtr.Size);
+        Assert.InRange(Unsafe.SizeOf<Pcre2DirectGlobalMatchCursor>(), 1, 64 * IntPtr.Size);
+        Assert.InRange(Unsafe.SizeOf<Pcre2BacktrackingDetailedGlobalMatchCursor>(), 1, 64 * IntPtr.Size);
     }
 
     [Fact]
     public void Pcre2GlobalCursorCarriesOneSharedDirectRouteState()
     {
         Assert.True(
-            Pcre2GlobalMatchCursor.DebugSizeInBytes <=
-            Pcre2DirectGlobalMatchCursor.DebugSizeInBytes +
-            Pcre2LiteralFamilyGlobalMatchCursor.DebugSizeInBytes +
+            Unsafe.SizeOf<Pcre2GlobalMatchCursor>() <=
+            Unsafe.SizeOf<Pcre2DirectGlobalMatchCursor>() +
+            Unsafe.SizeOf<Pcre2LiteralFamilyGlobalMatchCursor>() +
             (2 * IntPtr.Size));
     }
 
