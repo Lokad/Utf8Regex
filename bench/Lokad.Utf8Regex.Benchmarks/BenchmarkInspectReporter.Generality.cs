@@ -130,8 +130,18 @@ internal static partial class BenchmarkInspectReporter
         {
             _pattern = pattern; _text = text; _input = Encoding.UTF8.GetBytes(text); _token = token;
             _boundaries = new int[text.Length + 1];
-            for (var i = 0; i < text.Length; i++) _boundaries[i + 1] = _boundaries[i] + Encoding.UTF8.GetByteCount(text.AsSpan(i, 1));
+            var utf8 = 0;
+            var utf16 = 0;
+            foreach (var scalar in text.EnumerateRunes())
+            {
+                // A reference capture inside a surrogate pair has no byte boundary.
+                if (scalar.Utf16SequenceLength == 2) _boundaries[utf16 + 1] = -1;
+                utf16 += scalar.Utf16SequenceLength;
+                utf8 += scalar.Utf8SequenceLength;
+                _boundaries[utf16] = utf8;
+            }
             _start = text.Length / 2;
+            if (_boundaries[_start] < 0) _start--;
             _core = [Create(), Create(timeout: true), Create(limits: true), Create(timeout: true, limits: true), Create(timeout: true, limits: true, compiled: true)];
             _oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
             _compiled = new Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled, Regex.InfiniteMatchTimeout);
