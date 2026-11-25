@@ -99,30 +99,36 @@ public sealed class Utf8ScalarDiscoveryBudgetTests
     private static Utf8ExecutionLimitKind Find(Utf8SliceProgram program, byte[] input, bool histories,
         int start, int end, int[] captureStarts, int[] captureLengths, ref Utf8SliceInvocation invocation)
     {
-        var outcome = Utf8SliceRunner.TryFindFirst(program, input, program.RightToLeft ? input.Length : 0,
-            new int[program.GroupCount], new int[program.GroupCount], histories, ref invocation);
+        var workspace = new Utf8SliceRunner.AttemptWorkspace();
+        var results = new Utf8InvocationResultLedger();
         try
         {
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, program.RightToLeft ? input.Length : 0,
+                new int[program.GroupCount], new int[program.GroupCount], histories, ref workspace, ref invocation);
             if (outcome.Breach == Utf8ExecutionLimitKind.None)
             {
                 Assert.True(outcome.Found);
                 Assert.Equal((start, end), (outcome.StartByte, outcome.EndByte));
                 if (histories)
                 {
+                    var held = invocation.Ledger.ReservedBytes;
+                    var snapshot = workspace.Stacks.SnapshotHistory(input, program.GroupNumbers, outcome.StartByte, outcome.EndByte,
+                        ref results, ref invocation);
                     Assert.Equal(captureStarts.Zip(captureLengths, static (start, length) => (start, start + length)),
-                        outcome.CaptureHistory?[0]);
-                    Assert.Equal(13UL + Utf8SliceHistoryAdmissionTests.HistoryBytes(
-                        outcome.CaptureHistory ?? throw new InvalidOperationException()), invocation.Ledger.ReservedBytes);
+                        Utf8SliceHistoryAdmissionTests.CaptureEdges(snapshot, program.GroupNumbers[1]));
+                    Assert.Equal(held + Utf8SliceHistoryAdmissionTests.HistoryBytes(snapshot), invocation.Ledger.ReservedBytes);
                 }
             }
-            else
-            {
-                Assert.False(outcome.Found);
-                Assert.Null(outcome.CaptureHistory);
-            }
+            else Assert.False(outcome.Found);
             return outcome.Breach;
         }
-        finally { Utf8SliceRunner.ReleaseHistory(outcome.CaptureHistory, ref invocation); }
+        catch (InvalidOperationException) when (invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { return invocation.Budget.LimitBreach; }
+        finally
+        {
+            results.Release(ref invocation);
+            workspace.Release(ref invocation);
+        }
     }
 
     [Fact]
@@ -131,23 +137,28 @@ public sealed class Utf8ScalarDiscoveryBudgetTests
         var regex = new Utf8Regex("(?<x>.)+", options: RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Scalar program missing.");
         var input = System.Text.Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", 4096)));
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        Assert.True(Utf8SliceRunner.TryFindFirst(program, input, 0, new int[1], new int[1], false, ref baseline).Found);
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
+        var workspace = new Utf8SliceRunner.AttemptWorkspace();
+        var results = new Utf8InvocationResultLedger();
         var entered = false;
-        invocation.CheckpointHook = steps =>
+        try
         {
-            // The identical VM without materialization has already completed.
-            if (steps <= baseline.Budget.Steps) return;
-            entered = true;
-            source.Cancel();
-        };
-        var error = Assert.Throws<OperationCanceledException>(() =>
-            Utf8SliceRunner.TryFindFirst(program, input, 0, new int[1], new int[1], true, ref invocation));
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, new int[1], new int[1], true,
+                ref workspace, ref invocation);
+            Assert.True(outcome.Found);
+            invocation.CheckpointHook = _ => { entered = true; source.Cancel(); };
+            var error = Assert.Throws<OperationCanceledException>(() => workspace.Stacks.SnapshotHistory(input,
+                program.GroupNumbers, outcome.StartByte, outcome.EndByte, ref results, ref invocation));
+            Assert.Equal(source.Token, error.CancellationToken);
+        }
+        finally
+        {
+            results.Release(ref invocation);
+            workspace.Release(ref invocation);
+        }
         Assert.True(entered);
-        Assert.Equal(source.Token, error.CancellationToken);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
     }
 }

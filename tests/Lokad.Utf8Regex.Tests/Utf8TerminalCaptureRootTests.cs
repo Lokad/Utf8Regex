@@ -110,7 +110,6 @@ public sealed class Utf8TerminalCaptureRootTests
         var result = Utf8SliceRunner.TryMatchAt(program, input, start, starts, ends, true, ref invocation,
             collectHistory: history);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
-        Utf8SliceRunner.ReleaseHistory(result.CaptureHistory, ref invocation);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         return (result.IsMatch, result.EndIndex, starts, ends);
     }

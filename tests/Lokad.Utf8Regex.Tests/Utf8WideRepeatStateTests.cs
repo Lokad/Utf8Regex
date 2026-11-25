@@ -190,7 +190,7 @@ public sealed class Utf8WideRepeatStateTests
         try
         {
             return Utf8SliceRunner.RunFrom(program, input, start, [], [],
-                false, nonempty, true, ref workspace, ref invocation);
+                nonempty, true, ref workspace, ref invocation);
         }
         finally
         {

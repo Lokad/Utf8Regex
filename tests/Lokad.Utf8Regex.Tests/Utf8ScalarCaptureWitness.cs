@@ -49,15 +49,14 @@ internal static class Utf8ScalarCaptureWitness
         var ends = new int[program.GroupCount];
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(invocation.Ledger.TryReserve(7));
-        var outcome = Utf8SliceRunner.TryMatchAt(program, Encoding.ASCII.GetBytes(text), start, starts, ends,
-            true, ref invocation, collectHistory: true);
+        var (outcome, history) = MatchAndSnapshot(program, Encoding.ASCII.GetBytes(text), start, starts, ends, ref invocation);
         try
         {
             Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
             Assert.Equal(expected.Success && expected.Index == start, outcome.IsMatch);
             if (!outcome.IsMatch)
             {
-                Assert.Null(outcome.CaptureHistory);
+                Assert.False(history.Success);
                 return;
             }
             Assert.Equal(expected.Index + expected.Length, outcome.EndIndex);
@@ -66,16 +65,38 @@ internal static class Utf8ScalarCaptureWitness
             {
                 var captures = expected.Groups[program.GroupNumbers[slot + 1]].Captures;
                 Assert.Equal(captures.Select(static capture => (capture.Index, capture.Index + capture.Length)),
-                    outcome.CaptureHistory?[slot]);
+                    Utf8SliceHistoryAdmissionTests.CaptureEdges(history, program.GroupNumbers[slot + 1]));
                 Assert.Equal(captures.Count == 0 ? -1 : captures[^1].Index, starts[slot]);
                 Assert.Equal(captures.Count == 0 ? -1 : captures[^1].Index + captures[^1].Length, ends[slot]);
             }
         }
         finally
         {
-            Utf8SliceRunner.ReleaseHistory(outcome.CaptureHistory, ref invocation);
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
             invocation.Ledger.Release(7);
+        }
+    }
+
+    internal static (Utf8SliceMatchOutcome Outcome, Utf8RangeMatch History) MatchAndSnapshot(Utf8SliceProgram program,
+        ReadOnlyMemory<byte> input, int start, int[] starts, int[] ends, ref Utf8SliceInvocation invocation)
+    {
+        var workspace = new Utf8SliceRunner.AttemptWorkspace();
+        var results = new Utf8InvocationResultLedger();
+        try
+        {
+            var outcome = Utf8SliceRunner.TryMatchAt(program, input.Span, start, starts, ends, true, false, true,
+                ref workspace, ref invocation);
+            return !outcome.IsMatch ? (outcome, default) : (outcome, workspace.Stacks.SnapshotHistory(input,
+                program.GroupNumbers, start, outcome.EndIndex, ref results, ref invocation));
+        }
+        catch (InvalidOperationException) when (invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        {
+            return (new(false, -1, invocation.Budget.LimitBreach), default);
+        }
+        finally
+        {
+            results.Release(ref invocation);
+            workspace.Release(ref invocation);
         }
     }
 }

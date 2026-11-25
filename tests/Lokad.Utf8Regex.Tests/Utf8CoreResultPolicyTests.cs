@@ -224,14 +224,27 @@ public sealed class Utf8CoreResultPolicyTests
         Assert.True(invocation.Ledger.TryReserve(7));
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
         var borrowed = invocation.Ledger.ReservedBytes;
+        var workspace = new Utf8SliceRunner.AttemptWorkspace();
+        var results = new Utf8InvocationResultLedger();
+        var input = "aaaa"u8.ToArray();
         try
         {
-            var outcome = Utf8SliceRunner.TryFindFirst(program, "aaaa"u8, 0, slots.Starts, slots.Ends, true, ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, outcome.Breach);
-            Assert.False(outcome.Found);
-            Assert.Equal(borrowed, invocation.Ledger.ReservedBytes);
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, slots.Starts, slots.Ends, true,
+                ref workspace, ref invocation);
+            Assert.True(outcome.Found);
+            var held = invocation.Ledger.ReservedBytes;
+            Assert.Throws<InvalidOperationException>(() => workspace.Stacks.SnapshotHistory(input,
+                program.GroupNumbers, outcome.StartByte, outcome.EndByte, ref results, ref invocation));
+            Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, invocation.Budget.LimitBreach);
+            Assert.Equal(held, invocation.Ledger.ReservedBytes);
         }
-        finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
+        finally
+        {
+            results.Release(ref invocation);
+            workspace.Release(ref invocation);
+            Assert.Equal(borrowed, invocation.Ledger.ReservedBytes);
+            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
+        }
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
     }
 
@@ -247,21 +260,30 @@ public sealed class Utf8CoreResultPolicyTests
         var retained = Collect(ref invocation);
         var alias = invocation;
         Assert.Equal(bytes, alias.Budget.ResultBytes);
-        var denied = Collect(ref alias);
-        Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, denied.Breach);
-        Assert.False(denied.Found);
+        Assert.Throws<InvalidOperationException>(() => Collect(ref alias));
+        Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, alias.Budget.LimitBreach);
         Assert.Equal(alias.Budget.ResultBytes, invocation.Budget.ResultBytes);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal(first.CaptureHistory![0], retained.CaptureHistory![0]);
+        Assert.Equal(Utf8SliceHistoryAdmissionTests.CaptureEdges(first, 1), Utf8SliceHistoryAdmissionTests.CaptureEdges(retained, 1));
 
-        Utf8SliceSearchOutcome Collect(ref Utf8SliceInvocation state)
+        Utf8RangeMatch Collect(ref Utf8SliceInvocation state)
         {
             var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref state);
-            var outcome = default(Utf8SliceSearchOutcome);
-            try { return outcome = Utf8SliceRunner.TryFindFirst(program, "aa"u8, 0, slots.Starts, slots.Ends, true, ref state); }
+            var workspace = new Utf8SliceRunner.AttemptWorkspace();
+            var results = new Utf8InvocationResultLedger();
+            var input = "aa"u8.ToArray();
+            try
+            {
+                var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, slots.Starts, slots.Ends, true,
+                    ref workspace, ref state);
+                Assert.True(outcome.Found);
+                return workspace.Stacks.SnapshotHistory(input, program.GroupNumbers, outcome.StartByte, outcome.EndByte,
+                    ref results, ref state);
+            }
             finally
             {
-                Utf8SliceRunner.ReleaseHistory(outcome.CaptureHistory, ref state);
+                results.Release(ref state);
+                workspace.Release(ref state);
                 Utf8SliceRunner.ReleaseSlots(slots, ref state);
             }
         }

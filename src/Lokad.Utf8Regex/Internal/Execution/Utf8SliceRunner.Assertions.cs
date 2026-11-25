@@ -41,7 +41,7 @@ internal static partial class Utf8SliceRunner
     internal static Utf8SliceMatchOutcome RunFrom(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int start,
         scoped Span<int> captureStarts, scoped Span<int> captureEnds,
-        bool collectHistory, bool requireNonEmpty, bool startIsScalarBoundary,
+        bool requireNonEmpty, bool startIsScalarBoundary,
         ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, int? requiredEnd = null)
     {
         ref var stacks = ref workspace.Stacks;
@@ -148,17 +148,7 @@ internal static partial class Utf8SliceRunner
                     continue;
                 }
 
-                if (continuations.Count == 0)
-                {
-                    if (!outcome.IsMatch) return outcome;
-                    (int Start, int End)[][]? history = null;
-                    if (collectHistory)
-                    {
-                        var historyBreach = stacks.MaterializeHistory(program.GroupCount, ref invocation, out history);
-                        if (historyBreach != Utf8ExecutionLimitKind.None) return new(false, -1, historyBreach);
-                    }
-                    return new(true, outcome.EndIndex, outcome.Breach, history);
-                }
+                if (continuations.Count == 0) return outcome;
                 var exitBreach = invocation.TryChargeInputStep();
                 if (exitBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, exitBreach);

@@ -44,13 +44,12 @@ public sealed class Utf8ScalarCaptureContinuationTests
         var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(baseline.Ledger.TryReserve(7));
-        var outcome = Utf8SliceRunner.TryMatchAt(program, "ab"u8, 0, starts, ends,
-            true, ref baseline, collectHistory: true);
+        var input = "ab"u8.ToArray();
+        var (outcome, history) = Utf8ScalarCaptureWitness.MatchAndSnapshot(program, input, 0, starts, ends, ref baseline);
         Assert.True(outcome.IsMatch);
         Assert.Equal(2, outcome.EndIndex);
-        Assert.Equal(new[] { (0, 1) }, outcome.CaptureHistory?[0]);
-        Assert.Equal(new[] { (1, 2) }, outcome.CaptureHistory?[1]);
-        Utf8SliceRunner.ReleaseHistory(outcome.CaptureHistory, ref baseline);
+        Assert.Equal(new[] { (0, 1) }, Utf8SliceHistoryAdmissionTests.CaptureEdges(history, 1));
+        Assert.Equal(new[] { (1, 2) }, Utf8SliceHistoryAdmissionTests.CaptureEdges(history, 2));
         Assert.Equal(7UL, baseline.Ledger.ReservedBytes);
         baseline.Ledger.Release(7);
         var limits = Enumerable.Range(1, checked((int)baseline.Budget.Steps - 1))
@@ -60,11 +59,10 @@ public sealed class Utf8ScalarCaptureContinuationTests
         {
             var denied = new Utf8SliceInvocation(limit, Regex.InfiniteMatchTimeout, CancellationToken.None);
             Assert.True(denied.Ledger.TryReserve(7));
-            var failed = Utf8SliceRunner.TryMatchAt(program, "ab"u8, 0, starts, ends,
-                true, ref denied, collectHistory: true);
+            var (failed, unpublished) = Utf8ScalarCaptureWitness.MatchAndSnapshot(program, input, 0, starts, ends, ref denied);
             Assert.False(failed.IsMatch);
             Assert.Equal(limit.MaxWorkSteps == 0 ? Utf8ExecutionLimitKind.WorkingBytes : Utf8ExecutionLimitKind.WorkSteps, failed.Breach);
-            Assert.Null(failed.CaptureHistory);
+            Assert.False(unpublished.Success);
             Assert.Equal(7UL, denied.Ledger.ReservedBytes);
             denied.Ledger.Release(7);
         }

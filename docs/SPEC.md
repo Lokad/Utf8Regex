@@ -210,6 +210,9 @@ backreferences compare scalar equivalents. Both use bounded execution checks.
 The engine admits covered storage before acquisition. It covers capture
 and projection arrays, cursor tables, output staging and finalized result
 storage. The scalar runner admits capture starts and ends as one buffer.
+Core cursors shape accepted capture history directly into the published
+range and group-offset arrays. Admission covers the shaping scratch and
+any compacted range buffer needed by balancing captures.
 A shared or temporary allocation may count more than once.
 Fixed scalar values, borrowed inputs and programs, caller destinations,
 incidental helpers, standalone getters and host retention fall outside these

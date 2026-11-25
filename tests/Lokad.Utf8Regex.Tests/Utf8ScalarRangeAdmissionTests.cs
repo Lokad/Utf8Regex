@@ -69,7 +69,6 @@ public sealed class Utf8ScalarRangeAdmissionTests
         Assert.Equal(limit + 1, denied.Budget.Steps);
         Assert.All(starts, value => Assert.Equal(-1, value));
         Assert.All(ends, value => Assert.Equal(-1, value));
-        Assert.Null(stopped.CaptureHistory);
         Assert.Equal(0UL, denied.Ledger.ReservedBytes);
         var recovered = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(Utf8SliceRunner.TryMatchAt(program, input, start, starts, ends, true, ref recovered).IsMatch);

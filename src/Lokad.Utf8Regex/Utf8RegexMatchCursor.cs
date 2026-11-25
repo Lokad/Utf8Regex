@@ -138,7 +138,10 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             }
 
             // Snapshot checks during capture shaping and before allocating each result array.
-            var completed = Snapshot(outcome, useCaptureSlots, ref results);
+            var completed = collectHistory
+                ? _workspace.Stacks.SnapshotHistory(_input, _catalog!.GroupNumbers, outcome.StartByte, outcome.EndByte,
+                    ref results, ref _invocation)
+                : SnapshotSlots(outcome, ref results);
             Utf8RetainedRangeMatch? receipt = null;
             if (retain)
             {
@@ -174,7 +177,6 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         finally
         {
             results.Release(ref _invocation);
-            Utf8SliceRunner.ReleaseHistory(outcome.CaptureHistory, ref _invocation);
             // Close only after transient reservations/roots have finished.
             if (exhausted) Close(Status.Ended);
         }
@@ -209,21 +211,17 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         _boundary = _nonBacktracking!.ResolveByteOffset(_input.Span, _position);
     }
 
-    private Utf8RangeMatch Snapshot(Utf8SliceSearchOutcome outcome, bool useCaptureSlots, ref Utf8InvocationResultLedger results)
+    private Utf8RangeMatch SnapshotSlots(Utf8SliceSearchOutcome outcome, ref Utf8InvocationResultLedger results)
     {
         var numbers = _catalog!.GroupNumbers;
         var starts = _slots.Starts;
         var ends = _slots.Ends;
         var count = 1;
-        if (useCaptureSlots)
-            for (var slot = 0; slot < ends.Length; slot++)
-            {
-                if ((slot & 255) == 0) Checkpoint();
-                if (ends[slot] >= 0) count++;
-            }
-        else if (outcome.CaptureHistory is { } history)
-            for (var slot = 0; slot < history.Length; slot++)
-            { if ((slot & 255) == 0) Checkpoint(); count = checked(count + history[slot].Length); }
+        for (var slot = 0; slot < ends.Length; slot++)
+        {
+            if ((slot & 255) == 0) Checkpoint();
+            if (ends[slot] >= 0) count++;
+        }
         var offsets = numbers.Length == 1 ? null
             : results.AllocateArray<int>(checked(numbers.Length + 1), ref _invocation);
         var captures = results.AllocateArray<Utf8CaptureRange>(count, ref _invocation);
@@ -234,17 +232,8 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         for (var slot = 1; slot < numbers.Length; slot++)
         {
             if ((slot & 255) == 0) Checkpoint();
-            if (useCaptureSlots)
-            {
-                var end = ends[slot - 1];
-                if (end >= 0) captures[written++] = new(starts[slot - 1], end);
-            }
-            else if (outcome.CaptureHistory is { } groupHistories)
-                foreach (var (start, end) in groupHistories[slot - 1])
-                {
-                    if ((written & 255) == 0) Checkpoint();
-                    captures[written++] = new(start, end);
-                }
+            var end = ends[slot - 1];
+            if (end >= 0) captures[written++] = new(starts[slot - 1], end);
             offsets[slot + 1] = written;
         }
         return new(_input, captures, offsets, numbers);

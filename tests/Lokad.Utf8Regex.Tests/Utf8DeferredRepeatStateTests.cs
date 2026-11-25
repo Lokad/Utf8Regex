@@ -215,6 +215,7 @@ public sealed class Utf8DeferredRepeatStateTests
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+        var results = new Utf8InvocationResultLedger();
         try
         {
             var first = Utf8SliceRunner.TryMatchAt(program, "aaabbc"u8, 0, slots.Starts, slots.Ends, true, false, true,
@@ -224,7 +225,10 @@ public sealed class Utf8DeferredRepeatStateTests
             Assert.Equal(0, slots.Starts[0]); Assert.Equal(3, slots.Ends[0]);
             var counts = workspace.Counts; var positions = workspace.Positions;
             Assert.NotEmpty(counts);
-            Utf8SliceRunner.ReleaseHistory(first.CaptureHistory, ref invocation);
+            var firstHistory = workspace.Stacks.SnapshotHistory("aaabbc"u8.ToArray(), program.GroupNumbers, 0, first.EndIndex,
+                ref results, ref invocation);
+            Assert.Equal(new[] { (0, 3) }, Utf8SliceHistoryAdmissionTests.CaptureEdges(firstHistory, 1));
+            results.Release(ref invocation);
             var reserved = invocation.Ledger.ReservedBytes;
             var second = Utf8SliceRunner.TryMatchAt(program, "abc"u8, 0, slots.Starts, slots.Ends, true, false, true,
                 ref workspace, ref invocation);
@@ -232,11 +236,15 @@ public sealed class Utf8DeferredRepeatStateTests
             Assert.Equal(3, second.EndIndex);
             Assert.Equal(0, slots.Starts[0]); Assert.Equal(1, slots.Ends[0]);
             Assert.Same(counts, workspace.Counts); Assert.Same(positions, workspace.Positions);
-            Utf8SliceRunner.ReleaseHistory(second.CaptureHistory, ref invocation);
+            var secondHistory = workspace.Stacks.SnapshotHistory("abc"u8.ToArray(), program.GroupNumbers, 0, second.EndIndex,
+                ref results, ref invocation);
+            Assert.Equal(new[] { (0, 1) }, Utf8SliceHistoryAdmissionTests.CaptureEdges(secondHistory, 1));
+            results.Release(ref invocation);
             Assert.Equal(reserved, invocation.Ledger.ReservedBytes);
         }
         finally
         {
+            results.Release(ref invocation);
             workspace.Release(ref invocation);
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
         }
