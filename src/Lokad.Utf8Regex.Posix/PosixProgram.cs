@@ -39,7 +39,7 @@ internal sealed partial class PosixProgram
     internal ChartNode[] Chart { get; }
     internal Utf8SliceNode.CategorySetNode[] ChartClasses { get; }
 
-    internal static PosixProgram Compile(string pattern, PosixCompileOptions options)
+    internal static PosixProgram Compile(string pattern, PosixCompileOptions options, bool enableExistenceTier = false)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -131,7 +131,8 @@ internal sealed partial class PosixProgram
             frames.Pop();
         }
         var scalar = Utf8SliceLowerer.Lower(completed!, null, false,
-            (options & PosixCompileOptions.IgnoreCase) != 0, false)
+            (options & PosixCompileOptions.IgnoreCase) != 0, false, null, false, false, Utf8ScalarCaseBehavior.Invariant,
+            false, proofCompilation: enableExistenceTier ? Utf8BoundedProgramEmitter.Compilation.TieredLiteralExistence : default)
             ?? throw new InvalidOperationException("The admitted POSIX tree could not be lowered.");
         var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget, out var capturesOpenOnce);
         var canReplayDirectly = true;

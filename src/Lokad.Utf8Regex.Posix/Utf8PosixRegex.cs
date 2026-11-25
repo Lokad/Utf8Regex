@@ -30,8 +30,12 @@ public sealed class Utf8PosixRegex : IDisposable
         resources.Validate(nameof(policy));
         Pattern = pattern; Options = options;
         _limits = new(resources);
-        var ownsConstruction = explicitCompile || account is not null ||
+        var controlledConstruction = account is not null ||
             constructionPolicy != default || constructionTimeout != Regex.InfiniteMatchTimeout;
+        var ownsConstruction = explicitCompile || controlledConstruction;
+        var enableExistenceTier = !controlledConstruction && !Utf8ConstructionScope.IsActive &&
+            MatchTimeout == Regex.InfiniteMatchTimeout && _limits == Utf8ExecutionLimits.Unlimited &&
+            (options & PosixCompileOptions.IgnoreCase) == 0;
         // PosixProgram already owns default construction and inherits a parent.
         // Explicit controls need one outer owner, never a replacement parent.
         using var construction = !ownsConstruction ? null : account is null
@@ -39,7 +43,7 @@ public sealed class Utf8PosixRegex : IDisposable
             : Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token, account);
         try
         {
-            _program = PosixProgram.Compile(pattern, options);
+            _program = PosixProgram.Compile(pattern, options, enableExistenceTier);
             GroupCount = _program.CaptureTags.Length - 1;
             if (construction is not null)
             {
@@ -62,6 +66,7 @@ public sealed class Utf8PosixRegex : IDisposable
     // Synchronous state remains bounded and admitted by the workspace.
     private const int StackStateLimit = 128;
     private readonly PosixProgram _program;
+    internal Utf8SliceProgram ScalarProgram => _program.Scalar;
     private readonly Utf8ExecutionLimits _limits;
     private readonly Utf8FundedStorage? _programMemory;
 
@@ -98,6 +103,16 @@ public sealed class Utf8PosixRegex : IDisposable
         try
         {
             CheckStart(input, 0, ref invocation);
+            var scalar = ScalarProgram;
+            // POSIX's small-input loop avoids the shared search setup.
+            if (input.Length > Utf8SliceRunner.ShortSingleOriginProofInputLimit &&
+                (scalar.ObservesProofWork || scalar.TieredProof is not null) &&
+                invocation.IsUnmetered && invocation.CheckpointHook is null)
+            {
+                var result = Utf8SliceRunner.TryFindFirst(scalar, input, 0, [], [], false, ref invocation, existenceOnly: true);
+                if (result.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+                return result.Found;
+            }
             InitializeWorkspace(out workspace, ref invocation, captureHistory: false);
             Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
             var found = workspace.Find(input, state, 0, true, ref invocation, out _, out _);

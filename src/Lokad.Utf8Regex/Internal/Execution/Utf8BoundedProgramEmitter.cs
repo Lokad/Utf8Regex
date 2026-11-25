@@ -10,7 +10,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal static class Utf8BoundedProgramEmitter
 {
     internal delegate int Match(ReadOnlySpan<byte> input, Span<Utf8CaptureRange> captures = default);
-    internal enum Compilation : byte { None, Eager, Tiered, TieredBranches }
+    internal enum Compilation : byte { None, Eager, Tiered, TieredBranches, TieredLiteralExistence }
 
     private const int MaxUnsplitInstructions = 64;
     private const int MaxExpandedVisits = Utf8SliceRunner.BranchedPrefixInstructionLimit;
@@ -89,9 +89,25 @@ internal static class Utf8BoundedProgramEmitter
         return offsets;
     }
 
-    internal static bool CanTierUp(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+    internal static bool CanTierUp(Utf8SliceProgram program, Utf8ConstructionBudget budget,
+        Compilation compilation = Compilation.Tiered)
     {
         if (!TryGetEntry(program, out var entry)) return false;
+        if (compilation == Compilation.TieredLiteralExistence)
+        {
+            // Capture tags and branch priority cannot affect existence in
+            // this finite literal graph. Reject profile-specific atom and
+            // anchor behavior before admitting the shared runner.
+            if (entry != 0 || program.CanMatchEmpty || program.LeadingByteCandidate is not { FromBranch: true })
+                return false;
+            budget.ChargeWork((ulong)program.Instructions.Length);
+            foreach (var instruction in program.Instructions)
+                if (instruction is not ({ Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } or
+                    { Kind: Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump, B: 0 } or
+                    { Kind: Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or
+                        Utf8SliceInstructionKind.Accept or Utf8SliceInstructionKind.Fail }))
+                    return false;
+        }
         if (program.Instructions[0].Kind == Utf8SliceInstructionKind.Anchor)
             return entry == 1 && program.Instructions[0].D == 1 && program.Instructions.Length <= MaxUnsplitInstructions &&
                 CountExpandedVisits(program, entry, program.Instructions.Length, budget) <= MaxExpandedVisits;

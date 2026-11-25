@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Diagnostics;
@@ -7,6 +8,41 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 
 public sealed class PosixWorkspaceTests
 {
+    [Fact]
+    public void OnlyExistenceUsesTheLiteralBranchTier()
+    {
+        const string pattern = "ab|abc";
+        var prefix = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("axé😀 ", 128)));
+        byte[] input = [.. prefix, .. "abc abc"u8];
+        using var regex = new Utf8PosixRegex(pattern);
+        var program = regex.ScalarProgram;
+        var dynamicCode = RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
+        Assert.Equal(dynamicCode, program.ObservesProofWork);
+
+        using var source = new CancellationTokenSource();
+        for (var i = 0; i < 512; i++)
+        {
+            Assert.True(regex.IsMatch(input, source.Token));
+            Assert.Equal(2, regex.Count(input));
+        }
+        Assert.Null(program.TieredProof);
+        for (var i = 0; i < 8192 && program.ObservesProofWork; i++)
+            Assert.True(regex.IsMatch(input));
+        Assert.Equal(dynamicCode, program.TieredProof is not null);
+        Assert.False(regex.IsMatch(prefix));
+        Assert.Equal(new Utf8CaptureRange(prefix.Length, prefix.Length + 3), regex.Match(input));
+        Assert.Equal(2, regex.Count(input));
+
+        source.Cancel();
+        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, source.Token)).CancellationToken);
+        using var bounded = new Utf8PosixRegex(pattern, policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1 } });
+        Assert.False(bounded.ScalarProgram.ObservesProofWork);
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => bounded.IsMatch(input));
+        using var anchor = new Utf8PosixRegex("(ab|abc)$");
+        Assert.False(anchor.ScalarProgram.ObservesProofWork);
+        Assert.False(anchor.IsMatch("abc\n"u8));
+    }
+
     [Fact]
     public void DirectRunsWithPrivateTagsAdmitOnlyPublicCaptureSlots()
     {

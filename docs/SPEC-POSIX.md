@@ -119,6 +119,11 @@ dependencies. General capture workspace can grow quadratically in subject
 boundaries. It requires working admission, including growth overlap.
 Proved direct runs reserve capture workspace for public groups only.
 
+Eligible finite ASCII literal branches can use a bounded compiled proof
+for `IsMatch` on longer subjects. Match ranges, Count and capture ranking
+use POSIX longest selection. Tokens, deadlines, limits and shared working
+admission keep `IsMatch` on its metered path.
+
 POSIX publishes fixed ranges or writes caller-owned slots. Any positive
 `MaxResultBytes` admits those outputs. Cursor creation can admit capture
 slots for later advances. Caller arrays, decoded text and borrowed subject

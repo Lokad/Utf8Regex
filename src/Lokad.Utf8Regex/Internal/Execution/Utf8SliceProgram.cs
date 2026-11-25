@@ -588,19 +588,19 @@ internal sealed class Utf8SliceProgram
         }
         if (proofCompilation == Utf8BoundedProgramEmitter.Compilation.TieredBranches && !HasCaptureFreeAsciiBranch)
             proofCompilation = Utf8BoundedProgramEmitter.Compilation.None;
-        if (proofCompilation != Utf8BoundedProgramEmitter.Compilation.None)
+        if (proofCompilation is Utf8BoundedProgramEmitter.Compilation.Eager or Utf8BoundedProgramEmitter.Compilation.Tiered)
             EmittedHistoryOffsets = Utf8BoundedProgramEmitter.PrepareHistoryOffsets(this, Utf8ConstructionScope.CurrentBudget);
         if (proofCompilation == Utf8BoundedProgramEmitter.Compilation.Eager)
             EmittedMatch = Utf8BoundedProgramEmitter.TryEmit(this, Utf8ConstructionScope.CurrentBudget);
-        else if (proofCompilation is Utf8BoundedProgramEmitter.Compilation.Tiered or Utf8BoundedProgramEmitter.Compilation.TieredBranches)
+        else if (proofCompilation != Utf8BoundedProgramEmitter.Compilation.None)
         {
             var budget = Utf8ConstructionScope.CurrentBudget;
-            if (Utf8BoundedProgramEmitter.CanTierUp(this, budget))
+            if (Utf8BoundedProgramEmitter.CanTierUp(this, budget, proofCompilation))
             {
                 // Branch-only consumers recover compilation cost on searches
                 // that have more than a single candidate's bounded work.
-                var minimumVisits = proofCompilation == Utf8BoundedProgramEmitter.Compilation.TieredBranches
-                    ? Utf8SliceRunner.BranchedPrefixInstructionLimit + 1 : 1;
+                var minimumVisits = proofCompilation == Utf8BoundedProgramEmitter.Compilation.Tiered
+                    ? 1 : Utf8SliceRunner.BranchedPrefixInstructionLimit + 1;
                 _proofTier = budget.AllocateObject(minimumVisits, static visits => new ProofTier(visits));
             }
         }
