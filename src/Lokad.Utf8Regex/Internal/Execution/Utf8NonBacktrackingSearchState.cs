@@ -62,7 +62,6 @@ internal sealed class Utf8NonBacktrackingSearchState
                 // Only epsilon instructions need an order or a DFS visit.
                 orderLength = 0;
                 var last = instructions.Length - 1;
-                var afterCaptures = instructions.Length;
                 for (var pc = last; pc >= 0; pc--)
                 {
                     if (((last - pc) & 63) == 0) budget.ChargeWork((ulong)Math.Min(64, pc + 1));
@@ -70,11 +69,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                     if (IsEpsilonInstruction(instruction.Kind)) orderLength++;
                     else colors[pc] = 2;
                     if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
-                    {
-                        if (afterCaptures != pc + 1)
-                            instructions[pc] = new(instruction.Kind, instruction.A, instruction.B, afterCaptures, instruction.D);
-                    }
-                    else afterCaptures = pc;
+                        Utf8SliceInstruction.MarkCaptureRun(instructions, pc);
                 }
             }
             var result = wide ? budget.AllocateArray<int>(orderLength, false) : [];

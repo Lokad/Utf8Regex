@@ -2105,6 +2105,13 @@ internal static partial class Utf8SliceRunner
                     return proveMatch ? position : BranchedPrefixUndecided;
                 case Utf8SliceInstructionKind.CaptureStart:
                 case Utf8SliceInstructionKind.CaptureEnd:
+                    if (entry.C > index)
+                    {
+                        // Every skipped marker still consumes its proof visit.
+                        var skipped = Math.Min(remaining, entry.C - index);
+                        index += skipped;
+                        remaining -= skipped;
+                    }
                     continue;
                 case Utf8SliceInstructionKind.Jump:
                     // A jump only changes the instruction cursor. The shared

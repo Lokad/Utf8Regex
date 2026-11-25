@@ -106,6 +106,28 @@ public sealed class Utf8CapturedSimpleBooleanTests
     }
 
     [Fact]
+    public void AdjacentCaptureMarkersStillConsumeTheirProofVisits()
+    {
+        const string pattern = "^((((([0-9]+)))))x$";
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled);
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        var input = "12x"u8;
+        var firstCapture = Array.FindIndex(program.Instructions, instruction => instruction.Kind == Utf8SliceInstructionKind.CaptureStart);
+
+        Assert.True(Utf8SliceRunner.MayMatchBranchedAsciiPrefix(program, input, 0, firstCapture,
+            out var end, proveMatch: true, instructionLimit: 3));
+        Assert.Equal(-1, end);
+        Assert.True(Utf8SliceRunner.MayMatchBranchedAsciiPrefix(program, input, 0, firstCapture,
+            out end, proveMatch: true));
+        Assert.Equal(input.Length, end);
+
+        var captures = new Utf8CaptureRange[6];
+        Assert.True(regex.Match(input, 0, captures).Success);
+        foreach (var capture in captures.AsSpan(1))
+            Assert.Equal((true, 0, 2), (capture.Success, capture.StartOffsetInBytes, capture.EndOffsetInBytes));
+    }
+
+    [Fact]
     public void FiniteWorkingAdmissionBoundsMatchingAndPublication()
     {
         var input = "1234-5678-1234-456"u8.ToArray();

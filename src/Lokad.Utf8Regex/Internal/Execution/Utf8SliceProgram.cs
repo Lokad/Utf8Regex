@@ -234,7 +234,7 @@ internal readonly struct Utf8SliceInstruction
     // A negative Literal C holds the complemented jump of a fixed arm with a common delimiter.
     // A RepeatEnd can mark a proved consuming body for ordered discovery.
     // A leading Beginning anchor records a required first ASCII byte plus one.
-    // Wide regular capture markers can record where a consecutive marker run ends.
+    // Capture markers can record where a consecutive marker run ends.
     internal int C { get; }
     // For a positive unfolded Set, the low byte is the first ASCII byte
     // and the next byte is the interval width. Zero means no exact interval.
@@ -291,6 +291,17 @@ internal readonly struct Utf8SliceInstruction
             instructions[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd; skipped++)
             index++;
         return index;
+    }
+
+    // The lowering passes visit the next instruction before this marker.
+    internal static void MarkCaptureRun(Span<Utf8SliceInstruction> instructions, int index)
+    {
+        var next = index + 1;
+        if (next >= instructions.Length ||
+            instructions[next].Kind is not (Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd))
+            return;
+        ref var marker = ref instructions[index];
+        marker = new(marker.Kind, marker.A, marker.B, Math.Max(next + 1, instructions[next].C), marker.D);
     }
 }
 
@@ -1562,6 +1573,9 @@ internal static class Utf8SliceLowerer
                     break;
                 case Utf8SliceInstructionKind.CaptureStart:
                 case Utf8SliceInstructionKind.CaptureEnd:
+                    Utf8SliceInstruction.MarkCaptureRun(code, index);
+                    limit = next;
+                    break;
                 case Utf8SliceInstructionKind.Boundary:
                     limit = next;
                     break;
