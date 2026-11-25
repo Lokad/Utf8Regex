@@ -356,8 +356,10 @@ Boolean, whole-range and Count results. Eligible long capture searches can
 use a ready proof to select the starting byte. The scalar interpreter
 publishes capture results and handles other programs.
 An eligible ordinary Core program can also publish one emitted proof after
-repeated interpreted checks at the absolute beginning of short inputs or at
-unanchored candidate starts admitted for the complete proof.
+repeated interpreted checks at an absolute or contiguous origin on short
+inputs, or at unanchored candidate starts admitted for the complete proof.
+At a contiguous origin, eager and tiered proofs use the admitted short byte
+suffix in unlimited, unfunded calls without cancelable tokens or deadlines.
 This automatic tier applies to unlimited, unfunded calls without a cancelable
 token, on engines built with default construction controls. Finite policies,
 funding and cooperative interruption retain their existing execution paths.

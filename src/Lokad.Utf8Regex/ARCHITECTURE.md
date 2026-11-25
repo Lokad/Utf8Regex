@@ -17,10 +17,11 @@ parse -> analyze -> prepare -> immutable instructions -> invoke
   A proven delimiter can let ordered alternatives share an emitted
   continuation. The admitted extent can bound a decimal run with a proved
   endpoint. Search applies invocation checks at each admitted origin.
-  Eligible ordinary Core calls accumulate visits from complete short
-  absolute-origin proofs and from unanchored checks admitted to run the
-  entire emitted proof. Search and Count contribute their totals once per
-  scan, including checks that entered the general matcher.
+  Eligible ordinary Core calls accumulate visits from short absolute and
+  contiguous proofs and from unanchored checks admitted to run the entire
+  emitted proof. A contiguous proof uses the suffix at its admitted byte
+  origin and rebases the returned endpoint. Search and Count contribute their
+  totals once per scan, including checks that entered the general matcher.
   Construction admits separate tier state for eligible programs and keeps
   the lowered program fields immutable. One caller claims bounded
   compilation and publishes the delegate for future eligible calls.
