@@ -1055,8 +1055,8 @@ internal static class Pcre2BacktrackingRunner
                                     continue;
                                 }
                                 tokenStart = current.OpenStart;
-                                recordRollback = NeedsCaptureCloseRollback(slot, depth, ref frames,
-                                    ref subroutineCalls, ref captureMutations);
+                                recordRollback = NeedsCaptureRollback(slot, depth, in frames,
+                                    in subroutineCalls, in captureMutations);
                             }
 
                             SetCapture(slot, ref current, new(tokenStart, inputIndex, -1, depth, -1),
@@ -1107,8 +1107,8 @@ internal static class Pcre2BacktrackingRunner
                             continue;
                         }
 
-                        var recordClose = NeedsCaptureCloseRollback(endCaptureSlot, endCallDepth, ref frames,
-                            ref subroutineCalls, ref captureMutations);
+                        var recordClose = NeedsCaptureRollback(endCaptureSlot, endCallDepth, in frames,
+                            in subroutineCalls, in captureMutations);
                         SetCapture(
                             endCaptureSlot,
                             ref closing,
@@ -2134,7 +2134,8 @@ internal static class Pcre2BacktrackingRunner
                 ref captureState[mutation.Slot],
                 mutation.Previous,
                 ref captureMutations,
-                ref budget, recordRollback: retainMutations);
+                ref budget, recordRollback: retainMutations && NeedsCaptureRollback(mutation.Slot, calls.Count,
+                    in frames, in calls, in captureMutations));
         }
 
         if (!retainMutations)
@@ -2254,12 +2255,12 @@ internal static class Pcre2BacktrackingRunner
         }
     }
 
-    private static bool NeedsCaptureCloseRollback(int slot, int depth,
-        ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
-        scoped ref Pcre2SubroutineCalls calls,
-        ref Pcre2InvocationStateStack<Pcre2CaptureMutation> mutations)
+    private static bool NeedsCaptureRollback(int slot, int depth,
+        scoped in Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        scoped in Pcre2SubroutineCalls calls,
+        scoped in Pcre2InvocationStateStack<Pcre2CaptureMutation> mutations)
     {
-        // An existing mutation covers this close when no live retry or
+        // An existing mutation covers this write when no live retry or
         // return needs the value between that write and this one.
         var count = mutations.Count;
         return (frames.Count != 0 || depth != 0) && (count == 0 ||
