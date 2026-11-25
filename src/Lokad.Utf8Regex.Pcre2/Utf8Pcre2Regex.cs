@@ -324,16 +324,17 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         IUtf8MemoryAllowance? workingMemoryAllowance)
     {
         var budget = new Pcre2ResourceBudget(_program.Request, token, workingMemoryAllowance);
-        budget.WorkingInvocation.CheckpointHook = null;
+        ref var invocation = ref budget.WorkingInvocation;
+        invocation.CheckpointHook = null;
+        var workspace = new Utf8SliceRunner.AttemptWorkspace();
         try
         {
-            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref budget.WorkingInvocation);
+            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation);
             var slots = Utf8SliceSlots.Empty;
-            var workspace = new Utf8SliceRunner.AttemptWorkspace();
             var match = Pcre2Runner.MatchByteRanges(_program, input, start, start, matchOptions,
                 ref budget, ref slots, ref workspace, output);
             if (!match.Success) ClearCaptureOutput(output, ref budget);
-            Pcre2SliceDriver.CheckInvocation(ref budget.WorkingInvocation);
+            Pcre2SliceDriver.CheckInvocation(ref invocation);
             return Utf8Pcre2ValueMatch.Create(input, new Pcre2GroupData
             {
                 Success = match.Success, StartOffsetInBytes = match.StartOffsetInBytes,
@@ -342,7 +343,11 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         { throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout); }
-        finally { budget.WorkingInvocation.Ledger.Release(budget.WorkingInvocation.Ledger.ReservedBytes); }
+        finally
+        {
+            if (workspace.NeedsRelease) workspace.Release(ref invocation);
+            invocation.Ledger.Release(invocation.Ledger.ReservedBytes);
+        }
     }
 
     private static void ClearCaptureOutput(Span<Utf8Pcre2CaptureRange> output, ref Pcre2ResourceBudget budget)

@@ -347,6 +347,25 @@ public sealed class Pcre2InvocationWorkspaceTests
         finally { Utf8ExactStatePool.Clear(); }
     }
 
+    [Fact]
+    public void SliceMatchWithCallerSlotsReturnsItsFrameLeaf()
+    {
+        Utf8ExactStatePool.Clear();
+        try
+        {
+            using var regex = new Utf8Pcre2Regex(@"\A(?<prefix>.*)(?<end>[bc])\z");
+            Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+            Span<Utf8Pcre2CaptureRange> slots = stackalloc Utf8Pcre2CaptureRange[3];
+
+            var result = regex.Match("é😀b"u8, captures: slots);
+
+            Assert.True(result.Success);
+            Assert.Equal((6, 7), (slots[2].StartOffsetInBytes, slots[2].EndOffsetInBytes));
+            Assert.Equal(Utf8SliceRunner.FrameReserveBytes, Utf8ExactStatePool<Utf8SliceFrame>.RetainedBytes);
+        }
+        finally { Utf8ExactStatePool.Clear(); }
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static long MeasureVmBatch(Utf8Pcre2Regex regex, out bool correct)
     {
