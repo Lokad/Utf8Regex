@@ -53,11 +53,11 @@ internal sealed class Pcre2BacktrackingLowerer
         if (_hasSubroutineCalls)
         {
             var budget = Utf8ConstructionScope.CurrentBudget;
-            var subroutineTargets = budget.AllocateArray<int>(_captureCount + 1, false);
-            budget.ChargeWork((ulong)subroutineTargets.Length);
-            subroutineTargets.AsSpan().Fill(-1);
-            // Appended bodies can introduce more calls. Publishing the entry
-            // before emitting its body keeps self and mutual recursion finite.
+            var firstCalls = budget.AllocateArray<int>(_captureCount + 1, false);
+            budget.ChargeWork((ulong)firstCalls.Length);
+            firstCalls.AsSpan().Fill(-1);
+            // Appended bodies can introduce more calls. The first linked call
+            // supplies the body entry and byte minimum to all later callers.
             for (var index = 0; index < _instructions.Count; index++)
             {
                 budget.ChargeWork(1);
@@ -65,15 +65,19 @@ internal sealed class Pcre2BacktrackingLowerer
                 if (instruction.Kind != Pcre2BacktrackingInstructionKind.SubroutineCall)
                     continue;
                 var slot = instruction.SubroutineSlot;
-                var target = subroutineTargets[slot];
-                if (target < 0)
+                var firstCall = firstCalls[slot];
+                if (firstCall >= 0)
                 {
-                    target = _instructions.Count;
-                    subroutineTargets[slot] = target;
-                    EmitNode(slot == 0 ? root : _captureDefinitions[slot], null);
-                    _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
+                    _instructions[index] = _instructions[firstCall];
+                    continue;
                 }
-                _instructions[index] = Pcre2BacktrackingInstruction.CreateSubroutineCall(slot, target);
+                var body = slot == 0 ? root : _captureDefinitions[slot];
+                var target = _instructions.Count;
+                EmitNode(body, null);
+                _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
+                var minimumBytes = Pcre2BacktrackingAnalysis.GetMinimumByteLength(body);
+                _instructions[index] = Pcre2BacktrackingInstruction.CreateSubroutineCall(slot, target, minimumBytes);
+                firstCalls[slot] = index;
             }
         }
 

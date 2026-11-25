@@ -10,6 +10,10 @@ public sealed class Pcre2SubroutineCaptureReturnTests
     [InlineData(@"\A(a)(?&mid)\1\z(?(DEFINE)(?<mid>.*))", "a中a", true)]
     [InlineData(@"\A(a)(?&mid)\1\z(?(DEFINE)(?<mid>.*))", "a中b", false)]
     [InlineData(@"\A(a?)(?&mid)\1\z(?(DEFINE)(?<mid>t))", "t", true)]
+    [InlineData(@"\A(é)(?&mid)\1\z(?(DEFINE)(?<mid>.))", "éé", false)]
+    [InlineData(@"\A(é)(?&mid)\1\z(?(DEFINE)(?<mid>.))", "é😀é", true)]
+    [InlineData(@"\A(é)(?&mid)\1\z(?(DEFINE)(?<mid>.?))", "éé", true)]
+    [InlineData(@"\A(é)(?&mid)\1\z(?(DEFINE)(?<mid>(*ACCEPT).))", "éé", true)]
     [InlineData(@"\A(k)(?&mid)(?i:\1)\z(?(DEFINE)(?<mid>))", "kK", true)]
     public void ImmediateBackreferenceKeepsReturnedAndFoldedMatches(string pattern, string text, bool expected)
     {

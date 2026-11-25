@@ -546,6 +546,7 @@ internal readonly struct Pcre2BacktrackingInstruction
     internal int BackreferenceSlotSetId => RepeatId;
 
     internal int SubroutineSlot => RepeatId;
+    internal int SubroutineMinimumBytes => Minimum;
 
     internal int ConditionId => RepeatId;
 
@@ -632,8 +633,8 @@ internal readonly struct Pcre2BacktrackingInstruction
         Pcre2CharacterOptions options) =>
         new(Pcre2BacktrackingInstructionKind.BackreferenceSlotSet, default, 0, 0, backreferenceSlotSetId, (int)options, 0, Pcre2RepeatPreference.Greedy);
 
-    internal static Pcre2BacktrackingInstruction CreateSubroutineCall(int slot, int target = 0) =>
-        new(Pcre2BacktrackingInstructionKind.SubroutineCall, default, target, 0, slot, 0, 0, Pcre2RepeatPreference.Greedy);
+    internal static Pcre2BacktrackingInstruction CreateSubroutineCall(int slot, int target = 0, int minimumBytes = 0) =>
+        new(Pcre2BacktrackingInstructionKind.SubroutineCall, default, target, 0, slot, minimumBytes, 0, Pcre2RepeatPreference.Greedy);
 
     internal static Pcre2BacktrackingInstruction CreateSubroutineReturn() =>
         new(Pcre2BacktrackingInstructionKind.SubroutineReturn, default, 0, 0, 0, 0, 0, Pcre2RepeatPreference.Greedy);

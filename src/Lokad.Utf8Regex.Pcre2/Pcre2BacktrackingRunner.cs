@@ -1205,15 +1205,15 @@ internal static class Pcre2BacktrackingRunner
                             program.Instructions[instructionIndex + 1] is { Kind: Pcre2BacktrackingInstructionKind.Backreference } next &&
                             (next.BackreferenceOptions & Pcre2CharacterOptions.Caseless) == 0)
                         {
-                            // A return restores the caller's capture. The call
-                            // cannot move the input backwards, so the complete
-                            // exact reference must occur in this suffix.
+                            // A return restores the caller's capture. The exact
+                            // reference cannot start before the callee's minimum.
                             ref readonly var referenced = ref captureState[next.CaptureSlot];
                             if (referenced.Start >= 0 && referenced.End > referenced.Start)
                             {
                                 var length = referenced.End - referenced.Start;
-                                if (length > input.Length - inputIndex) break;
-                                var suffix = input[inputIndex..];
+                                var minimum = instruction.SubroutineMinimumBytes;
+                                if (length > input.Length - inputIndex - minimum) break;
+                                var suffix = input[(inputIndex + minimum)..];
                                 if (length == 1 ? !suffix.Contains(input[referenced.Start]) :
                                     suffix.IndexOf(input.Slice(referenced.Start, length)) < 0) break;
                             }
