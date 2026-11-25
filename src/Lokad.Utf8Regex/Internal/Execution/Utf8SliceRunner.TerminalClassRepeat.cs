@@ -14,7 +14,8 @@ internal enum Utf8SliceTerminalRootKind : byte
     Capture,
     Boundary,
     ClassRepeat,
-    AsciiSetThenRepeat
+    AsciiSetThenRepeat,
+    DelimitedClassRepeat
 }
 
 internal static partial class Utf8SliceRunner
@@ -36,7 +37,48 @@ internal static partial class Utf8SliceRunner
                 { Kind: Utf8SliceInstructionKind.Accept }
             ])
             return Utf8SliceTerminalRootKind.AsciiSetThenRepeat;
+        if (program.GroupCount == 0 && program.Instructions is
+            [
+                { Kind: Utf8SliceInstructionKind.Literal, A: >= 0 and < 128, B: 0 },
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 4, RepeatMinimum: 0, RepeatMaximum: long.MaxValue },
+                { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } atom,
+                { Kind: Utf8SliceInstructionKind.RepeatEnd, A: 1 },
+                { Kind: Utf8SliceInstructionKind.RepeatExit, RepeatExitRejectsShorterEndpoints: true },
+                { Kind: Utf8SliceInstructionKind.Literal, A: >= 0 and < 128 and var delimiter, B: 0 },
+                { Kind: Utf8SliceInstructionKind.Accept }
+            ] && TryGetAsciiRepeatStops(program, atom, out var first, out var second) &&
+            (delimiter == first || delimiter == second))
+            return Utf8SliceTerminalRootKind.DelimitedClassRepeat;
         return CanRunTerminalClassRepeat(program) ? Utf8SliceTerminalRootKind.ClassRepeat : Utf8SliceTerminalRootKind.None;
+    }
+
+    internal static Utf8ExecutionLimitKind IsMatchDelimitedClassRepeat(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, ref Utf8SliceInvocation invocation, out bool found)
+    {
+        found = false;
+        var breach = invocation.TryReserveWorking(0);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        var code = program.Instructions;
+        var head = (byte)code[0].A;
+        var delimiter = (byte)code[5].A;
+        TryGetAsciiRepeatStops(program, code[2], out var first, out var second);
+        while (position < input.Length - 1)
+        {
+            breach = TrySeekLeadingByte(input, ref position, head, head, false, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None || position < 0 || position == input.Length - 1) break;
+            var body = RunUnboundedByteStops(input, position + 1, false, false, first, second,
+                ref invocation, out _, checkExitDeadline: true);
+            if (body.Breach != Utf8ExecutionLimitKind.None) return body.Breach;
+            position = body.EndIndex;
+            if (position == input.Length) break;
+            if (input[position] != delimiter)
+                continue; // Any head inside the run would reach the same wrong stop.
+            found = true;
+            break;
+        }
+        invocation.Budget.ThrowIfCancellationRequested();
+        invocation.Budget.CheckDeadline();
+        return breach;
     }
 
     internal static bool PrepareRequiredLiteralWitness(Utf8SliceProgram program, ReadOnlySpan<byte> needle,

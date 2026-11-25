@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
@@ -47,6 +48,59 @@ public sealed class Utf8ClassFamilyQualificationTests
     {
         const string pattern = @"(?<head>[^\n]+)\x3A(?<tail>[^\r]+)";
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled }) ScalarRange(pattern, "😀 a:b", options, 0, 8);
+    }
+
+    [Theory]
+    [InlineData("\"[^\"\\n]*\"", "é\"skip\n😀\"\"", true)]
+    [InlineData("\"[^\"\\n]*\"", "é\"skip\n😀\"", false)]
+    [InlineData("x[^!\\n]*!", "xéx\nxx😀!", true)]
+    [InlineData("x[^!\\n]*!", "xéx\n!", false)]
+    [InlineData("\\n[^!\\n]*!", "\nx\n😀!", true)]
+    [InlineData("\\n[^!\\n]*!", "\nx\n", false)]
+    public void DelimitedRepeatResumesAtARejectedStop(string pattern, string text, bool expected)
+    {
+        using var regex = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1, MaxWorkSteps = 100 }
+        });
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        Assert.Equal(Utf8SliceTerminalRootKind.DelimitedClassRepeat, program.TerminalRoot);
+        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(text)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DelimitedRepeatKeepsWorkAdmissionAndInterruptionThroughLongBody(bool expire)
+    {
+        const string pattern = "\"[^\"\\n]*\"";
+        var bytes = Encoding.UTF8.GetBytes("\"" + new string('a', 140_000) + "\"");
+        using var limited = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 8 }
+        });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.IsMatch(bytes)).ResourceKind);
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var source = new CancellationTokenSource();
+        var timeout = TimeSpan.FromMilliseconds(50);
+        using var regex = new Utf8Regex(pattern, policy: new() { MatchTimeout = timeout });
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (expire) ticks = 100;
+            else source.Cancel();
+        });
+        try
+        {
+            if (expire)
+                Assert.Equal(timeout, Assert.Throws<RegexMatchTimeoutException>(
+                    () => regex.IsMatch(bytes, source.Token)).MatchTimeout);
+            else
+                Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(
+                    () => regex.IsMatch(bytes, source.Token)).CancellationToken);
+        }
+        finally { session.Complete(); }
     }
 
     [Fact]
