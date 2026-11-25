@@ -586,7 +586,7 @@ internal sealed class Utf8SliceProgram
             LeadingRepeatLiteralWindow = Utf8SliceRunner.GetShortRepeatLiteralWindow(this, leadingIndex);
         }
         if (LeadingScalarIsDecimal && LeadingClassDelimiter is { Direct: true, LiteralIndex: >= 0 } delimiter &&
-            instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 })
+            instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } boundary)
         {
             Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
             FollowingDecimalLiteralWindow = Utf8SliceRunner.GetShortRepeatLiteralWindow(this, delimiter.LiteralIndex + 2);
@@ -594,7 +594,13 @@ internal sealed class Utf8SliceProgram
                 !Utf8AsciiBytePredicates.IsDigit(next) && instructions[delimiter.LiteralIndex + 2].IsDecimalDigitSet)
             {
                 var index = delimiter.LiteralIndex + 6;
-                Utf8ConstructionScope.CurrentBudget.ChargeWork(3);
+                Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
+                // The class delimiter has already proved forward, case-sensitive
+                // search with no contiguous anchor. Cache the remaining program tests.
+                var aligned = !readsCaptures && boundary is { B: (int)Utf8SliceWordKind.Unicode, C: 0 } &&
+                    delimiter is { LeadingClass: 2, LiteralIndex: 5, GapMaximum: 0 } &&
+                    !Utf8AsciiBytePredicates.IsDigit((byte)delimiter.Literal) &&
+                    instructions[1].RepeatMinimum == 1 && SkipsTerminalRewind(1);
                 if (instructions.Length - index == 6 &&
                     instructions[index] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true,
                         RepeatMinimum: > 0 and var minimum, RepeatMaximum: <= 4 and var maximum } &&
@@ -602,9 +608,9 @@ internal sealed class Utf8SliceProgram
                     instructions[index + 4] is { Kind: Utf8SliceInstructionKind.Boundary,
                         A: 1, B: (int)Utf8SliceWordKind.Unicode, C: 0 } &&
                     instructions[index + 5].Kind == Utf8SliceInstructionKind.Accept)
-                    FollowingDecimalContinuation = (index, (byte)minimum, (byte)maximum);
+                    FollowingDecimalContinuation = (index, (byte)minimum, (byte)maximum, aligned);
                 else
-                    FollowingDecimalContinuation = (index, 0, 0);
+                    FollowingDecimalContinuation = (index, 0, 0, aligned);
             }
         }
         if (isNonBacktracking && instructions.Length > 64)
@@ -875,7 +881,7 @@ internal sealed class Utf8SliceProgram
             RepeatMinimum: > 0, RepeatMaximum: <= 4 };
     internal (int Min, int Max, byte Literal) LeadingRepeatLiteralWindow { get; }
     internal (int Min, int Max, byte Literal) FollowingDecimalLiteralWindow { get; }
-    internal (int Index, byte TerminalMin, byte TerminalMax) FollowingDecimalContinuation { get; }
+    internal (int Index, byte TerminalMin, byte TerminalMax, bool Aligned) FollowingDecimalContinuation { get; }
     internal Utf8BoundedProgramEmitter.Match? EmittedMatch { get; }
     internal int[]? EmittedHistoryOffsets { get; }
     internal const int ProofTierThreshold = 512 * 1024;

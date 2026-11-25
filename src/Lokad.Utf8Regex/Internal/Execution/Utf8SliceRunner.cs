@@ -571,6 +571,20 @@ internal static partial class Utf8SliceRunner
                     replay.Breach)
                 : new(false, -1, -1, replay.Breach);
         }
+        if (program.FollowingDecimalContinuation.Aligned &&
+            !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+            screenedLiteral < fromByte && candidatePlan.LiteralUtf8 is [var delimiter] &&
+            program.LeadingClassDelimiter is var window && window.Literal == delimiter)
+        {
+            if (invocation.Ledger.ReservedBytes != 0)
+            {
+                var admission = invocation.TryReserveWorking(0);
+                if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
+            }
+            return ScanAlignedDecimalWindows(program, input, fromByte, delimiter, window.LiteralIndex,
+                ref workspace, ref invocation, countAll: false, existenceOnly, out _);
+        }
+
         if (program.TerminalRoot == Utf8SliceTerminalRootKind.AsciiSetThenRepeat &&
             TryFindFirstShortAsciiRepeat(program, input, fromByte, candidatePlan.MinRequiredLength,
                 !existenceOnly && !collectHistory, ref invocation, out var shortMatch))
@@ -585,23 +599,6 @@ internal static partial class Utf8SliceRunner
         if (seekBeginning && first.B == 0 || seekVeryEnd || atContiguousOrigin)
             return TryFindFirstAtSingleOrigin(program, input, fromByte, captureStarts, captureEnds, collectHistory,
                 ref workspace, ref invocation, existenceOnly, first, seekBeginning, seekVeryEnd);
-
-        if (program.FollowingDecimalContinuation.Index != 0 && !reverse && !program.IgnoreCase && !program.HasContiguousAnchor &&
-            !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
-            first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1, B: (int)Utf8SliceWordKind.Unicode, C: 0 } &&
-            screenedLiteral < fromByte && candidatePlan.LiteralUtf8 is [var delimiter] &&
-            !Utf8AsciiBytePredicates.IsDigit(delimiter) &&
-            program.LeadingClassDelimiter is { LeadingClass: 2, LiteralIndex: 5, GapMaximum: 0, Direct: true } window &&
-            window.Literal == delimiter && program.Instructions[1].RepeatMinimum == 1 && program.SkipsTerminalRewind(1))
-        {
-            if (invocation.Ledger.ReservedBytes != 0)
-            {
-                var admission = invocation.TryReserveWorking(0);
-                if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
-            }
-            return ScanAlignedDecimalWindows(program, input, fromByte, delimiter, window.LiteralIndex,
-                ref workspace, ref invocation, countAll: false, existenceOnly, out _);
-        }
 
         if (remaining >= 256 && !program.ReadsCaptures &&
             program.HasShortDecimalHead && (program.EmittedMatch ?? program.TieredProof) is { } decimalProof &&
@@ -1558,12 +1555,9 @@ internal static partial class Utf8SliceRunner
             classSearch = prefixSearch;
             whitespaceLiteral = prefixSearch.Needle[0];
         }
-        if (literalImmediatelyAfterRepeat && directClassLiteral && whitespaceGapMaximum == 0 && leadingFirst < 0 &&
-            leadingClass == 2 && (classSearch is null or { Length: 1 }) && verifiedClassLiteralLength == 0 &&
-            !Utf8AsciiBytePredicates.IsDigit((byte)whitespaceLiteral) && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
-            first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1, B: (int)Utf8SliceWordKind.Unicode, C: 0 } &&
-            program.FollowingDecimalContinuation.Index != 0 && program.Instructions[1].RepeatMinimum == 1 &&
-            program.SkipsTerminalRewind(1))
+        if (program.FollowingDecimalContinuation.Aligned && literalImmediatelyAfterRepeat && leadingFirst < 0 &&
+            (classSearch is null or { Length: 1 }) && verifiedClassLiteralLength == 0 &&
+            captureStarts.IsEmpty && captureEnds.IsEmpty)
             return CountAlignedDecimalWindows(program, input, position, (byte)whitespaceLiteral,
                 whitespaceLiteralIndex, ref invocation);
         // Keep the existing literal and delimiter searches. A required decimal
