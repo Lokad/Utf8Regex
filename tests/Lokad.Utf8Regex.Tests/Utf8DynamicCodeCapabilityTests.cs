@@ -11,6 +11,67 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8DynamicCodeCapabilityTests
 {
     [Theory]
+    [InlineData(@"\G[=+^]+", "😀x+=^é", 5, 8)]
+    [InlineData(@"\G-?[0-9]+(\.[0-9]+)?(e[+-]?[0-9]+)?", "😀x-12.34e-5!", 5, 14)]
+    [InlineData(@"\G-?[0-9]+(\.[0-9]+)?(e[+-]?[0-9]+)?", "😀x12e-", 5, 7)]
+    public void EmittedContiguousRangeStartsAtTheAdmittedByteOrigin(string pattern, string text, int start, int end)
+    {
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        var dynamicCode = RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
+        Assert.Equal(dynamicCode, program.EmittedMatch is not null);
+        if (program.EmittedMatch is { } proof) Assert.Equal(end - start, proof(bytes.AsSpan(start)));
+        Assert.Equal(new Utf8CaptureRange(start, end), regex.Match(bytes, start));
+        Assert.False(regex.Match(bytes, start - 1).Success);
+        using var source = new CancellationTokenSource();
+        Assert.Equal(new Utf8CaptureRange(start, end), regex.Match(bytes, start, cancellationToken: source.Token));
+    }
+
+    [Theory]
+    [InlineData(31)]
+    [InlineData(32)]
+    [InlineData(33)]
+    public void ContiguousRepeatKeepsTheClippedExtentAcrossTheProofCutoff(int width)
+    {
+        using var regex = new Utf8Regex(@"\G[=+^]+", RegexOptions.Compiled);
+        var text = Encoding.UTF8.GetBytes("é" + new string('=', width + 1) + "x+=");
+        var end = 2 + width;
+        var slots = new Utf8CaptureRange[1];
+        Assert.Equal(new Utf8CaptureRange(2, end), regex.Match(text, 2, slots, endOffsetInBytes: end));
+        Assert.Equal(new Utf8CaptureRange(2, end), slots[0]);
+        Assert.Equal(new Utf8CaptureRange(2, end + 1), regex.Match(text, 2));
+        Assert.False(regex.Match(text, end + 1).Success);
+    }
+
+    [Fact]
+    public void ContiguousRepeatWithARealRetryUsesTheInterpreter()
+    {
+        using var regex = new Utf8Regex(@"\G[ab]+ab\z", RegexOptions.Compiled);
+        Assert.Null(regex.Inspection.AvailableOwnedSliceProgram.EmittedMatch);
+        Assert.Equal(new Utf8CaptureRange(2, 5), regex.Match("éaab"u8, 2));
+    }
+
+    [Fact]
+    public void OrdinaryContiguousRangeTiersUpFromUncontrolledCalls()
+    {
+        using var regex = new Utf8Regex(@"\G[=+^]+");
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        var dynamicCode = RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
+        Assert.Equal(dynamicCode, program.ObservesProofWork);
+        var bytes = Encoding.UTF8.GetBytes("é" + new string('+', 32));
+        var expected = new Utf8CaptureRange(2, bytes.Length);
+        using var source = new CancellationTokenSource();
+        for (var index = 0; index < 256; index++)
+            Assert.Equal(expected, regex.Match(bytes, 2, cancellationToken: source.Token));
+        Assert.Null(program.TieredProof);
+        for (var index = 0; index < 32_768 && program.ObservesProofWork; index++)
+            Assert.Equal(expected, regex.Match(bytes, 2));
+        Assert.Equal(dynamicCode, program.TieredProof is not null);
+        Assert.Equal(expected, regex.Match(bytes, 2));
+    }
+
+    [Theory]
     [InlineData(@"\A(?<unit>[1A-Za-z]{2})(?:[QX]?[XYZ]|[uV][0-9])$", "a1X\n", 3)]
     [InlineData(@"\A(?<unit>[1A-Za-z]{2})(?:[QX]?[XYZ]|[uV][0-9])$", "a1u4\n", 4)]
     [InlineData(@"\A(?<unit>[1A-Za-z]{2})[QX]??[XYZ]", "a1XX", 3)]

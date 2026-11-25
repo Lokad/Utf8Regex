@@ -684,19 +684,22 @@ internal static partial class Utf8SliceRunner
             int acceptedEnd;
             bool possible;
             var visits = 0;
-            var emitted = seekBeginning && fromByte == 0 ? program.EmittedMatch : null;
+            var atBeginning = seekBeginning && fromByte == 0;
+            var emitted = atBeginning ? program.EmittedMatch : null;
             var tiered = false;
-            if (emitted is null && seekBeginning && fromByte == 0 && proofStart == 1 &&
-                (program.ObservesProofWork || program.TieredProof is not null) &&
+            if (emitted is null && proofStart == 1 &&
+                (atBeginning || first.A == (int)Utf8SliceAnchorKind.Contiguous) &&
+                (program.ObservesProofWork || program.TieredProof is not null || program.EmittedMatch is not null) &&
                 invocation.CheckpointHook is null && invocation.IsUnmetered)
             {
-                emitted = program.TieredProof;
-                tiered = emitted is null;
+                emitted = program.EmittedMatch ?? program.TieredProof;
+                tiered = emitted is null && program.ObservesProofWork;
             }
             if (emitted is not null)
             {
-                acceptedEnd = emitted(input);
-                possible = acceptedEnd >= 0;
+                var end = emitted(fromByte == 0 ? input : input[fromByte..]);
+                possible = end >= 0;
+                acceptedEnd = possible ? fromByte + end : -1;
             }
             else if (tiered)
             {

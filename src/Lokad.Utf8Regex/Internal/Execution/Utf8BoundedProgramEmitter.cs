@@ -211,6 +211,13 @@ internal static class Utf8BoundedProgramEmitter
                                 pc = instruction.A + 1;
                                 break;
                             }
+                            if (instruction.RepeatMaximum == long.MaxValue)
+                            {
+                                origin = EmitGreedyOriginRun(code[pc], origin, offset, min, retry);
+                                offset = 0;
+                                pc = instruction.A + 1;
+                                break;
+                            }
                             if (min != max && CanSkipRepeatRetries(program, pc - 1, instruction))
                             {
                                 origin = EmitSingleEndpointRun(code[pc], origin, offset, min, max, retry);
@@ -331,6 +338,29 @@ internal static class Utf8BoundedProgramEmitter
             return end;
         }
 
+        Utf8IlLocal EmitGreedyOriginRun(in Utf8SliceInstruction atom, Utf8IlLocal? origin,
+            int offset, int min, Utf8IlLabel retry)
+        {
+            EmitRun(atom, origin, offset, min, retry);
+            // The caller bounds the entire origin suffix. The verified
+            // continuation uses the greedy endpoint without repeat retries.
+            var end = il.DeclareLocal<int>();
+            var scan = il.DefineLabel();
+            var done = il.DefineLabel();
+            LoadPosition(origin, offset + min);
+            il.StoreLocal(end);
+            il.MarkLabel(scan);
+            il.LoadLocal(end);
+            il.LoadLocal(length);
+            il.Emit(OpCodes.Bge_Un, done);
+            EmitMember(atom, end, 0, done);
+            LoadPosition(end, 1);
+            il.StoreLocal(end);
+            il.Emit(OpCodes.Br, scan);
+            il.MarkLabel(done);
+            return end;
+        }
+
         void EmitRun(in Utf8SliceInstruction atom, Utf8IlLocal? origin, int offset, int width, Utf8IlLabel retry)
         {
             if (width == 0) return;
@@ -410,8 +440,9 @@ internal static class Utf8BoundedProgramEmitter
             program.RightToLeft || program.IsNonBacktracking || program.ReadsCaptures ||
             code.Length is < 2 or > MaxExpandedVisits) return false;
 
-        if (code[0] is { Kind: Utf8SliceInstructionKind.Anchor,
-            A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: not 0 })
+        if (code[0] is { Kind: Utf8SliceInstructionKind.Anchor, B: 0 } and
+            ({ A: (int)Utf8SliceAnchorKind.Beginning, D: not 0 } or
+             { A: (int)Utf8SliceAnchorKind.Contiguous, D: 1 }))
         {
             entry = 1;
             return true;
@@ -468,6 +499,8 @@ internal static class Utf8BoundedProgramEmitter
         var code = program.Instructions;
         var shortOrigin = code[0] is { Kind: Utf8SliceInstructionKind.Anchor,
             A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: 1 };
+        var shortContiguousOrigin = code[0] is { Kind: Utf8SliceInstructionKind.Anchor,
+            A: (int)Utf8SliceAnchorKind.Contiguous, B: 0, D: 1 };
         budget.ChargeWork((ulong)(end - entry));
         // Count every expanded continuation, including retries that never
         // run on a successful input. Reject before allocating the IL builder.
@@ -492,6 +525,15 @@ internal static class Utf8BoundedProgramEmitter
                     instruction.HasSingleAtomBody && instruction.A + 1 < end && code[pc + 1].IsDecimalDigitSet &&
                     CanEmitDecimalRepeat(program, pc, instruction, shortOrigin)
                     => 1 + EmittedRepeatMaximum(instruction) + visits[instruction.A + 1],
+                // A loop emits its consuming test once. Its runtime work is
+                // bounded by the caller's suffix and the expanded paths.
+                Utf8SliceInstructionKind.RepeatGreedy when shortContiguousOrigin &&
+                    instruction.HasSingleAtomBody && instruction.A + 1 < end &&
+                    instruction.RepeatMaximum == long.MaxValue &&
+                    instruction.RepeatMinimum <= Utf8SliceRunner.ShortSingleOriginProofInputLimit &&
+                    IsAsciiAtom(program, code[pc + 1]) &&
+                    (code[instruction.A].RepeatExitAcceptsEmptyTail || CanSkipRepeatRetries(program, pc, instruction))
+                    => 2 + (int)instruction.RepeatMinimum + visits[instruction.A + 1],
                 // Fixed repeats add byte checks without duplicating the continuation.
                 Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy when
                     instruction.HasSingleAtomBody && instruction.A + 1 < end &&
