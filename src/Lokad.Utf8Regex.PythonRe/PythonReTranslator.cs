@@ -14,9 +14,6 @@ internal static partial class PythonReTranslator
         return GetWidth(node, parseResult).Min == 0;
     }
 
-    public static bool CanMatchNonEmpty(PythonReNode node, PythonReParseResult parseResult) =>
-        GetWidth(node, parseResult).Max > 0;
-
     // Native FindAll over UTF-8 is admissible only when alternation order is
     // unobservable: prefix-free exact literals guarantee at most one branch
     // matches at any position, so a literal-family candidate scan cannot diverge

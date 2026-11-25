@@ -349,20 +349,21 @@ internal static partial class PythonReBenchmarkReporter
         var utf8Core = isLimited
             ? context.ExecuteBoundedExactLiteralReplacementChecksum()
             : context.ExecuteUtf8CoreRequiredReplacementChecksum();
-        var countedUtf8Core = isLimited
-            ? expected
-            : context.ExecuteUtf8CoreCountedLiteralReplacementChecksum();
+        var compareCountedLiteral = !isLimited && context.SupportsCountedLiteralReplacementPhase;
+        int? countedUtf8Core = compareCountedLiteral
+            ? context.ExecuteUtf8CoreCountedLiteralReplacementChecksum()
+            : null;
         var onePass = context.ExecuteDecodedOnePassLiteralReplacementChecksum();
         if (expected != predecoded ||
             expected != decoded ||
             expected != utf8Core ||
-            expected != countedUtf8Core ||
+            (countedUtf8Core.HasValue && expected != countedUtf8Core.Value) ||
             expected != onePass)
         {
             throw new InvalidOperationException(
                 $"PythonRe replacement phase diagnostic '{id}' produced incomparable sinks: " +
                 $"public={expected}, predecoded={predecoded}, decoded={decoded}, " +
-                $"UTF-8 core={utf8Core}, counted UTF-8 core={countedUtf8Core}, " +
+                $"UTF-8 core={utf8Core}, counted UTF-8 core={countedUtf8Core?.ToString() ?? "unavailable"}, " +
                 $"one-pass={onePass}.");
         }
 
@@ -416,7 +417,8 @@ internal static partial class PythonReBenchmarkReporter
         {
             PrintOperation("Utf8CoreReplace", MeasureRetainedPhaseOperation(context.ExecuteUtf8CoreReplacementOutput, effectiveIterations, samples));
             PrintOperation("Utf8CoreRequired", MeasureRetainedPhaseOperation(context.ExecuteUtf8CoreRequiredReplacement, effectiveIterations, samples));
-            PrintOperation("Utf8CoreCounted", MeasureRetainedPhaseOperation(context.ExecuteUtf8CoreCountedLiteralReplacement, effectiveIterations, samples));
+            if (compareCountedLiteral)
+                PrintOperation("Utf8CoreCounted", MeasureRetainedPhaseOperation(context.ExecuteUtf8CoreCountedLiteralReplacement, effectiveIterations, samples));
         }
         PrintOperation("PredecodedOnePass", MeasureRetainedPhaseOperation(context.ExecutePredecodedOnePassLiteralReplacement, effectiveIterations, samples));
         PrintOperation("DecodeOnePass", MeasureRetainedPhaseOperation(context.ExecuteDecodedOnePassLiteralReplacement, effectiveIterations, samples));
@@ -1362,19 +1364,22 @@ internal sealed class PythonReBenchmarkContext
                 _replacementBytes,
                 _captureCount,
                 new Dictionary<string, int>(StringComparer.Ordinal));
-            var hasNonemptyExactReplacementPattern =
+            var exactReplacementPattern =
                 (benchmarkCase.Options & PythonReCompileOptions.IgnoreCase) == 0 &&
-                PythonReTranslator.IsExactLiteral(parsed.Root) &&
-                PythonReTranslator.CanMatchNonEmpty(parsed.Root, parsed);
+                PythonReTranslator.IsExactLiteral(parsed.Root);
+            var width = exactReplacementPattern ? PythonReTranslator.GetWidth(parsed.Root, parsed) : default;
+            var hasNonemptyExactReplacementPattern = exactReplacementPattern && width.Max > 0;
             _supportsReplacementPhases = plan.Tokens.All(
                 static token => token.Kind == PythonReReplacementTokenKind.Literal) &&
                 (benchmarkCase.Operation != PythonReBenchmarkOperation.ReplaceStringLimited ||
                  hasNonemptyExactReplacementPattern);
             _coreReplacementRegex = _supportsReplacementPhases
-                ? new Utf8Regex(translatedPattern, options: regexOptions)                : null;
+                ? new Utf8Regex(translatedPattern, options: regexOptions)
+                : null;
+            if (_supportsReplacementPhases && !exactReplacementPattern)
+                width = PythonReTranslator.GetWidth(parsed.Root, parsed);
             _replacementNonEmptyAtSamePositionRegex = _supportsReplacementPhases &&
-                PythonReTranslator.CanMatchEmpty(parsed.Root, parsed) &&
-                PythonReTranslator.CanMatchNonEmpty(parsed.Root, parsed)
+                width.Min == 0 && width.Max > 0
                     ? new Regex(
                         @"\G(?:(?:" + translatedPattern + @"))(?!\G)",
                         regexOptions,
@@ -1446,6 +1451,12 @@ internal sealed class PythonReBenchmarkContext
     internal int CaptureCount => _captureCount;
 
     internal bool SupportsReplacementPhases => _supportsReplacementPhases;
+    internal bool SupportsCountedLiteralReplacementPhase =>
+        _coreReplacementRegex?.Inspection.PreparedRegex is
+        {
+            ExecutionKind: NativeExecutionKind.ExactAsciiLiteral,
+            SearchPlan.LiteralSearch: { Length: > 0, IgnoreCase: false }
+        };
 
     internal bool SupportsSplitPhases => _supportsSplitPhases;
 
