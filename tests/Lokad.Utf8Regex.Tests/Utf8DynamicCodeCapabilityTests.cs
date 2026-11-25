@@ -32,6 +32,10 @@ public sealed class Utf8DynamicCodeCapabilityTests
     [InlineData(31)]
     [InlineData(32)]
     [InlineData(33)]
+    [InlineData(129)]
+    [InlineData(254)]
+    [InlineData(255)]
+    [InlineData(257)]
     public void ContiguousRepeatKeepsTheClippedExtentAcrossTheProofCutoff(int width)
     {
         using var regex = new Utf8Regex(@"\G[=+^]+", RegexOptions.Compiled);
@@ -42,6 +46,17 @@ public sealed class Utf8DynamicCodeCapabilityTests
         Assert.Equal(new Utf8CaptureRange(2, end), slots[0]);
         Assert.Equal(new Utf8CaptureRange(2, end + 1), regex.Match(text, 2));
         Assert.False(regex.Match(text, end + 1).Success);
+    }
+
+    [Fact]
+    public void LongerContiguousRepeatKeepsWideCaseAliases()
+    {
+        using var regex = new Utf8Regex(@"\G[k]+", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var text = Encoding.UTF8.GetBytes("é" + new string('k', 48) + "Kk!");
+        var expected = new Utf8CaptureRange(2, text.Length - 1);
+        Assert.Equal(expected, regex.Match(text, 2));
+        using var source = new CancellationTokenSource();
+        Assert.Equal(expected, regex.Match(text, 2, cancellationToken: source.Token));
     }
 
     [Fact]

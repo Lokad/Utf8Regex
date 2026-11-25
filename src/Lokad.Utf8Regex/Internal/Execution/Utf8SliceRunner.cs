@@ -458,16 +458,20 @@ internal static partial class Utf8SliceRunner
         var workspace = new AttemptWorkspace();
         try
         {
-            // Prepared absolute-beginning proofs already fix the only origin.
-            // Dispatch without setting up the general search or changing the
-            // single-origin verifier's admission and fallback.
+            // Prepared start anchors already fix the only origin in these
+            // extents. Use the same verifier without general search setup.
             ref readonly var first = ref program.Instructions[0];
             if (fromByte == 0 && !program.IsNonBacktracking && !program.RightToLeft &&
-                first is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: not 0 })
+                first is { Kind: Utf8SliceInstructionKind.Anchor, B: 0, D: not 0 })
             {
-                invocation.Budget.ThrowIfCancellationRequested();
-                return TryFindFirstAtSingleOrigin(program, input, fromByte, captureStarts, captureEnds,
-                    collectHistory, ref workspace, ref invocation, existenceOnly, first, seekBeginning: true, seekVeryEnd: false);
+                var seekBeginning = first.A == (int)Utf8SliceAnchorKind.Beginning;
+                if (seekBeginning || first.A == (int)Utf8SliceAnchorKind.Contiguous &&
+                    input.Length < SingleOriginPrefixInstructionLimit && invocation.AnchorOriginByte == 0)
+                {
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    return TryFindFirstAtSingleOrigin(program, input, fromByte, captureStarts, captureEnds,
+                        collectHistory, ref workspace, ref invocation, existenceOnly, first, seekBeginning, seekVeryEnd: false);
+                }
             }
             return TryFindFirst(program, input, fromByte, captureStarts, captureEnds,
                 collectHistory, ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral);
@@ -676,6 +680,18 @@ internal static partial class Utf8SliceRunner
                 if (input.Length > BranchedPrefixInstructionLimit)
                     proofLimit = SingleOriginPrefixInstructionLimit;
             }
+            else if (!existenceOnly &&
+                first is { A: (int)Utf8SliceAnchorKind.Contiguous, D: 1 } &&
+                input.Length - fromByte <= SingleOriginPrefixInstructionLimit - 2 &&
+                program.Instructions[1] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true } repeat &&
+                program.Instructions[repeat.A + 1].Kind == Utf8SliceInstructionKind.Accept &&
+                invocation.IsUnmetered && invocation.CheckpointHook is null)
+            {
+                // A terminal repeat can use the existing longer range proof.
+                // Leave one visit each for the repeat and its acceptance.
+                proofStart = 1;
+                proofLimit = SingleOriginPrefixInstructionLimit;
+            }
         }
         if (proofStart >= 0)
         {
@@ -688,7 +704,8 @@ internal static partial class Utf8SliceRunner
             var emitted = atBeginning ? program.EmittedMatch : null;
             var tiered = false;
             if (emitted is null && proofStart == 1 &&
-                (atBeginning || first.A == (int)Utf8SliceAnchorKind.Contiguous) &&
+                (atBeginning || first.A == (int)Utf8SliceAnchorKind.Contiguous &&
+                    proofLimit == BranchedPrefixInstructionLimit) &&
                 (program.ObservesProofWork || program.TieredProof is not null || program.EmittedMatch is not null) &&
                 invocation.CheckpointHook is null && invocation.IsUnmetered)
             {
