@@ -213,9 +213,10 @@ public sealed class Utf8OwnedTreeContinuationTests
         Array.Fill(ends, -1);
         var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
             Regex.InfiniteMatchTimeout, CancellationToken.None);
+        // Retained history needs the journal even when no alternative remains.
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes,
             Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
-                collectHistory: false, ref storage).Breach);
+                collectHistory: true, ref storage).Breach);
         Assert.Equal(0UL, storage.Ledger.ReservedBytes);
         Array.Fill(starts, -1);
         Array.Fill(ends, -1);

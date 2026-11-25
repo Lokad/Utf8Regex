@@ -66,13 +66,16 @@ public sealed class Utf8SliceBoundsTests
     [Fact]
     public void StorageDenialBreachesWithCleanup()
     {
-        var program = PlusProgram();
-        var input = Encoding.ASCII.GetBytes("aaabbb");
+        // The first alternative captures a value before the trailing c fails.
+        using var regex = new Utf8Regex("((a)|ab)(c)");
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        var input = "abc"u8;
         var invocation = Invoke(0, 0, 1, CancellationToken.None);
         var (starts, ends) = Slots(program);
         var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
             collectHistory: false, ref invocation);
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, outcome.Breach);
+        Assert.False(outcome.Found);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 
