@@ -1315,7 +1315,8 @@ internal static partial class Utf8SliceRunner
                 A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd }) return;
         }
         else if (next is not ({ Kind: Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Literal, B: 0 } or
-                  { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }) &&
+                  { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+                  { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: 0 }) &&
             !(repeat is { RepeatMinimum: 0, RepeatMaximum: 1 } &&
               (optionalAsciiLiteral || atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 }) &&
               next is { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy, RepeatMinimum: > 0 }))
@@ -1732,6 +1733,22 @@ internal static partial class Utf8SliceRunner
                 case { Kind: Utf8SliceInstructionKind.Fork, B: 0 } when entry.A > index:
                     if (!ExcludesShorterRepeatEnds(instructions, setMasks, entry.A, consumedAscii, asciiOnly, ref remaining)) return false;
                     continue;
+                case { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: 0 } when asciiOnly && remaining >= 4 &&
+                    instructions.Length - index >= 6 && entry.A == index + 4:
+                {
+                    // A positive one-class lookahead tests the next scalar.
+                    // Its completed ASCII mask must reject every byte that
+                    // could appear at a shorter repeat endpoint.
+                    remaining -= 4;
+                    if (instructions[index + 1] is not ({ Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+                            { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }) ||
+                        instructions[index + 2].Kind != Utf8SliceInstructionKind.Commit ||
+                        instructions[index + 3] is not { Kind: Utf8SliceInstructionKind.Jump } jump ||
+                        jump.A != entry.A + 1 || instructions[entry.A].Kind != Utf8SliceInstructionKind.Fail)
+                        return false;
+                    var guard = ReadAsciiSet(setMasks[instructions[index + 1].A]);
+                    return ((guard.Low & consumedAscii.Low) | (guard.High & consumedAscii.High)) == 0;
+                }
                 case { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy,
                     RepeatMinimum: > 0 } when IsSingleAtomRepeat(instructions, index, entry):
                     continue;

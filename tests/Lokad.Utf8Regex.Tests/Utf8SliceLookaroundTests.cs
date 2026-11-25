@@ -13,6 +13,20 @@ namespace Lokad.Utf8Regex.Tests;
 // Unsupported or malformed grammar retains its construction behavior.
 public sealed class Utf8SliceLookaroundTests
 {
+    [Fact]
+    public void DisjointClassLookaheadDoesNotRewindWithinItsWorkLimit()
+    {
+        using var regex = new Utf8Regex(@"(?<=\s)[A-Z][a-z]+(?=\s)", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 64 }
+        });
+        var prefix = " A" + new string('a', 4095);
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(prefix + "! 😀")));
+        var match = regex.Match(Encoding.UTF8.GetBytes(prefix + "\u2003"));
+        Assert.True(match.Success);
+        Assert.Equal((1, prefix.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+    }
+
     public static IEnumerable<object?[]> VariableLookbehindOwnedShapes()
     {
         // Variable-length bodies follow backward greedy/lazy choice order
