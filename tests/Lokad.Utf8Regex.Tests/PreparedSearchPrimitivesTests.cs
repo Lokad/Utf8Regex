@@ -500,15 +500,18 @@ public sealed class PreparedSearchPrimitivesTests
             Encoding.UTF8.GetBytes("LogWarning"),
             Encoding.UTF8.GetBytes("LogError"),
         ]);
-        var input = Encoding.UTF8.GetBytes("..LogWarning(..LogError(..");
+        const string text = "LogOther LogWarrant ..LogWarning(..LogError(..LogE";
+        var input = Encoding.UTF8.GetBytes(text);
 
         Assert.Equal(PreparedLiteralSetStrategy.SingleBucketPrefix, exact.Strategy);
         Assert.True(exact.SearchData.Buckets[0].PrefixDiscriminator.HasValue);
         Assert.True(exact.TryFindFirstMatchWithLength(input, out var index, out var matchedLength));
-        Assert.Equal(2, index);
+        Assert.Equal(text.IndexOf("LogWarning", StringComparison.Ordinal), index);
         Assert.Equal("LogWarning".Length, matchedLength);
         Assert.True(exact.TryGetMatchedLiteralLength(input, index, out var lengthAtIndex));
         Assert.Equal("LogWarning".Length, lengthAtIndex);
+        Assert.Equal(index, exact.IndexOf(input));
+        Assert.Equal(text.IndexOf("LogError", StringComparison.Ordinal), exact.LastIndexOf(input));
     }
 
     [Fact]

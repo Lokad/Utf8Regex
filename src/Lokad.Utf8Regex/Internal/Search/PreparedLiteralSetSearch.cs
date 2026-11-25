@@ -488,6 +488,9 @@ internal readonly partial struct PreparedLiteralSetSearch
                 matchedLength = literal.Length;
                 return true;
             }
+
+            // Preparation requires a distinct byte at this offset for every literal.
+            return false;
         }
 
         foreach (var literal in bucket.Literals)
