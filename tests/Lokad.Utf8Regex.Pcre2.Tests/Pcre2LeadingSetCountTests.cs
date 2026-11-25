@@ -47,12 +47,14 @@ public sealed class Pcre2LeadingSetCountTests
     public void TerminalLiteralPairCountKeepsStartsAtBlockEdges(string pattern)
     {
         var subject = Encoding.UTF8.GetBytes("😀ab" + new string('x', 2045) + "abéabbb a");
+        var skippedBlock = Encoding.UTF8.GetBytes("😀ab" + new string('x', 4094) + "ab");
         using var token = new CancellationTokenSource();
         using var regex = Create(pattern, working: 1, work: 10);
         using var denied = Create(pattern, working: 1, work: 3);
 
         Assert.Equal(3, regex.Count(subject, 4, cancellationToken: token.Token));
         Assert.Equal(2, regex.Count(subject, 6, cancellationToken: token.Token));
+        Assert.Equal(2, regex.Count(skippedBlock, 4, cancellationToken: token.Token));
         Assert.Equal(Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => denied.Count(subject, 4, cancellationToken: token.Token)).ErrorKind);
     }

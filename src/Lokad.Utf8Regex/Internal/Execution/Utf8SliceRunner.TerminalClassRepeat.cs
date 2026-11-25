@@ -431,8 +431,13 @@ internal static partial class Utf8SliceRunner
             breach = control.TryChargeWorkspaceStep();
             if (breach != Utf8ExecutionLimitKind.None) { outcome = new(count, breach); return true; }
             // Each block owns its starts and borrows one byte of lookahead.
-            var starts = Math.Min(2048, input.Length - 1);
-            count += PreparedSubstringSearch.CountExactSequence(input[..(starts + 1)], needle);
+            // A full block can skip all starts before its first starter byte.
+            const int blockStarts = 2048;
+            var starts = Math.Min(blockStarts, input.Length - 1);
+            var firstStart = starts == blockStarts && input[0] != needle[0]
+                ? input[..starts].IndexOf(needle[0]) : 0;
+            if (firstStart >= 0)
+                count += PreparedSubstringSearch.CountExactSequence(input[firstStart..(starts + 1)], needle);
             input = input[starts..];
         }
         outcome = new(count, control.TryChargeWorkspaceStep());
