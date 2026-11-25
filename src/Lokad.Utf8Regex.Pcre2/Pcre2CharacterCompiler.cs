@@ -1737,10 +1737,8 @@ internal static class Pcre2CharacterSemantics
             return (matchOptions & Pcre2MatchOptions.NotEol) == 0;
         }
 
-        if ((options & Pcre2CharacterOptions.Multiline) != 0 && TryGetNewlineWidth(input, offset, newline, out _))
-        {
-            return true;
-        }
+        if ((options & Pcre2CharacterOptions.Multiline) != 0)
+            return TryGetNewlineWidth(input, offset, newline, out _);
 
         return (matchOptions & Pcre2MatchOptions.NotEol) == 0 &&
             (compileOptions & Pcre2CompileOptions.DollarEndOnly) == 0 &&
