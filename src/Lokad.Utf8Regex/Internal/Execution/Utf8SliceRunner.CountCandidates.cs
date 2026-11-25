@@ -2490,8 +2490,7 @@ internal static partial class Utf8SliceRunner
         int atomIndex, in Utf8SliceInstruction repeat, ref int remaining, out bool continueProof)
     {
         continueProof = false;
-        var atom = program.Instructions[atomIndex];
-        var continuation = repeat.A + 1;
+        ref readonly var atom = ref program.Instructions[atomIndex];
         var repeatMaximum = repeat.RepeatMaximum;
         if (atom.IsDecimalDigitSet && repeatMaximum == long.MaxValue && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
             input.Length - position <= Math.Min(32, remaining) &&
@@ -2512,7 +2511,7 @@ internal static partial class Utf8SliceRunner
         if (repeatMaximum > 4)
         {
             var available = Math.Min(input.Length - position, repeatMaximum);
-            var exit = program.Instructions[repeat.A];
+            ref readonly var exit = ref program.Instructions[repeat.A];
             // A greedy run with an unconditional empty tail can keep its
             // longest endpoint. Verify the tail in order for the final range.
             if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || available > remaining ||
@@ -2560,6 +2559,15 @@ internal static partial class Utf8SliceRunner
             continueProof = true;
             return position + length;
         }
+
+        return TryMatchSmallPrefixRepeat(program, input, position, atomIndex, in repeat, ref remaining, out continueProof);
+    }
+
+    private static int TryMatchSmallPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
+        int atomIndex, in Utf8SliceInstruction repeat, ref int remaining, out bool continueProof)
+    {
+        continueProof = false;
+        ref readonly var atom = ref program.Instructions[atomIndex];
         var decimalDigits = atom.IsDecimalDigitSet;
         var ascii = default(Utf8SearchAsciiSet);
         var asciiOnly = false;
@@ -2582,7 +2590,7 @@ internal static partial class Utf8SliceRunner
         }
 
         var minimum = (int)repeat.RepeatMinimum;
-        var maximum = Math.Min(input.Length - position, (int)repeatMaximum);
+        var maximum = Math.Min(input.Length - position, (int)repeat.RepeatMaximum);
         if (maximum > remaining) return BranchedPrefixUndecided;
         remaining -= maximum;
         var consumed = 0;
@@ -2617,6 +2625,7 @@ internal static partial class Utf8SliceRunner
         {
             // Keep the first viable endpoint in the program's repeat order.
             var lazy = repeat.Kind == Utf8SliceInstructionKind.RepeatLazy;
+            var continuation = repeat.A + 1;
             var last = lazy ? consumed : minimum;
             var step = lazy ? 1 : -1;
             for (var count = lazy ? minimum : consumed; count != last; count += step)
