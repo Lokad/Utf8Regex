@@ -51,6 +51,12 @@ public sealed partial class Utf8Regex
                 throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
             var program = _ownedSliceProgram;
             invocation.AnchorOriginByte = startOffsetInBytes;
+            if (output.Length > 1 && program.EmittedHistoryOffsets is { } offsets &&
+                (program.EmittedMatch ?? program.TieredProof) is { } proof &&
+                invocation.IsUnmetered && invocation.CheckpointHook is null &&
+                Utf8SliceRunner.TryGetFixedDecimalFollower(program, out var digits, out var first, out var last))
+                return MatchEmittedCaptureSlots(subject, startOffsetInBytes, output, offsets, digits, first, last, proof);
+
             Utf8CaptureRange result;
             if (program.GroupCount == 0 && CanUseNativeLiteralSearch(program, maximumAlternatives: 8))
             {
@@ -105,6 +111,7 @@ public sealed partial class Utf8Regex
                     new(Math.Min(opening, closing), Math.Max(opening, closing));
             }
             FinishFundedInvocation(ref invocation);
+            if (result.Success && output.Length > 1) program.ObserveCaptureProofWork(ref invocation);
             return result;
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
@@ -122,5 +129,34 @@ public sealed partial class Utf8Regex
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
             invocation.Ledger.Release(invocation.Ledger.ReservedBytes);
         }
+    }
+
+    private static Utf8CaptureRange MatchEmittedCaptureSlots(ReadOnlySpan<byte> subject, int position,
+        Span<Utf8CaptureRange> output, int[] offsets, int digits, byte first, byte last, Utf8BoundedProgramEmitter.Match proof)
+    {
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[Utf8BoundedProgramEmitter.MaxHistoryCaptures];
+        if (!Utf8SliceRunner.TryFindFixedDecimalMatch(subject, position, digits, first, last, proof,
+                out var start, out var end, captures))
+        {
+            output.Clear();
+            return default;
+        }
+
+        var value = output[0] = new(start, end);
+        for (var slot = 1; slot < output.Length; slot++)
+        {
+            var firstCapture = offsets[slot];
+            var afterLastCapture = offsets[slot + 1];
+            if (firstCapture == afterLastCapture)
+            {
+                output[slot] = default;
+                continue;
+            }
+            // Layout offsets include group zero. The scratch contains only
+            // nonzero groups and records their ranges relative to match start.
+            var capture = captures[afterLastCapture - 2];
+            output[slot] = new(start + capture.StartOffsetInBytes, start + capture.EndOffsetInBytes);
+        }
+        return value;
     }
 }

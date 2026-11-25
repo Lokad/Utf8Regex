@@ -149,11 +149,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
                     ? _workspace.Stacks.SnapshotHistory(_input, _catalog!.GroupNumbers, outcome.StartByte, outcome.EndByte,
                         ref results, ref _invocation)
                     : SnapshotSlots(outcome, ref results);
-                // One accepted straight-line history accounts for one bounded
-                // walk. Candidate misses and the controlled path add no credit.
-                if (program.EmittedHistoryOffsets is not null && program.ObservesProofWork &&
-                    _invocation.IsUnmetered && _invocation.CheckpointHook is null)
-                    program.ObserveProofWork(program.Instructions.Length);
+                program.ObserveCaptureProofWork(ref _invocation);
             }
             Utf8RetainedRangeMatch? receipt = null;
             if (retain)

@@ -829,6 +829,15 @@ internal sealed class Utf8SliceProgram
         internal volatile Utf8BoundedProgramEmitter.Match? Emitted;
     }
 
+    internal void ObserveCaptureProofWork(ref Utf8SliceInvocation invocation)
+    {
+        // An accepted straight-line capture result accounts for one bounded
+        // walk. Candidate misses and controlled invocations add no credit.
+        if (EmittedHistoryOffsets is not null && ObservesProofWork &&
+            invocation.IsUnmetered && invocation.CheckpointHook is null)
+            ObserveProofWork(Instructions.Length);
+    }
+
     internal void ObserveProofWork(int visits)
     {
         if (_proofTier is not { } tier) return;

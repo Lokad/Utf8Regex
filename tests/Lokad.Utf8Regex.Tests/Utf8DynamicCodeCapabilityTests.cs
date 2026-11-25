@@ -222,6 +222,9 @@ public sealed class Utf8DynamicCodeCapabilityTests
         Assert.Equal(ranges, first.GetCaptures(1).ToArray());
         AssertHistory(boundary, (warmup - 1) * width);
         AssertHistory(last, warmup * width);
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
+        Assert.Equal(first.Value, regex.Match(bytes, captures: slots));
+        Assert.Equal(ranges[^1], slots[1]);
         Assert.Same(proof, program.TieredProof);
 
         void AssertHistory(Utf8RangeMatch match, int start)
@@ -304,10 +307,23 @@ public sealed class Utf8DynamicCodeCapabilityTests
         foreach (var (number, start, end) in expected)
             Assert.Equal(new Utf8CaptureRange(start, end), Assert.Single(first.GetCaptures(number).ToArray()));
 
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[5];
+        var sentinel = new Utf8CaptureRange(42, 43);
+        slots.Fill(sentinel);
+        Assert.Equal(first.Value, regex.Match(bytes, startOffsetInBytes: 2, captures: slots[..2], endOffsetInBytes: 12));
+        Assert.Equal(new Utf8CaptureRange(3, 9), slots[1]);
+        Assert.Equal(sentinel, slots[2]);
+        Assert.Equal(first.Value, regex.Match(bytes, captures: slots));
+        for (var slot = 1; slot <= expected.Length; slot++)
+            Assert.Equal(new Utf8CaptureRange(expected[slot - 1].Item2, expected[slot - 1].Item3), slots[slot]);
+        Assert.Equal(sentinel, slots[^1]);
+        Assert.False(regex.Match(bytes, captures: slots, endOffsetInBytes: 11).Success);
+        foreach (var slot in slots[..^1]) Assert.Equal(default, slot);
+        Assert.Equal(sentinel, slots[^1]);
+
         if (program.EmittedMatch is { } proof)
         {
             Span<Utf8CaptureRange> storage = stackalloc Utf8CaptureRange[3];
-            var sentinel = new Utf8CaptureRange(42, 43);
             storage.Fill(sentinel);
             Assert.Equal(-1, proof("𝟙2-X4"u8, storage));
             foreach (var capture in storage) Assert.Equal(sentinel, capture);
