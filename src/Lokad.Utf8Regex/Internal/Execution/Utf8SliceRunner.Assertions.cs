@@ -282,6 +282,15 @@ internal static partial class Utf8SliceRunner
         return breach;
     }
 
+    private static bool TryGetTerminalInlineRepeatAssertion(Utf8SliceProgram program, int continuation,
+        out Utf8SliceInstruction guard)
+    {
+        var code = program.Instructions;
+        guard = code[continuation];
+        return guard is { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: < 0 } &&
+            guard.A + guard.D == code.Length - 1 && code[^1].Kind == Utf8SliceInstructionKind.Accept;
+    }
+
     private static Utf8SliceMatchOutcome MatchTerminalInlineRepeatAssertion(Utf8SliceProgram program,
         int repeatIndex, in Utf8SliceInstruction guard, ReadOnlySpan<byte> input, int position,
         ref Utf8SliceInvocation invocation)

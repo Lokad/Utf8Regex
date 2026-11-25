@@ -354,8 +354,7 @@ internal static partial class Utf8SliceRunner
         workspace.Stacks.ResetAttempt();
         if (verifiedPrefix.Bytes > 0 && captureStarts.IsEmpty && captureEnds.IsEmpty &&
             !collectHistory && !requireFullInput && !program.RightToLeft &&
-            program.Instructions[verifiedPrefix.Instruction] is { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: < 0 } guard &&
-            guard.A + guard.D == program.Instructions.Length - 1 && program.Instructions[^1].Kind == Utf8SliceInstructionKind.Accept)
+            TryGetTerminalInlineRepeatAssertion(program, verifiedPrefix.Instruction, out var guard))
         {
             // No instruction after this capture-free guard observes an
             // assertion endpoint. Its result belongs to the verified prefix.
@@ -1611,6 +1610,10 @@ internal static partial class Utf8SliceRunner
         // Keep a leading boundary in the original verification order.
         var straightPrefixStart = reuseLeadingPrefix && leadingScalarIndex == 0 ? prefixContinuation : 0;
         var straightPrefixBytes = straightPrefixStart != 0 ? leadingPrefix.Length : 0;
+        var terminalGuard = default(Utf8SliceInstruction);
+        var terminalAssertion = prefixContinuation != 0 && !program.RightToLeft &&
+            captureStarts.IsEmpty && captureEnds.IsEmpty &&
+            TryGetTerminalInlineRepeatAssertion(program, prefixContinuation, out terminalGuard);
         var (prefixRepeatAscii, prefixRepeatFollower, prefixRepeatMinimum) = GetExactPrefixRepeatHead(program, prefixContinuation);
         var terminalRepeat = 0;
         var terminalWordMinimum = -1;
@@ -1889,6 +1892,18 @@ internal static partial class Utf8SliceRunner
                         ? RunUnboundedAsciiWord(input, start, terminalWordMinimum != 0, ref invocation)
                         : RunClassRepeat(program, terminalRepeat, input, start, ref invocation);
                     outcome = new(tail.EndIndex >= 0, tail.EndIndex, tail.Breach);
+                }
+                else if (terminalAssertion && verifiedPrefix.Item1 == prefixContinuation && verifiedPrefix.Item2 > 0)
+                {
+                    // The search established the prefix. The terminal assertion
+                    // has no mutable attempt state, but admission still comes first.
+                    if (!workspace.Initialized)
+                    {
+                        var admission = workspace.Initialize(program, ref invocation);
+                        if (admission != Utf8ExecutionLimitKind.None) return new(count, admission);
+                    }
+                    outcome = MatchTerminalInlineRepeatAssertion(program, prefixContinuation + 1, terminalGuard,
+                        input, position + verifiedPrefix.Item2, ref invocation);
                 }
                 else
                     outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, false, false, true,
