@@ -29,7 +29,8 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
             state.HasAlternation,
             state.HasAbsoluteStartAnchor,
             state.HasWordBoundary,
-            state.HasLookbehind);
+            state.HasLookbehind,
+            state.HasCaptureNodes);
     }
 
     private struct Frame(Utf8TreeNode node)
@@ -55,6 +56,10 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
                 frame.Entered = true;
                 switch (node.Kind)
                 {
+                    case Utf8TreeNodeKind.Capture when node.M > 0:
+                        state.HasCaptureNodes = true;
+                        break;
+
                     case Utf8TreeNodeKind.Backreference:
                         state.HasBackreferences = true;
                         break;
@@ -124,5 +129,6 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
         public bool HasAbsoluteStartAnchor;
         public bool HasWordBoundary;
         public bool HasLookbehind;
+        public bool HasCaptureNodes;
     }
 }

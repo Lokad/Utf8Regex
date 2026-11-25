@@ -132,7 +132,7 @@ public sealed partial class Utf8Regex : IDisposable
             var usesLiteralEngine = preparedRegex.HasLiteralPlan;
             var captureRoot = usesLiteralEngine || _anchoredLiteral.HasValue ? root : null;
             _hasCaptures = ownedSliceProgram.GroupCount != 0 &&
-                (captureRoot is null || ContainsCapture(captureRoot));
+                (captureRoot is null || preparedRegex.Features.HasCaptureNodes);
             if (usesLiteralEngine && _hasCaptures && !ownedSliceProgram.HasUnicodePatternAtoms &&
                 !HasFiniteExecutionLimits && matchTimeout == Regex.InfiniteMatchTimeout && !UsesRightToLeft())
             {
@@ -712,36 +712,6 @@ public sealed partial class Utf8Regex : IDisposable
             return Utf8SliceBufferWork.CreateMatchRange(outcome.StartByte, outcome.EndByte, ref invocation);
         invocation.Budget.ThrowIfCancellationRequested();
         return default;
-    }
-
-    private struct CaptureCheckFrame(Utf8TreeNode node)
-    {
-        internal readonly Utf8TreeNode Node = node;
-        internal int NextChild;
-    }
-
-    private static bool ContainsCapture(Utf8TreeNode node)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<CaptureCheckFrame>.Create(budget, new(node));
-        while (frames.Count != 0)
-        {
-            budget.ChargeWork(1);
-            var index = frames.Count - 1;
-            var frame = frames[index];
-            if (frame.Node.Kind == Utf8TreeNodeKind.Capture && frame.Node.M > 0) return true;
-            if (frame.NextChild < frame.Node.ChildCount)
-            {
-                var child = frame.Node.Child(frame.NextChild++);
-                frames[index] = frame;
-                frames.Push(new(child));
-            }
-            else frames.Pop();
-        }
-        // This predicate retains no storage, so its construction scope releases
-        // the frame descriptor as well as its array on either result.
-        return false;
     }
 
     /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input.</summary>

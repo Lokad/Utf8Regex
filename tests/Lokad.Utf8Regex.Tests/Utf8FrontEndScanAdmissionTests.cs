@@ -233,7 +233,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
             Node(Utf8TreeNodeKind.Backreference, ""), lookbehind, Node(Utf8TreeNodeKind.Atomic, ""),
             Node(Utf8TreeNodeKind.ExpressionConditional, ""), Node(Utf8TreeNodeKind.Setloop, Digits), Node(Utf8TreeNodeKind.Alternate, ""));
         var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(Semantic(root));
-        Assert.Equal(new Utf8RegexFeatures(1, false, true, true, true, true, true, true, true, true, true), features);
+        Assert.Equal(new Utf8RegexFeatures(1, false, true, true, true, true, true, true, true, true, true, false), features);
     }
 
     [Fact]

@@ -11,4 +11,5 @@ internal readonly record struct Utf8RegexFeatures(
     bool HasAlternation,
     bool HasAbsoluteStartAnchor,
     bool HasWordBoundary,
-    bool HasLookbehind);
+    bool HasLookbehind,
+    bool HasCaptureNodes);
