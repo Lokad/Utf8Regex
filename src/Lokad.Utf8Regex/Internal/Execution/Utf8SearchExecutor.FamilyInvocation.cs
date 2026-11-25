@@ -323,7 +323,8 @@ internal static partial class Utf8SearchExecutor
         ArgumentOutOfRangeException.ThrowIfNegative(start);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(end, input.Length);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
-        var breach = invocation.TryChargeInputStep();
+        // The first window and the final outcome each check the deadline.
+        var breach = invocation.TryChargeBoundedCheck();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         var candidateBoundary = confirm && !reverse ? leadingBoundary : Utf8BoundaryRequirement.None;
         var matchBoundary = reverse ? leadingBoundary : Utf8BoundaryRequirement.None;
@@ -469,10 +470,21 @@ internal static partial class Utf8SearchExecutor
                     var candidate = reverse && confirm ? candidateByte + 1 - literal.Length : candidateByte;
                     if (candidate < start || candidate > end - literal.Length) continue;
                     if (!boundedExactHeads && !folded && input[candidate] != literal[0]) continue;
-                    breach = TryCompareLiteral(input.Slice(candidate, literal.Length), literal, folded,
-                        ref invocation, out var equal);
-                    if (breach != Utf8ExecutionLimitKind.None) return breach;
-                    if (!equal) continue;
+                    var candidateBytes = input.Slice(candidate, literal.Length);
+                    if (boundedExactHeads && literal.Length <= 32)
+                    {
+                        // One work step covers this bounded probe. The next
+                        // window or outcome checks the clock directly.
+                        breach = invocation.TryChargeBoundedCheck();
+                        if (breach != Utf8ExecutionLimitKind.None) return breach;
+                        if (!candidateBytes.SequenceEqual(literal)) continue;
+                    }
+                    else
+                    {
+                        breach = TryCompareLiteral(candidateBytes, literal, folded, ref invocation, out var equal);
+                        if (breach != Utf8ExecutionLimitKind.None) return breach;
+                        if (!equal) continue;
+                    }
                     var accepted = true;
                     if (confirmAfterComparison)
                         breach = TryConfirmLiteral(matchBoundary, trailingBoundary, trailingLiteral,

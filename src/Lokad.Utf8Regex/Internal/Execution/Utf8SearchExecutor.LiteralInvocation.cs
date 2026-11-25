@@ -211,7 +211,9 @@ internal static partial class Utf8SearchExecutor
         ref Utf8SliceInvocation invocation, out bool accepted)
     {
         accepted = false;
-        var breach = invocation.TryChargeInputStep();
+        // At most four scalar neighbors. Search windows, a trailing literal
+        // comparison and the final outcome retain their direct clock checks.
+        var breach = invocation.TryChargeBoundedCheck();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         // Inspect neighbors on the original subject, including after a reverse
         // cursor's end floor. Enumeration bounds do not invent word boundaries.
