@@ -41,6 +41,35 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.True(backreference.IsMatch("clé: clé"u8, source.Token));
     }
 
+    [Theory]
+    [InlineData(": ")]
+    [InlineData(":: ")]
+    public void OrdinalBackreferenceWindowKeepsLaterStartsAndWideCaptures(string delimiter)
+    {
+        var pattern = @"(\w+)" + delimiter + @"\1\b";
+        var prefix = new string('!', 2046) + "Ω " + string.Concat(Enumerable.Repeat($"key{delimiter}value; ", 64));
+        var text = prefix + $"clékey{delimiter}key; clé{delimiter}clé; key{delimiter}";
+        var expected = new Regex(pattern).Matches(text);
+        Assert.Equal(2, expected.Count);
+        var input = Encoding.UTF8.GetBytes(text);
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(prefix + "key" + delimiter), source.Token));
+        Assert.True(regex.IsMatch(input, source.Token));
+        Assert.Equal(expected.Count, regex.Count(input, source.Token));
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
+        var first = Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[0].Index));
+        Assert.Equal(new Utf8CaptureRange(first, first + expected[0].Length), regex.Match(input, 0, slots, source.Token));
+        Assert.Equal(new Utf8CaptureRange(first, first + 3), slots[1]);
+        using var cursor = regex.CreateMatchCursor(input, slots[0].EndOffsetInBytes, source.Token);
+        Assert.True(cursor.MoveNext(out var wide));
+        var second = Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[1].Index));
+        Assert.Equal(new Utf8CaptureRange(second, second + Encoding.UTF8.GetByteCount(expected[1].Value)), wide.Value);
+        Assert.Equal(new Utf8CaptureRange(second, second + 4), Assert.Single(wide.GetCaptures(1).ToArray()));
+        Assert.False(cursor.MoveNext(out _));
+    }
+
     [Fact]
     public void VerifiedClassDelimiterKeepsWorkBoundAndWideLabelEndpoints()
     {

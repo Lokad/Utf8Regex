@@ -658,9 +658,16 @@ internal static partial class Utf8SliceRunner
         int literalIndex, byte literal, Utf8ConstructionBudget budget)
     {
         var code = program.Instructions;
-        if (program.ReadsCaptures || program.Assertions.Length != 0 ||
+        if (program.Assertions.Length != 0 ||
             code[leadingClass - 1].RepeatMaximum != long.MaxValue)
             return default;
+
+        var capturesLeadingRun = leadingClass == 2 && literalIndex == 6 &&
+            code[0] is { Kind: Utf8SliceInstructionKind.CaptureStart } open &&
+            code[5] is { Kind: Utf8SliceInstructionKind.CaptureEnd } close &&
+            open.A == close.A && open.B == close.B;
+        var requiredRun = code[leadingClass - 1] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 };
+        if (program.ReadsCaptures && (!capturesLeadingRun || !requiredRun)) return default;
 
         budget.ChargeWork(1);
         ref readonly var atom = ref code[leadingClass];
@@ -677,10 +684,11 @@ internal static partial class Utf8SliceRunner
                 !Utf8SliceScalarClasses.MatchesShorthand(new Rune(literal), (Utf8SliceShorthand)atom.A),
             _ => null,
         };
+        if (program.ReadsCaptures && excludes != true) return default;
         if (excludes == false) return new(0, 0, 0, false, false, false);
 
-        // Any shorter aligned needle ends at a literal and cannot supply
-        // the hybrid suffix. Longer needles already decline alignment.
+        // The complete literal width locates the suffix even when the
+        // aligned search needle covers only part of the delimiter.
         var index = literalIndex + 1;
         for (; index < code.Length && index - literalIndex < 64; index++)
         {
@@ -688,16 +696,23 @@ internal static partial class Utf8SliceRunner
             if (code[index] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 })
                 break;
         }
+        if (program.ReadsCaptures)
+        {
+            // The excluded delimiter fixes where this nonempty capture ends.
+            // Compare the first byte of its ordinal reference before trying
+            // starts in the run. Keep single-attempt and suffix reuse disabled.
+            return index < code.Length && code[index] is { Kind: Utf8SliceInstructionKind.Backref, B: 0 } reference &&
+                reference.A == code[0].A
+                ? new((byte)(index - literalIndex), 0, 0, false, false, null)
+                : default;
+        }
+
         budget.ChargeWork(12);
         var (first, second) = GetRequiredHybridSuffix(code, index);
         // A value-only call can also skip the capture markers around the
         // proved run. The initial guard excludes programs that read them.
-        var capturesLeadingRun = leadingClass == 2 && literalIndex == 6 &&
-            code[0] is { Kind: Utf8SliceInstructionKind.CaptureStart } open &&
-            code[5] is { Kind: Utf8SliceInstructionKind.CaptureEnd } close &&
-            open.A == close.A && open.B == close.B;
         var canReuse = (leadingClass == 1 && literalIndex == 4 && program.GroupCount == 0 || capturesLeadingRun) &&
-            code[leadingClass - 1] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 };
+            requiredRun;
         var canAccept = false;
         if (canReuse && !capturesLeadingRun && second != 0 && second == first + 2 && code[second - 1].RepeatMinimum == 1)
         {
@@ -1477,7 +1492,25 @@ internal static partial class Utf8SliceRunner
             return invocation.TryChargeInputStep();
         }
         if (!useNearestViableStart)
-            return TryRewindClassWhitespace(program, input, floor, leadingClass, gapMaximum, direct, ref position, ref invocation);
+        {
+            breach = TryRewindClassWhitespace(program, input, floor, leadingClass, gapMaximum, direct, ref position, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None || position >= windowEnd || !direct || !program.ReadsCaptures ||
+                program.LeadingClassWindowProof.LiteralLength is not (> 0 and var referenceOffset) ||
+                program.LeadingClassDelimiter.LeadingClass != leadingClass || program.LeadingClassDelimiter.Literal != literal)
+                return breach;
+
+            if (referenceOffset < input.Length - windowEnd)
+            {
+                // An ASCII follower requires the same first byte at the
+                // capture start. Keep wide followers on the scalar path.
+                var first = input[windowEnd + referenceOffset];
+                if (first >= 128 || input[position] == first) return breach;
+                breach = TrySeekAsciiCandidate(input[..windowEnd], ref position, first, first, ref invocation);
+                if (breach != Utf8ExecutionLimitKind.None || position >= 0) return breach;
+            }
+            position = windowEnd + 1;
+            return invocation.TryChargeInputStep();
+        }
 
         // Boolean and Count callers can use the nearest valid start. The
         // excluded delimiter and the minimum of one make this scalar sufficient.
