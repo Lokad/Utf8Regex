@@ -502,6 +502,15 @@ public sealed class Utf8DynamicCodeCapabilityTests
         {
             new(start, firstEnd), new(firstEnd, firstEnd + 5), new(firstEnd + 5, firstEnd + 10)
         }, match.GetCaptures(1).ToArray());
+
+        // The extra digit prevents a match at byte zero. The search must
+        // retain the immediately following ASCII or wide-scalar origin.
+        foreach (var text in new[] { "11234-5678-1234-456", "1" + value })
+        {
+            var overlap = Encoding.UTF8.GetBytes(text);
+            Assert.True(regex.IsMatch(overlap));
+            Assert.Equal(new Utf8CaptureRange(1, overlap.Length), regex.Match(overlap));
+        }
     }
 
     [Fact]

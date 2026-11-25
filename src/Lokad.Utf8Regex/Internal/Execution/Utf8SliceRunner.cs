@@ -602,12 +602,15 @@ internal static partial class Utf8SliceRunner
 
         if (remaining is > 0 and <= 32 && !reverse && !program.IgnoreCase && !program.HasContiguousAnchor &&
             !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
-            first.Kind == Utf8SliceInstructionKind.Fork && remaining >= candidatePlan.MinRequiredLength &&
-            program.LeadingByteCandidate is { First: >= 0 and < 128, InstructionIndex: 0, FromBranch: true } branch &&
-            input[fromByte] < 128 && MayStartAtByte(input[fromByte], branch.First, branch.Last, branch.SparsePair, false) &&
+            remaining >= candidatePlan.MinRequiredLength && input[fromByte] is < 128 and var firstByte &&
+            (first.Kind == Utf8SliceInstructionKind.Fork
+                ? program.LeadingByteCandidate is { First: >= 0 and < 128, InstructionIndex: 0, FromBranch: true } branch &&
+                    MayStartAtByte(firstByte, branch.First, branch.Last, branch.SparsePair, false)
+                : emitted is not null && Utf8AsciiBytePredicates.IsDigit(firstByte) && program.HasShortDecimalHead &&
+                    invocation.CheckpointHook is null && invocation.IsUnmetered) &&
             !CanSeekExactPrefix(program, candidatePlan))
         {
-            // Try the existing bounded proof at the first admitted origin.
+            // A branch or ready decimal proof can verify the first origin.
             // A rejection advances one ASCII byte before general discovery.
             if (invocation.Ledger.ReservedBytes != 0)
             {
