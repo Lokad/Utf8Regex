@@ -9,6 +9,30 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ClassPrefixCandidateTests
 {
     [Fact]
+    public void VerifiedClassDelimiterKeepsWorkBoundAndWideLabelEndpoints()
+    {
+        using var regex = new Utf8Regex(@"[\w.+-]+@[\w-]+\.[\w.-]+", policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 800 }
+        });
+        using var source = new CancellationTokenSource();
+        var prefix = "Ω " + string.Concat(Enumerable.Repeat("a@label! x@.bar; t@p.; ", 64));
+        var input = Encoding.UTF8.GetBytes(prefix + "u@b.example");
+        Assert.True(regex.IsMatch(input, source.Token));
+        Assert.Equal(new Utf8CaptureRange(Encoding.UTF8.GetByteCount(prefix), input.Length),
+            regex.Match(input, cancellationToken: source.Token));
+
+        // The first wide scalar can begin before or after the proof's edge.
+        foreach (var length in new[] { 88, 89, 90 })
+        {
+            var value = "u@" + new string('a', length) + "β.γ";
+            var bytes = Encoding.UTF8.GetBytes("Ω " + value + new string('!', 256));
+            Assert.Equal(new Utf8CaptureRange(3, 3 + Encoding.UTF8.GetByteCount(value)),
+                regex.Match(bytes, cancellationToken: source.Token));
+        }
+    }
+
+    [Fact]
     public void VerifiedPrefixKeepsWorkBoundAndWideRepeatEndpoints()
     {
         using var regex = new Utf8Regex(@"Sherlock\s+Holmes", policy: new()

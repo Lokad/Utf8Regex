@@ -1056,16 +1056,17 @@ internal static partial class Utf8SliceRunner
         // Only a forward, instruction-zero run can enter the VM directly.
         var verifiedLeadingPrefix = !leadingPrefix.IsEmpty && leadingScalarIndex == 0 &&
             !program.RightToLeft && !program.HasContiguousAnchor ? (leadingPrefix.Length, leadingPrefix.Length) : default;
-        var provedPrefixLength = verifiedLeadingPrefix.Item1 != 0 && canProveValue && captureEnds.IsEmpty &&
+        var prefixContinuation = verifiedClassLiteralLength != 0 ? 4 + verifiedClassLiteralLength : verifiedLeadingPrefix.Item1;
+        var prefixProof = prefixContinuation != 0 && canProveValue && captureEnds.IsEmpty &&
             // Each nested proof branch spends a visit. Tight depth limits
             // stay with the VM's exact admission of individual choices.
             invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
-            program.Instructions[verifiedLeadingPrefix.Item1] is
+            program.Instructions[prefixContinuation] is
                 { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true, RepeatMaximum: > 4 } prefixRepeat &&
             program.Instructions[prefixRepeat.A].RepeatExitRejectsShorterEndpoints &&
-            program.Instructions[verifiedLeadingPrefix.Item1 + 1] is
-                ({ Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
-            ? verifiedLeadingPrefix.Item1 : 0;
+            (program.Instructions[prefixContinuation + 1] is
+                { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } ||
+                program.GetCompleteAsciiCategoryMask(program.Instructions[prefixContinuation + 1]) != 0);
         if ((leading >= 0 || seekLiteral || hasClassWindow) && invocation.Ledger.ReservedBytes != 0)
         {
             // An enclosing loan still counts when candidate discovery needs no storage.
@@ -1187,7 +1188,13 @@ internal static partial class Utf8SliceRunner
                 continue;
             if (shortRepeatWindow.Min != 0 && !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal))
                 continue;
-            if (checkBranchedPrefix || checkStraightRepeat || shortDecimalHead || provedPrefixLength != 0 ||
+            // The metered rewind proved the nonempty leading class and its
+            // aligned delimiter. Shorter endpoints cannot reach the literal.
+            var verifiedPrefix = verifiedClassLiteralLength != 0 && position < classWindowEnd
+                ? (4 + verifiedClassLiteralLength, classWindowEnd - position + verifiedClassLiteralLength)
+                : verifiedLeadingPrefix;
+            var provePrefix = prefixProof && verifiedPrefix.Item1 == prefixContinuation;
+            if (checkBranchedPrefix || checkStraightRepeat || shortDecimalHead || provePrefix ||
                 proveDecimalWindow && input[position] < 128)
             {
                 // Starts only advance in these forward searches. The
@@ -1196,10 +1203,10 @@ internal static partial class Utf8SliceRunner
                 var proveDecimalPrefix = shortDecimalHead || proveDecimalWindow;
                 // The exact search already proved the literal prefix. Verify
                 // only the remaining instructions inside the same allowance.
-                var proveMatch = proveDecimalPrefix || proveBranchedMatch || provedPrefixLength != 0;
-                var proofStart = proveMatch ? provedPrefixLength : leadingScalarIndex;
-                var proofPosition = position + provedPrefixLength;
-                var proofLimit = BranchedPrefixInstructionLimit - provedPrefixLength;
+                var proveMatch = proveDecimalPrefix || proveBranchedMatch || provePrefix;
+                var proofStart = provePrefix ? verifiedPrefix.Item1 : proveMatch ? 0 : leadingScalarIndex;
+                var proofPosition = provePrefix ? position + verifiedPrefix.Item2 : position;
+                var proofLimit = BranchedPrefixInstructionLimit - (provePrefix ? verifiedPrefix.Item1 : 0);
                 if (reuseRewoundDigits)
                 {
                     // Rewind already admitted a nonempty decimal run ending at
@@ -1241,6 +1248,7 @@ internal static partial class Utf8SliceRunner
                             screenedDelimiter = followingWindowEnd - 1;
                         position = classWindowEnd;
                     }
+                    if (provePrefix && singleWindowAttempt) position = classWindowEnd;
                     continue;
                 }
                 if (acceptedEnd >= 0)
@@ -1254,13 +1262,6 @@ internal static partial class Utf8SliceRunner
                         : new(false, -1, -1, breach);
                 }
             }
-            // For an initial single-class +, a start strictly before the
-            // aligned delimiter admits at least one complete scalar. The
-            // metered rewind proved the whole run, and the class excludes
-            // the delimiter. Shorter endpoints cannot reach this literal.
-            var verifiedPrefix = verifiedClassLiteralLength != 0 && position < classWindowEnd
-                ? (4 + verifiedClassLiteralLength, classWindowEnd - position + verifiedClassLiteralLength)
-                : verifiedLeadingPrefix;
             var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds,
                 collectHistory, false, true, ref workspace, ref invocation, existenceOnly, verifiedPrefix);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)

@@ -2549,15 +2549,18 @@ internal static partial class Utf8SliceRunner
         }
 
         var available = Math.Min(input.Length - position, repeatMaximum);
+        var completeCategory = program.GetCompleteAsciiCategoryMask(atom) != 0;
         ref readonly var exit = ref program.Instructions[repeat.A];
         // A greedy run with an unconditional empty tail can keep its
         // longest endpoint. Verify the tail in order for the final range.
         if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy ||
-            available > remaining && (remaining < repeat.RepeatMinimum ||
+            available > remaining && (remaining < repeat.RepeatMinimum || !completeCategory &&
                 atom is not ({ Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
                     { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })) ||
             !(exit.RepeatExitRejectsShorterEndpoints ||
-                repeatMaximum == long.MaxValue && exit.RepeatExitAcceptsEmptyTail ||
+                repeatMaximum == long.MaxValue && (exit.RepeatExitAcceptsEmptyTail ||
+                    completeCategory && repeat.A + 2 == program.Instructions.Length &&
+                    program.Instructions[^1].Kind == Utf8SliceInstructionKind.Accept) ||
                 program.SkipsTerminalRewind(atomIndex - 1)))
             return BranchedPrefixUnhandledRepeat;
 
@@ -2567,7 +2570,7 @@ internal static partial class Utf8SliceRunner
             stop = atom.A == 0 ? candidate.IndexOf((byte)'\n') : -1;
         else if (GetUnfoldedAsciiRange(atom, out var last) is >= 0 and var first)
             stop = candidate.IndexOfAnyExceptInRange((byte)first, last);
-        else if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
+        else if (completeCategory || atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
             { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
         {
             var mask = program.SetMasks[atom.A];
@@ -2575,7 +2578,7 @@ internal static partial class Utf8SliceRunner
             if ((uint)stop < (uint)candidate.Length)
             {
                 var value = candidate[stop];
-                if (atom.Kind == Utf8SliceInstructionKind.Hybrid)
+                if (completeCategory || atom.Kind == Utf8SliceInstructionKind.Hybrid)
                 {
                     if (value >= 128) return BranchedPrefixUnhandledRepeat;
                 }
