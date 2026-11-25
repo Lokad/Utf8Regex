@@ -1481,6 +1481,17 @@ internal static partial class Utf8SliceRunner
         var straightPrefixStart = reuseLeadingPrefix && leadingScalarIndex == 0 ? prefixContinuation : 0;
         var straightPrefixBytes = straightPrefixStart != 0 ? leadingPrefix.Length : 0;
         var (prefixRepeatAscii, prefixRepeatFollower) = GetExactPrefixRepeatHead(program, prefixContinuation);
+        var terminalRepeat = 0;
+        if (prefixRepeatAscii.HasValue && captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
+            invocation.IsUnmetered && invocation.CheckpointHook is null)
+        {
+            var code = program.Instructions;
+            var index = prefixContinuation + 5;
+            if (code.Length - index == 5 && IsSingleClassRepeat(code, index) &&
+                code[index + 1] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } &&
+                code[^1].Kind == Utf8SliceInstructionKind.Accept)
+                terminalRepeat = index;
+        }
         var remaining = program.RightToLeft ? fromByte : input.Length - fromByte;
         if (CanSearchOrdinaryOrdered(program, remaining, candidatePlan, ref invocation) &&
             captureStarts.Length == 0 && !seekLiteral && !seekBeginning && !seekVeryEnd &&
@@ -1714,9 +1725,18 @@ internal static partial class Utf8SliceRunner
                     position = AdvancePastScalar(input, position, reverse: false);
                     continue;
                 }
-                var outcome = provedEnd >= 0
-                    ? new Utf8SliceMatchOutcome(true, provedEnd, invocation.TryReserveWorking(0))
-                    : TryMatchAt(program, input, position, captureStarts, captureEnds, false, false, true,
+                Utf8SliceMatchOutcome outcome;
+                if (provedEnd >= 0)
+                    outcome = new(true, provedEnd, invocation.TryReserveWorking(0));
+                else if (terminalRepeat != 0 && verifiedPrefix.Item1 == terminalRepeat)
+                {
+                    // An admitted prefix has reached a terminal repeat with no
+                    // further choice. Reuse the same scan without VM workspace.
+                    var tail = RunClassRepeat(program, terminalRepeat, input, position + verifiedPrefix.Item2, ref invocation);
+                    outcome = new(tail.EndIndex >= 0, tail.EndIndex, tail.Breach);
+                }
+                else
+                    outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, false, false, true,
                         ref workspace, ref invocation, verifiedPrefix: verifiedPrefix, dotTailChecked: dotTailChecked);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
                     return new Utf8SliceCountOutcome(count, outcome.Breach);
