@@ -168,6 +168,11 @@ path. Delegated Core operations can propagate their own exception. Shared
 working admission and finite working/result-byte policies omit the subject from
 timeout diagnostics.
 
+Eligible capture-free `IsMatch` branches can use a bounded compiled proof
+after repeated searches that exceed one candidate's proof allowance. The
+proof uses the same Python scalar program. Calls with a token, deadline,
+resource limits or shared working admission use metered execution.
+
 Work, depth, working bytes and result bytes follow the shared policy. Covered
 storage is admitted before allocation, including overlapping capacity during
 growth. Work and capacity requirements can change by version. On failure the

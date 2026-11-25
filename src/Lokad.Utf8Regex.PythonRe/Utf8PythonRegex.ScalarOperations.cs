@@ -32,9 +32,7 @@ public sealed partial class Utf8PythonRegex
         var useLiteral = (HasFiniteExecutionLimits || cancellationToken.CanBeCanceled ||
             MatchTimeout != Timeout.InfiniteTimeSpan || program.GroupCount != 0) &&
             prepared?.CanFindNativeLiteralForResult == true;
-        var useBranchProof = program.GroupCount == 0 && program.LeadingByteCandidate is
-            { First: >= 0 and < 128, FromBranch: true, InstructionIndex: 0 };
-        if ((useLiteral || useBranchProof) && !program.CanMatchEmpty &&
+        if ((useLiteral || program.HasCaptureFreeAsciiBranch) && !program.CanMatchEmpty &&
             !program.HasContiguousAnchor && !program.RightToLeft && !program.IgnoreCase)
         {
             ValidateScalarStartOffset(input, startOffsetInBytes);

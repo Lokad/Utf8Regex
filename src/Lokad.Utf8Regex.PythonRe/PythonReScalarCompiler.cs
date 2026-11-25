@@ -19,7 +19,7 @@ internal static partial class PythonReScalarCompiler
         internal Utf8SliceNode? Yes;
     }
 
-    internal static Utf8SliceProgram Compile(PythonReParseResult parse)
+    internal static Utf8SliceProgram Compile(PythonReParseResult parse, bool enableProofTierUp = false)
     {
         using var construction = Utf8ConstructionScope.Enter();
         using var frames = Utf8ConstructionFrames<ConversionFrame>.Create(construction.Budget, new(parse.Root, parse.Options));
@@ -210,7 +210,9 @@ internal static partial class PythonReScalarCompiler
                 names[group] = nameText.Append(group).ToText();
             }
         }
-        var program = Utf8SliceLowerer.Lower(root, names, false, false, false)
+        var program = Utf8SliceLowerer.Lower(root, names, false, false, false, null, false, false,
+            Utf8ScalarCaseBehavior.Invariant, false, proofCompilation: enableProofTierUp
+                ? Utf8BoundedProgramEmitter.Compilation.TieredBranches : Utf8BoundedProgramEmitter.Compilation.None)
             ?? throw new InvalidOperationException("The validated Python tree has no owned scalar program.");
         arena.Complete();
         construction.Complete();

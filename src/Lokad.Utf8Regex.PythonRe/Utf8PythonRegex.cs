@@ -54,8 +54,10 @@ public sealed partial class Utf8PythonRegex
         PythonReCompileValidator.Validate(options);
         MatchTimeout = Utf8MatchTimeout.Validate(policy.MatchTimeout ?? DefaultMatchTimeout, nameof(policy));
         ArgumentNullException.ThrowIfNull(patternSource.Text, "pattern");
-        var explicitConstruction = eager || programMemoryAllowance is not null ||
+        var controlledConstruction = programMemoryAllowance is not null ||
             constructionPolicy != default || constructionTimeout != Timeout.InfiniteTimeSpan;
+        var explicitConstruction = eager || controlledConstruction;
+        var canTierUp = !controlledConstruction && !Utf8ConstructionScope.IsActive;
         using var construction = !explicitConstruction ? Utf8ConstructionScope.Enter()
             : programMemoryAllowance is null
                 ? Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, cancellationToken)
@@ -90,7 +92,8 @@ public sealed partial class Utf8PythonRegex
             // so exact literals need no width walk before preparing Core.
             var prepareCore = isExactLiteral || !PythonReTranslator.CanMatchEmpty(parseResult.Root, parseResult);
             var translation = PythonReTranslator.Translate(parseResult, prepareCore);
-            _scalarProgram = PythonReScalarCompiler.Compile(parseResult);
+            _scalarProgram = PythonReScalarCompiler.Compile(parseResult, canTierUp &&
+                MatchTimeout == Timeout.InfiniteTimeSpan && !HasFiniteExecutionLimits);
 
             _nameEntriesUtf8 = construction.Budget.AllocateArray<KeyValuePair<byte[], int>>(parseResult.NamedGroups.Count, false);
             var nameIndex = 0;
@@ -197,7 +200,7 @@ public sealed partial class Utf8PythonRegex
 
     // Exact profile classes and lexical reference lowerings come from the Python
     // AST, independently of residual native selectors or BCL case flags.
-    private Utf8SliceProgram ScalarProgram => _scalarProgram;
+    internal Utf8SliceProgram ScalarProgram => _scalarProgram;
 
     /// <summary>Gets the number of capture groups, excluding whole-match group zero.</summary>
     /// <remarks>The count comes from the validated grammar and does not depend on match participation.</remarks>

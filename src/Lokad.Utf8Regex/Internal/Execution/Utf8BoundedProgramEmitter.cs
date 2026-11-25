@@ -10,7 +10,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal static class Utf8BoundedProgramEmitter
 {
     internal delegate int Match(ReadOnlySpan<byte> input, Span<Utf8CaptureRange> captures = default);
-    internal enum Compilation : byte { None, Eager, Tiered }
+    internal enum Compilation : byte { None, Eager, Tiered, TieredBranches }
 
     private const int MaxUnsplitInstructions = 64;
     private const int MaxExpandedVisits = Utf8SliceRunner.BranchedPrefixInstructionLimit;

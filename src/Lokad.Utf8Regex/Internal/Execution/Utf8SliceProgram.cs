@@ -586,15 +586,23 @@ internal sealed class Utf8SliceProgram
             RequiredFinalAscii = FindRequiredFinalAscii(Utf8ConstructionScope.CurrentBudget, out var unanchoredByte);
             RequiredUnanchoredFinalByte = unanchoredByte;
         }
+        if (proofCompilation == Utf8BoundedProgramEmitter.Compilation.TieredBranches && !HasCaptureFreeAsciiBranch)
+            proofCompilation = Utf8BoundedProgramEmitter.Compilation.None;
         if (proofCompilation != Utf8BoundedProgramEmitter.Compilation.None)
             EmittedHistoryOffsets = Utf8BoundedProgramEmitter.PrepareHistoryOffsets(this, Utf8ConstructionScope.CurrentBudget);
         if (proofCompilation == Utf8BoundedProgramEmitter.Compilation.Eager)
             EmittedMatch = Utf8BoundedProgramEmitter.TryEmit(this, Utf8ConstructionScope.CurrentBudget);
-        else if (proofCompilation == Utf8BoundedProgramEmitter.Compilation.Tiered)
+        else if (proofCompilation is Utf8BoundedProgramEmitter.Compilation.Tiered or Utf8BoundedProgramEmitter.Compilation.TieredBranches)
         {
             var budget = Utf8ConstructionScope.CurrentBudget;
             if (Utf8BoundedProgramEmitter.CanTierUp(this, budget))
-                _proofTier = budget.AllocateObject(0, static _ => new ProofTier());
+            {
+                // Branch-only consumers recover compilation cost on searches
+                // that have more than a single candidate's bounded work.
+                var minimumVisits = proofCompilation == Utf8BoundedProgramEmitter.Compilation.TieredBranches
+                    ? Utf8SliceRunner.BranchedPrefixInstructionLimit + 1 : 1;
+                _proofTier = budget.AllocateObject(minimumVisits, static visits => new ProofTier(visits));
+            }
         }
     }
 
@@ -800,6 +808,8 @@ internal sealed class Utf8SliceProgram
     internal bool HasSingleCapturePerGroup { get; }
     internal (int First, byte Last, int Second, byte SecondLast, int InstructionIndex, bool FromBranch, bool SparsePair) LeadingByteCandidate { get; }
         = (-1, 0, -1, 0, -1, false, false);
+    internal bool HasCaptureFreeAsciiBranch => GroupCount == 0 &&
+        LeadingByteCandidate is { First: >= 0 and < 128, FromBranch: true, InstructionIndex: 0 };
     internal (int Instruction, byte Min, byte Max, byte Value) RequiredBranchLiteral { get; }
     internal bool LeadingByteAdmitsKelvin => LeadingByteCandidate is { First: 'K', InstructionIndex: 0, SparsePair: true } &&
         Instructions[0] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 1 };
@@ -823,8 +833,9 @@ internal sealed class Utf8SliceProgram
     internal bool ObservesProofWork => _proofTier is { } tier && Volatile.Read(ref tier.InterpretedVisits) >= 0;
     internal Utf8BoundedProgramEmitter.Match? TieredProof => _proofTier?.Emitted;
 
-    private sealed class ProofTier
+    private sealed class ProofTier(int minimumVisits)
     {
+        internal readonly int MinimumVisits = minimumVisits;
         internal int InterpretedVisits; // Negative once preparation is claimed.
         internal volatile Utf8BoundedProgramEmitter.Match? Emitted;
     }
@@ -840,7 +851,7 @@ internal sealed class Utf8SliceProgram
 
     internal void ObserveProofWork(int visits)
     {
-        if (_proofTier is not { } tier) return;
+        if (_proofTier is not { } tier || visits < tier.MinimumVisits) return;
         int previous, next;
         do
         {

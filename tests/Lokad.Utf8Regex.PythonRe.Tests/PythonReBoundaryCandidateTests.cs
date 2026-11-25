@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
@@ -8,6 +9,53 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReBoundaryCandidateTests
 {
+    [Fact]
+    public void IsMatchTiersUpThePythonBranchProgram()
+    {
+        const string pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
+        using var regex = new Utf8PythonRegex(pattern);
+        var program = regex.ScalarProgram;
+        var dynamicCode = RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
+        Assert.True(program.HasCaptureFreeAsciiBranch);
+        Assert.Equal(dynamicCode, program.ObservesProofWork);
+        Assert.Null(program.TieredProof);
+
+        using var source = new CancellationTokenSource();
+        var miss = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀é 012.200.033.1AA!", 12)));
+        byte[] later = [.. miss, .. "012.200.033.199"u8];
+        for (var i = 0; i < 65_536; i++)
+            if (!regex.IsMatch("012.200.033.199"u8)) throw new InvalidOperationException("Missing single-candidate hit.");
+        Assert.Null(program.TieredProof);
+        for (var i = 0; i < 4_096; i++)
+            if (!regex.IsMatch(later, cancellationToken: source.Token)) throw new InvalidOperationException("Missing controlled hit.");
+        Assert.Null(program.TieredProof);
+
+        for (var i = 0; i < 131_072 && program.ObservesProofWork; i++)
+            if (!regex.IsMatch(later)) throw new InvalidOperationException("Missing tier-up hit.");
+        var proof = program.TieredProof;
+        Assert.Equal(dynamicCode, proof is not null);
+        Assert.True(regex.IsMatch(later, miss.Length));
+        Assert.True(regex.IsMatch(later, miss.Length, source.Token));
+        Assert.False(regex.IsMatch(miss));
+        Assert.False(regex.IsMatch(later, later.Length));
+        Assert.Same(proof, program.TieredProof);
+
+        source.Cancel();
+        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>
+            regex.IsMatch(later, cancellationToken: source.Token)).CancellationToken);
+        using var funded = new Utf8PythonRegex(pattern, policy: new() { ProgramMemoryAllowance = new Allowance(1 << 24) });
+        using var limited = new Utf8PythonRegex(pattern, policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1 } });
+        using var timed = new Utf8PythonRegex(pattern, policy: new() { MatchTimeout = TimeSpan.FromMinutes(1) });
+        using var constructionLimited = new Utf8PythonRegex(pattern,
+            policy: new() { ConstructionPolicy = new() { MaxWorkSteps = 1_000_000 } });
+        Assert.False(funded.ScalarProgram.ObservesProofWork);
+        Assert.False(limited.ScalarProgram.ObservesProofWork);
+        Assert.False(timed.ScalarProgram.ObservesProofWork);
+        Assert.False(constructionLimited.ScalarProgram.ObservesProofWork);
+        Assert.True(funded.IsMatch(later));
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.IsMatch(later));
+    }
+
     [Theory]
     [InlineData(@"\b[0-9]+X\b", "111 22X 333", 0, "22X", 1)]
     [InlineData(@"\b[0-9]+X\b", "a11X_ 22X", 0, "22X", 1)]
