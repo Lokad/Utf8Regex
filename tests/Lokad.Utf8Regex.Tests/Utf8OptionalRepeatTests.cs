@@ -104,8 +104,11 @@ public sealed class Utf8OptionalRepeatTests
             ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 << 14 }
         });
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
-        Assert.Equal(2, program.Instructions.Count(instruction =>
-            instruction.Kind == Utf8SliceInstructionKind.RepeatExit && instruction.RepeatExitRejectsShorterEndpoints));
+        var whitespaceRepeats = program.Instructions.Where((instruction, index) => instruction is
+            { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true, RepeatMaximum: long.MaxValue } &&
+            program.Instructions[index + 1].Kind == Utf8SliceInstructionKind.Hybrid).ToArray();
+        Assert.Equal(2, whitespaceRepeats.Length);
+        Assert.All(whitespaceRepeats, repeat => Assert.True(program.Instructions[repeat.A].RepeatExitRejectsShorterEndpoints));
         var input = Encoding.UTF8.GetBytes(text);
         var expected = new Regex(pattern, options).Match(text);
         using var source = new CancellationTokenSource();
