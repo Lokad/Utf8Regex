@@ -248,11 +248,18 @@ internal static partial class Utf8SearchExecutor
                         : PreparedLiteralSetSearch.TryFindFirstMatchSingleLiteralBuckets(block, prepared, out relative, out _);
                     if (foundInBlock && relative < starts)
                     {
-                        // Distinct heads identify the branch. Shared prefixes
-                        // retain pattern order at the same start.
-                        for (var id = 0; id < literals.Length; id++)
-                            if (sharedPrefix ? block[relative..].StartsWith(literals[id]) : literals[id][0] == block[relative])
-                            { best = relative; ordinal = id; break; }
+                        if (distinctHeads)
+                        {
+                            best = relative;
+                            ordinal = prepared.BucketIndexMap[block[relative]];
+                        }
+                        else
+                        {
+                            // Shared prefixes retain pattern order at the same start.
+                            for (var id = 0; id < literals.Length; id++)
+                                if (block[relative..].StartsWith(literals[id]))
+                                { best = relative; ordinal = id; break; }
+                        }
                     }
                 }
             }
