@@ -1729,28 +1729,31 @@ internal static class Pcre2GlobalOperationDriver
             Pcre2SliceDriver.TryCountSingleToken(tokenProgram.Program, input[start.Value..], ref invocation, out result))
             return true;
 
-        if (program is Pcre2FiniteLiteralLanguageDirectProgram finiteLiteralProgram &&
-            matchOptions == Pcre2MatchOptions.None &&
-            (invocation.IsUnmetered && invocation.CheckpointHook is null))
-        {
-            result = 0;
-            var matches = finiteLiteralProgram.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
-            while (matches.MoveNext())
-            {
-                result = checked(result + 1);
-            }
-
-            return true;
-        }
-
         if (program is Pcre2LiteralFamilyDirectProgram literalFamilyProgram &&
             matchOptions == Pcre2MatchOptions.None)
         {
             if (invocation.IsUnmetered && invocation.CheckpointHook is null)
             {
-                // Exact, case-sensitive literal portfolios count byte ranges;
-                // they consume no whole-subject coordinate description.
-                result = literalFamilyProgram.Regex.ByteOffsetExecution.CountLiteralFamily(input[start.Value..]);
+                // Expanded literals preserve consumption and ordered choice.
+                // A start reset changes the reported range only.
+                var regex = literalFamilyProgram.Regex;
+                var remaining = input[start.Value..];
+                var prepared = regex.Inspection.PreparedRegex;
+                if (prepared.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal &&
+                    prepared.SearchPlan.LiteralSearch is { Length: > 0 } literal)
+                {
+                    // Keep the prepared searcher's selective anchors on a
+                    // single literal and advance over its full consumed range.
+                    result = 0;
+                    while (remaining.Length >= literal.Length)
+                    {
+                        var found = literal.IndexOf(remaining);
+                        if (found < 0) break;
+                        result++;
+                        remaining = remaining[(found + literal.Length)..];
+                    }
+                }
+                else result = regex.Count(remaining);
                 return true;
             }
 

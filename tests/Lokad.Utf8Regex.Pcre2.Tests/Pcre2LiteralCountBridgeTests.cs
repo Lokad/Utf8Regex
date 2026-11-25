@@ -82,11 +82,13 @@ public sealed class Pcre2LiteralCountBridgeTests
     [InlineData("(a)(b)", "π😀xx", 2, 0)]
     public void FiniteCountKeepsOrderedScalarsAndBorrowedOffsets(string pattern, string text, int start, int expected)
     {
+        using var ordinary = new Utf8Pcre2Regex(pattern);
         var regex = Create(pattern);
         Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
         var storage = Encoding.UTF8.GetBytes("pad" + text + "pad");
         var input = storage.AsSpan(3, Encoding.UTF8.GetByteCount(text));
         using var token = new CancellationTokenSource();
+        Assert.Equal(expected, ordinary.Count(input, start));
         Assert.Equal(expected, regex.Count(input, start));
         Assert.Equal(expected, regex.Count(input, start, Pcre2MatchOptions.None, token.Token));
     }

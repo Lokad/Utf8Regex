@@ -15,11 +15,6 @@ public sealed partial class Utf8Regex
             _owner = owner;
         }
 
-        // PCRE2-INTEGRATION-POINT: the adapter admits an exact literal family
-        // and supplies a scalar-aligned suffix of an unmetered invocation.
-        public int CountLiteralFamily(ReadOnlySpan<byte> remaining) =>
-            _owner._compiledEngineRuntime.Count(remaining, Utf8ExecutionDeadline.Infinite);
-
         // PCRE2-INTEGRATION-POINT: flavor-neutral prepared byte-range iteration.
         public Utf8PreparedValueMatchEnumerator EnumeratePreparedMatches(
             ReadOnlySpan<byte> input, Utf8BytePosition start)

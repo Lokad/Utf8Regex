@@ -452,6 +452,8 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.Equal(2, global.Count("abc123 abc123"u8));
         Assert.Equal(3, alternative.Count("foobar foobaz foobar"u8));
         Assert.Equal(3, rootAtomic.Count("abz ab ab"u8));
+        Assert.Equal(2, resetAtEnd.Count("😀abab"u8, startOffsetInBytes: 4));
+        Assert.Equal(1, resetAtEnd.Count("😀abab"u8, startOffsetInBytes: 5));
         Assert.Equal([(3, 6), (10, 13)], EnumerateByteRanges(global, "abc123 abc123"u8));
         Assert.Equal([(3, 6), (7, 13), (17, 20)], EnumerateByteRanges(alternative, "foobar foobaz foobar"u8));
         Assert.Equal([(1, 3), (4, 6), (7, 9)], EnumerateByteRanges(rootAtomic, "abz ab ab"u8));
