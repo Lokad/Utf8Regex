@@ -52,6 +52,42 @@ public sealed class Utf8SliceHistoryAdmissionTests
         Assert.Equal(expected, CaptureEdges(firstHistory, 1));
     }
 
+    [Theory]
+    [InlineData(16)]
+    [InlineData(17)]
+    public void HistoryScratchOnlyChargesHeapStorage(int groups)
+    {
+        using var regex = new Utf8Regex("(a)+" + string.Concat(Enumerable.Repeat("(b)", groups - 1)));
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        var input = System.Text.Encoding.UTF8.GetBytes("aaa" + new string('b', groups - 1));
+        var invocation = Invocation(new(0, 0, ulong.MaxValue, ulong.MaxValue));
+        var workspace = new Utf8SliceRunner.AttemptWorkspace();
+        var results = new Utf8InvocationResultLedger();
+        try
+        {
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, new int[groups], new int[groups], true,
+                ref workspace, ref invocation);
+            Assert.True(outcome.Found);
+            var held = invocation.Ledger.ReservedBytes;
+            var traffic = invocation.Budget.ResultBytes;
+            var history = workspace.Stacks.SnapshotHistory(input, program.GroupNumbers, outcome.StartByte, outcome.EndByte,
+                ref results, ref invocation);
+            Assert.Equal(new[] { (0, 1), (1, 2), (2, 3) }, CaptureEdges(history, 1));
+            for (var group = 2; group <= groups; group++)
+                Assert.Equal((group + 1, group + 2), Assert.Single(CaptureEdges(history, group)));
+            var payload = HistoryBytes(history);
+            Assert.Equal(held + payload, invocation.Ledger.ReservedBytes);
+            var scratch = groups == 16 ? 0UL : 2 * (32UL + 80UL);
+            Assert.Equal(payload + scratch, invocation.Budget.ResultBytes - traffic);
+        }
+        finally
+        {
+            results.Release(ref invocation);
+            workspace.Release(ref invocation);
+        }
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+    }
+
     private static Utf8SliceInvocation Invocation(Utf8ExecutionLimits limits)
     {
         var invocation = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, default);

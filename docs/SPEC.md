@@ -211,8 +211,9 @@ The engine admits covered storage before acquisition. It covers capture
 and projection arrays, cursor tables, output staging and finalized result
 storage. The scalar runner admits capture starts and ends as one buffer.
 Core cursors shape accepted capture history directly into the published
-range and group-offset arrays. Admission covers the shaping scratch and
-any compacted range buffer needed by balancing captures.
+range and group-offset arrays. Admission covers heap shaping scratch and
+any compacted range buffer needed by balancing captures. Small group
+catalogs use fixed-capacity stack scratch outside the modeled byte limits.
 A shared or temporary allocation may count more than once.
 Fixed scalar values, borrowed inputs and programs, caller destinations,
 incidental helpers, standalone getters and host retention fall outside these

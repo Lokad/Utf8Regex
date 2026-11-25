@@ -3153,26 +3153,42 @@ internal static partial class Utf8SliceRunner
         internal Utf8RangeMatch SnapshotHistory(ReadOnlyMemory<byte> input, int[] numbers, int matchStart, int matchEnd,
             ref Utf8InvocationResultLedger results, ref Utf8SliceInvocation invocation)
         {
+            const int maxStackGroups = 16;
             var groups = numbers.Length - 1;
-            var temporaryBytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(groups) * 2);
-            Utf8SliceBufferWork.ChargeResultBytes(temporaryBytes, ref invocation);
-            if (invocation.TryReserveWorking(temporaryBytes) != Utf8ExecutionLimitKind.None)
-                throw invocation.Budget.CreateResourceFailure();
+            var useStack = groups <= maxStackGroups;
+            var temporaryBytes = useStack ? 0UL : checked(Utf8ConstructionBudget.ArrayBytes<int>(groups) * 2);
+            if (!useStack)
+            {
+                Utf8SliceBufferWork.ChargeResultBytes(temporaryBytes, ref invocation);
+                if (invocation.TryReserveWorking(temporaryBytes) != Utf8ExecutionLimitKind.None)
+                    throw invocation.Budget.CreateResourceFailure();
+            }
 
             int[]? rentedCounts = null;
             int[]? rentedOpen = null;
             var retain = invocation.HasUnlimitedWorkingMemory;
             try
             {
-                Utf8SliceBufferWork.Checkpoint(ref invocation);
-                var counts = rentedCounts = Utf8ExactStatePool<int>.Rent(groups, retain);
-                Utf8SliceBufferWork.Checkpoint(ref invocation);
-                var open = rentedOpen = Utf8ExactStatePool<int>.Rent(groups, retain);
+                Span<int> scratch = useStack ? stackalloc int[maxStackGroups * 2] : default;
+                scoped Span<int> counts;
+                scoped Span<int> open;
+                if (useStack)
+                {
+                    counts = scratch[..groups];
+                    open = scratch.Slice(maxStackGroups, groups);
+                }
+                else
+                {
+                    Utf8SliceBufferWork.Checkpoint(ref invocation);
+                    counts = rentedCounts = Utf8ExactStatePool<int>.Rent(groups, retain);
+                    Utf8SliceBufferWork.Checkpoint(ref invocation);
+                    open = rentedOpen = Utf8ExactStatePool<int>.Rent(groups, retain);
+                }
                 for (var offset = 0; offset < groups;)
                 {
                     Utf8SliceBufferWork.Checkpoint(ref invocation);
                     var count = Math.Min(2048, groups - offset);
-                    counts.AsSpan(offset, count).Clear();
+                    counts.Slice(offset, count).Clear();
                     offset += count;
                 }
 
@@ -3258,7 +3274,7 @@ internal static partial class Utf8SliceRunner
             {
                 if (rentedOpen is not null) Utf8ExactStatePool<int>.Return(rentedOpen, retain);
                 if (rentedCounts is not null) Utf8ExactStatePool<int>.Return(rentedCounts, retain);
-                invocation.Ledger.Release(temporaryBytes);
+                if (!useStack) invocation.Ledger.Release(temporaryBytes);
             }
         }
 
