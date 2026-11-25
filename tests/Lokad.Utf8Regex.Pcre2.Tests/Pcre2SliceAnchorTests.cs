@@ -99,6 +99,23 @@ public sealed class Pcre2SliceAnchorTests
     }
 
     [Theory]
+    [InlineData("^R:.+$", 2, 2)]
+    [InlineData("^R:.*$", 4, 3)]
+    [InlineData("^R(:).+?$", 2, 2)]
+    [InlineData("^R:.{2,}$", 1, 1)]
+    [InlineData("^R:.+(?-m:$)", 0, 0)]
+    [InlineData(@"^R:(.)+\1$", 0, 0)]
+    public void MultilineCountPreservesDotBoundsAndByteStarts(string pattern, int fromLine, int insidePrefix)
+    {
+        var input = "😀\nR:\nR:😀\r\nR:é\nR:"u8;
+        using var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Multiline);
+
+        Assert.Equal(fromLine, regex.Count(input, 5));
+        Assert.Equal(insidePrefix, regex.Count(input, 6));
+        Assert.Equal(0, regex.Count(input, input.Length));
+    }
+
+    [Theory]
     [InlineData("^a|b$", "x\na", 0, true, 2, 3)]
     [InlineData("^a.*b$", "a1b", 0, true, 0, 3)]
     public void OwnedFirstMatchProjectsScalarBytes(

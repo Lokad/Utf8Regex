@@ -37,16 +37,43 @@ internal static partial class Utf8SliceRunner
             prefixLength++;
             pc++;
         }
-        if (prefixLength == 0 || Rune.IsWhiteSpace(new Rune(code[prefixStart].A)) || !IsLineCountLoop(code, pc) ||
-            code[pc + 1].Kind != Utf8SliceInstructionKind.Dot || code[pc + 1].A != 0) return false;
-        pc = SkipLineCountCaptures(code, pc + 3);
+        if (prefixLength == 0 || Rune.IsWhiteSpace(new Rune(code[prefixStart].A)) || code.Length - pc < 3 ||
+            code[pc + 1] is not { Kind: Utf8SliceInstructionKind.Dot, A: 0 }) return false;
+        var requiresDot = false;
+        if (IsLineCountLoop(code, pc)) pc += 3;
+        else
+        {
+            // With LF excluded, only the end of this run can satisfy the end anchor.
+            // Greedy and lazy single-atom repeats therefore have the same endpoint.
+            var repeat = code[pc];
+            if (repeat.Kind is not (Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy) ||
+                !repeat.HasSingleAtomBody || repeat.RepeatMinimum > 1 || repeat.RepeatMaximum != long.MaxValue)
+                return false;
+            requiresDot = repeat.RepeatMinimum != 0;
+            pc = repeat.A + 1;
+        }
+        pc = SkipLineCountCaptures(code, pc);
         if (pc >= code.Length || code[pc].Kind != Utf8SliceInstructionKind.Anchor ||
             code[pc].A is not ((int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd)) return false;
         var end = code[pc++];
         pc = SkipLineCountCaptures(code, pc);
         if (pc != code.Length - 1 || code[pc].Kind != Utf8SliceInstructionKind.Accept) return false;
+
+        scoped ReadOnlySpan<byte> linePrefix = default;
+        if (!program.IsNonBacktracking)
+        {
+            // Reuse Count's anchored search. Dense occurrences inside a line
+            // must not turn into individual candidate checks.
+            Span<byte> needle = stackalloc byte[code.Length];
+            needle[0] = (byte)'\n';
+            var offset = 1;
+            for (var index = prefixStart; offset <= prefixLength; index++)
+                if (code[index].Kind == Utf8SliceInstructionKind.Literal)
+                    needle[offset++] = (byte)code[index].A;
+            linePrefix = needle[..offset];
+        }
         outcome = CountAnchoredLines(program, input, fromByte, prefixStart, prefixLength,
-            whitespace, beginning.B != 0, end, ref invocation);
+            whitespace, beginning.B != 0, requiresDot, end, linePrefix, ref invocation);
         return true;
     }
 
@@ -62,8 +89,8 @@ internal static partial class Utf8SliceRunner
             code[pc + 2].Kind == Utf8SliceInstructionKind.Jump && code[pc + 2].A == pc;
 
     private static Utf8SliceCountOutcome CountAnchoredLines(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int fromByte, int prefixStart, int prefixLength, bool whitespace, bool multilineBeginning,
-        in Utf8SliceInstruction endAnchor, ref Utf8SliceInvocation invocation)
+        int fromByte, int prefixStart, int prefixLength, bool whitespace, bool multilineBeginning, bool requiresDot,
+        in Utf8SliceInstruction endAnchor, scoped ReadOnlySpan<byte> linePrefix, ref Utf8SliceInvocation invocation)
     {
         var count = 0;
         var breach = invocation.TryChargeInputStep();
@@ -77,44 +104,54 @@ internal static partial class Utf8SliceRunner
         while (position < input.Length)
         {
             var relative = -1;
-            while (position < input.Length)
+            if (!linePrefix.IsEmpty)
             {
+                breach = TrySeekBeginning(program, input, ref position, ref invocation, linePrefix);
+                if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+                if (position < 0) break;
+            }
+            else
+            {
+                while (position < input.Length)
+                {
+                    breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+                    var block = input.Slice(position, Math.Min(2048, input.Length - position));
+                    relative = block.IndexOf(first);
+                    if (relative >= 0) { position += relative; break; }
+                    position += block.Length;
+                }
+                if (relative < 0) break;
+                // At most 64 instructions, including transparent capture markers.
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
-                var block = input.Slice(position, Math.Min(2048, input.Length - position));
-                relative = block.IndexOf(first);
-                if (relative >= 0) { position += relative; break; }
-                position += block.Length;
-            }
-            if (relative < 0) break;
-            // At most 64 instructions, including transparent capture markers.
-            breach = invocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
-            if (input.Length - position < prefixLength || !MatchesStraightAsciiPrefix(program, input, position, prefixStart))
-            { position++; continue; }
-            var start = position;
-            var anchored = start == 0 || multilineBeginning && input[start - 1] == (byte)'\n';
-            if (whitespace)
-            {
-                var visited = 0;
-                while (!anchored && start > floor)
+                if (input.Length - position < prefixLength || !MatchesStraightAsciiPrefix(program, input, position, prefixStart))
+                { position++; continue; }
+                var start = position;
+                var anchored = start == 0 || multilineBeginning && input[start - 1] == (byte)'\n';
+                if (whitespace)
                 {
-                    if ((visited++ & 63) == 0)
+                    var visited = 0;
+                    while (!anchored && start > floor)
                     {
-                        breach = invocation.TryChargeInputStep();
-                        if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+                        if ((visited++ & 63) == 0)
+                        {
+                            breach = invocation.TryChargeInputStep();
+                            if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+                        }
+                        _ = Rune.DecodeLastFromUtf8(input[..start], out var scalar, out var width);
+                        if (!Rune.IsWhiteSpace(scalar)) break;
+                        start -= width;
+                        anchored = start == 0 || multilineBeginning && input[start - 1] == (byte)'\n';
                     }
-                    _ = Rune.DecodeLastFromUtf8(input[..start], out var scalar, out var width);
-                    if (!Rune.IsWhiteSpace(scalar)) break;
-                    start -= width;
-                    anchored = start == 0 || multilineBeginning && input[start - 1] == (byte)'\n';
                 }
+                if (!anchored) { position++; continue; }
             }
-            if (!anchored) { position++; continue; }
             // A non-white first literal prevents overlapping whitespace rewinds.
             // Count needs only an admitted start; all such starts have this end.
             var nextCandidate = position + 1;
             position += prefixLength;
+            var dotStart = position;
             while (position < input.Length)
             {
                 breach = invocation.TryChargeInputStep();
@@ -124,7 +161,7 @@ internal static partial class Utf8SliceRunner
                 if (relative >= 0) { position += relative; break; }
                 position += block.Length;
             }
-            if (HoldsNonBacktrackingAnchor(endAnchor, input, position))
+            if ((!requiresDot || position != dotStart) && HoldsNonBacktrackingAnchor(endAnchor, input, position))
             {
                 count++;
                 floor = position;

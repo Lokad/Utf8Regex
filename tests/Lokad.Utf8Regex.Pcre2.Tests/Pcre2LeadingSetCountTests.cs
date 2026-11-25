@@ -72,15 +72,17 @@ public sealed class Pcre2LeadingSetCountTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void TerminalLiteralPairScanKeepsOriginalInterruption(bool deadline)
+    [InlineData("(a)b+", "ab", false)]
+    [InlineData("(a)b+", "ab", true)]
+    [InlineData("(?m)^ab.+$", "ab😀", false)]
+    [InlineData("(?m)^ab.+$", "ab😀", true)]
+    public void CountBlockSearchKeepsOriginalInterruption(string pattern, string hit, bool deadline)
     {
-        var input = Encoding.UTF8.GetBytes("ab" + new string('x', 2048 * 70) + "ab");
+        var input = Encoding.UTF8.GetBytes(hit + "\n" + new string('x', 2048 * 70) + "\n" + hit);
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        using var regex = new Utf8Pcre2Regex("(a)b+", policy: new() { MatchTimeout = TimeSpan.FromMilliseconds(20) });
+        using var regex = new Utf8Pcre2Regex(pattern, policy: new() { MatchTimeout = TimeSpan.FromMilliseconds(20) });
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
         {
             if (deadline) ticks = 25;

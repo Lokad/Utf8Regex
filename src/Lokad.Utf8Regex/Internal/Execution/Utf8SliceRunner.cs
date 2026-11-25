@@ -1394,6 +1394,9 @@ internal static partial class Utf8SliceRunner
         var first = program.Instructions[0];
         var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.Beginning;
+        if (seekBeginning && first is { B: 1, C: > 0 } && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+            TryCountAnchoredLine(program, input, fromByte, ref invocation, out var anchoredLineCount))
+            return anchoredLineCount;
         var seekVeryEnd = program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.VeryEnd;
         // A distance-zero exact prefix is necessary, never sufficient. The scalar
