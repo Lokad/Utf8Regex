@@ -1204,7 +1204,7 @@ internal static partial class Utf8SliceRunner
             (atom.IsDecimalDigitSet || atom is { Kind: Utf8SliceInstructionKind.Hybrid, B: 1, D: 0 } ||
              atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } && continuation == code.Length - 1);
         if (!optionalAsciiLiteral && !prepareRequiredEmptyTail && atom is not ({ Kind: Utf8SliceInstructionKind.Dot } or
-                         { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
+                         { Kind: Utf8SliceInstructionKind.Set, B: 0 } or { Kind: Utf8SliceInstructionKind.Set, C: 0 } or
                          { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }))
             return;
 
@@ -1247,6 +1247,24 @@ internal static partial class Utf8SliceRunner
                 code[repeat.A - 1] = new(loop.Kind, loop.A, loop.B, loop.C, (tail << 4) | width);
             }
         }
+        if (atom.Kind == Utf8SliceInstructionKind.Dot)
+        {
+            if (next is { Kind: Utf8SliceInstructionKind.Fork, B: 0 })
+            {
+                var starts = FindRepeatRewindStarts(code, setMasks, continuation, budget);
+                if (starts != 0) code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C, starts);
+            }
+            else if (atom.A == 0 && next is ({ Kind: Utf8SliceInstructionKind.Literal, A: '\n', B: 0 } or
+                { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd }))
+            {
+                // A shorter endpoint faces a consumed non-LF scalar. It can
+                // satisfy neither an LF literal nor an end anchor.
+                budget.ChargeWork(1);
+                code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitRejectsShorterFlag, exit.D);
+            }
+            return;
+        }
+
         if (atom is { Kind: Utf8SliceInstructionKind.Set, C: not 0 })
         {
             // Case folding leaves LF unchanged, so the mask determines
@@ -1261,22 +1279,6 @@ internal static partial class Utf8SliceRunner
               next is { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy, RepeatMinimum: > 0 }))
             return;
 
-        if (atom.Kind == Utf8SliceInstructionKind.Dot)
-        {
-            if (next.Kind == Utf8SliceInstructionKind.Fork)
-            {
-                var starts = FindRepeatRewindStarts(code, setMasks, continuation, budget);
-                if (starts != 0) code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C, starts);
-            }
-            else if (atom.A == 0 && next is { Kind: Utf8SliceInstructionKind.Literal, A: '\n' })
-            {
-                // The dot rejects LF, so only its last endpoint can see this delimiter.
-                budget.ChargeWork(1);
-                code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitRejectsShorterFlag, exit.D);
-            }
-            return;
-        }
-
         // A single-atom follower adds one visit for its repeat entry. A fork
         // shares a bounded allowance among its arms.
         var work = next.Kind switch
@@ -1287,8 +1289,10 @@ internal static partial class Utf8SliceRunner
         };
         budget.ChargeWork((ulong)work + 2);
         var consumed = optionalAsciiLiteral ? default(Utf8SearchAsciiSet).With((byte)atom.A) : ReadAsciiSet(setMasks[atom.A]);
+        if (atom is { Kind: Utf8SliceInstructionKind.Set, B: not 0 })
+            consumed = Utf8SearchAsciiSet.FromMasks(~consumed.Low, ~consumed.High);
         if (ExcludesShorterRepeatEnds(code, setMasks, continuation, consumed,
-            optionalAsciiLiteral || atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 }, ref work))
+            optionalAsciiLiteral || atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }, ref work))
         {
             code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitRejectsShorterFlag, exit.D);
             if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
