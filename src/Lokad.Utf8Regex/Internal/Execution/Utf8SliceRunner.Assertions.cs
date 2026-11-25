@@ -206,19 +206,17 @@ internal static partial class Utf8SliceRunner
     {
         matched = false;
         breach = Utf8ExecutionLimitKind.None;
+        if (!assertion.CanRunInline) return false;
         var body = assertion.Body;
         var code = body.Instructions;
         var prefixLength = assertion.InlineLiteralPrefixLength;
-        var singleClass = prefixLength < 0 && code is
-            [{ IsInlineAssertionClass: true }, { Kind: Utf8SliceInstructionKind.Accept }];
-        if (prefixLength < 0 && !singleClass) return false;
         // Fixed-forward lookbehind keeps its original scalar rewind and end
         // constraint, without suspending the parent for this bounded body.
         int? requiredEnd = assertion.ForwardScalarCount.HasValue ? start : null;
         breach = TryRewindAssertionStart(input, assertion.ForwardScalarCount,
             ref start, ref invocation, out var available);
         if (breach != Utf8ExecutionLimitKind.None || !available) return true;
-        if (!singleClass)
+        if (prefixLength >= 0)
         {
             breach = TryMatchInlineLiteralAssertion(code, 0, code.Length - 1, prefixLength,
                 input, start, body.RightToLeft, requiredEnd, depth, ref invocation, out matched);

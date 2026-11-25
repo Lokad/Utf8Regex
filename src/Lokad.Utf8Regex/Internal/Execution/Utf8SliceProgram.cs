@@ -344,6 +344,9 @@ internal sealed class Utf8SliceAssertion
         var code = body.Instructions;
         var inlineLiteralPrefixLength = code.Length != 0 && code[^1].Kind == Utf8SliceInstructionKind.Accept
             ? FindInlineLiteralPrefixLength(code, 0, code.Length - 1, owner.Budget) : -1;
+        if (inlineLiteralPrefixLength < 0 && code is
+            [{ IsInlineAssertionClass: true }, { Kind: Utf8SliceInstructionKind.Accept }])
+            inlineLiteralPrefixLength = Utf8SliceInstruction.InlineClassAssertion;
         var result = owner.Budget.AllocateObject(
             (body, minLengthBytes, maxLengthBytes, isLookbehind, forwardScalarCount, inlineLiteralPrefixLength),
             static state => new Utf8SliceAssertion(state.body, state.minLengthBytes, state.maxLengthBytes,
@@ -387,6 +390,7 @@ internal sealed class Utf8SliceAssertion
     internal bool IsLookbehind { get; }
     internal uint? ForwardScalarCount { get; }
     internal int InlineLiteralPrefixLength { get; }
+    internal bool CanRunInline => InlineLiteralPrefixLength != -1;
 }
 
 internal readonly record struct Utf8SliceClassWindowProof(

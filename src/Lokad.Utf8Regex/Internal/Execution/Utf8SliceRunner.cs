@@ -395,10 +395,10 @@ internal static partial class Utf8SliceRunner
                 attempt = new(matched && breach == Utf8ExecutionLimitKind.None,
                     matched && breach == Utf8ExecutionLimitKind.None ? start : -1, breach);
             }
-            else if (!collectHistory && program.Assertions.Length == 0)
+            else if (!collectHistory && program.Assertions is [] or [{ CanRunInline: true }])
             {
-                // This root cannot suspend or publish capture history. Execute
-                // the same VM without the unused assertion-continuation driver.
+                // A root with no suspending assertion can run one segment.
+                // Leave larger assertion lists to the existing driver.
                 var current = new AssertionCursor(program, start, counts, positions,
                     requireNonEmpty, startIsScalarBoundary, workspace.Stacks.FrameCount)
                 {
