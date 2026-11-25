@@ -187,6 +187,52 @@ public sealed class Utf8DynamicCodeCapabilityTests
     }
 
     [Fact]
+    public void OrdinaryHistoryCursorTiersUpAfterPublishingInterpretedCaptures()
+    {
+        using var regex = new Utf8Regex(@"(\d{4}[- ]){3}\d{3,4}");
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        var dynamicCode = RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
+        Assert.Equal(dynamicCode, program.ObservesProofWork);
+        Assert.Null(program.TieredProof);
+
+        var warmup = (Utf8SliceProgram.ProofTierThreshold + program.Instructions.Length - 1) / program.Instructions.Length;
+        const string record = "𝟙2٣4-5678-1234-𝟜5٦!";
+        var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(record, warmup + 1)));
+        var width = Encoding.UTF8.GetByteCount(record);
+        using var source = new CancellationTokenSource();
+        using (var controlled = regex.CreateMatchCursor(bytes, cancellationToken: source.Token))
+        {
+            for (var i = 0; i < warmup; i++)
+                if (!controlled.MoveNext(out _)) throw new InvalidOperationException("Missing controlled match.");
+        }
+        Assert.Null(program.TieredProof);
+
+        using var cursor = regex.CreateMatchCursor(bytes);
+        Assert.True(cursor.MoveNext(out var first));
+        for (var i = 1; i < warmup - 1; i++)
+            if (!cursor.MoveNext(out _)) throw new InvalidOperationException("Missing interpreted match.");
+        Assert.Null(program.TieredProof);
+        Assert.True(cursor.MoveNext(out var boundary));
+        var proof = program.TieredProof;
+        Assert.Equal(dynamicCode, proof is not null);
+        Assert.True(cursor.MoveNext(out var last));
+        Assert.False(cursor.MoveNext(out _));
+
+        Utf8CaptureRange[] ranges = [new(0, 9), new(9, 14), new(14, 19)];
+        Assert.Equal(ranges, first.GetCaptures(1).ToArray());
+        AssertHistory(boundary, (warmup - 1) * width);
+        AssertHistory(last, warmup * width);
+        Assert.Same(proof, program.TieredProof);
+
+        void AssertHistory(Utf8RangeMatch match, int start)
+        {
+            Assert.Equal(new Utf8CaptureRange(start, start + width - 1), match.Value);
+            Assert.Equal(ranges.Select(range => new Utf8CaptureRange(start + range.StartOffsetInBytes,
+                start + range.EndOffsetInBytes)), match.GetCaptures(1).ToArray());
+        }
+    }
+
+    [Fact]
     public void FixedDecimalFollowerCountPreservesOrderedScalarProgress()
     {
         using var regex = new Utf8Regex(@"\d{2}[.-]\d{2}", RegexOptions.Compiled | RegexOptions.CultureInvariant);
