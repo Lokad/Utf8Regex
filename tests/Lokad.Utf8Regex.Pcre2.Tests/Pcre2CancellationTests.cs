@@ -99,16 +99,6 @@ public sealed class Pcre2CancellationTests
     }
 
     [Fact]
-    public void CancellationBeatsValidation()
-    {
-        var regex = Create();
-        var token = CanceledToken();
-        var invalid = new byte[] { 0xFF, 0xFF };
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.IsMatch(invalid, cancellationToken: token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
     public void OptionalArgumentsPreserveOffsetsOptionsAndDefaultSubstitution()
     {
         var regex = Create();

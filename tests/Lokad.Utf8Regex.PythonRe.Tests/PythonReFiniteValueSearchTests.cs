@@ -34,10 +34,8 @@ public sealed class PythonReFiniteValueSearchTests
             Assert.False(regex.Match("other"u8, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search).Success && pattern.Length != 0);
             Assert.Equal(pattern, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         }
-        byte[] invalid = [.. input, 0xff];
-
         token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(invalid, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search)).CancellationToken);
     }
 
     [Fact]

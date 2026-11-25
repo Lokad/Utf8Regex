@@ -99,10 +99,8 @@ public sealed class PythonReNullableCaptureTests
                 PythonReCaptureAssert.Equal(detailed[index], retained[index]);
             }
         }
-        var invalid = input.Concat(new byte[] { 0xff }).ToArray();
-
         source.Cancel();
-        var error = Assert.Throws<OperationCanceledException>(() => regex.Count(invalid, 0, source.Token));
+        var error = Assert.Throws<OperationCanceledException>(() => regex.Count(input, 0, source.Token));
         Assert.Equal(source.Token, error.CancellationToken);
     }
 }

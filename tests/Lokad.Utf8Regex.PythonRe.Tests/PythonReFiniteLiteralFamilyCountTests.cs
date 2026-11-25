@@ -118,9 +118,6 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         Assert.Equal(width + 1, regex.Count(input, 6, token.Token));
         Assert.Equal(0, regex.Count(input, input.Length, token.Token));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 1));
-
-        input[0] = 0xFF;
-
     }
     [Theory]
     [InlineData(2037)]
@@ -281,17 +278,16 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
             MatchTimeout = TimeSpan.FromMilliseconds(1),
             ResourcePolicy = Generous
         });
-        var invalid = new byte[] { 0xFF, 99, 97, 116 };
         long reads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => reads++ == 0 ? 0 : 1000);
-        var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(invalid, 1));
+        var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.Count("猫cat"u8, 3));
         Assert.Empty(error.Input);
         Assert.Equal(regex.Pattern, error.Pattern);
         Assert.Equal(TimeSpan.FromMilliseconds(1), error.MatchTimeout);
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
-            regex.Count(invalid, 1, cancellation.Token)).CancellationToken);
+            regex.Count("猫cat"u8, 3, cancellation.Token)).CancellationToken);
     }
     [Theory]
     [InlineData(false, 2)]

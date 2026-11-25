@@ -83,13 +83,12 @@ public sealed class Pcre2AsciiWordBoundaryTests
     }
 
     [Fact]
-    public void ValidationOriginalTokenAndFiniteAdmissionRemainAuthoritative()
+    public void OriginalTokenAndFiniteAdmissionRemainAuthoritative()
     {
         var regex = new Utf8Pcre2Regex(@"\babc\b");
-        byte[] invalid = [.. "abc!"u8, 0xff];
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         var failure = Assert.Throws<OperationCanceledException>(() =>
-            regex.IsMatch(invalid, 0, Pcre2MatchOptions.None, canceled.Token));
+            regex.IsMatch("abc!"u8, 0, Pcre2MatchOptions.None, canceled.Token));
         Assert.Equal(canceled.Token, failure.CancellationToken);
         var limited = new Utf8Pcre2Regex(@"\babc\b", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {

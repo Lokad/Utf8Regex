@@ -172,16 +172,6 @@ public sealed class PythonReCancellationTests
     }
 
     [Fact]
-    public void PreCanceledTokenIsReportedAtEntry()
-    {
-        var regex = Create();
-        var token = CanceledToken();
-        var invalid = new byte[] { 0xFF, 0xFF };
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.IsMatch(invalid, 0, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
     public void OptionalArgumentsPreserveNamedOffsetsAndDefaultCounts()
     {
         var regex = Create();

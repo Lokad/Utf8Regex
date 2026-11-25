@@ -1,7 +1,6 @@
 using System.Buffers;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
@@ -10,26 +9,23 @@ public sealed class Pcre2ReplacementEntryInvocationTests
 {
     public static IEnumerable<object[]> Routes()
     {
-        foreach (var mode in new[] { "Bytes", "Utf8Template" })
-        {
-            yield return ["abc", "xabc", mode];
-            yield return ["(?<x>a)b", "xab", mode];
-            yield return [@"(?<x>a)\k<x>", "xaa", mode];
-            yield return [@"(?<x>\x41+)", "xAAA", mode];
-        }
+        yield return ["abc", "xabc"];
+        yield return ["(?<x>a)b", "xab"];
+        yield return [@"(?<x>a)\k<x>", "xaa"];
+        yield return [@"(?<x>\x41+)", "xAAA"];
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void SearchWorkDeniesBeforeUnvisitedTail(string pattern, string text, string mode)
+    public void SearchWorkDeniesBeforeUnvisitedTail(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(new string('x', 16385) + text);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = Run(Policy(pattern, 3), input, mode); }).ErrorKind);
-        Assert.Equal("xZ", Run(Policy(pattern, 100000), Encoding.UTF8.GetBytes(text), mode));
+            Policy(pattern, 3).Replace(input, "Z"u8)).ErrorKind);
+        Assert.Equal("xZ", Replace(Policy(pattern, 100000), Encoding.UTF8.GetBytes(text)));
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void OriginalTokenAndAbsoluteDeadlineCoverEntryAndPublication(string pattern, string text, string mode)
+    public void OriginalTokenIsObservedAtEntryAndDuringReplacement(string pattern, string text)
     {
         foreach (var cancelAt in new[] { 2, 8 })
         foreach (var hit in new[] { true, false })
@@ -44,18 +40,18 @@ public sealed class Pcre2ReplacementEntryInvocationTests
             { if (++reads == cancelAt) source.Cancel(); return 0; });
             var input = Encoding.UTF8.GetBytes(hit ? text : "zzz");
             Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>
-            { _ = Run(regex, input, mode, source.Token); }).CancellationToken);
+                regex.Replace(input, "Z"u8, cancellationToken: source.Token)).CancellationToken);
         }
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void WholeSubjectScalarStartsAndFreshOutputRemainValid(string pattern, string text, string mode)
+    public void ScalarStartsAndFreshOutputRemainValid(string pattern, string text)
     {
         var regex = Policy(pattern, 100000);
         var input = Encoding.UTF8.GetBytes("😀" + text);
-        Assert.Equal("😀xZ", Run(regex, input, mode, start: 4));
-        Assert.Throws<ArgumentOutOfRangeException>(() => Run(regex, input, mode, start: 1));
-        Assert.Equal("😀xZ", Run(regex, input, mode, start: 4));
+        Assert.Equal("😀xZ", Replace(regex, input, start: 4));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Replace(regex, input, start: 1));
+        Assert.Equal("😀xZ", Replace(regex, input, start: 4));
     }
 
     [Theory]
@@ -97,6 +93,6 @@ public sealed class Pcre2ReplacementEntryInvocationTests
         MatchTimeout = Timeout.InfiniteTimeSpan
     });
 
-    private static string Run(Utf8Pcre2Regex regex, byte[] input, string mode, CancellationToken token = default, int start = 0)
-=>mode switch { "Bytes" => Encoding.UTF8.GetString(regex.Replace(input, "Z"u8, start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)), "Utf8Template" => Encoding.UTF8.GetString(regex.Replace(input, "Z"u8, start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)), _ => throw new ArgumentOutOfRangeException(nameof(mode)) };
+    private static string Replace(Utf8Pcre2Regex regex, byte[] input, int start = 0)
+        => Encoding.UTF8.GetString(regex.Replace(input, "Z"u8, start));
 }

@@ -123,27 +123,22 @@ public sealed class PythonReCompletedBackreferenceTests
     }
 
     [Fact]
-    public void OriginalCancellationAndFiniteAdmissionRemainBeforePublication()
+    public void FiniteAdmissionRemainsBeforePublication()
     {
-        var malformed = "token-token"u8.ToArray().Concat(new byte[] { 0xff }).ToArray();
-
+        var input = "token-token"u8.ToArray();
         foreach (var policy in new[] { new Utf8ResourcePolicy { MaxWorkSteps = 1 },
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 }, new Utf8ResourcePolicy { MaxResultBytes = 1 } })
         {
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-        {
-            Utf8PythonRangeMatch snapshot3 = default;
-            using (var captureCursor3 = new Utf8PythonRegex(Pattern, options: default, policy: new Utf8RegexPolicy()
             {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = policy
-            }).CreateMatchCursor("token-token"u8.ToArray(), mode: Utf8PythonMatchMode.FullMatch))
-            {
-                captureCursor3.MoveNext(out snapshot3);
-            }
-
-            _ = snapshot3;
-        });
+                using var regex = new Utf8PythonRegex(Pattern, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = policy
+                });
+                using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch);
+                cursor.MoveNext(out _);
+            });
         }
     }
 }

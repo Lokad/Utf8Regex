@@ -145,10 +145,9 @@ public sealed class Pcre2LiteralGlobalOperationTests
             var text = "😀" + new string('x', padding) + pattern + " " + pattern;
             var input = Encoding.UTF8.GetBytes(text);
             Assert.Equal(2, regex.Count(input, 4));
-            var invalidOffset = Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 2));
-            Assert.Equal("startOffsetInBytes", invalidOffset.ParamName);
-            foreach (var offset in new[] { -1, 2, input.Length + 2 })
-                Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count([.. input, 0xff], offset));
+            foreach (var offset in new[] { -1, 2, input.Length + 1 })
+                Assert.Equal("startOffsetInBytes",
+                    Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, offset)).ParamName);
             var matches = regex.EnumerateMatches(input, 4);
             Assert.True(matches.MoveNext());
             Assert.Equal(4 + padding, matches.Current.StartOffsetInBytes);

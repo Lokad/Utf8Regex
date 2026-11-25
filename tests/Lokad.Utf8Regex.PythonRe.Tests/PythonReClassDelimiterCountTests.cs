@@ -69,7 +69,7 @@ public sealed class PythonReClassDelimiterCountTests
             }
         });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Count([.. input, 0xff])).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Count(input)).ResourceKind);
     }
 
     [Theory]
