@@ -29,6 +29,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.True(bounded.IsMatch("clé: . clé: β42"u8, source.Token));
 
         using var regex = new Utf8Regex(pattern);
+        Assert.Equal(1, regex.Count(input, source.Token));
         Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];
         Assert.Equal(new Utf8CaptureRange(start, input.Length), regex.Match(input, 0, slots, source.Token));
         Assert.Equal(key, slots[1]);
@@ -41,6 +42,7 @@ public sealed class Utf8ClassPrefixCandidateTests
 
         using var backreference = new Utf8Regex(@"(\w+): \1\b");
         Assert.False(backreference.IsMatch(input, source.Token));
+        Assert.Equal(0, backreference.Count(input, source.Token));
         Assert.True(backreference.IsMatch("clé: clé"u8, source.Token));
     }
 

@@ -1600,7 +1600,7 @@ internal static partial class Utf8SliceRunner
                 {
                     var proof = program.LeadingClassWindowProof;
                     requiredClassSuffix = proof.SuffixAfter(aligned.Length);
-                    if (program.GroupCount == 0 && proof.CanReusePrefix)
+                    if (proof.CanReusePrefix && captureStarts.IsEmpty && captureEnds.IsEmpty)
                         verifiedClassLiteralLength = aligned.Length;
                 }
             }
@@ -1618,9 +1618,11 @@ internal static partial class Utf8SliceRunner
             return CountAlignedDecimalWindows(program, input, position, (byte)whitespaceLiteral,
                 whitespaceLiteralIndex, ref invocation);
         var classContinuation = verifiedClassLiteralLength != 0 ? whitespaceLiteralIndex + verifiedClassLiteralLength : 0;
-        var proveClassSuffix = classContinuation != 0 && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+        var repeatIndex = classContinuation != 0 && program.GroupCount != 0
+            ? Utf8SliceInstruction.SkipLeadingCaptureMarkers(program.Instructions, classContinuation) : classContinuation;
+        var proveClassSuffix = classContinuation != 0 &&
             invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
-            CanProveRepeatPrefix(program, classContinuation);
+            CanProveRepeatPrefix(program, repeatIndex);
         // Keep the existing literal and delimiter searches. A required decimal
         // starter can also skip unrelated bytes on a long forward search.
         if (whitespaceLiteral >= 0 && leadingFirst >= 128) leadingFirst = -1;
