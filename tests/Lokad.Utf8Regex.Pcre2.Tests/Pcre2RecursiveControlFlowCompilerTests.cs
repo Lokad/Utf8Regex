@@ -188,6 +188,20 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
     }
 
     [Theory]
+    [InlineData(@"(?J)\A(?<R>a)(?(R)b|c)\z", "ab", "ac")]
+    [InlineData(@"(?J)\A(?<R1>a)(?(R1)b|c)\z", "ab", "ac")]
+    [InlineData(@"\A(?(R99)b|c)(?<R99>a)\z", "ca", "ba")]
+    [InlineData(@"\A(?<Rex>a)(?(Rex)b|c)\z", "ab", "ac")]
+    [InlineData(@"(?J)\A(?:(?<R>a)|(?<R>b))(?(R)c|d)\z", "bc", "bd")]
+    public void BareConditionsPreferMatchingCaptureNames(string pattern, string hit, string miss)
+    {
+        using var regex = new Utf8Pcre2Regex(pattern);
+
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(hit)));
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(miss)));
+    }
+
+    [Theory]
     [InlineData(@"\A(?&g)\z(?(DEFINE)(?<g>(?=(?(R&g)a|b)).))", "a", "b")]
     [InlineData(@"\A(?&g)\z(?(DEFINE)(?<g>(?=(?(R)a|b)).))", "a", "b")]
     [InlineData(@"\A(?&g)\z(?(DEFINE)(?<g>.(?<=(?(R&g)a|b))))", "a", "b")]

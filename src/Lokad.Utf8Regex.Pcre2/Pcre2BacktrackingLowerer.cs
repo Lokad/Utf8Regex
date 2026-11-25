@@ -765,25 +765,29 @@ internal sealed class Pcre2BacktrackingLowerer
                 assertion.AssertionKind);
         }
 
-        if (conditional.ConditionKind == Pcre2BacktrackingConditionKind.RecursionAny)
+        var kind = conditional.ConditionKind;
+        var target = conditional.Target;
+        int[] slots;
+        if (kind is (Pcre2BacktrackingConditionKind.RecursionAny or Pcre2BacktrackingConditionKind.RecursionSlot) &&
+            target.Kind == Pcre2BackreferenceTargetKind.Absolute && _nameSlots.TryGetValue(target.Name, out var shadow))
         {
-            return new Pcre2BacktrackingCondition(
-                conditional.ConditionKind,
-                [],
-                0,
-                default);
+            kind = Pcre2BacktrackingConditionKind.CaptureSet;
+            slots = shadow;
+        }
+        else
+        {
+            slots = kind == Pcre2BacktrackingConditionKind.RecursionAny ? [] :
+                target.Kind == Pcre2BackreferenceTargetKind.Named ? _nameSlots[target.Name] :
+                [Pcre2BacktrackingAnalysis.ResolveReferenceSlot(target)];
         }
 
-        var slots = conditional.Target.Kind == Pcre2BackreferenceTargetKind.Named
-            ? _nameSlots[conditional.Target.Name]
-            : [Pcre2BacktrackingAnalysis.ResolveReferenceSlot(conditional.Target)];
-        if (conditional.ConditionKind == Pcre2BacktrackingConditionKind.CaptureSet)
+        if (kind == Pcre2BacktrackingConditionKind.CaptureSet)
         {
             if (slots.Length == 1) NoteCaptureRead(slots[0]);
             else _captureReadSlot = -1;
         }
         return new Pcre2BacktrackingCondition(
-            conditional.ConditionKind,
+            kind,
             slots,
             0,
             default);

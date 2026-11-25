@@ -49,9 +49,9 @@ internal sealed class Pcre2BacktrackingParser
         foreach (var (target, subroutine) in _references)
         {
             Utf8ConstructionScope.ChargeWork(1);
-            var slot = target.Kind == Pcre2BackreferenceTargetKind.Named
-                ? (nameSlots.TryGetValue(target.Name, out var slots) ? slots[0] : -1)
-                : Pcre2BacktrackingAnalysis.ResolveReferenceSlot(target);
+            var slot = target.Name.Length != 0 && nameSlots.TryGetValue(target.Name, out var slots)
+                ? slots[0] : target.Kind == Pcre2BackreferenceTargetKind.Named
+                    ? -1 : Pcre2BacktrackingAnalysis.ResolveReferenceSlot(target);
             if (slot >= (subroutine ? 0 : 1) && slot <= _captureCount &&
                 (!subroutine || slot == 0 || _captureDefinitions.ContainsKey(slot)))
                 continue;
@@ -1171,44 +1171,29 @@ internal sealed class Pcre2BacktrackingParser
         }
 
         var content = _pattern.CopyText(contentStart, contentEnd - contentStart).AsSpan();
-        if (content[0] == 'R')
+        if (content.SequenceEqual("R"))
         {
-            if (content.Length == 1)
-            {
-                conditionKind = Pcre2BacktrackingConditionKind.RecursionAny;
-                _offset = contentEnd + 1;
-                return true;
-            }
-
-            var recursionTarget = content[1..];
-            if (recursionTarget[0] == '&')
-            {
-                recursionTarget = recursionTarget[1..];
-                if (!IsValidCaptureName(recursionTarget))
-                {
-                    return false;
-                }
-
-                target = new Pcre2BackreferenceTarget(
-                    Pcre2BackreferenceTargetKind.Named,
-                    0,
-                    recursionTarget.ToString(),
-                    _captureCount);
-            }
-            else if (TryParseSignedReference(recursionTarget, out var recursionNumber) && recursionNumber > 0)
-            {
-                target = new Pcre2BackreferenceTarget(
-                    Pcre2BackreferenceTargetKind.Absolute,
-                    recursionNumber,
-                    string.Empty,
-                    _captureCount);
-            }
-            else
-            {
+            conditionKind = Pcre2BacktrackingConditionKind.RecursionAny;
+            target = new(Pcre2BackreferenceTargetKind.Absolute, 0, "R", _captureCount);
+            _offset = contentEnd + 1;
+            return true;
+        }
+        if (content.StartsWith("R&", StringComparison.Ordinal))
+        {
+            var name = content[2..];
+            if (!IsValidCaptureName(name))
                 return false;
-            }
 
             conditionKind = Pcre2BacktrackingConditionKind.RecursionSlot;
+            target = new(Pcre2BackreferenceTargetKind.Named, 0, name.ToString(), _captureCount);
+            _offset = contentEnd + 1;
+            return true;
+        }
+        if (content[0] == 'R' && TryParseSignedReference(content[1..], out var recursionNumber) && recursionNumber > 0)
+        {
+            // A later declaration can give this token its capture-test meaning.
+            conditionKind = Pcre2BacktrackingConditionKind.RecursionSlot;
+            target = new(Pcre2BackreferenceTargetKind.Absolute, recursionNumber, content.ToString(), _captureCount);
             _offset = contentEnd + 1;
             return true;
         }
