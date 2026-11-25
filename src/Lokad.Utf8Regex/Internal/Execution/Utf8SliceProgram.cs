@@ -233,7 +233,8 @@ internal readonly struct Utf8SliceInstruction
     // That captured fork's target Literal can pack two following ASCII bytes here, plus one.
     // A negative Literal C holds the complemented jump of a fixed arm with a common delimiter.
     // A RepeatEnd can mark a proved consuming body for ordered discovery.
-    // A leading Beginning anchor records a required first ASCII byte plus one.
+    // A leading Beginning anchor records a required first ASCII byte plus one,
+    // or -1 for a folded scalar followed by a folded repeat and an end anchor.
     // A Contiguous anchor can record the exact literal width before a terminal LF-delimited line.
     // Capture markers can record where a consecutive marker run ends.
     internal int C { get; }
@@ -495,6 +496,14 @@ internal sealed class Utf8SliceProgram
                 var proof = first.D;
                 if (proof == 0 && first.B == 0 && repeatCount != 0)
                     proof = Utf8SliceRunner.PrepareAnchoredRepeatProof(this, Utf8ConstructionScope.CurrentBudget);
+                if (proof == -1 && first.B == 0 && instructions is
+                    [_, { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 1 } head,
+                        { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true, RepeatMinimum: 0, RepeatMaximum: long.MaxValue },
+                        { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 1 } body, _, _,
+                        { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd, B: 0 },
+                        { Kind: Utf8SliceInstructionKind.Accept }] &&
+                    setMasks[head.A].Length == 16 && setMasks[body.A].Length == 16)
+                    ascii = -1;
                 if (ascii != 0 || proof != 0)
                     instructions[0] = new(first.Kind, first.A, first.B, ascii, proof);
             }

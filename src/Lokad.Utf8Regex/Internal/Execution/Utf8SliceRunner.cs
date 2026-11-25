@@ -694,7 +694,7 @@ internal static partial class Utf8SliceRunner
     {
         // These anchors admit one origin in the search direction.
         // Keep its normal attempt and interruption checks.
-        if (seekBeginning && (fromByte != 0 || first.C != 0))
+        if (seekBeginning && (fromByte != 0 || first.C > 0))
         {
             var seekBreach = TrySeekBeginning(program, input, ref fromByte, ref invocation);
             if (seekBreach != Utf8ExecutionLimitKind.None || fromByte < 0)
@@ -759,7 +759,12 @@ internal static partial class Utf8SliceRunner
             }
             // Allow the same visits as the bounded interpreter, including
             // entering the repeat, consuming its LF delimiter and accepting.
-            if (first is { A: (int)Utf8SliceAnchorKind.Contiguous, C: > 0 } && input.Length - fromByte <= proofLimit - 3)
+            if (seekBeginning && first.C < 0 && input.Length <= proofLimit - 3)
+            {
+                acceptedEnd = MatchAnchoredFoldedRepeat(program, input);
+                possible = acceptedEnd >= 0;
+            }
+            else if (first is { A: (int)Utf8SliceAnchorKind.Contiguous, C: > 0 } && input.Length - fromByte <= proofLimit - 3)
             {
                 var length = MatchLiteralLine(input[fromByte..], program.Instructions.AsSpan(1, first.C));
                 possible = length >= 0;
@@ -798,6 +803,23 @@ internal static partial class Utf8SliceRunner
         }
         result = default;
         return false;
+    }
+
+    private static int MatchAnchoredFoldedRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input)
+    {
+        if (input.IsEmpty) return -1;
+        var code = program.Instructions;
+        var head = program.SetMasks[code[1].A];
+        var value = input[0];
+        var width = value < 128 && (head[value >> 3] & (1 << (value & 7))) != 0
+            ? 1 : GetFoldedMaskScalarWidth(input, 0, head, program.CaseBehavior);
+        if (width == 0) return -1;
+
+        var body = program.SetMasks[code[3].A];
+        var end = width + ScanAsciiMask(input[width..], body, category: false);
+        if (MatchesEndAnchor(input, end, code[6])) return end;
+        end = ContinueFoldedAsciiMask(input, end, body, program.CaseBehavior);
+        return MatchesEndAnchor(input, end, code[6]) ? end : -1;
     }
 
     private static int MatchLiteralLine(ReadOnlySpan<byte> input, ReadOnlySpan<Utf8SliceInstruction> prefix)

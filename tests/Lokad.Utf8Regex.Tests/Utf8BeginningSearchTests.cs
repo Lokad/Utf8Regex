@@ -12,6 +12,25 @@ public sealed class Utf8BeginningSearchTests
         => new() { MaxWorkSteps = work, MaxDepth = 1024, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 };
 
     [Theory]
+    [InlineData(@"^[a-z][a-z0-9_]*$")]
+    [InlineData(@"\A[a-z][a-z0-9_]*\z")]
+    public void AnchoredFoldedRepeatPreservesScalarFoldingAndTheEndAnchor(string pattern)
+    {
+        const RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+        using var regex = new Utf8Regex(pattern, options, new Utf8RegexPolicy { ResourcePolicy = Policy(4096) });
+        using var source = new CancellationTokenSource();
+        var oracle = new Regex(pattern, options);
+        foreach (var text in new[] { "", "A", "É", "Key_K", "Key\n", "Key\r\n", "A\nB", "A😀", "_0", "Aİ" })
+        {
+            var input = Encoding.UTF8.GetBytes(text);
+            var expected = oracle.Match(text);
+            var range = expected.Success ? new Utf8CaptureRange(0, Encoding.UTF8.GetByteCount(expected.Value)) : default;
+            Assert.Equal(range, regex.Match(input, cancellationToken: source.Token));
+            if (input.Length > 0) Assert.False(regex.Match(input, input.Length).Success);
+        }
+    }
+
+    [Theory]
     [InlineData(0)] [InlineData(76)] [InlineData(77)] [InlineData(78)]
     [InlineData(236)] [InlineData(237)] [InlineData(238)]
     public void ContiguousLineMatchConsumesTheFirstNewlineWithinTheSelectedExtent(int padding)
