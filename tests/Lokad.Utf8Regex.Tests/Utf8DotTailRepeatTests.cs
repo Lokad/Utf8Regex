@@ -26,6 +26,25 @@ public sealed class Utf8DotTailRepeatTests
     }
 
     [Fact]
+    public void CategoryRepeatRewindsToAnEarlierDotWithinTheWorkLimit()
+    {
+        using var regex = new Utf8Regex(@"([\w.+-]+)@([\w.-]+)\.([\w.-]+)",
+            options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new() { MaxWorkSteps = 6000, MaxWorkingBytes = 4096 }
+            });
+        using var source = new CancellationTokenSource();
+        var miss = Encoding.UTF8.GetBytes("u@" + new string('a', 4095) + "!");
+        Assert.False(regex.IsMatch(miss, source.Token));
+
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[4];
+        var match = regex.Match("α@β.γ."u8, captures: slots, cancellationToken: source.Token);
+        Assert.Equal(new Utf8CaptureRange(0, 9), match);
+        Assert.Equal(new Utf8CaptureRange(3, 5), slots[2]);
+        Assert.Equal(new Utf8CaptureRange(6, 9), slots[3]);
+    }
+
+    [Fact]
     public void BoundedDotTailKeepsScalarBoundsAndCaptureAcrossBoundary()
     {
         using var regex = new Utf8Regex(@"\Astart(?<gap>.{8,25})\bfinish", RegexOptions.Compiled,

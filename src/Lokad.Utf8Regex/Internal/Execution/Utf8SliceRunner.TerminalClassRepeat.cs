@@ -782,6 +782,10 @@ internal static partial class Utf8SliceRunner
             outcome = RunFixedReverseClassRepeat(program, atom, input, start, repeat.RepeatMinimum, ref invocation);
             return true;
         }
+        // The prepared literal followed by a required repeat cannot use the
+        // terminal-literal proof. Use the existing scalar run and rewind scan.
+        if (atom.Kind == Utf8SliceInstructionKind.CategorySet && instructions[repeat.A].RepeatExitRewindStarts != 0)
+            return false;
         if (!dotTailChecked && atom.Kind == Utf8SliceInstructionKind.Dot &&
             instructions[repeat.A - 1].D is > 0 and var packedTail &&
             !MayMatchPreparedDotTail(program, input, start, packedTail, (int)repeat.RepeatMaximum, atom.A != 0,
@@ -1336,6 +1340,19 @@ internal static partial class Utf8SliceRunner
             if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
                 { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
                 PrepareInlineRepeatAssertion(code, repeatIndex, budget);
+        }
+        else if (completeAsciiCategory)
+        {
+            var afterLiteral = continuation + 1;
+            budget.ChargeWork((ulong)Math.Min(32, code.Length - afterLiteral));
+            afterLiteral = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, afterLiteral);
+            if (afterLiteral < code.Length && code[afterLiteral] is
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy, RepeatMinimum: > 0 })
+            {
+                // Every successful rewind must start with this exact byte.
+                var starts = FindRepeatRewindStarts(code, setMasks, continuation, budget);
+                code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C, starts);
+            }
         }
     }
 
