@@ -412,9 +412,9 @@ public sealed partial class Utf8Regex : IDisposable
             if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
             return found;
         }
-        if (screenedLiteral < startByte || !_preparedRegex.RequiredLiteralAlignsClassWindow ||
-            !Utf8SliceRunner.TryFindPreparedClassWindow(program, input, ref startByte,
-                search.RequiredPrefilterSearcher.LiteralSearch, screenedLiteral, ref invocation, out var outcome))
+        if (screenedLiteral < startByte || _preparedRegex.RequiredLiteralContinuation is not (> 0 and var continuation) ||
+            !Utf8SliceRunner.TryFindPreparedLiteralContinuation(program, input, ref startByte,
+                search.RequiredPrefilterSearcher.LiteralSearch, screenedLiteral, continuation, ref invocation, out var outcome))
             outcome = FindOwnedSliceValue(program, input, startByte, ref invocation, search,
                 existenceOnly: true, screenedLiteral: screenedLiteral);
         if (outcome.Breach != Utf8ExecutionLimitKind.None)

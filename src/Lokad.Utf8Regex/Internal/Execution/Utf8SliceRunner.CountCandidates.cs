@@ -730,17 +730,20 @@ internal static partial class Utf8SliceRunner
             canReuse, canAccept, excludes);
     }
 
-    internal static bool PrepareRequiredClassWindow(Utf8SliceProgram program, ReadOnlySpan<byte> needle,
+    internal static int PrepareRequiredLiteralContinuation(Utf8SliceProgram program, ReadOnlySpan<byte> needle,
         Utf8ConstructionBudget budget)
     {
-        if (program.IsNonBacktracking || program.IgnoreCase ||
-            program.LeadingClassWindowProof is not { CanReusePrefix: true, ExcludesDelimiter: true } proof ||
-            needle.Length != proof.LiteralLength) return false;
-        budget.ChargeWork((ulong)needle.Length + 1);
-        var literal = program.LeadingClassDelimiter.LiteralIndex;
-        return (proof.CanAcceptAfterPair || program.GroupCount == 0 &&
-                CanProveRepeatPrefix(program, literal + needle.Length)) &&
-            LiteralStartsAtInstruction(program, literal, needle);
+        if (program.IsNonBacktracking || program.IgnoreCase || needle.Length is < 1 or > 64) return 0;
+        budget.ChargeWork(1);
+        var proof = program.LeadingClassWindowProof;
+        var alignedWindow = proof is { CanReusePrefix: true, ExcludesDelimiter: true } &&
+            needle.Length == proof.LiteralLength;
+        var literal = alignedWindow ? program.LeadingClassDelimiter.LiteralIndex : 0;
+        var continuation = literal + needle.Length;
+        if (!(alignedWindow && proof.CanAcceptAfterPair) &&
+            (program.GroupCount != 0 || !CanProveRepeatPrefix(program, continuation))) return 0;
+        budget.ChargeWork((ulong)needle.Length);
+        return LiteralStartsAtInstruction(program, literal, needle) ? continuation : 0;
     }
 
     private static bool CanProveRepeatPrefix(Utf8SliceProgram program, int index)
@@ -1357,13 +1360,14 @@ internal static partial class Utf8SliceRunner
         return start == limit || input[start - 1] < 128 ? start : -1;
     }
 
-    internal static bool TryFindPreparedClassWindow(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        ref int position, in PreparedSubstringSearch search, int screenedDelimiter, ref Utf8SliceInvocation invocation,
+    internal static bool TryFindPreparedLiteralContinuation(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        ref int position, in PreparedSubstringSearch search, int screenedLiteral, int continuation, ref Utf8SliceInvocation invocation,
         out Utf8SliceSearchOutcome outcome)
     {
         outcome = default;
-        var proof = program.LeadingClassWindowProof;
-        if (!proof.CanAcceptAfterPair && invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit)
+        var classWindow = continuation != search.Length;
+        var pair = classWindow && program.LeadingClassWindowProof.CanAcceptAfterPair;
+        if (!pair && invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit)
             return false;
         invocation.Budget.ThrowIfCancellationRequested();
         if ((uint)position > (uint)input.Length || position < input.Length && (input[position] & 0xC0) == 0x80)
@@ -1372,43 +1376,46 @@ internal static partial class Utf8SliceRunner
             return true;
         }
 
-        // Preparation established an exact, excluded delimiter after one
-        // required run. All its starts therefore reach the same continuation.
-        var breach = proof.CanAcceptAfterPair ? invocation.TryChargeStep() : invocation.TryChargeInputStep();
-        var (literal, leadingClass, instruction, _, _) = program.LeadingClassDelimiter;
-        if (breach == Utf8ExecutionLimitKind.None && proof.CanAcceptAfterPair)
+        var breach = pair ? invocation.TryChargeStep() : invocation.TryChargeInputStep();
+        if (breach == Utf8ExecutionLimitKind.None && pair)
         {
+            var (literal, leadingClass, _, _, _) = program.LeadingClassDelimiter;
             outcome = FindAlignedClassPair(program, input, position, leadingClass, (byte)literal, search,
-                proof.SuffixAfter(search.Length), screenedDelimiter, ref invocation);
+                program.LeadingClassWindowProof.SuffixAfter(search.Length), screenedLiteral, ref invocation);
             return true;
         }
         if (breach == Utf8ExecutionLimitKind.None && invocation.Ledger.ReservedBytes != 0)
             breach = invocation.TryReserveWorking(0);
-        if (breach == Utf8ExecutionLimitKind.None && screenedDelimiter > position &&
-            TryReadScalar(input, screenedDelimiter, true, out var scalar, out var width))
+        var start = screenedLiteral;
+        if (breach == Utf8ExecutionLimitKind.None && classWindow)
         {
-            breach = TryMatchScalarClass(program, program.Instructions[leadingClass], scalar, ref invocation, out var member);
-            if (breach == Utf8ExecutionLimitKind.None && member)
+            // An excluded delimiter fixes the end of the leading run.
+            // Its last scalar suffices for this Boolean result.
+            start = -1;
+            if (screenedLiteral > position && TryReadScalar(input, screenedLiteral, true, out var scalar, out var width))
             {
-                var continuation = instruction + search.Length;
-                if (MayMatchBranchedAsciiPrefix(program, input, screenedDelimiter + search.Length, continuation,
-                    out var end, proveMatch: true, BranchedPrefixInstructionLimit - continuation))
-                {
-                    if (end < 0) return false;
-                    breach = invocation.TryChargeInputStep();
-                    if (breach == Utf8ExecutionLimitKind.None)
-                    {
-                        outcome = new(true, screenedDelimiter - width, end, breach);
-                        return true;
-                    }
-                }
+                var leadingClass = program.LeadingClassDelimiter.LeadingClass;
+                breach = TryMatchScalarClass(program, program.Instructions[leadingClass], scalar, ref invocation, out var member);
+                if (member) start = screenedLiteral - width;
+            }
+        }
+        if (breach == Utf8ExecutionLimitKind.None && start >= 0 &&
+            MayMatchBranchedAsciiPrefix(program, input, screenedLiteral + search.Length, continuation,
+                out var end, proveMatch: true, BranchedPrefixInstructionLimit - continuation))
+        {
+            if (end < 0) return false;
+            breach = invocation.TryChargeInputStep();
+            if (breach == Utf8ExecutionLimitKind.None)
+            {
+                outcome = new(true, start, end, breach);
+                return true;
             }
         }
         if (breach == Utf8ExecutionLimitKind.None)
         {
-            // An excluded byte prevents any earlier start from reaching a
-            // later delimiter. Retain the next byte for overlapping needles.
-            position = screenedDelimiter + 1;
+            // The first hit rules out only its own prefix or delimiter.
+            // Retain the next byte for overlapping needles.
+            position = screenedLiteral + 1;
             return false;
         }
         outcome = new(false, -1, -1, breach);

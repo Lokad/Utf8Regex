@@ -169,9 +169,19 @@ public sealed class Utf8ClassPrefixCandidateTests
         {
             var value = "Sherlock" + new string(' ', spaces) + "\u2003Holmes";
             var bytes = Encoding.UTF8.GetBytes("Ω " + value + new string('!', 256));
+            Assert.True(regex.IsMatch(bytes, source.Token));
             Assert.Equal(new Utf8CaptureRange(3, 3 + Encoding.UTF8.GetByteCount(value)),
                 regex.Match(bytes, cancellationToken: source.Token));
         }
+    }
+
+    [Fact]
+    public void RejectedPreparedPrefixKeepsAnOverlappingLiteral()
+    {
+        using var regex = new Utf8Regex(@"abab\s+end", policy: new() { ResourcePolicy = Funded });
+        using var source = new CancellationTokenSource();
+        Assert.True(regex.IsMatch("ababab end"u8, source.Token));
+        Assert.False(regex.IsMatch("ababab en"u8, source.Token));
     }
 
     [Theory]
