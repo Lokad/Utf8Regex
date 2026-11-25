@@ -455,26 +455,43 @@ internal static partial class Utf8SliceRunner
         ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default,
         bool existenceOnly = false, int screenedLiteral = -1)
     {
+        // A complete single-origin proof can finish without initializing
+        // an attempt workspace. The unresolved case keeps the same origin.
+        var singleOrigin = false;
+        ref readonly var first = ref program.Instructions[0];
+        if (fromByte == 0 && !program.IsNonBacktracking && !program.RightToLeft &&
+            first is { Kind: Utf8SliceInstructionKind.Anchor, B: 0, D: not 0 })
+        {
+            var seekBeginning = first.A == (int)Utf8SliceAnchorKind.Beginning;
+            singleOrigin = seekBeginning || first.A == (int)Utf8SliceAnchorKind.Contiguous &&
+                input.Length < SingleOriginPrefixInstructionLimit && invocation.AnchorOriginByte == 0;
+            if (singleOrigin)
+            {
+                invocation.Budget.ThrowIfCancellationRequested();
+                if (TryProveSingleOrigin(program, input, ref fromByte, !collectHistory && captureStarts.IsEmpty,
+                    ref invocation, existenceOnly, first, seekBeginning, seekVeryEnd: false, out var result))
+                    return result;
+            }
+        }
+        return FindFirstWithLocalWorkspace(program, input, fromByte, captureStarts, captureEnds,
+            collectHistory, ref invocation, candidatePlan, existenceOnly, screenedLiteral, singleOrigin);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Utf8SliceSearchOutcome FindFirstWithLocalWorkspace(
+        Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
+        scoped Span<int> captureStarts, scoped Span<int> captureEnds, bool collectHistory,
+        ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan,
+        bool existenceOnly, int screenedLiteral, bool singleOrigin)
+    {
         var workspace = new AttemptWorkspace();
         try
         {
-            // Prepared start anchors already fix the only origin in these
-            // extents. Use the same verifier without general search setup.
-            ref readonly var first = ref program.Instructions[0];
-            if (fromByte == 0 && !program.IsNonBacktracking && !program.RightToLeft &&
-                first is { Kind: Utf8SliceInstructionKind.Anchor, B: 0, D: not 0 })
-            {
-                var seekBeginning = first.A == (int)Utf8SliceAnchorKind.Beginning;
-                if (seekBeginning || first.A == (int)Utf8SliceAnchorKind.Contiguous &&
-                    input.Length < SingleOriginPrefixInstructionLimit && invocation.AnchorOriginByte == 0)
-                {
-                    invocation.Budget.ThrowIfCancellationRequested();
-                    return TryFindFirstAtSingleOrigin(program, input, fromByte, captureStarts, captureEnds,
-                        collectHistory, ref workspace, ref invocation, existenceOnly, first, seekBeginning, seekVeryEnd: false);
-                }
-            }
-            return TryFindFirst(program, input, fromByte, captureStarts, captureEnds,
-                collectHistory, ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral);
+            return singleOrigin
+                ? MatchSingleOrigin(program, input, fromByte, captureStarts, captureEnds, collectHistory,
+                    ref workspace, ref invocation, existenceOnly, seekVeryEnd: false)
+                : TryFindFirst(program, input, fromByte, captureStarts, captureEnds,
+                    collectHistory, ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral);
         }
         finally
         {
@@ -654,6 +671,16 @@ internal static partial class Utf8SliceRunner
         scoped Span<int> captureStarts, scoped Span<int> captureEnds, bool collectHistory,
         ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, bool existenceOnly,
         in Utf8SliceInstruction first, bool seekBeginning, bool seekVeryEnd)
+        => TryProveSingleOrigin(program, input, ref fromByte, !collectHistory && captureStarts.IsEmpty,
+            ref invocation, existenceOnly, first, seekBeginning, seekVeryEnd, out var result)
+            ? result
+            : MatchSingleOrigin(program, input, fromByte, captureStarts, captureEnds,
+                collectHistory, ref workspace, ref invocation, existenceOnly, seekVeryEnd);
+
+    private static bool TryProveSingleOrigin(
+        Utf8SliceProgram program, ReadOnlySpan<byte> input, ref int fromByte, bool allowProof,
+        ref Utf8SliceInvocation invocation, bool existenceOnly, in Utf8SliceInstruction first,
+        bool seekBeginning, bool seekVeryEnd, out Utf8SliceSearchOutcome result)
     {
         // These anchors admit one origin in the search direction.
         // Keep its normal attempt and interruption checks.
@@ -661,17 +688,22 @@ internal static partial class Utf8SliceRunner
         {
             var seekBreach = TrySeekBeginning(program, input, ref fromByte, ref invocation);
             if (seekBreach != Utf8ExecutionLimitKind.None || fromByte < 0)
-                return new(false, -1, -1, seekBreach);
+            {
+                result = new(false, -1, -1, seekBreach);
+                return true;
+            }
         }
         var breach = invocation.TryChargeInputStep();
-        if (breach != Utf8ExecutionLimitKind.None)
-            return new(false, -1, -1, breach);
-        invocation.Budget.ThrowIfCancellationRequested();
-        if (seekVeryEnd && fromByte != input.Length)
-            return new(false, -1, -1, Utf8ExecutionLimitKind.None);
+        if (breach == Utf8ExecutionLimitKind.None)
+            invocation.Budget.ThrowIfCancellationRequested();
+        if (breach != Utf8ExecutionLimitKind.None || seekVeryEnd && fromByte != input.Length)
+        {
+            result = new(false, -1, -1, breach);
+            return true;
+        }
         var proofStart = -1;
         var proofLimit = BranchedPrefixInstructionLimit;
-        if (!seekVeryEnd && !collectHistory && captureStarts.Length == 0)
+        if (!seekVeryEnd && allowProof)
         {
             if (first.D == 1 && input.Length - fromByte <= ShortSingleOriginProofInputLimit)
                 proofStart = 1;
@@ -740,11 +772,21 @@ internal static partial class Utf8SliceRunner
                 invocation.Budget.ThrowIfCancellationRequested();
                 if (breach == Utf8ExecutionLimitKind.None && visits != 0)
                     program.ObserveProofWork(visits);
-                return possible && breach == Utf8ExecutionLimitKind.None
+                result = possible && breach == Utf8ExecutionLimitKind.None
                     ? new(true, fromByte, acceptedEnd, breach)
                     : new(false, -1, -1, breach);
+                return true;
             }
         }
+        result = default;
+        return false;
+    }
+
+    private static Utf8SliceSearchOutcome MatchSingleOrigin(
+        Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
+        scoped Span<int> captureStarts, scoped Span<int> captureEnds, bool collectHistory,
+        ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, bool existenceOnly, bool seekVeryEnd)
+    {
         var outcome = TryMatchAt(program, input, fromByte, captureStarts, captureEnds,
             collectHistory, false, true, ref workspace, ref invocation, existenceOnly);
         return outcome.IsMatch && outcome.Breach == Utf8ExecutionLimitKind.None
