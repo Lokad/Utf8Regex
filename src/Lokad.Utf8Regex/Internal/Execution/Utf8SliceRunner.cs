@@ -1849,7 +1849,7 @@ internal static partial class Utf8SliceRunner
                         !program.SkipsTerminalRewind(candidateContinuation))
                     {
                         // Screen the selected tail before starting an attempt.
-                        if (!MayMatchPreparedDotTail(code, input, position + prefixBytes, packedTail,
+                        if (!MayMatchPreparedDotTail(program, input, position + prefixBytes, packedTail,
                             (int)repeat.RepeatMaximum, code[candidateContinuation + 1].A != 0,
                             ref invocation, out var probeBreach))
                         {

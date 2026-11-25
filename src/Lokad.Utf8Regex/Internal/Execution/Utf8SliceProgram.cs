@@ -395,7 +395,8 @@ internal sealed class Utf8SliceProgram
     // Conservative carrier allowance; major children have separate admission.
     internal static ulong ObjectBytes =>
         512 + 4UL * (ulong)IntPtr.Size + (ulong)Unsafe.SizeOf<(int, byte, byte, byte)>() +
-        (ulong)Unsafe.SizeOf<(long, Utf8SliceClassWindowProof)>() - sizeof(long);
+        (ulong)Unsafe.SizeOf<(long, Utf8SliceClassWindowProof)>() - sizeof(long) +
+        (ulong)Unsafe.SizeOf<(int, int, byte[]?)>();
 
     private Utf8SliceProgram(
         Utf8SliceInstruction[] instructions,
@@ -435,9 +436,11 @@ internal sealed class Utf8SliceProgram
         bool requiresUnicodeWordBoundary,
         bool requiresUnicodeShorthand,
         bool requiresUnicodeCategory,
-        bool isRoot, Utf8BoundedProgramEmitter.Compilation proofCompilation)
+        bool isRoot, Utf8BoundedProgramEmitter.Compilation proofCompilation,
+        (int Start, int TrailingBoundary, byte[]? Bytes) terminalDotTail)
     {
         Instructions = instructions;
+        TerminalDotTail = terminalDotTail;
         IsNonBacktracking = isNonBacktracking;
         NonBacktrackingCaptureOpeningCount = nonBacktrackingCaptureOpeningCount;
         NonBacktrackingEpsilonOrder = nonBacktrackingEpsilonOrder;
@@ -660,6 +663,7 @@ internal sealed class Utf8SliceProgram
         var hasUnicodePatternAtoms = false;
         var hasOrderSensitiveLookbehind = false;
         var nonBacktrackingOrderedForwardOnly = nonBacktrackingOrdered.Closures is { Length: > 0 };
+        var terminalDotTail = default((int Start, int TrailingBoundary, byte[]? Bytes));
         ulong consumers = 0, accepts = 0;
         budget.ChargeWork((ulong)instructions.Length);
         for (var pc = 0; pc < instructions.Length; pc++)
@@ -670,7 +674,13 @@ internal sealed class Utf8SliceProgram
                 // Record the final repeat layout once for runtime verification.
                 instructions[pc] = instruction with { HasSingleAtomBody = Utf8SliceRunner.IsSingleAtomRepeat(instructions, pc, instruction) };
                 if (!rightToLeft && !isNonBacktracking)
+                {
                     Utf8SliceRunner.PrepareScalarRepeatContinuation(instructions, setMasks, categorySetMembers, pc, budget);
+                    if (!hasBalancing && terminalDotTail.Bytes is null &&
+                        instructions[pc].HasSingleAtomBody && instructions[pc + 1].Kind == Utf8SliceInstructionKind.Dot &&
+                        instructions[instruction.A - 1].D is > 0 and var packedTail)
+                        terminalDotTail = Utf8SliceRunner.PrepareTerminalDotTail(instructions, packedTail >> 4, budget);
+                }
             }
             else if (instruction.Kind == Utf8SliceInstructionKind.Jump && !rightToLeft && !isNonBacktracking)
                 Utf8SliceRunner.MarkExcludedLoopStart(instructions, setMasks, pc, budget);
@@ -794,11 +804,12 @@ internal sealed class Utf8SliceProgram
             requiresUnicodeWordBoundary,
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
-            isRoot, proofCompilation);
+            isRoot, proofCompilation, terminalDotTail);
         construction.Complete(); return result;
     }
 
     internal Utf8SliceInstruction[] Instructions { get; }
+    internal (int Start, int TrailingBoundary, byte[]? Bytes) TerminalDotTail { get; }
     internal bool IsNonBacktracking { get; }
     internal int NonBacktrackingCaptureOpeningCount { get; }
     internal int[] NonBacktrackingEpsilonOrder { get; }

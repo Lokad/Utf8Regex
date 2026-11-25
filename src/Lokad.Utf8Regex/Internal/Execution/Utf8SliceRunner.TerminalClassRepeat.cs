@@ -784,7 +784,7 @@ internal static partial class Utf8SliceRunner
         }
         if (!dotTailChecked && atom.Kind == Utf8SliceInstructionKind.Dot &&
             instructions[repeat.A - 1].D is > 0 and var packedTail &&
-            !MayMatchPreparedDotTail(instructions, input, start, packedTail, (int)repeat.RepeatMaximum, atom.A != 0,
+            !MayMatchPreparedDotTail(program, input, start, packedTail, (int)repeat.RepeatMaximum, atom.A != 0,
                 ref invocation, out var probeBreach))
         {
             outcome = (-1, probeBreach);
@@ -1105,17 +1105,26 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static bool MayMatchPreparedDotTail(ReadOnlySpan<Utf8SliceInstruction> code, ReadOnlySpan<byte> input,
+    private static bool MayMatchPreparedDotTail(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int start, int packedTail, int maximum, bool singleline, ref Utf8SliceInvocation invocation,
         out Utf8ExecutionLimitKind breach)
     {
         breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return false;
-        Span<byte> prefix = stackalloc byte[8];
         var tailStart = packedTail >> 4;
         var width = packedTail & 15;
-        for (var offset = 0; offset < width; offset++)
-            prefix[offset] = (byte)code[tailStart + offset].A;
+        scoped ReadOnlySpan<byte> prefix;
+        var prepared = program.TerminalDotTail;
+        if (prepared.Start == tailStart && prepared.Bytes is { } bytes)
+            prefix = bytes.AsSpan(0, width);
+        else
+        {
+            Span<byte> buffer = stackalloc byte[8];
+            var code = program.Instructions;
+            for (var offset = 0; offset < width; offset++)
+                buffer[offset] = (byte)code[tailStart + offset].A;
+            prefix = buffer[..width];
+        }
         // The repeat cannot cover more than four bytes per scalar.
         var window = input.Slice(start, Math.Min(input.Length - start, maximum * 4 + width));
         if (!singleline && window.IndexOf((byte)'\n') is >= 0 and var newline)
@@ -1123,7 +1132,7 @@ internal static partial class Utf8SliceRunner
             // The dot stops at LF, but the literal can start there or span it.
             window = window[..Math.Min(window.Length, newline + width)];
         }
-        var possible = width == 1 ? window.Contains(prefix[0]) : window.IndexOf(prefix[..width]) >= 0;
+        var possible = width == 1 ? window.Contains(prefix[0]) : window.IndexOf(prefix) >= 0;
         breach = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();
         return breach == Utf8ExecutionLimitKind.None && possible;
@@ -1774,34 +1783,20 @@ internal static partial class Utf8SliceRunner
         // Prove the literal through Accept before discarding rewind choices.
         // Capture boundaries still execute in the VM at the selected endpoint.
         if (program.HasBalancing) return false;
-        Span<byte> literal = stackalloc byte[64];
-        var length = 0;
-        var cursor = tail;
         var instructions = program.Instructions;
-        while (cursor < instructions.Length && instructions[cursor].Kind == Utf8SliceInstructionKind.Literal)
+        var prepared = program.TerminalDotTail;
+        var trailingBoundary = prepared.TrailingBoundary;
+        scoped ReadOnlySpan<byte> literal;
+        if (prepared.Start == tail && prepared.Bytes is { } bytes)
+            literal = bytes;
+        else
         {
-            var item = instructions[cursor++];
-            if (item.B != 0 || length == literal.Length) return false;
-            if ((uint)item.A < 128)
-                literal[length++] = (byte)item.A;
-            else
-            {
-                if (!Rune.TryCreate(item.A, out var scalar) ||
-                    !scalar.TryEncodeToUtf8(literal[length..], out var written)) return false;
-                length += written;
-            }
+            Span<byte> buffer = stackalloc byte[64];
+            var encoded = EncodeGreedyRepeatTerminalLiteral(instructions, tail, buffer, out trailingBoundary);
+            if (encoded == 0) return false;
+            literal = buffer[..encoded];
         }
-        var trailingBoundary = -1;
-        for (var skipped = 0; skipped < 32 && cursor < instructions.Length; skipped++, cursor++)
-        {
-            if (instructions[cursor].Kind == Utf8SliceInstructionKind.CaptureEnd) continue;
-            if (trailingBoundary >= 0 || instructions[cursor].Kind != Utf8SliceInstructionKind.Boundary) break;
-            trailingBoundary = cursor;
-        }
-        if (cursor < instructions.Length && instructions[cursor].Kind == Utf8SliceInstructionKind.Jump)
-            cursor = instructions[cursor].A;
-        if (length == 0 || (uint)cursor >= (uint)instructions.Length ||
-            instructions[cursor].Kind != Utf8SliceInstructionKind.Accept) return false;
+        var length = literal.Length;
 
         // Each reverse-search block checks the deadline before reading bytes.
         // An empty window or a failed repeat still checks it before returning.
@@ -1836,7 +1831,7 @@ internal static partial class Utf8SliceRunner
             }
             var first = Math.Max(minimumEnd, last - (2048 - length));
             var block = input.Slice(first, last - first + length);
-            var hit = length == 1 ? block.LastIndexOf(literal[0]) : block.LastIndexOf(literal[..length]);
+            var hit = length == 1 ? block.LastIndexOf(literal[0]) : block.LastIndexOf(literal);
             if (hit < 0)
             {
                 last = first - 1;
@@ -1857,6 +1852,53 @@ internal static partial class Utf8SliceRunner
         invocation.Budget.CheckDeadline();
         outcome = (selected, Utf8ExecutionLimitKind.None);
         return true;
+    }
+
+    internal static (int Start, int TrailingBoundary, byte[]? Bytes) PrepareTerminalDotTail(
+        ReadOnlySpan<Utf8SliceInstruction> instructions, int tail, Utf8ConstructionBudget budget)
+    {
+        // Cache one exact accepting tail per program. The existing prefix
+        // screen and reverse scan can read the same bytes.
+        budget.ChargeWork((ulong)Math.Min(97, instructions.Length - tail));
+        Span<byte> literal = stackalloc byte[64];
+        var length = EncodeGreedyRepeatTerminalLiteral(instructions, tail, literal, out var boundary);
+        if (length == 0) return default;
+        var bytes = budget.AllocateArray<byte>(length, false);
+        budget.ChargeWork((ulong)length);
+        literal[..length].CopyTo(bytes);
+        return (tail, boundary, bytes);
+    }
+
+    private static int EncodeGreedyRepeatTerminalLiteral(ReadOnlySpan<Utf8SliceInstruction> instructions,
+        int tail, Span<byte> literal, out int trailingBoundary)
+    {
+        trailingBoundary = -1;
+        var length = 0;
+        var cursor = tail;
+        while (cursor < instructions.Length && instructions[cursor].Kind == Utf8SliceInstructionKind.Literal)
+        {
+            var item = instructions[cursor++];
+            if (item.B != 0 || length == literal.Length) return 0;
+            if ((uint)item.A < 128)
+                literal[length++] = (byte)item.A;
+            else
+            {
+                if (!Rune.TryCreate(item.A, out var scalar) ||
+                    !scalar.TryEncodeToUtf8(literal[length..], out var written)) return 0;
+                length += written;
+            }
+        }
+        for (var skipped = 0; skipped < 32 && cursor < instructions.Length; skipped++, cursor++)
+        {
+            if (instructions[cursor].Kind == Utf8SliceInstructionKind.CaptureEnd) continue;
+            if (trailingBoundary >= 0 || instructions[cursor].Kind != Utf8SliceInstructionKind.Boundary) break;
+            trailingBoundary = cursor;
+        }
+        if (cursor < instructions.Length && instructions[cursor].Kind == Utf8SliceInstructionKind.Jump)
+            cursor = instructions[cursor].A;
+        if (length == 0 || (uint)cursor >= (uint)instructions.Length ||
+            instructions[cursor].Kind != Utf8SliceInstructionKind.Accept) return 0;
+        return length;
     }
 
     private static bool TryGetStrictEndLiteralWidth(ReadOnlySpan<Utf8SliceInstruction> tail, bool implicitEnd, out int width)
