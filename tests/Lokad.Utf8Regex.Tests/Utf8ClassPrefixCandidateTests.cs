@@ -129,14 +129,17 @@ public sealed class Utf8ClassPrefixCandidateTests
             Encoding.UTF8.GetByteCount(text.AsSpan(0, group.Index + group.Length)));
     }
 
-    [Fact]
-    public void EqualTerminalClassesRequireAScalarOnBothSidesOfTheDelimiter()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EqualTerminalClassesRequireAScalarOnBothSidesOfTheDelimiter(bool captures)
     {
-        const string pattern = @"[\w.+-]+@[\p{L}.]+\.[\p{L}.]+";
+        var pattern = captures ? @"([\w.+-]+)@([\p{L}.]+)\.([\p{L}.]+)" : @"[\w.+-]+@[\p{L}.]+\.[\p{L}.]+";
         var reference = new Regex(pattern);
         using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
         using var source = new CancellationTokenSource();
-        foreach (var suffix in new[] { "a@.β", "a@β.", "a@β..", "a@β.γ", "a@" + new string('β', 48) + ".γ" })
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[captures ? 4 : 1];
+        foreach (var suffix in new[] { "a@.β", "a@β.", "a@β..", "a@β.γ", "a@β.γ.δ", "a@" + new string('β', 48) + ".γ" })
         {
             var text = new string('!', 260) + suffix;
             var input = Encoding.UTF8.GetBytes(text);
@@ -148,6 +151,16 @@ public sealed class Utf8ClassPrefixCandidateTests
                 : default;
             Assert.Equal(range, regex.Match(input, cancellationToken: source.Token));
             Assert.Equal(reference.Count(text), regex.Count(input, source.Token));
+            if (captures && expected.Success)
+            {
+                Assert.Equal(range, regex.Match(input, 0, slots, source.Token));
+                for (var group = 1; group < slots.Length; group++)
+                {
+                    var capture = expected.Groups[group];
+                    Assert.Equal(new Utf8CaptureRange(Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index)),
+                        Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index + capture.Length))), slots[group]);
+                }
+            }
         }
     }
 

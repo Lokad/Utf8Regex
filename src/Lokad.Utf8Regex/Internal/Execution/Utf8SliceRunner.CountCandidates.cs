@@ -2824,7 +2824,7 @@ internal static partial class Utf8SliceRunner
             if (inner <= 0) return BranchedPrefixRejected;
             if (inner >= remaining) return BranchedPrefixUndecided;
             remaining -= inner + 1;
-            if (!candidate.Slice(1, inner).Contains((byte)program.Instructions[repeat.A + 1].A))
+            if (!candidate.Slice(1, inner).Contains((byte)exit.RepeatExitRewindStarts))
                 return BranchedPrefixRejected;
         }
         return position + length;

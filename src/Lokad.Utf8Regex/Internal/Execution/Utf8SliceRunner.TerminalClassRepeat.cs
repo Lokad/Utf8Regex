@@ -1412,19 +1412,21 @@ internal static partial class Utf8SliceRunner
                 // Every successful rewind must start with this exact byte.
                 var starts = FindRepeatRewindStarts(code, setMasks, continuation, budget);
                 var flags = exit.C;
-                if (afterLiteral == continuation + 1 && repeat is { RepeatMinimum: 1, RepeatMaximum: long.MaxValue } &&
+                if (starts != 0 && repeat is { RepeatMinimum: 1, RepeatMaximum: long.MaxValue } &&
                     code[afterLiteral] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1,
-                        RepeatMaximum: long.MaxValue } following && following.A == code.Length - 2 &&
+                        RepeatMaximum: long.MaxValue } following &&
                     code[^1].Kind == Utf8SliceInstructionKind.Accept && IsSingleAtomRepeat(code, afterLiteral, following))
                 {
-                    budget.ChargeWork(5);
+                    var tail = following.A + 1;
+                    budget.ChargeWork(5UL + (ulong)Math.Min(code.Length - tail, Utf8SliceInstruction.LeadingCaptureMarkerLimit));
                     var terminalAtom = code[afterLiteral + 1];
-                    if (Utf8SliceProgram.GetCompleteAsciiCategoryMask(terminalAtom, categories) ==
+                    if (Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, tail) == code.Length - 1 &&
+                        Utf8SliceProgram.GetCompleteAsciiCategoryMask(terminalAtom, categories) ==
                         Utf8SliceProgram.GetCompleteAsciiCategoryMask(atom, categories) &&
                         setMasks[atom.A].AsSpan().SequenceEqual(setMasks[terminalAtom.A]))
                     {
                         // Both runs consume the same alphabet. A delimiter
-                        // inside a single complete run proves the whole suffix.
+                        // inside a complete run proves the unobserved suffix.
                         flags |= Utf8SliceInstruction.RepeatExitSharesTerminalRunFlag;
                     }
                 }
