@@ -2149,9 +2149,9 @@ internal static partial class Utf8SliceRunner
                         // This operand describes the complete positive ASCII interval.
                         matches = instruction.MatchesAsciiInterval(value);
                     }
-                    else if (value < 128 && instruction.C == 0)
+                    else if (value < 128)
                     {
-                        // An ASCII byte is already a complete unfolded scalar.
+                        // Set masks already include the ASCII case equivalents.
                         var mask = program.SetMasks[instruction.A];
                         matches = ((mask[value >> 3] & (1 << (value & 7))) != 0) != (instruction.B != 0);
                     }

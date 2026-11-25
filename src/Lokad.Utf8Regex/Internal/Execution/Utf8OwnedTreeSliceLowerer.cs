@@ -331,7 +331,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     }
                 }
                 var foldMask = foldCase && (categories.Count != 0 || members.Count != 0 ||
-                    !Utf8ScalarAsciiProjector.TryCloseAsciiCaseFiber(mask, caseBehavior));
+                    !Utf8ScalarAsciiProjector.CloseAsciiCaseFiber(mask, caseBehavior));
                 var shorthand = arena.Take(members, segments.Count != 0 || position < data.Length);
                 segments.Add(categories.Count == 0
                     ? new Utf8SliceNode.SetNode(mask, negated, shorthand, foldMask)

@@ -44,16 +44,15 @@ internal static class Utf8ScalarAsciiProjector
         return true;
     }
 
-    // Lowering already knows the culture. Only replace the mask if all its
-    // equivalents are one-byte scalars under that behavior.
-    internal static bool TryCloseAsciiCaseFiber(Span<byte> mask, Utf8ScalarCaseBehavior behavior)
+    // Close the ASCII mask under the construction culture. The result tells
+    // lowering whether it must still check wider case equivalents.
+    internal static bool CloseAsciiCaseFiber(Span<byte> mask, Utf8ScalarCaseBehavior behavior)
     {
-        if (!TryCloseAsciiCaseFiber(BinaryPrimitives.ReadUInt64LittleEndian(mask),
-            BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]), (int)behavior, (int)behavior, out var low, out var high))
-            return false;
+        var asciiOnly = TryCloseAsciiCaseFiber(BinaryPrimitives.ReadUInt64LittleEndian(mask),
+            BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]), (int)behavior, (int)behavior, out var low, out var high);
         BinaryPrimitives.WriteUInt64LittleEndian(mask, low);
         BinaryPrimitives.WriteUInt64LittleEndian(mask[8..], high);
-        return true;
+        return asciiOnly;
     }
 
     private static bool TryCloseAsciiCaseFiber(ulong definitionLow, ulong definitionHigh,
@@ -61,6 +60,7 @@ internal static class Utf8ScalarAsciiProjector
     {
         low = definitionLow;
         high = definitionHigh;
+        var asciiOnly = true;
         Utf8ConstructionScope.ChargeWork(2);
         for (var word = 0; word < 2; word++)
             for (var bits = word == 0 ? definitionLow : definitionHigh; bits != 0; bits &= bits - 1)
@@ -73,13 +73,13 @@ internal static class Utf8ScalarAsciiProjector
                     foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents(value, (Utf8ScalarCaseBehavior)behavior))
                     {
                         Utf8ConstructionScope.ChargeWork(1);
-                        if (equivalent >= 128) return false;
                         if (equivalent < 64) low |= 1UL << equivalent;
-                        else high |= 1UL << (equivalent - 64);
+                        else if (equivalent < 128) high |= 1UL << (equivalent - 64);
+                        else asciiOnly = false;
                     }
                 }
             }
-        return (low | high) != 0;
+        return asciiOnly && (low | high) != 0;
     }
 
     // Construction queries may inspect any owned class on the ASCII domain.

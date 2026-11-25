@@ -2342,9 +2342,8 @@ internal static partial class Utf8SliceRunner
             if (count >= minimum) minimumEnd = start + (int)minimum;
         }
         var completeMask = hybrid || atom.Kind == Utf8SliceInstructionKind.Set || categories != 0;
-        ReadOnlySpan<byte> asciiMask = hybrid ||
-            atom.Kind is Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet &&
-            atom.B == 0 && atom.C == 0 ? program.SetMasks[atom.A] : [];
+        ReadOnlySpan<byte> asciiMask = hybrid || atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
+            { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } ? program.SetMasks[atom.A] : [];
         while (count < maximum)
         {
             var breach = invocation.TryChargeStep();
