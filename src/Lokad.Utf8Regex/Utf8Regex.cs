@@ -356,7 +356,6 @@ public sealed partial class Utf8Regex : IDisposable
         Utf8SliceInvocation.InitializeExclusive(out var invocation, InvocationLimits, MatchTimeout, token, null);
         try
         {
-            Utf8SliceBufferWork.Checkpoint(ref invocation);
             return OwnedSliceIsMatchFromByte(input, program, startByte, ref invocation);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
@@ -368,6 +367,19 @@ public sealed partial class Utf8Regex : IDisposable
     private bool OwnedSliceIsMatchFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program, int startByte, ref Utf8SliceInvocation invocation)
     {
         invocation.AnchorOriginByte = startByte;
+        ref readonly var search = ref _preparedRegex.SearchPlan;
+        if (_preparedRegex.RequiredLiteralProvesMatch && ReferenceEquals(program, _ownedSliceProgram))
+        {
+            // The prepared literal is sufficient for existence. Its finder
+            // checks the invocation before scanning and before publishing.
+            var breach = search.RequiredPrefilterSearcher.TryFindMatch(input, startByte, input.Length, false,
+                ref invocation, out _, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Required literal proof breached the invocation budget.");
+            return found;
+        }
+
+        Utf8SliceBufferWork.Checkpoint(ref invocation);
         // Boolean results need no capture storage. The bounded finder confirms
         // boundary requirements on the original subject under this invocation.
         if ((HasFiniteExecutionLimits || invocation.Ledger.HasMemoryAllowance) &&
@@ -377,17 +389,6 @@ public sealed partial class Utf8Regex : IDisposable
                 input, startByte, input.Length, false, ref invocation, out _, out var found);
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Native literal existence search breached the invocation budget.");
-            return found;
-        }
-        ref readonly var search = ref _preparedRegex.SearchPlan;
-        if (_preparedRegex.RequiredLiteralProvesMatch && ReferenceEquals(program, _ownedSliceProgram))
-        {
-            // The prepared literal is sufficient for existence. The search
-            // already checks the invocation before returning a hit or miss.
-            var breach = search.RequiredPrefilterSearcher.TryFindMatch(input, startByte, input.Length, false,
-                ref invocation, out _, out var found);
-            if (breach != Utf8ExecutionLimitKind.None)
-                throw new InvalidOperationException("Required literal proof breached the invocation budget.");
             return found;
         }
         if (RejectMissingRequiredInput(input, program, ref invocation, out var screenedLiteral)) return false;

@@ -67,7 +67,6 @@ public sealed partial class Utf8Regex
             Utf8SliceInvocation.InitializeExclusive(out var invocation, InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
             try
             {
-                Utf8SliceBufferWork.Checkpoint(ref invocation);
                 var result = OwnedSliceIsMatchFromByte(input, _ownedSliceProgram,
                     _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
                 FinishFundedInvocation(ref invocation);
