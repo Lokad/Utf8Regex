@@ -89,6 +89,21 @@ public sealed class Utf8CaptureSlotMatchTests
     }
 
     [Fact]
+    public void LatestOnlySlotsNeedNoJournalWithoutAReplayFrame()
+    {
+        var bytes = Utf8ConstructionBudget.ArrayBytes<int>(4);
+        using var regex = new Utf8Regex(@"(\w+): (\w+)", policy: new() { ResourcePolicy = new() { MaxWorkingBytes = bytes } });
+        var account = new Account { Maximum = bytes };
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];
+        ReadOnlySpan<byte> input = "clé: value"u8;
+
+        Assert.Equal(new Utf8CaptureRange(0, input.Length), regex.Match(input, captures: slots, workingMemoryAllowance: account));
+        Assert.Equal(new Utf8CaptureRange(0, 4), slots[1]);
+        Assert.Equal(new Utf8CaptureRange(6, input.Length), slots[2]);
+        Assert.Equal(0UL, account.Held);
+    }
+
+    [Fact]
     public void ShortDestinationFitsBelowTheFullCaptureWorkspace()
     {
         var pattern = @"\A(?<1000>é)" + string.Concat(Enumerable.Repeat("(b)", 24)) + @"\z";

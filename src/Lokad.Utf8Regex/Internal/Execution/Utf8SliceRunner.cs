@@ -318,7 +318,8 @@ internal static partial class Utf8SliceRunner
         bool startIsScalarBoundary,
         ref AttemptWorkspace workspace,
         ref Utf8SliceInvocation invocation, bool existenceOnly = false,
-        (int Instruction, int Bytes) verifiedPrefix = default, bool requireFullInput = false, bool dotTailChecked = false)
+        (int Instruction, int Bytes) verifiedPrefix = default, bool requireFullInput = false, bool dotTailChecked = false,
+        bool preserveClosingOrder = false)
     {
         // Profile cursors can reuse this admitted workspace across candidate
         // attempts while preserving their own empty-match and anchor progress.
@@ -410,7 +411,7 @@ internal static partial class Utf8SliceRunner
                 {
                     attempt = RunSegment(input, captureStarts, captureEnds, heads, ref current,
                         false, preserveCaptureTrail: false, ref workspace.Stacks, ref invocation, out _, canStopEarly,
-                        dotTailChecked ? verifiedPrefix.Instruction : -1);
+                        dotTailChecked ? verifiedPrefix.Instruction : -1, preserveClosingOrder);
                 }
                 finally
                 {
@@ -2001,7 +2002,7 @@ internal static partial class Utf8SliceRunner
         ReadOnlySpan<byte> input, scoped Span<int> captureStarts, scoped Span<int> captureEnds, int[] balanceHeads,
         ref AssertionCursor cursor, bool resumeFailure, bool preserveCaptureTrail,
         ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation, out bool suspended, bool existenceOnly = false,
-        int checkedDotTailAt = -1)
+        int checkedDotTailAt = -1, bool preserveClosingOrder = false)
     {
         suspended = false;
         var program = cursor.Program;
@@ -2584,10 +2585,9 @@ internal static partial class Utf8SliceRunner
                         programIndex++;
                         break;
                     }
-                    // The assertion/history driver retains every entry. In an
-                    // assertion-free latest-value root, a plain start slot needs
-                    // undo only while a frame can return to an earlier value.
-                    // Closing entries still preserve multi-group completion order.
+                    // The assertion/history driver retains every entry. A plain
+                    // start slot in a latest-value root needs undo only while
+                    // a frame can return to an earlier value.
                     if ((preserveCaptureTrail || balanceHeads.Length != 0 || stacks.FrameCount != 0) &&
                         !stacks.PushTrail(instruction.A, captureStarts[instruction.A], inputIndex, true, ref invocation))
                     {
@@ -2614,7 +2614,10 @@ internal static partial class Utf8SliceRunner
                     }
                     else
                     {
-                        if ((preserveCaptureTrail || captureStarts.Length != 1 || balanceHeads.Length != 0 || stacks.FrameCount != 0) &&
+                        // Python metadata observes closing order separately
+                        // from the final slot values. Latest-only output needs
+                        // a trail entry only for rollback.
+                        if ((preserveCaptureTrail || preserveClosingOrder || balanceHeads.Length != 0 || stacks.FrameCount != 0) &&
                             !stacks.PushTrail(instruction.A, captureEnds[instruction.A], inputIndex, false, ref invocation))
                         {
                             failure = stacks.Breach;

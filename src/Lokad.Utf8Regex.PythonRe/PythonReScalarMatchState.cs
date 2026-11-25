@@ -554,7 +554,8 @@ internal struct PythonReScalarMatchState
     {
         _invocation.AnchorOriginByte = _position;
         return Utf8SliceRunner.TryMatchAt(_program, input, _position, _slots.Starts, _slots.Ends,
-            false, _retryNonEmpty, true, ref _workspace, ref _invocation, existenceOnly, requireFullInput: requireFullInput);
+            false, _retryNonEmpty, true, ref _workspace, ref _invocation, existenceOnly,
+            requireFullInput: requireFullInput, preserveClosingOrder: _program.GroupCount > 1);
     }
 
     private bool RecordMatch(Utf8SliceMatchOutcome outcome)
