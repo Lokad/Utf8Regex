@@ -93,14 +93,21 @@ public sealed class Utf8ScalarRepeatAndStateLifetimeTests
     [Fact]
     public void ReferenceLoansHaveExactAdmissionBoundedRetentionAndClearGraphSlots()
     {
-        var denied = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 1), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var limits = new Utf8ExecutionLimits(0, 0, 1);
         var buffer = new Utf8InvocationStateBuffer<ReferenceState>();
         var value = new ReferenceState(new object(), 1);
+        // Initialize the closed generic denial path outside the allocation sample.
+        // A fresh invocation below still has to make its own admission decision.
+        var warmup = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, CancellationToken.None);
+        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, buffer.TryPush(value, ref warmup));
+        var denied = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, CancellationToken.None);
         var before = GC.GetAllocatedBytesForCurrentThread();
         var breach = buffer.TryPush(value, ref denied);
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, breach);
         Assert.Equal(0, allocated);
+        Assert.Equal(0, buffer.Count);
+        Assert.Equal(0UL, denied.Ledger.ReservedBytes);
         var retained = Utf8ExactStatePool<ReferenceState>.RetainedBytes;
         var finite = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 4096), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.None, buffer.TryPush(value, ref finite));
