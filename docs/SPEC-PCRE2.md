@@ -184,6 +184,11 @@ discovery, projection, publication, cold replacement preparation and cursor
 waits. Expiry throws `Pcre2MatchException` with `Timeout`. An omitted
 `MatchTimeout` inherits `Utf8Pcre2Regex.DefaultMatchTimeout`, initially infinite.
 
+Eligible capture-free `Count` operations with default match options can
+reuse a bounded compiled proof after enough interpreted candidate work.
+Calls with resource controls, a deadline, a token or shared working
+admission use metered execution.
+
 `ResourcePolicy` exposes the policy. `DefaultExecutionLimits` projects null
 as zero and preserves these PCRE2 units. `MaxWorkSteps` is at most
 `uint.MaxValue`. A numeric denial throws `Pcre2MatchException` with the

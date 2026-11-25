@@ -9,7 +9,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// lexing the pattern again.</summary>
 internal static class Utf8OwnedTreeSliceLowerer
 {
-    internal static Utf8SliceProgram? TryLower(Utf8OwnedRegexTree tree, RegexOptions options, bool enableProofTierUp = false)
+    internal static Utf8SliceProgram? TryLower(Utf8OwnedRegexTree tree, RegexOptions options,
+        Utf8BoundedProgramEmitter.Compilation proofCompilation = default)
     {
         if (tree.CaptureCatalog is not { } catalog)
             return null;
@@ -35,8 +36,7 @@ internal static class Utf8OwnedTreeSliceLowerer
             (options & RegexOptions.Compiled) != 0 && hasCaptureWritingLazyRange,
             tree.UsesLiteralClassBracketSyntax, caseBehavior,
             (options & RegexOptions.NonBacktracking) != 0, prepareUnbranchedSearch: true,
-            proofCompilation: (options & RegexOptions.Compiled) != 0 ? Utf8BoundedProgramEmitter.Compilation.Eager :
-                enableProofTierUp ? Utf8BoundedProgramEmitter.Compilation.Tiered : Utf8BoundedProgramEmitter.Compilation.None);
+            proofCompilation: (options & RegexOptions.Compiled) != 0 ? Utf8BoundedProgramEmitter.Compilation.Eager : proofCompilation);
         if (program is not null) { arena.Complete(); construction.Complete(); }
         return program;
     }

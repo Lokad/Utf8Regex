@@ -52,8 +52,10 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         Pcre2CompileValidator.ValidateArguments(options, compileSettings);
         ArgumentNullException.ThrowIfNull(patternSource.Text, "pattern");
         var account = policy.ProgramMemoryAllowance;
-        var ownsConstruction = explicitCompile || account is not null || constructionPolicy != default ||
+        var controlledConstruction = account is not null || constructionPolicy != default ||
             constructionTimeout != Timeout.InfiniteTimeSpan;
+        var ownsConstruction = explicitCompile || controlledConstruction;
+        var canTierUp = !controlledConstruction && !Utf8ConstructionScope.IsActive;
         using var construction = !ownsConstruction ? Utf8ConstructionScope.Enter() : account is null
             ? Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token)
             : Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token, account);
@@ -75,8 +77,9 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                 compileSettings,
                 defaultExecutionLimits,
                 validatedTimeout);
-            _program = Pcre2Compiler.Compile(request);
-            if (Pcre2GlobalOperationDriver.HasUnmeteredExecution(request) &&
+            var unmetered = Pcre2GlobalOperationDriver.HasUnmeteredExecution(request);
+            _program = Pcre2Compiler.Compile(request, sharedBranchTier: canTierUp && unmetered);
+            if (unmetered &&
                 _program.Operations.IsMatch is Pcre2FiniteLiteralLanguageDirectProgram literalLanguage)
             {
                 _unmeteredLiteralLanguage = literalLanguage;

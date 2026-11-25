@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
@@ -10,6 +11,43 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2AsciiIpv4CountTests
 {
     private const string Pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
+
+    [Fact]
+    public void SharedBranchCountTiersUpUnderItsOriginalInvocation()
+    {
+        const int matches = 128;
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀 012.200.033.1AA!012.200.033.199;", matches)));
+        using var regex = new Utf8Pcre2Regex(Pattern);
+        var slice = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Count).SliceProgram;
+        var dynamicCode = RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
+        Assert.Equal(dynamicCode, slice.ObservesProofWork);
+
+        using var source = new CancellationTokenSource();
+        for (var i = 0; i < 256; i++)
+        {
+            Assert.Equal(1, regex.Count("012.200.033.199"u8));
+            Assert.Equal(matches, regex.Count(input, cancellationToken: source.Token));
+            Assert.Equal(0, regex.Count(input, matchOptions: Pcre2MatchOptions.Anchored));
+        }
+        Assert.Null(slice.TieredProof);
+        for (var i = 0; i < 256 && slice.ObservesProofWork; i++)
+            Assert.Equal(matches, regex.Count(input));
+
+        var proof = slice.TieredProof;
+        Assert.Equal(dynamicCode, proof is not null);
+        Assert.Equal(matches, regex.Count(input, startOffsetInBytes: 6));
+        Assert.Equal(matches - 1, regex.Count(input.AsSpan(0, input.Length - 3)));
+        Assert.Equal(matches, regex.Count(input, matchOptions: Pcre2MatchOptions.NotEmpty));
+        Assert.Same(proof, slice.TieredProof);
+
+        source.Cancel();
+        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>
+            regex.Count(input, cancellationToken: source.Token)).CancellationToken);
+        using var limited = new Utf8Pcre2Regex(Pattern, policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1 } });
+        var limitedSlice = Assert.IsType<Pcre2SliceDirectProgram>(limited.DebugCompiledProgram.Operations.Count).SliceProgram;
+        Assert.False(limitedSlice.ObservesProofWork);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => limited.Count(input)).ErrorKind);
+    }
 
     [Fact]
     public void AdmittedCountPreservesOrderedMatchesAliasesAndScalarByteFloors()

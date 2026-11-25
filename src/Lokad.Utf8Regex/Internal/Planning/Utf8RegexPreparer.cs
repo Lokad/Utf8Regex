@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 internal static class Utf8RegexPreparer
 {
     internal static Utf8PreparedRegex Prepare(Utf8RegexAnalysis analyzedRegex, RegexOptions scalarOptions,
-        bool enableProofTierUp = false)
+        Utf8BoundedProgramEmitter.Compilation proofCompilation = default)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
@@ -14,7 +14,7 @@ internal static class Utf8RegexPreparer
         try
         {
             var scalarProgram = Utf8SliceParser.TryParse(scalarOptions,
-                analyzedRegex.SemanticRegex.RuntimeTree, enableProofTierUp);
+                analyzedRegex.SemanticRegex.RuntimeTree, proofCompilation);
             var anchoredLiteral = Utf8AnchoredLiteralClassifier.Classify(analyzedRegex.SemanticRegex.RuntimeTree);
             var fallbackReason = analyzedRegex.FallbackReason;
             if (analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex &&

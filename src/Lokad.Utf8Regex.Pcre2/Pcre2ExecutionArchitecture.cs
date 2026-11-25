@@ -49,7 +49,7 @@ internal readonly record struct Pcre2CompileRequest(
 
 internal static class Pcre2Compiler
 {
-    internal static Pcre2CompiledProgram Compile(Pcre2CompileRequest request)
+    internal static Pcre2CompiledProgram Compile(Pcre2CompileRequest request, bool sharedBranchTier)
     {
         Pcre2CompileValidator.ValidatePattern(request.ConstructionPattern, request.Options, request.Settings);
         if (Pcre2LiteralCompiler.Compile(request) is { } literal)
@@ -64,7 +64,7 @@ internal static class Pcre2Compiler
             Utf8Regex? core = null;
             if (!backtracking.RequiresProfileOptions &&
                 Pcre2CompiledProgramOverlay.CanPrepareCore(request, backtracking.Root))
-                _ = TryCreateUtf8Regex(request, out core);
+                _ = TryCreateUtf8Regex(request, sharedBranchTier, out core);
             var foundation = Pcre2CompiledProgramOverlay.CreateBacktracking(
                 request, backtracking.Root, backtracking.Program, core);
             Pcre2ProgramInvariant.Validate(foundation);
@@ -74,21 +74,15 @@ internal static class Pcre2Compiler
         throw new NotSupportedException("The pattern is not supported by the managed PCRE2 grammar.");
     }
 
-    private static bool TryCreateUtf8Regex(Pcre2CompileRequest request, out Utf8Regex? regex)
+    private static bool TryCreateUtf8Regex(Pcre2CompileRequest request, bool sharedBranchTier, out Utf8Regex? regex)
     {
         try
         {
-            var source = request.ConstructionPattern;
-            regex = source.IsUtf8
-                ? new Utf8Regex(source.Utf8, options: ToRegexOptions(request.Options), policy: new Utf8RegexPolicy
-                {
-                    MatchTimeout = request.MatchTimeout,
-                    ResourcePolicy = request.CoreResourcePolicy
-                })                : new Utf8Regex(source.Text, options: ToRegexOptions(request.Options), policy: new Utf8RegexPolicy
-                {
-                    MatchTimeout = request.MatchTimeout,
-                    ResourcePolicy = request.CoreResourcePolicy
-                });
+            regex = Utf8Regex.PrepareSharedBranchSearch(request.ConstructionPattern, ToRegexOptions(request.Options), new Utf8RegexPolicy
+            {
+                MatchTimeout = request.MatchTimeout,
+                ResourcePolicy = request.CoreResourcePolicy
+            }, sharedBranchTier);
             return true;
         }
         catch (ArgumentException)

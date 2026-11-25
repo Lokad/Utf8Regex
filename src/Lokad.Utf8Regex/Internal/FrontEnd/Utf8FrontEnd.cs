@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
@@ -15,11 +16,11 @@ internal static class Utf8FrontEnd
         => Compile(new Utf8ConstructionPattern(pattern), options, scalarOptions, out _);
 
     internal static Utf8PreparedRegex Compile(Utf8ConstructionPattern pattern, RegexOptions options,
-        RegexOptions scalarOptions, out Utf8TreeNode? root, bool enableProofTierUp = false)
+        RegexOptions scalarOptions, out Utf8TreeNode? root, Utf8BoundedProgramEmitter.Compilation proofCompilation = default)
     {
         using var owner = Utf8ConstructionScope.Enter();
         var analysis = Analyze(pattern, options);
-        var result = Utf8RegexPreparer.Prepare(analysis, scalarOptions, enableProofTierUp);
+        var result = Utf8RegexPreparer.Prepare(analysis, scalarOptions, proofCompilation);
         // The caller may read the root while deriving literal capture facts.
         // Published preparation holds only the results of those analyses.
         root = analysis.SemanticRegex.RuntimeTree?.Root;
