@@ -2302,6 +2302,29 @@ internal static partial class Utf8SliceRunner
                             // whenever the optional atom leaves it. Only the
                             // final endpoint is observed by this proof.
                             position++;
+                            // Preparation proves the remaining instructions are
+                            // the dot, the absolute end and plain capture markers.
+                            // The dot's three body/loop/exit instructions are
+                            // already skipped by the ordinary repeat proof.
+                            var visits = code.Length - index - 3;
+                            if (input.Length - position <= remaining - visits)
+                            {
+                                var lf = input[position..].IndexOf((byte)'\n');
+                                if (lf < 0)
+                                {
+                                    remaining -= visits + input.Length - position;
+                                    return input.Length;
+                                }
+                                var anchor = program.TerminalRepeatAnchor;
+                                var end = position + lf;
+                                if (MatchesEndAnchor(input, end, code[anchor]))
+                                {
+                                    remaining -= visits + lf + 1;
+                                    return end;
+                                }
+                                remaining -= anchor - index - 2 + lf + 1;
+                                return BranchedPrefixRejected;
+                            }
                             continue;
                         }
                         if (value >= 128 && optionalAtom.Kind == Utf8SliceInstructionKind.Hybrid)

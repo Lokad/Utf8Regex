@@ -73,6 +73,25 @@ public sealed class Utf8TerminalClassRepeatTests
     }
 
     [Theory]
+    [InlineData("a", "$", 5)]
+    [InlineData("a\n", "$", 5)]
+    [InlineData("a\n", @"\z", -1)]
+    [InlineData("a\nx", "$", -1)]
+    [InlineData("a😀\n", "$", 9)]
+    public void OptionalTerminalDotProofKeepsAbsoluteEndAndScalarOffsets(string tail, string anchor, int expectedEnd)
+    {
+        using var regex = Utf8Regex.Compile(@"\A///\s?(?<doc>.*)" + anchor);
+        var input = Encoding.UTF8.GetBytes("/// " + tail);
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+
+        // The caller has already proved the beginning anchor at instruction zero.
+        Assert.Equal(expectedEnd >= 0, Utf8SliceRunner.MayMatchBranchedAsciiPrefix(program, input, 0, 1,
+            out var end, proveMatch: true));
+        Assert.Equal(expectedEnd, end);
+        Assert.Equal(expectedEnd < 0 ? default : new Utf8CaptureRange(0, expectedEnd), regex.Match(input));
+    }
+
+    [Theory]
     [InlineData("!é😀 rest\n", "$", 12, 7)]
     [InlineData("!é😀 rest\n", @"\z", -1, -1)]
     [InlineData("!é😀 rest\nx", "$", -1, -1)]

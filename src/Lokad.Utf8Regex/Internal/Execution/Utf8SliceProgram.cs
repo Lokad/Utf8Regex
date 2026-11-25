@@ -892,6 +892,7 @@ internal sealed class Utf8SliceProgram
     }
 
     private (ulong Mask, int Anchor) TerminalRepeatsWithoutRewind { get; }
+    internal int TerminalRepeatAnchor => TerminalRepeatsWithoutRewind.Anchor;
     private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) RequiredFinalAscii { get; }
     internal byte? RequiredUnanchoredFinalByte { get; }
 
