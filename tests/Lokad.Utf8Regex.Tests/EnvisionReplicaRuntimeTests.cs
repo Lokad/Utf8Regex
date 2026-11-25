@@ -306,21 +306,16 @@ show scalar "y" with 2
         Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
-    [Fact]
-    public void LexerStringMatchHandlesEscapedQuote()
+    [Theory]
+    [InlineData("\"alpha\\\"beta\" tail", 13)]
+    [InlineData("\"hello\\\"world\"", 14)]
+    [InlineData("\"été\"", 7)]
+    [InlineData("\"été\" tail", 7)]
+    public void LexerStringMatchReturnsTheQuotedByteRange(string input, int end)
     {
         const string pattern = "\\G\"([^\"\\\\]|\\\\.)*\"";
-        const string input = "\"alpha\\\"beta\" tail";
-
-        var utf8 = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
-        var dotnet = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-
-        var expected = dotnet.Match(input);
-        var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
-
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
-        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
+        using var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
+        Assert.Equal(new Utf8CaptureRange(0, end), regex.Match(Encoding.UTF8.GetBytes(input)));
     }
 
     [Fact]
@@ -430,23 +425,6 @@ show scalar "y" with 2
 
         var utf8 = new Utf8Regex(pattern, options: RegexOptions.IgnoreCase);
         var dotnet = new Regex(pattern, RegexOptions.IgnoreCase, Regex.InfiniteMatchTimeout);
-
-        var expected = dotnet.Match(input);
-        var actual = utf8.Match(Encoding.UTF8.GetBytes(input));
-
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
-        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
-    }
-
-    [Fact]
-    public void LexerStringMatchPreservesUtf16LengthOnNonAsciiInput()
-    {
-        const string pattern = "\\G\"([^\"\\\\]|\\\\.)*\"";
-        const string input = "\"été\" tail";
-
-        var utf8 = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
-        var dotnet = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
 
         var expected = dotnet.Match(input);
         var actual = utf8.Match(Encoding.UTF8.GetBytes(input));

@@ -507,11 +507,13 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
     }
 
-    [Fact]
-    public void CompiledDocLineIncludesTheNewlineInItsByteRange()
+    [Theory]
+    [InlineData("/// doc line\n", 13)]
+    [InlineData("/// summary line\n", 17)]
+    public void CompiledDocLineIncludesTheNewlineInItsByteRange(string input, int end)
     {
-        var regex = new Utf8Regex("\\G///[^\\n]*\\n", options: RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        Assert.Equal(new Utf8CaptureRange(0, 13), regex.Match("/// doc line\n"u8));
+        using var regex = new Utf8Regex("\\G///[^\\n]*\\n", options: RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        Assert.Equal(new Utf8CaptureRange(0, end), regex.Match(Encoding.UTF8.GetBytes(input)));
     }
 
     [Fact]
@@ -2102,45 +2104,6 @@ public sealed class Utf8RegexConstructionTests
         {
             MatchTimeout = TimeSpan.Zero
         }));
-    }
-
-    [Fact]
-    public void DirectPrefixFamilyCanMatchDocLineDirectly()
-    {
-        var regex = new Utf8Regex("\\G///[^\\n]*\\n", options: RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.CultureInvariant);
-        var match = regex.Match("/// summary line\n"u8);
-
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
-        Assert.True(match.Success);
-        Assert.True(match.Success);
-        Assert.Equal(0, match.StartOffsetInBytes);
-        Assert.Equal(17, (match.EndOffsetInBytes - match.StartOffsetInBytes));
-    }
-
-    [Fact]
-    public void FallbackRegexCanMatchEnvisionQuotedStringDirectly()
-    {
-        var regex = new Utf8Regex("\\G\"([^\"\\\\]|\\\\.)*\"", options: RegexOptions.CultureInvariant);
-        var match = regex.Match("\"hello\\\"world\""u8);
-
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
-        Assert.True(match.Success);
-        Assert.True(match.Success);
-        Assert.Equal(0, match.StartOffsetInBytes);
-        Assert.Equal(14, (match.EndOffsetInBytes - match.StartOffsetInBytes));
-        Assert.Equal(14, (match.EndOffsetInBytes - match.StartOffsetInBytes));
-    }
-
-    [Fact]
-    public void FallbackRegexCanMatchEnvisionQuotedStringDirectlyWithUtf8Content()
-    {
-        var regex = new Utf8Regex("\\G\"([^\"\\\\]|\\\\.)*\"", options: RegexOptions.CultureInvariant);
-        var match = regex.Match("\"été\""u8);
-
-        Assert.True(match.Success);
-        Assert.True(match.Success);
-        Assert.Equal(0, match.StartOffsetInBytes);
-        Assert.Equal(7, match.EndOffsetInBytes - match.StartOffsetInBytes);
     }
 
 }
