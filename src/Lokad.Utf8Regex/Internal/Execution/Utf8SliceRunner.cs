@@ -1617,6 +1617,10 @@ internal static partial class Utf8SliceRunner
             captureStarts.IsEmpty && captureEnds.IsEmpty)
             return CountAlignedDecimalWindows(program, input, position, (byte)whitespaceLiteral,
                 whitespaceLiteralIndex, ref invocation);
+        var classContinuation = verifiedClassLiteralLength != 0 ? whitespaceLiteralIndex + verifiedClassLiteralLength : 0;
+        var proveClassSuffix = classContinuation != 0 && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+            invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
+            CanProveRepeatPrefix(program, classContinuation);
         // Keep the existing literal and delimiter searches. A required decimal
         // starter can also skip unrelated bytes on a long forward search.
         if (whitespaceLiteral >= 0 && leadingFirst >= 128) leadingFirst = -1;
@@ -1888,8 +1892,8 @@ internal static partial class Utf8SliceRunner
                 var verifiedPrefix = candidateContinuation == 0 ? verifiedLinePrefix : (candidateContinuation, prefixBytes);
                 // The rewind proved this nonempty class run up to the
                 // excluded delimiter. Continue with the original suffix.
-                if (verifiedClassLiteralLength != 0 && position < whitespaceWindowEnd)
-                    verifiedPrefix = (4 + verifiedClassLiteralLength, whitespaceWindowEnd - position + verifiedClassLiteralLength);
+                if (classContinuation != 0 && position < whitespaceWindowEnd)
+                    verifiedPrefix = (classContinuation, whitespaceWindowEnd - position + verifiedClassLiteralLength);
                 if (prefixRepeatAscii.HasValue)
                 {
                     var extra = ScanExactPrefixRepeatHead(input[(position + prefixBytes)..],
@@ -1934,7 +1938,14 @@ internal static partial class Utf8SliceRunner
                     continue;
                 }
                 Utf8SliceMatchOutcome outcome;
-                if (provedEnd >= 0)
+                if (proveClassSuffix && position < whitespaceWindowEnd && verifiedPrefix.Item1 == classContinuation && provedEnd < 0 &&
+                    !MayMatchBranchedAsciiPrefix(program, input, position + verifiedPrefix.Item2, classContinuation,
+                        out provedEnd, proveMatch: true, BranchedPrefixInstructionLimit - classContinuation))
+                {
+                    // Every start in this window reaches the same suffix.
+                    outcome = new(false, -1, Utf8ExecutionLimitKind.None);
+                }
+                else if (provedEnd >= 0)
                     outcome = new(true, provedEnd, invocation.TryReserveWorking(0));
                 else if (terminalPrefixAccept != 0 && verifiedPrefix.Item1 == terminalPrefixAccept && workspace.Initialized)
                 {

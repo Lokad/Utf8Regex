@@ -193,6 +193,27 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Fact]
+    public void CountAcrossAlignedDelimitersKeepsCompleteNonOverlappingEndpoints()
+    {
+        const string pattern = @"[\w.+-]+@[\w-]+\.[\w.-]+";
+        var prefix = new string('!', 260) + "Ω x@.bar; t@p. ";
+        var text = prefix + "α@β.γ.δ@b.cd " + "q@" + new string('β', 90) + ".γ; λ@b?.cd";
+        var input = Encoding.UTF8.GetBytes(text);
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+        var expected = new Regex(pattern).Matches(text);
+        Assert.Equal(2, expected.Count);
+        Assert.Equal(expected.Count, regex.Count(input, source.Token));
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: source.Token);
+        foreach (Match match in expected)
+        {
+            Assert.True(cursor.MoveNext(out var observed));
+            Utf8MatchSequence.AssertRange(observed.Value, text, match.Index, match.Length);
+        }
+        Assert.False(cursor.MoveNext(out _));
+    }
+
+    [Fact]
     public void VerifiedPrefixKeepsWorkBoundAndWideRepeatEndpoints()
     {
         using var regex = new Utf8Regex(@"Sherlock\s+Holmes", policy: new()
