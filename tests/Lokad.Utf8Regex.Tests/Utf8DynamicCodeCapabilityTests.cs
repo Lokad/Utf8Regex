@@ -115,6 +115,31 @@ public sealed class Utf8DynamicCodeCapabilityTests
     }
 
     [Theory]
+    [InlineData("one.net", 7, 1)]
+    [InlineData("one.two.example\n", 15, 2)]
+    [InlineData("one.two.example\n.", -1, 0)]
+    [InlineData("one.two.ex𝟘", -1, 0)]
+    [InlineData("one.two.", -1, 0)]
+    public void DelimitedAbsoluteProofKeepsOrderedEndpointsAndCaptures(string text, int end, int captures)
+    {
+        using var regex = new Utf8Regex(@"^(?<labels>(?<label>[a-z]+\.)+)(?<tail>[a-z]{2,12})$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var input = Encoding.UTF8.GetBytes(text);
+        var success = end >= 0;
+        Assert.Equal(success, regex.IsMatch(input));
+        Assert.Equal(success ? 1 : 0, regex.Count(input));
+        var range = regex.Match(input);
+        Assert.Equal(success, range.Success);
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.Equal(success, cursor.MoveNext(out var retained));
+        if (!success) return;
+
+        Assert.Equal(new Utf8CaptureRange(0, end), range);
+        Assert.Equal(range, retained.Value);
+        Assert.Equal(captures, retained.GetCaptures(2).ToArray().Length);
+    }
+
+    [Theory]
     [InlineData("#Ab10E3", 7)]
     [InlineData("aF09B2\n", 6)]
     [InlineData("#aF9\n", 4)]

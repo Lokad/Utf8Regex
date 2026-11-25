@@ -2229,6 +2229,22 @@ internal static partial class Utf8SliceRunner
                     }
                     else
                     {
+                        if (proveMatch && entry.A == index + 1 &&
+                            input.Length - position is <= sizeof(ulong) and var tailLength && tailLength < remaining &&
+                            code[index] is { Kind: Utf8SliceInstructionKind.Jump, A: var body, B: > 0 and <= 128 } jump &&
+                            body < index)
+                        {
+                            // Each further iteration needs the delimiter recorded on its back edge.
+                            // Only screen short tails to avoid rescanning a long suffix at each fork.
+                            var suffix = input[position..];
+                            remaining -= tailLength;
+                            if (!suffix.Contains((byte)(jump.B - 1)))
+                            {
+                                remaining--;
+                                index = entry.A;
+                                continue;
+                            }
+                        }
                         var end = ProbeBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch);
                         if (end != BranchedPrefixRejected) return end;
                     }
