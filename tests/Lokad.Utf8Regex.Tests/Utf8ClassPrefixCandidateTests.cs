@@ -47,6 +47,31 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData(@"(\w+): (\w+)", 128, false)]
+    [InlineData(@"(\w+): (\w+)", 8, false)]
+    [InlineData(@"(?<slot>\w+): (?<slot>\w+)", 128, true)]
+    public void CapturedClassWindowKeepsTheRequestedSlotAcrossRetryAndByteFloor(
+        string pattern, int depth, bool sharedSlot)
+    {
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded with { MaxDepth = (uint)depth } });
+        using var token = new CancellationTokenSource();
+        var input = "é: . Ω𐐀key: β42!"u8;
+        var start = "é: . Ω"u8.Length;
+        var delimiter = start + "𐐀key"u8.Length;
+        var value = delimiter + ": "u8.Length;
+        var end = value + "β42"u8.Length;
+        var requested = sharedSlot ? new Utf8CaptureRange(value, end) : new Utf8CaptureRange(start, delimiter);
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
+
+        Assert.Equal(new Utf8CaptureRange(start - "Ω"u8.Length, end), regex.Match(input, 0, slots, token.Token));
+        Assert.Equal(sharedSlot ? requested : new(start - "Ω"u8.Length, delimiter), slots[1]);
+        Assert.Equal(new Utf8CaptureRange(start, end), regex.Match(input, start, slots, token.Token));
+        Assert.Equal(requested, slots[1]);
+        Assert.False(regex.Match(input, start, slots, token.Token, endOffsetInBytes: value).Success);
+        Assert.False(slots[1].Success);
+    }
+
+    [Theory]
     [InlineData(": ")]
     [InlineData(":: ")]
     public void OrdinalBackreferenceWindowKeepsLaterStartsAndWideCaptures(string delimiter)

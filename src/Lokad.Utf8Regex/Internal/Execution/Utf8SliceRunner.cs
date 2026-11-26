@@ -978,6 +978,7 @@ internal static partial class Utf8SliceRunner
         var singleWindowAttempt = false;
         var requiredClassSuffix = default((int First, int Second));
         var verifiedClassLiteralLength = 0;
+        var classCapture = -1;
         var screenedDelimiter = -1;
         var wideInput = input.Length - fromByte >= 256;
         var needsClassWindow = leading is < 0 or >= 128;
@@ -1017,12 +1018,20 @@ internal static partial class Utf8SliceRunner
                     if (singleWindowAttempt)
                     {
                         requiredClassSuffix = proof.SuffixAfter(aligned.Length);
-                        if (!collectHistory && proof.CanReusePrefix &&
-                            (program.GroupCount == 0 || captureStarts.IsEmpty && captureEnds.IsEmpty))
+                        if (!collectHistory && proof.CanReusePrefix)
                         {
-                            verifiedClassLiteralLength = aligned.Length;
-                            if (existenceOnly && captureStarts.IsEmpty && captureEnds.IsEmpty &&
-                                requiredClassSuffix.Second != 0 && proof.CanAcceptAfterPair)
+                            if (program.GroupCount == 0 || captureStarts.IsEmpty && captureEnds.IsEmpty)
+                                verifiedClassLiteralLength = aligned.Length;
+                            else if (program.HasSingleCapturePerGroup &&
+                                invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit)
+                            {
+                                // For a captured prefix, the proof requires a single
+                                // opening at instruction zero and its close at the delimiter.
+                                verifiedClassLiteralLength = aligned.Length;
+                                classCapture = first.A;
+                            }
+                            if (verifiedClassLiteralLength != 0 && existenceOnly && captureStarts.IsEmpty &&
+                                captureEnds.IsEmpty && requiredClassSuffix.Second != 0 && proof.CanAcceptAfterPair)
                                 return FindAlignedClassPair(program, input, fromByte, leadingClass, (byte)literal,
                                     aligned, requiredClassSuffix,
                                     ReferenceEquals(candidatePlan.RequiredPrefilterSearcher.LiteralSearch.Needle, aligned.Needle)
@@ -1358,8 +1367,18 @@ internal static partial class Utf8SliceRunner
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, -1, outcome.Breach);
             if (outcome.IsMatch)
+            {
+                // The continuation cannot read or overwrite this capture.
+                // Publish its original byte range only after the tail succeeds.
+                if (verifiedPrefix.Item1 == classContinuation && position < classWindowEnd &&
+                    (uint)classCapture < (uint)Math.Min(captureStarts.Length, captureEnds.Length))
+                {
+                    captureStarts[classCapture] = position;
+                    captureEnds[classCapture] = classWindowEnd;
+                }
                 return new(true, Math.Min(position, outcome.EndIndex), Math.Max(position, outcome.EndIndex),
                     Utf8ExecutionLimitKind.None);
+            }
             if (singleWindowAttempt) position = classWindowEnd;
         }
         return new(false, -1, -1, Utf8ExecutionLimitKind.None);
