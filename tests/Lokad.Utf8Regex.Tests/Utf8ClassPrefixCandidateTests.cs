@@ -773,13 +773,37 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.Equal(3, regex.Count(input, token.Token));
 
         using var ordinary = new Utf8Regex(pattern);
-        using var cursor = ordinary.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(prefix));
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        using var cursor = ordinary.CreateMatchCursor(input, floor);
+        using var metered = regex.CreateMatchCursor(input, floor, token.Token);
         foreach (Match match in expected)
         {
             Assert.True(cursor.MoveNext(out var selected));
             Utf8MatchSequence.AssertRange(selected.Value, text, match.Index, match.Length);
+            Assert.True(metered.MoveNext(out var funded));
+            Assert.Equal(selected.Value, funded.Value);
         }
         Assert.False(cursor.MoveNext(out _));
+        Assert.False(metered.MoveNext(out _));
+    }
+
+    [Fact]
+    public void GuardedCursorKeepsItsWorkLimitAfterPublishingARange()
+    {
+        const string pattern = @"(?<=\s)[A-Z][a-z]+(?=\s)";
+        var input = Encoding.UTF8.GetBytes(" First " + new string('!', 262144) + " Last ");
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 64 }
+        });
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token);
+
+        Assert.True(cursor.MoveNext(out var first));
+        Assert.Equal(new Utf8CaptureRange(1, 6), first.Value);
+        var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, denied.ResourceKind);
+        Assert.Equal(new Utf8CaptureRange(1, 6), first.Value);
     }
 
     [Theory]

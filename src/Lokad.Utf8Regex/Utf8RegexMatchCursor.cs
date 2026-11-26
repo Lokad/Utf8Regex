@@ -136,10 +136,10 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             {
                 var input = _input.Span;
                 var fromByte = _position;
-                // Let the existing proof finish a capture-free range. Its
-                // undecided case leaves the first unresolved candidate.
+                // The proof meters candidate search on the cursor's invocation.
+                // Its undecided case leaves the first unresolved candidate.
                 if (program.GroupCount != 0 || program.Instructions[0].Kind != Utf8SliceInstructionKind.Lookbehind ||
-                    !_invocation.IsUnmetered || _invocation.CheckpointHook is not null ||
+                    _invocation.CheckpointHook is not null ||
                     !Utf8SliceRunner.TryFindGuardedRepeat(program, input, ref fromByte, ref _invocation, out outcome))
                     outcome = Utf8SliceRunner.TryFindFirst(program, input, fromByte, _slots.Starts, _slots.Ends,
                         collectHistory, ref _workspace, ref _invocation, in _regex!.SearchPlan,
