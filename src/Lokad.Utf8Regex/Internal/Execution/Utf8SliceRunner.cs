@@ -951,7 +951,7 @@ internal static partial class Utf8SliceRunner
         var classLiteral = -1;
         var classSearch = default(PreparedSubstringSearch?);
         byte[][]? classAlternatives = null;
-        (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) repeatPrefix = default;
+        (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd, bool Terminal) repeatPrefix = default;
         long classGapMaximum = 0;
         var directClassLiteral = false;
         var seekDecimalWindow = false;
@@ -1129,13 +1129,14 @@ internal static partial class Utf8SliceRunner
             // matches, captures and assertion context keep their usual order.
             while (hasClassWindow && position > classWindowEnd)
             {
+                var provedMatchEnd = -1;
                 var seekBreach = seekDecimalWindow
                     ? TrySeekDecimalLiteralWindow(program, input, (byte)classLiteral,
                         ref position, ref invocation, out classWindowEnd, screenedDelimiter,
                         verifyFollowingWindow, out followingWindowEnd)
                     : TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                         (byte)classLiteral, classSearch, classGapMaximum, directClassLiteral,
-                        ref position, ref invocation, out classWindowEnd, repeatPrefix, classAlternatives,
+                        ref position, ref invocation, out classWindowEnd, out provedMatchEnd, repeatPrefix, classAlternatives,
                         requiredClassSuffix, screenedDelimiter);
                 screenedDelimiter = -1;
                 if (seekBreach != Utf8ExecutionLimitKind.None)
@@ -1143,6 +1144,14 @@ internal static partial class Utf8SliceRunner
                 if (position < 0)
                     return new(false, -1, -1,
                         new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                if (provedMatchEnd >= 0 && canProveValue && captureEnds.IsEmpty &&
+                    invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit)
+                {
+                    var admission = invocation.TryChargeInputStep();
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    return admission == Utf8ExecutionLimitKind.None
+                        ? new(true, position, provedMatchEnd, admission) : new(false, -1, -1, admission);
+                }
                 // A decimal repeat cannot consume this delimiter. Every start
                 // in its window must reach the next literal from the same suffix.
                 if (followingWindow.Min != 0 && position <= classWindowEnd)
@@ -1600,7 +1609,7 @@ internal static partial class Utf8SliceRunner
         // consuming instructions separate the repeat from its delimiter.
         var literalImmediatelyAfterRepeat = whitespaceLiteral >= 0 && whitespaceLiteralIndex == leadingClass + 3;
         var classSearch = default(PreparedSubstringSearch?);
-        (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) repeatPrefix = default;
+        (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd, bool Terminal) repeatPrefix = default;
         var singleWindowAttempt = false;
         var verifiedClassLiteralLength = 0;
         var requiredClassSuffix = default((int First, int Second));
@@ -1813,7 +1822,7 @@ internal static partial class Utf8SliceRunner
                     {
                         var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                             (byte)whitespaceLiteral, classSearch, whitespaceGapMaximum, directClassLiteral,
-                            ref position, ref invocation, out whitespaceWindowEnd, repeatPrefix, requiredSuffix: requiredClassSuffix,
+                            ref position, ref invocation, out whitespaceWindowEnd, out _, repeatPrefix, requiredSuffix: requiredClassSuffix,
                             useNearestViableStart: verifiedClassLiteralLength != 0);
                         if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     }

@@ -973,7 +973,7 @@ internal static partial class Utf8SliceRunner
     }
 
     private static PreparedSubstringSearch? GetRepeatPrefixSearch(Utf8SliceProgram program,
-        in Utf8SearchPlan candidatePlan, out (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) prefix)
+        in Utf8SearchPlan candidatePlan, out (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd, bool Terminal) prefix)
     {
         prefix = default;
         if (candidatePlan.LiteralSearch is not { IgnoreCase: false, Length: > 1 } search) return null;
@@ -982,6 +982,7 @@ internal static partial class Utf8SliceRunner
         var last = default(Utf8SearchAsciiSet);
         var previousCategories = 0u;
         var disjoint = true;
+        var terminal = program.GroupCount == 0;
         var repeats = 0;
         var index = 0;
         while (index < code.Length && index < 64)
@@ -990,6 +991,7 @@ internal static partial class Utf8SliceRunner
             if (code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or
                 Utf8SliceInstructionKind.Boundary)
             {
+                terminal = false;
                 index++;
                 continue;
             }
@@ -1006,6 +1008,7 @@ internal static partial class Utf8SliceRunner
                 disjoint &= asciiOnly;
             }
             var required = code[index].RepeatMinimum > 0;
+            terminal &= code[index].RepeatMinimum == 1;
             disjoint &= required && code[index].RepeatMaximum == long.MaxValue &&
                 (last.Low & ascii.Low) == 0 && (last.High & ascii.High) == 0 &&
                 (previousCategories & categories) == 0;
@@ -1019,7 +1022,12 @@ internal static partial class Utf8SliceRunner
 
         if ((low | high) == 0 || (low & high) == ulong.MaxValue || index >= 64 ||
             !LiteralStartsAtInstruction(program, index, search.Needle)) return null;
-        prefix = (Utf8SearchAsciiSet.FromMasks(low, high), last, disjoint && repeats >= 2 ? index : 0);
+        var disjointEnd = disjoint && repeats >= 2 ? index : 0;
+        // The completed rewind proves every minimum. An excluded literal
+        // fixes the final greedy split, and Accept leaves no tail to replay.
+        terminal &= disjointEnd != 0 && !last.Contains(search.Needle[0]) &&
+            code.Length - index == search.Length + 1 && code[^1].Kind == Utf8SliceInstructionKind.Accept;
+        prefix = (Utf8SearchAsciiSet.FromMasks(low, high), last, disjointEnd, terminal);
         return search;
     }
 
@@ -1626,7 +1634,7 @@ internal static partial class Utf8SliceRunner
         while (true)
         {
             var breach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass, delimiter, search,
-                0, true, ref position, ref invocation, out var delimiterStart, requiredSuffix: suffixClasses,
+                0, true, ref position, ref invocation, out var delimiterStart, out _, requiredSuffix: suffixClasses,
                 screenedDelimiter: screenedDelimiter, useNearestViableStart: true);
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
             if (position < 0)
@@ -1664,10 +1672,12 @@ internal static partial class Utf8SliceRunner
     internal static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int leadingClass, byte literal, in PreparedSubstringSearch? search,
         long gapMaximum, bool direct, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd,
-        in (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) repeatPrefix = default,
+        out int provedMatchEnd,
+        in (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd, bool Terminal) repeatPrefix = default,
         byte[][]? delimiterAlternatives = null, (int First, int Second) requiredSuffix = default,
         int screenedDelimiter = -1, bool useNearestViableStart = false)
     {
+        provedMatchEnd = -1;
         if (leadingClass >= 2 && !repeatPrefix.Any.HasValue && delimiterAlternatives is null)
         {
             var code = program.Instructions;
@@ -1758,6 +1768,7 @@ internal static partial class Utf8SliceRunner
             if (earliest >= 0)
             {
                 position = earliest;
+                if (repeatPrefix.Terminal) provedMatchEnd = windowEnd + search.GetValueOrDefault().Length;
                 return Utf8ExecutionLimitKind.None;
             }
             // Even if this hit is inside a repeat and the actual delimiter is

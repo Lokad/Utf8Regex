@@ -928,6 +928,28 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData(@"\w+\s+\w+\s+Holmes", "word Holmes! é Ω Holmes!", "é Ω Holmes")]
+    [InlineData(@"\w+\s+\w{2,}\s+Holmes", "a b Holmes! a bc Holmes!", "a bc Holmes")]
+    [InlineData("a+b+bbb", "!aabbbbbb!", "aabbbbbb")]
+    public void TerminalRunRangeRequiresEveryMinimumAndTheGreedyEnd(string pattern, string text, string value)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var start = Encoding.UTF8.GetByteCount(text.AsSpan(0, text.IndexOf(value, StringComparison.Ordinal)));
+        var expected = new Utf8CaptureRange(start, start + Encoding.UTF8.GetByteCount(value));
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+
+        Assert.True(regex.IsMatch(input, token.Token));
+        Assert.Equal(expected, regex.Match(input, 0, slots, token.Token));
+        Assert.Equal(expected, slots[0]);
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(expected, match.Value);
+        Assert.False(cursor.MoveNext(out _));
+    }
+
+    [Theory]
     [InlineData(96)]
     [InlineData(512)]
     public void DisjointRunNeedsOnlyOneTailAttemptPerDelimiter(int runLength)

@@ -428,7 +428,7 @@ internal struct PythonReScalarMatchState
                     {
                         var breach = Utf8SliceRunner.TrySeekLeadingClassLiteralWindow(_program, input,
                             leadingClass, (byte)delimiter, search: default, gapMaximum: 0, direct: true,
-                            ref _position, ref _invocation, out windowEnd);
+                            ref _position, ref _invocation, out windowEnd, out _);
                         if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
                         if (_position < 0) { Checkpoint(); _finished = true; return false; }
                         // The leading boundary leaves the repeat at the start

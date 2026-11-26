@@ -333,7 +333,7 @@ internal static class Pcre2SliceDriver
         {
             var breach = Utf8SliceRunner.TrySeekLeadingClassLiteralWindow(program, input,
                 program.LeadingClassDelimiter.LeadingClass, delimiter,
-                search: null, gapMaximum: 0, direct: true, ref position, ref invocation, out var windowEnd);
+                search: null, gapMaximum: 0, direct: true, ref position, ref invocation, out var windowEnd, out _);
             ThrowIfSliceBreached(breach);
             if (position < 0 || position > lastStart) break;
             if (position < windowEnd)
