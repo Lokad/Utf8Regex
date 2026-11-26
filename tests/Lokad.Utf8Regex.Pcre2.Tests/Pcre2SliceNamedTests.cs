@@ -91,6 +91,16 @@ public sealed class Pcre2SliceNamedTests
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((bee.Success ? detailed2Input.Span.Slice(bee.StartOffsetInBytes, bee.EndOffsetInBytes - bee.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
+    [Fact]
+    public void MixedNumberingIncludesCapturesInsideAssertions()
+    {
+        using var regex = new Utf8Pcre2Regex("(?=(?<named>ab))(a)b", options: Pcre2CompileOptions.None);
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
+        Assert.True(regex.Match("éab"u8, captures: captures).Success);
+        Assert.Equal((2, 4), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.Equal((2, 3), (captures[2].StartOffsetInBytes, captures[2].EndOffsetInBytes));
+    }
+
     public static IEnumerable<object?[]> IsMatchCases()
     {
         yield return new object?[] { "(?<word>a)+", "xaa", true };

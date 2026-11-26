@@ -643,7 +643,7 @@ internal static class Pcre2CompiledProgramOverlay
             // PCRE2 POSIX classes differ from .NET's literal bracket members.
             // Collating/equivalence spellings also retain their profile programs.
             sliceProgram.UsesLiteralClassBracketSyntax ||
-            sliceProgram.HasMixedNamedGroups ||
+            sliceProgram.CaptureCatalog is { HasMixedNamedGroups: true } ||
             // .NET aliases duplicate names; PCRE2 keeps distinct physical slots.
             sliceProgram.HasSharedCaptureDeclarations ||
             // Explicit .NET numbers do not establish PCRE2 positional identities.

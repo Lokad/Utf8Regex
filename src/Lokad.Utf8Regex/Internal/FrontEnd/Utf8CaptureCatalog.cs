@@ -12,7 +12,7 @@ internal sealed class Utf8CaptureCatalog
         int[] DefinitionNumbers, int[] GroupNumbers, string[] GroupNames,
         Utf8ConstructionReadOnlyMap<string, int>? NameToNumber,
         Utf8ConstructionReadOnlyMap<int, int>? SparseMapping,
-        bool HasSharedCaptureDeclarations, bool HasExplicitCaptureNumbers,
+        bool HasSharedCaptureDeclarations, bool HasExplicitCaptureNumbers, bool HasMixedNamedGroups,
         KeyValuePair<byte[], int>[]? Utf8Names);
 
     private readonly record struct AutomaticDefinition(int Index, int OpenPosition);
@@ -26,6 +26,7 @@ internal sealed class Utf8CaptureCatalog
         SparseMapping = state.SparseMapping;
         HasSharedCaptureDeclarations = state.HasSharedCaptureDeclarations;
         HasExplicitCaptureNumbers = state.HasExplicitCaptureNumbers;
+        HasMixedNamedGroups = state.HasMixedNamedGroups;
         Utf8Names = state.Utf8Names;
     }
 
@@ -49,7 +50,7 @@ internal sealed class Utf8CaptureCatalog
                     names[slot] = NumberName(slot, budget);
                 }
                 var dense = budget.AllocateObject(new ConstructionState([], numbers, names, null, null,
-                    hasReferencedCaptures, false, null), static state => new Utf8CaptureCatalog(state));
+                    hasReferencedCaptures, false, false, null), static state => new Utf8CaptureCatalog(state));
                 scope.Complete();
                 return dense;
             }
@@ -101,10 +102,13 @@ internal sealed class Utf8CaptureCatalog
                 if (definitions[index].IsAutomatic)
                     groupNames[FindOrdinal(groupNumbers, definitionNumbers[index], budget)] = definitions[index].Name;
             }
+            var hasUnnamedGroups = false;
             for (var ordinal = 0; ordinal < unique; ordinal++)
             {
                 budget.ChargeWork(1);
-                groupNames[ordinal] ??= NumberName(groupNumbers[ordinal], budget);
+                if (groupNames[ordinal] is not null) continue;
+                groupNames[ordinal] = NumberName(groupNumbers[ordinal], budget);
+                hasUnnamedGroups |= ordinal != 0;
             }
 
             Utf8ConstructionReadOnlyMap<int, int>? sparseMapping = null;
@@ -160,7 +164,7 @@ internal sealed class Utf8CaptureCatalog
             }
             var catalog = budget.AllocateObject(new ConstructionState(definitionNumbers, groupNumbers, groupNames,
                 nameToNumber, sparseMapping, definitions.Length + unnamedCount > unique - 1 || hasReferencedCaptures,
-                explicitNumbers, utf8Names), static state => new Utf8CaptureCatalog(state));
+                explicitNumbers, hasUnnamedGroups && automaticCount != 0, utf8Names), static state => new Utf8CaptureCatalog(state));
             arena.Complete();
             scope.Complete();
             return catalog;
@@ -242,6 +246,8 @@ internal sealed class Utf8CaptureCatalog
     internal Utf8ConstructionReadOnlyMap<int, int>? SparseMapping { get; }
     internal bool HasSharedCaptureDeclarations { get; }
     internal bool HasExplicitCaptureNumbers { get; }
+    // PCRE2-INTEGRATION-POINT: mixed names can change positional capture identities.
+    internal bool HasMixedNamedGroups { get; }
     private KeyValuePair<byte[], int>[]? Utf8Names { get; }
 
     internal int GroupNumberFromUtf8Name(ReadOnlySpan<byte> name, CancellationToken cancellationToken)

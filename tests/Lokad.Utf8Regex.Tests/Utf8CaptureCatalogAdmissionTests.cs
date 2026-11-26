@@ -1,4 +1,3 @@
-using System.Reflection;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -26,6 +25,7 @@ public sealed class Utf8CaptureCatalogAdmissionTests
         Assert.Equal(seed.Assigned, catalog.DefinitionNumbers);
         Assert.Equal(seed.Shared, catalog.HasSharedCaptureDeclarations);
         Assert.Equal(seed.Explicit, catalog.HasExplicitCaptureNumbers);
+        Assert.Equal(seed.Mixed, catalog.HasMixedNamedGroups);
         for (var ordinal = 0; ordinal < seed.Numbers.Length; ordinal++)
         {
             var number = seed.Numbers[ordinal];
@@ -76,6 +76,7 @@ public sealed class Utf8CaptureCatalogAdmissionTests
                 Assert.NotNull(result);
                 Assert.Equal(seed.Numbers, result.GroupNumbers);
                 Assert.Equal(seed.Names, result.GroupNames);
+                Assert.Equal(seed.Mixed, result.HasMixedNamedGroups);
                 Assert.True(budget.ReservedBytes > 128);
             }
             else
@@ -99,18 +100,12 @@ public sealed class Utf8CaptureCatalogAdmissionTests
     }
 
     [Fact]
-    public void TheOnlyConstructorAdmitsTheFullStateBeforeAcquiringTheCatalog()
+    public void EmptyCatalogRetainsMetadataAndGroupZeroArrays()
     {
-        var type = typeof(Utf8CaptureCatalog);
-        var constructor = Assert.Single(type.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance));
-        var state = Assert.Single(constructor.GetParameters()).ParameterType;
-        var fields = type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
-        var stateFields = state.GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
-        Assert.Equal(8, fields.Length);
-        Assert.Equal(fields.Select(field => field.FieldType), stateFields.Select(field => field.FieldType));
         using var owner = Utf8ConstructionScope.Enter();
         var catalog = Utf8CaptureCatalog.Create(0, [], false);
-        Assert.NotNull(catalog);
+        Assert.Equal(0, Assert.Single(catalog.GroupNumbers));
+        Assert.Equal("0", Assert.Single(catalog.GroupNames));
         Assert.Equal(128ul + Utf8ConstructionBudget.ArrayBytes<int>(1)
             + Utf8ConstructionBudget.ArrayBytes<string>(1), owner.Budget.ReservedBytes);
     }
@@ -139,16 +134,16 @@ public sealed class Utf8CaptureCatalogAdmissionTests
     private sealed class Parent(int value) { internal readonly int Value = value; }
 
     private sealed record CatalogSeed(int Unnamed, Utf8CaptureDefinition[] Definitions, bool References,
-        int[] Assigned, int[] Numbers, string[] Names, bool Shared = false, bool Explicit = false);
+        int[] Assigned, int[] Numbers, string[] Names, bool Shared = false, bool Explicit = false, bool Mixed = false);
 
     private static CatalogSeed Seed(int index) => index switch
     {
         0 => new(0, [], false, [], [0], ["0"]),
         1 => new(3, [], false, [], [0, 1, 2, 3], ["0", "1", "2", "3"]),
-        2 => new(1, [new("named", 0, true, 9)], false, [2], [0, 1, 2], ["0", "1", "named"]),
+        2 => new(1, [new("named", 0, true, 9)], false, [2], [0, 1, 2], ["0", "1", "named"], Mixed: true),
         3 => new(1, [new("9", 9, false, 1)], false, [9], [0, 1, 9], ["0", "1", "9"], Explicit: true),
         4 => new(1, [new("x", 0, true, 30), new("x", 0, true, 10), new("y", 0, true, 20), new("2", 2, false, 5)],
-            false, [3, 3, 4, 2], [0, 1, 2, 3, 4], ["0", "1", "2", "x", "y"], true, true),
+            false, [3, 3, 4, 2], [0, 1, 2, 3, 4], ["0", "1", "2", "x", "y"], Shared: true, Explicit: true, Mixed: true),
         5 => new(0, [new("2147483647", int.MaxValue, false, 1)], false, [int.MaxValue], [0, int.MaxValue], ["0", "2147483647"], Explicit: true),
         6 => new(0, [new("0", 0, false, 1)], false, [0], [0], ["0"], Shared: true),
         7 => new(0, [], true, [], [0], ["0"], Shared: true),

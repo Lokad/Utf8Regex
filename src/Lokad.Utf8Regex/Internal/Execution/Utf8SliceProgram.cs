@@ -448,7 +448,6 @@ internal sealed class Utf8SliceProgram
         bool hasNonFixedLookbehind,
         bool hasOrderSensitiveLookbehind,
         bool usesLiteralClassBracketSyntax,
-        bool hasMixedNamedGroups,
         Utf8CaptureCatalog? captureCatalog,
         bool usesCaptureOpeningJournal,
         bool readsCaptures,
@@ -490,7 +489,6 @@ internal sealed class Utf8SliceProgram
         HasNonFixedLookbehind = hasNonFixedLookbehind;
         HasOrderSensitiveLookbehind = hasOrderSensitiveLookbehind;
         UsesLiteralClassBracketSyntax = usesLiteralClassBracketSyntax;
-        HasMixedNamedGroups = hasMixedNamedGroups;
         CaptureCatalog = captureCatalog;
         UsesCaptureOpeningJournal = usesCaptureOpeningJournal;
         ReadsCaptures = readsCaptures;
@@ -685,7 +683,7 @@ internal sealed class Utf8SliceProgram
                 { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 1 } body, ..] &&
             setMasks[head.A].Length == 16 && setMasks[body.A].Length == 16;
 
-    internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, Utf8SliceAssertion[] assertions, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings,
+    internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, Utf8SliceAssertion[] assertions, string[] groupNames, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings,
         bool isRoot, (ulong[]? Closures, byte[]? Leaves, uint Conditions) nonBacktrackingOrdered = default,
         Utf8BoundedProgramEmitter.Compilation proofCompilation = default)
     {
@@ -843,7 +841,6 @@ internal sealed class Utf8SliceProgram
             hasNonFixedLookbehind,
             hasOrderSensitiveLookbehind,
             usesLiteralClassBracketSyntax,
-            hasMixedNamedGroups,
             captureCatalog,
             usesCaptureOpeningJournal,
             readsCaptures,
@@ -894,7 +891,6 @@ internal sealed class Utf8SliceProgram
     // PCRE2-INTEGRATION-POINT: .NET reads POSIX-looking class syntax as
     // literal members; profiles with a different grammar keep their programs.
     internal bool UsesLiteralClassBracketSyntax { get; }
-    internal bool HasMixedNamedGroups { get; }
     internal Utf8CaptureCatalog? CaptureCatalog { get; }
     internal bool UsesCaptureOpeningJournal { get; }
     internal bool ReadsCaptures { get; }
@@ -1511,9 +1507,9 @@ internal static class Utf8SliceLowerer
         // context) carry no names; decimal ordinals identify their slots since
         // only the parser admits named shapes, always with real names.
         var resolvedNames = lowerer.GroupNames;
-        Span<char> numberText = stackalloc char[10];
         if (resolvedNames is null)
         {
+            Span<char> numberText = stackalloc char[10];
             resolvedNames = lowerer.Budget.AllocateArray<string>(lowerer.GroupCount + 1, false);
             for (var number = 0; number <= lowerer.GroupCount; number++)
             {
@@ -1521,28 +1517,6 @@ internal static class Utf8SliceLowerer
                 if (!((uint)number).TryFormat(numberText, out var written))
                     throw new InvalidOperationException("A scalar group number exceeds its decimal scratch.");
                 resolvedNames[number] = lowerer.Budget.CopyText(numberText[..written]);
-            }
-        }
-
-        // Mixed named/unnamed shapes number differently across oracles
-        // (BCL unnamed-first vs positional), so consumers with positional
-        // native numbering decline them. All-digit spellings can never be
-        // names (explicit numbers decline at parse), so a name matching
-        // its slot number is exactly an unnamed group.
-        var hasUnnamedGroups = false;
-        var hasNamedGroups = false;
-        for (var number = 1; number < resolvedNames.Length; number++)
-        {
-            lowerer.Budget.ChargeWork(1);
-            if (!((uint)number).TryFormat(numberText, out var written))
-                throw new InvalidOperationException("A scalar group number exceeds its decimal scratch.");
-            if (resolvedNames[number].AsSpan().SequenceEqual(numberText[..written]))
-            {
-                hasUnnamedGroups = true;
-            }
-            else
-            {
-                hasNamedGroups = true;
             }
         }
 
@@ -1573,7 +1547,7 @@ internal static class Utf8SliceLowerer
             lowerer.RepeatCount,
             lowerer.GroupCount,
             assertions,
-            resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.GetFacts(root).CanMatchEmpty, lowerer.CaptureCatalog,
+            resolvedNames, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.GetFacts(root).CanMatchEmpty, lowerer.CaptureCatalog,
             isRoot && usesInterpretedLazyLoopSemantics, isRoot && usesLiteralClassBracketSyntax, lowerer.CaseBehavior,
             lowerer.NonBacktracking, lowerer.CaptureOpeningCount,
             epsilonOrder, epsilonAncestors,
