@@ -565,6 +565,23 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.False(cursor.MoveNext(out _));
     }
 
+    [Fact]
+    public void OptionalLiteralCountPreservesPrefixSeamsAndUnprovedRanges()
+    {
+        const string pattern = @"https?://[^\s/?#]+[^\s?#]*(?:\?[^\s#]*)?";
+        const string rejected = "http?missing hhttp:://bad";
+        // Four prefix bytes start at the final admitted start of the first window.
+        var text = rejected + new string(' ', 2044 - rejected.Length) +
+            "https://host?http://wrapped http://Ω/path?#stop http://final?";
+        var input = Encoding.UTF8.GetBytes(text);
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+
+        Assert.Equal(4, regex.RequiredLiteralContinuation);
+        Assert.Equal(3, Regex.Count(text, pattern));
+        Assert.Equal(3, regex.Count(input, token.Token));
+    }
+
     [Theory]
     [InlineData(@"https?://[^\s/?#]+[^\s?#]*(?:\?[^\s#]*)?", true)]
     [InlineData(@"https?://[^\s/?#]+[^\s?#!]*(?:\?[^\s#]*)?", false)]

@@ -634,21 +634,23 @@ public sealed partial class Utf8Regex : IDisposable
         }
         if (ReferenceEquals(program, _ownedSliceProgram) && RequiredLiteralContinuation is > 0 and var continuation &&
             _preparedRegex.SearchPlan.RequiredPrefilterSearcher.LiteralSearch is var prefix && prefix.Length == continuation &&
-            program.Instructions[continuation] is { Kind: Utf8SliceInstructionKind.RepeatGreedy,
-                RepeatMinimum: > 0, RepeatMaximum: long.MaxValue, HasSingleAtomBody: true } repeat &&
-            program.Instructions[repeat.A].RepeatExitRejectsShorterEndpoints)
+            program.Instructions[continuation] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true } repeat)
         {
-            if (_preparedRegex.RequiredLiteralTerminalSuffix is { } suffix &&
+            var suffix = _preparedRegex.RequiredLiteralTerminalSuffix;
+            // Preparation admits a zero-minimum prefix here only for an
+            // optional ASCII literal followed by a provable class continuation.
+            if ((suffix is not null || screenedLiteral >= 0 && repeat is { RepeatMinimum: 0, RepeatMaximum: 1 }) &&
                 invocation.Budget.Limits.MaxDepth is 0 or >= Utf8SliceRunner.BranchedPrefixInstructionLimit &&
                 Utf8BytePosition.IsScalarBoundary(input, startByte))
             {
-                var proved = Utf8SliceRunner.CountPreparedLiteralRepeat(program, input, prefix.Needle,
+                var proved = Utf8SliceRunner.CountPreparedLiteralRanges(program, input, prefix.Needle,
                     suffix, ref startByte, ref screenedLiteral, ref invocation);
                 if (proved.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
                 countedPrefix += proved.Count;
                 if (startByte == input.Length) return countedPrefix;
             }
-            else
+            else if (repeat is { RepeatMinimum: > 0, RepeatMaximum: long.MaxValue } &&
+                program.Instructions[repeat.A].RepeatExitRejectsShorterEndpoints)
             {
                 // Count can consume proved ranges without preparing attempt storage.
                 // Keep the first unresolved origin and the same invocation for fallback.

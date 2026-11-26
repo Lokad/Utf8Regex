@@ -1984,11 +1984,12 @@ internal static partial class Utf8SliceRunner
             continuation, ref invocation, out outcome, existenceOnly: false);
     }
 
-    internal static Utf8SliceCountOutcome CountPreparedLiteralRepeat(Utf8SliceProgram program,
+    internal static Utf8SliceCountOutcome CountPreparedLiteralRanges(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, ReadOnlySpan<byte> prefix, ReadOnlySpan<byte> suffix,
         ref int position, ref int screenedLiteral, ref Utf8SliceInvocation invocation)
     {
         var count = 0;
+        var branched = suffix.IsEmpty;
         ref readonly var repeat = ref program.Instructions[prefix.Length];
         var last = input.Length - prefix.Length;
         position = Math.Max(position, screenedLiteral);
@@ -2017,21 +2018,23 @@ internal static partial class Utf8SliceRunner
                 if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
 
                 var remaining = BranchedPrefixInstructionLimit - prefix.Length - 1;
-                var end = TryMatchLongPrefixRepeat(program, input, position + prefix.Length,
-                    prefix.Length + 1, in repeat, ref remaining);
+                var start = position + prefix.Length;
+                var end = branched
+                    ? ProbeBranchedAsciiPrefix(program, input, start, prefix.Length, ref remaining, proveMatch: true)
+                    : TryMatchLongPrefixRepeat(program, input, start, prefix.Length + 1, in repeat, ref remaining);
                 if (end == BranchedPrefixRejected)
                 {
                     position++;
                     continue;
                 }
-                if (end < 0 || remaining <= suffix.Length)
+                if (end < 0 || !branched && remaining <= suffix.Length)
                 {
                     // The ordinary verifier must begin at the first unproved
                     // prefix. A later candidate could consume this match.
                     screenedLiteral = position;
                     break;
                 }
-                if (input[end..].StartsWith(suffix))
+                if (branched || input[end..].StartsWith(suffix))
                 {
                     count++;
                     position = end + suffix.Length;
