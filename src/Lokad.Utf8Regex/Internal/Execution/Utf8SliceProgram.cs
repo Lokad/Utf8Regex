@@ -1868,10 +1868,9 @@ internal static class Utf8SliceLowerer
                     if (frame.Stage == 0)
                     {
                         HasAlternation |= alternate.Branches.Length > 1;
-                        frame.Scratch = Utf8ConstructionBuffer<int>.Create(Budget);
+                        if (alternate.Branches.Length > 2) frame.Scratch = Utf8ConstructionBuffer<int>.Create(Budget);
                         frame.Stage = 1;
                     }
-                    var jumps = frame.Scratch ?? throw new InvalidOperationException("Missing alternation jumps.");
                     while (frame.Index < alternate.Branches.Length)
                     {
                         Budget.ChargeWork(1);
@@ -1886,14 +1885,23 @@ internal static class Utf8SliceLowerer
                         }
                         if (frame.Index + 1 < alternate.Branches.Length)
                         {
-                            jumps.Add(Instructions.Count);
+                            if (frame.Scratch is { } jumps) jumps.Add(Instructions.Count);
+                            else frame.Jump = Instructions.Count;
                             Emit(new(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
                             Patch(frame.Mark, Instructions.Count);
                         }
                         frame.Index++;
                         frame.Stage = 1;
                     }
-                    foreach (var jump in jumps) { Budget.ChargeWork(1); Patch(jump, Instructions.Count); }
+                    if (frame.Scratch is { } pending)
+                    {
+                        foreach (var jump in pending) { Budget.ChargeWork(1); Patch(jump, Instructions.Count); }
+                    }
+                    else if (alternate.Branches.Length == 2)
+                    {
+                        Budget.ChargeWork(1);
+                        Patch(frame.Jump, Instructions.Count);
+                    }
                     break;
                 case Utf8SliceNode.RepeatNode repeat:
                     if (repeat.Minimum < 0 || repeat.Minimum >= uint.MaxValue || repeat.Maximum < repeat.Minimum ||
