@@ -779,7 +779,19 @@ internal static partial class Utf8SliceRunner
             }
         }
         var completion = Utf8SliceClassWindowCompletion.None;
-        if (canReuse && !capturesLeadingRun && excludes == true && code.Length - index == 10)
+        if (canReuse && excludes == true && capturesLeadingRun && program.HasSingleCapturePerGroup &&
+            program.GroupCount == 2 && code.Length - index == 7)
+        {
+            budget.ChargeWork(7);
+            // The full delimiter leaves exactly one capture around a greedy class
+            // repeat. Accept observes only its maximal extent and both captures.
+            if (code[index] is { Kind: Utf8SliceInstructionKind.CaptureStart, A: var slot } &&
+                code[^2] is { Kind: Utf8SliceInstructionKind.CaptureEnd, A: var endSlot } &&
+                slot == endSlot && slot != code[0].A && code[^1].Kind == Utf8SliceInstructionKind.Accept &&
+                IsSingleClassRepeat(code, index + 1))
+                completion = Utf8SliceClassWindowCompletion.CapturedRepeat;
+        }
+        else if (canReuse && !capturesLeadingRun && excludes == true && code.Length - index == 10)
         {
             budget.ChargeWork(10);
             if (code.AsSpan(index) is
@@ -796,6 +808,28 @@ internal static partial class Utf8SliceRunner
         // these two single-class nodes keep both offsets within a byte.
         return new((byte)(index - literalIndex), checked((byte)first), checked((byte)second),
             canReuse, canAccept, excludes) { Completion = completion };
+    }
+
+    private static Utf8SliceMatchOutcome MatchTerminalCapturedRepeat(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int start, int captureInstruction, scoped Span<int> captureStarts,
+        scoped Span<int> captureEnds, ref Utf8SliceInvocation invocation)
+    {
+        var repeated = RunClassRepeat(program, captureInstruction + 1, input, start, ref invocation);
+        if (repeated.EndIndex < 0 || repeated.Breach != Utf8ExecutionLimitKind.None)
+            return new(false, -1, repeated.Breach);
+        var breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, breach);
+
+        // A truncated caller buffer can omit either capture. The leading
+        // capture is published by candidate search after this tail succeeds.
+        var slot = program.Instructions[captureInstruction].A;
+        if ((uint)slot < (uint)Math.Min(captureStarts.Length, captureEnds.Length))
+        {
+            captureStarts[slot] = start;
+            captureEnds[slot] = repeated.EndIndex;
+        }
+        return new(true, repeated.EndIndex, Utf8ExecutionLimitKind.None);
     }
 
     internal static int PrepareRequiredLiteralContinuation(Utf8SliceProgram program, ReadOnlySpan<byte> needle,

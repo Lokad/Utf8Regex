@@ -48,6 +48,7 @@ public sealed class Utf8ClassPrefixCandidateTests
 
     [Theory]
     [InlineData(@"(\w+): (\w+)", 128, false)]
+    [InlineData(@"(\w+): (\w{2,4})", 128, false)]
     [InlineData(@"(\w+): (\w+)", 8, false)]
     [InlineData(@"(?<slot>\w+): (?<slot>\w+)", 128, true)]
     public void CapturedClassWindowKeepsTheRequestedSlotAcrossRetryAndByteFloor(
@@ -69,6 +70,36 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.Equal(requested, slots[1]);
         Assert.False(regex.Match(input, start, slots, token.Token, endOffsetInBytes: value).Success);
         Assert.False(slots[1].Success);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TerminalCapturedValueKeepsOriginalInterruptionAndClearsSlots(bool expire)
+    {
+        var input = Encoding.UTF8.GetBytes("clé: " + new string('v', 1 << 18));
+        using var token = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var regex = new Utf8Regex(@"(\w+): (\w+)", policy: new()
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
+        Utf8CaptureRange[] slots = [new(1, 2), new(1, 2), new(1, 2)];
+        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        {
+            if (steps < 64) return;
+            if (expire) ticks = 50; else token.Cancel();
+        });
+        try
+        {
+            var failure = Record.Exception(() => regex.Match(input, 0, slots, token.Token));
+            if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
+            else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+            Assert.All(slots, slot => Assert.False(slot.Success));
+        }
+        finally { session.Complete(); }
     }
 
     [Theory]

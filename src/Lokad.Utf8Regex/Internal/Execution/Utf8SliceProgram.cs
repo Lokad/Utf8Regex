@@ -400,6 +400,7 @@ internal enum Utf8SliceClassWindowCompletion : byte
     None,
     Whitespace,
     SeparatedRuns,
+    CapturedRepeat,
 }
 
 internal readonly record struct Utf8SliceClassWindowProof(
