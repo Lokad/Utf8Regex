@@ -31,7 +31,7 @@ internal static class Utf8RegexSyntax
         return ch is '\\' or '.' or '$' or '^' or '{' or '[' or '(' or '|' or ')' or '*' or '+' or '?';
     }
 
-    public static string? ClassifyUnsupportedOptions(RegexOptions options)
+    public static bool SupportsNativeOptions(RegexOptions options)
     {
         options = NormalizeNonSemanticOptions(options);
 
@@ -43,17 +43,7 @@ internal static class Utf8RegexSyntax
             RegexOptions.ExplicitCapture |
             RegexOptions.IgnorePatternWhitespace |
             RegexOptions.RightToLeft;
-        if ((options & ~allowedOptions) != 0)
-        {
-            return "unsupported_options";
-        }
-
-        if ((options & RegexOptions.IgnoreCase) != 0 &&
-            (options & RegexOptions.CultureInvariant) == 0)
-        {
-            return "culture_sensitive_ignore_case";
-        }
-
-        return null;
+        return (options & ~allowedOptions) == 0 &&
+            ((options & RegexOptions.IgnoreCase) == 0 || (options & RegexOptions.CultureInvariant) != 0);
     }
 }

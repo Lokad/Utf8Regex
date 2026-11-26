@@ -19,7 +19,7 @@ internal sealed class Utf8PreparedRegex
     private Utf8PreparedRegex(
         Utf8AnchoredLiteralPlan anchoredLiteral, in Utf8SearchPlan searchPlan,
         Utf8PreparedSemanticRegex semanticRegex, Utf8RegexFeatures features, string? executionPattern,
-        NativeExecutionKind executionKind, Utf8SliceProgram? scalarProgram, byte[]? literalUtf8, string? fallbackReason,
+        NativeExecutionKind executionKind, Utf8SliceProgram? scalarProgram, byte[]? literalUtf8,
         bool requiredLiteralProvesMatch, int requiredLiteralContinuation, byte[]? requiredLiteralTerminalSuffix,
         int requiredLiteralOptionalRun)
     {
@@ -31,7 +31,6 @@ internal sealed class Utf8PreparedRegex
         ExecutionKind = executionKind;
         ScalarProgram = scalarProgram;
         LiteralUtf8 = literalUtf8;
-        FallbackReason = fallbackReason;
         RequiredLiteralProvesMatch = requiredLiteralProvesMatch;
         RequiredLiteralContinuation = requiredLiteralContinuation;
         RequiredLiteralTerminalSuffix = requiredLiteralTerminalSuffix;
@@ -41,7 +40,7 @@ internal sealed class Utf8PreparedRegex
     internal static Utf8PreparedRegex Create(
         Utf8PreparedSemanticRegex semanticRegex, Utf8RegexFeatures features, string? executionPattern,
         NativeExecutionKind executionKind, Utf8SliceProgram? scalarProgram, in Utf8SearchPlan searchPlan,
-        byte[]? literalUtf8, string? fallbackReason, Utf8AnchoredLiteralPlan anchoredLiteral)
+        byte[]? literalUtf8, Utf8AnchoredLiteralPlan anchoredLiteral)
     {
         using var scope = Utf8ConstructionScope.Enter();
         scope.Budget.CheckBytes(ObjectBytes);
@@ -69,7 +68,7 @@ internal sealed class Utf8PreparedRegex
         scope.Budget.ReserveBytes(ObjectBytes);
         var result = new Utf8PreparedRegex(
             anchoredLiteral, searchPlan, semanticRegex, features, executionPattern,
-            executionKind, scalarProgram, literalUtf8, fallbackReason, requiredLiteralProvesMatch,
+            executionKind, scalarProgram, literalUtf8, requiredLiteralProvesMatch,
             requiredLiteralContinuation, requiredLiteralTerminalSuffix, requiredLiteralOptionalRun);
         scope.Complete();
         return result;
@@ -96,7 +95,6 @@ internal sealed class Utf8PreparedRegex
 
     public byte[]? LiteralUtf8 { get; }
 
-    public string? FallbackReason { get; }
 
     public ref readonly Utf8AnchoredLiteralPlan AnchoredLiteral => ref _anchoredLiteral;
 }

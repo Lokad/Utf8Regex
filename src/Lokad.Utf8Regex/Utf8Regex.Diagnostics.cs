@@ -59,7 +59,6 @@ public sealed partial class Utf8Regex
         public bool DebugHasPackedNibbleLiteralFamilyCountStrategy =>
             _owner._packedNibbleLiteralFamilyCountStrategy is not null;
 
-        public string? FallbackReason => _owner.FallbackReason;
 
         public int DebugReplacementCacheEntryCount => _owner._replacementCache.Count;
     }

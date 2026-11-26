@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.Planning;
+
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static class Utf8FrontEndAnalyzer
@@ -8,9 +10,7 @@ internal static class Utf8FrontEndAnalyzer
         RegexOptions executionOptions)
     {
         var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex);
-        // Native discovery remains limited to admitted literal shapes. Other
-        // graphs receive their owned scalar NFA at construction. The historical
-        // unsupported-options reason describes native-plan eligibility here.
+        // Flat regular graphs can use the admitted native literal plans.
         if ((executionOptions & RegexOptions.NonBacktracking) != 0 &&
             Lokad.Utf8Regex.Internal.Execution.Utf8SliceParser.IsNonBacktrackingFlatGraph(semanticRegex.RuntimeTree) &&
             Utf8NativeExecutionAnalyzer.TryAnalyze(semanticRegex, features, executionPattern, executionOptions, out var nativeNonBacktracking) &&
@@ -19,30 +19,18 @@ internal static class Utf8FrontEndAnalyzer
         {
             return nativeNonBacktracking;
         }
-        var unsupportedOptions = Utf8RegexSyntax.ClassifyUnsupportedOptions(executionOptions);
-        if (unsupportedOptions is not null)
-        {
-            return Utf8RegexAnalysis.CreateFallback(
-                semanticRegex,
-                executionPattern,
-                features,
-                Utf8FrontEndSearchAnalyzer.Analyze(semanticRegex),
-                unsupportedOptions);
-        }
-
-        if (Utf8NativeExecutionAnalyzer.TryAnalyze(semanticRegex, features, executionPattern, executionOptions, out var analyzedRegex))
+        if (Utf8RegexSyntax.SupportsNativeOptions(executionOptions) &&
+            Utf8NativeExecutionAnalyzer.TryAnalyze(semanticRegex, features, executionPattern, executionOptions, out var analyzedRegex))
         {
             return analyzedRegex;
         }
 
         var searchFacts = Utf8FrontEndSearchAnalyzer.Analyze(semanticRegex);
-        var fallbackReason = Utf8FallbackReasonClassifier.Classify("unsupported_pattern", features) ?? "unsupported_pattern";
-
-        return Utf8RegexAnalysis.CreateFallback(
+        return Utf8RegexAnalysis.Create(
             semanticRegex,
             executionPattern,
             features,
             searchFacts,
-            fallbackReason);
+            NativeExecutionKind.FallbackRegex);
     }
 }

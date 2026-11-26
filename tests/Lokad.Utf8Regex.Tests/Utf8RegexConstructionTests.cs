@@ -148,7 +148,6 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("a.*b");
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal("unsupported_loop", regex.Inspection.FallbackReason);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
     }
 
@@ -171,7 +170,6 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(pattern, options: RegexOptions.Multiline | RegexOptions.NonBacktracking);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal("unsupported_options", regex.Inspection.FallbackReason);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
         Assert.Equal("#😀", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("///#😀"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromUtf8Name("title"u8)).Span));
     }
@@ -623,7 +621,6 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("abc", options: RegexOptions.IgnoreCase);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
     }
 
     [Fact]
@@ -640,7 +637,6 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("^(?<col>[a-z])(?<row>(\\d)+)$", options: RegexOptions.IgnoreCase);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
         Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -652,7 +648,6 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(pattern, options: RegexOptions.IgnoreCase);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
         Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -664,18 +659,16 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(pattern, options: RegexOptions.IgnoreCase);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
         Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
-    public void ConstructorExposesFallbackReasonForDeferredOptions()
+    public void RightToLeftLiteralUsesExactAsciiPlan()
     {
         var regex = new Utf8Regex("abc", options: RegexOptions.RightToLeft | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
-        Assert.Null(regex.Inspection.FallbackReason);
     }
 
     [Fact]
@@ -1815,21 +1808,6 @@ public sealed class Utf8RegexConstructionTests
             Assert.False(regex.IsMatch("xxx nihil yyy"u8));
             Assert.False(regex.Match("xxx nihil yyy"u8).Success);
         }
-    }
-
-    [Theory]
-    [InlineData(@"(?<word>ab)\k<word>", "unsupported_backreference")]
-    [InlineData("(?!ab)ab", "unsupported_lookaround")]
-    [InlineData("(?>ab)c", "unsupported_atomic")]
-    [InlineData("(a)?(?(1)ab|cd)", "unsupported_conditional")]
-    [InlineData("(?(?=a)b|c)", "unsupported_conditional")]
-    [InlineData("ab+", "unsupported_loop")]
-    public void ConstructorExposesSemanticFallbackReasonForUnsupportedPatternFamilies(string pattern, string expectedReason)
-    {
-        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
-
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal(expectedReason, regex.Inspection.FallbackReason);
     }
 
     [Fact]

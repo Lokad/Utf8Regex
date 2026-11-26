@@ -1653,10 +1653,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"SampleCount       : {context.Samples.Length}");
         Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
         Console.WriteLine($"CompiledEngine    : {context.Utf8Regex.Inspection.CompiledEngineKind}");
-        if (!string.IsNullOrEmpty(context.Utf8Regex.Inspection.FallbackReason))
-        {
-            Console.WriteLine($"FallbackReason    : {context.Utf8Regex.Inspection.FallbackReason}");
-        }
 
         Measure("PrefilterOnly", iterations, context.ExecuteUtf8PrefixPrefilterOnly);
         Measure("DirectUrlMatcher", iterations, context.ExecuteLokadScriptDirectUrlMatcher);
@@ -1693,10 +1689,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"InputBytes        : {context.TotalInputBytes}");
         Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
         Console.WriteLine($"CompiledEngine    : {context.Utf8Regex.Inspection.CompiledEngineKind}");
-        if (!string.IsNullOrEmpty(context.Utf8Regex.Inspection.FallbackReason))
-        {
-            Console.WriteLine($"FallbackReason    : {context.Utf8Regex.Inspection.FallbackReason}");
-        }
 
         Measure("LiteralFinderModel", iterations, context.ExecuteLiteralFinderModel);
         Measure("LinePrefixModel", iterations, context.ExecuteLinePrefixModel);
@@ -1735,10 +1727,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"InputBytes        : {context.TotalInputBytes}");
         Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
         Console.WriteLine($"CompiledEngine    : {context.Utf8Regex.Inspection.CompiledEngineKind}");
-        if (!string.IsNullOrEmpty(context.Utf8Regex.Inspection.FallbackReason))
-        {
-            Console.WriteLine($"FallbackReason    : {context.Utf8Regex.Inspection.FallbackReason}");
-        }
 
         Measure("PrefilterOnly", iterations, context.ExecuteUtf8CountPrefilterOnly);
         Measure("CompiledCount", iterations, context.ExecuteUtf8CountCompiled);
@@ -1764,10 +1752,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"InputBytes        : {context.InputBytes.Length}");
         Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
         Console.WriteLine($"CompiledEngine    : {context.CompiledUtf8Regex.Inspection.CompiledEngineKind}");
-        if (!string.IsNullOrEmpty(context.CompiledUtf8Regex.Inspection.FallbackReason))
-        {
-            Console.WriteLine($"FallbackReason    : {context.CompiledUtf8Regex.Inspection.FallbackReason}");
-        }
 
         Measure("AsciiOnlyCheck", iterations, () => Ascii.IsValid(context.InputBytes) ? context.InputBytes.Length : 0);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
@@ -2034,10 +2018,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"InputBytes        : {context.InputBytes.Length}");
         Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
         Console.WriteLine($"CompiledEngine    : {context.CompiledUtf8Regex.Inspection.CompiledEngineKind}");
-        if (!string.IsNullOrEmpty(context.CompiledUtf8Regex.Inspection.FallbackReason))
-        {
-            Console.WriteLine($"FallbackReason    : {context.CompiledUtf8Regex.Inspection.FallbackReason}");
-        }
 
         if (context.Operation == LokadPublicBenchmarkOperation.Count)
         {
@@ -2587,7 +2567,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Options           : {options}");
         Console.WriteLine($"ExecutionKind     : {prepared.ExecutionKind}");
         Console.WriteLine($"CompiledEngine    : {Utf8CompiledEngineSelector.Select(prepared)}");
-        Console.WriteLine($"FallbackReason    : {prepared.FallbackReason ?? "<native>"}");
         Console.WriteLine("RuntimeTree       :");
         Console.WriteLine(DumpNode(root!));
         return 0;
@@ -2791,7 +2770,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"PreparedSearcher  : {regex.Inspection.SearchPlan.PreparedSearcher.Kind}");
         Console.WriteLine($"RequiredPrefilter : {(regex.Inspection.SearchPlan.RequiredPrefilterSearcher.HasValue ? regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind : "None")}");
         WriteStructuralSearchPlan(regex.Inspection.SearchPlan);
-        Console.WriteLine($"FallbackReason    : {regex.Inspection.FallbackReason ?? "<native>"}");
     }
 
     private static void WriteStructuralSearchDump(

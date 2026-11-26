@@ -261,7 +261,6 @@ public sealed partial class Utf8Regex : IDisposable
 
     private Utf8CompiledEngineKind CompiledEngineKind => _program.CompiledEngineKind;
 
-    private string? FallbackReason => _preparedRegex.FallbackReason;
 
     private static void ValidateOptions(RegexOptions options)
     {

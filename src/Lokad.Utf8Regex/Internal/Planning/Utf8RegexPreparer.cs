@@ -16,12 +16,6 @@ internal static class Utf8RegexPreparer
             var scalarProgram = Utf8SliceParser.TryParse(scalarOptions,
                 analyzedRegex.SemanticRegex.RuntimeTree, proofCompilation);
             var anchoredLiteral = Utf8AnchoredLiteralClassifier.Classify(analyzedRegex.SemanticRegex.RuntimeTree);
-            var fallbackReason = analyzedRegex.FallbackReason;
-            if (analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex &&
-                string.Equals(fallbackReason, "unsupported_loop", StringComparison.Ordinal) &&
-                anchoredLiteral.HasValue && anchoredLiteral.IsExact)
-                fallbackReason = null;
-
             var searchPlan = Utf8SearchPlan.Prepare(analyzedRegex.SearchFacts, scalarProgram);
             var result = Utf8PreparedRegex.Create(
                 new Utf8PreparedSemanticRegex(analyzedRegex.SemanticRegex.Pattern, analyzedRegex.SemanticRegex.Options,
@@ -33,7 +27,6 @@ internal static class Utf8RegexPreparer
                 scalarProgram,
                 searchPlan,
                 analyzedRegex.LiteralUtf8,
-                fallbackReason,
                 anchoredLiteral);
             scope.Complete();
             return result;

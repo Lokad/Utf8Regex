@@ -29,22 +29,19 @@ internal static class EnginePortfolioReporter
                 var diagnostics = context.Utf8Regex.CollectIsMatchDiagnostics(context.InputBytes);
                 Console.WriteLine(
                     $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
-                    $"Exec={diagnostics.ExecutionKind} | Search={diagnostics.SearchKind} | " +
-                    $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
+                    $"Exec={diagnostics.ExecutionKind} | Search={diagnostics.SearchKind}");
             }
             else if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Count)
             {
                 var diagnostics = context.Utf8Regex.CollectCountDiagnostics(context.InputBytes);
                 Console.WriteLine(
                     $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
-                    $"Exec={diagnostics.ExecutionKind} | Search={diagnostics.SearchKind} | " +
-                    $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
+                    $"Exec={diagnostics.ExecutionKind} | Search={diagnostics.SearchKind}");
             }
             else
             {
                 Console.WriteLine(
-                    $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
-                    $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
+                    $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind}");
             }
         }
     }
@@ -67,8 +64,7 @@ internal static class EnginePortfolioReporter
                 Console.WriteLine(
                     $"{benchmarkCase.Id} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
                     $"Exec={diagnostics.ExecutionKind} | Search={diagnostics.SearchKind} | " +
-                    $"Prefilter={(context.Utf8Regex.Inspection.SearchPlan.RequiredPrefilterSearcher.HasValue ? context.Utf8Regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind : "None")} | " +
-                    $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
+                    $"Prefilter={(context.Utf8Regex.Inspection.SearchPlan.RequiredPrefilterSearcher.HasValue ? context.Utf8Regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind : "None")}");
             }
             catch (Exception ex)
             {

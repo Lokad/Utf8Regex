@@ -42,12 +42,10 @@ public sealed class Utf8SliceNonBacktrackingTests
             if (pattern is "abc" or "a|ab" or "\\bword\\b")
             {
                 Assert.NotEqual(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-                Assert.Null(regex.Inspection.FallbackReason);
             }
             else
             {
                 Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-                Assert.Equal("unsupported_options", regex.Inspection.FallbackReason);
             }
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
             var legacyInput = Encoding.UTF8.GetBytes("xxaaxx");
