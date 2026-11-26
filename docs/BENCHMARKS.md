@@ -69,7 +69,10 @@ applies to the complete run.
 Set PATH to the pinned .NET 11 SDK and set `UTF8REGEX_CPYTHON` before starting.
 Check actual available RAM and disk space, including `/dev/shm`. Retire archived
 fixture scratch before a full run. Size the reservation for each focused
-experiment to fit its workers and retained results.
+experiment to fit its workers and retained results. Keep the quiet VM's home
+paths matching `~/utf8regex-*` below 5 GiB in total. Check allocated space with
+`du -sch -- ~/utf8regex-*` when those paths exist. Use a separate scratch
+directory for each run, then remove it after checking the copied archive.
 
 ```bash
 timeout --kill-after=5s 3600s pwsh -NoProfile -File ./tools/refresh-benchmarks.ps1
