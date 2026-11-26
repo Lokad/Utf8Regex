@@ -4,7 +4,7 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
 {
     private readonly record struct ConstructionState(int Failure, int BestOutputOrder, int BestOutputLength, int ShortestOutputLength);
 
-    public static PreparedMultiLiteralAutomatonSearch Create(byte[][] literals)
+    public static PreparedMultiLiteralAutomatonSearch Create(byte[][] literals, int knownStateCount = 0)
     {
         if (literals.Length == 0) return new([], [], [], [], int.MaxValue, 0);
         using var scope = Utf8ConstructionScope.Enter();
@@ -14,6 +14,13 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
         {
             using var states = Utf8ConstructionBuffer<ConstructionState>.Create(budget);
             using var transitions = Utf8ConstructionBuffer<int>.Create(budget);
+            if (knownStateCount != 0)
+            {
+                // The exact trie for these literals already counted the distinct
+                // prefixes. Admit the complete matrix once and publish it in place.
+                states.EnsureCapacity(knownStateCount);
+                transitions.EnsureCapacity(checked(knownStateCount * 256));
+            }
             budget.ChargeWork(256);
             Span<int> emptyRow = stackalloc int[256];
             emptyRow.Clear();

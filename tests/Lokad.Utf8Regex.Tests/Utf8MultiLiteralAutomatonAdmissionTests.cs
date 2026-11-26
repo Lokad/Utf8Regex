@@ -101,7 +101,10 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
     [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
     public void EveryTransitionAndFailureOutputAgreesWithIndependentSuffixModel(int family)
     {
-        var literals = Literals(family); var prefixes = Prefixes(literals); var search = PreparedMultiLiteralAutomatonSearch.Create(literals);
+        var literals = Literals(family);
+        var prefixes = Prefixes(literals);
+        var trie = PreparedMultiLiteralTrieSearch.Create(literals);
+        var search = PreparedMultiLiteralAutomatonSearch.Create(literals, trie.StateCount);
         var ids = prefixes.Select((value, id) => (Key: Convert.ToHexString(value), Id: id)).ToDictionary(value => value.Key, value => value.Id);
         for (var state = 0; state < prefixes.Count; state++)
         {
@@ -117,6 +120,26 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
             var best = outputs.OrderByDescending(value => value.Value.Length).ThenBy(value => value.Id).FirstOrDefault((Value: Array.Empty<byte>(), Id: -1));
             Assert.Equal(best.Id, search.BestOutputOrders[state]); Assert.Equal(best.Value.Length, search.BestOutputLengths[state]);
             Assert.Equal(outputs.Length == 0 ? int.MaxValue : outputs.Min(value => value.Value.Length), search.ShortestOutputLengths[state]);
+        }
+    }
+
+    [Fact]
+    public void PreparedTrieCountAvoidsGrowthAndFinalMatrixCopy()
+    {
+        var literals = Literals(4);
+        var trie = PreparedMultiLiteralTrieSearch.Create(literals);
+        var (grown, grownPeak, grownWork) = Build(0);
+        var (sized, sizedPeak, sizedWork) = Build(trie.StateCount);
+
+        Assert.Equal(grown.Transitions, sized.Transitions);
+        Assert.True(sizedPeak < grownPeak);
+        Assert.True(sizedWork < grownWork);
+
+        (PreparedMultiLiteralAutomatonSearch Search, ulong Peak, ulong Work) Build(int stateCount)
+        {
+            using var owner = Utf8ConstructionScope.Enter();
+            var search = PreparedMultiLiteralAutomatonSearch.Create(literals, stateCount);
+            return (search, owner.Budget.PeakBytes, owner.Budget.WorkSteps);
         }
     }
 

@@ -1662,6 +1662,8 @@ internal readonly partial struct PreparedMultiLiteralTrieSearch
 
     public int ShortestLength { get; }
 
+    internal int StateCount => _nodes.Length;
+
     public int IndexOf(ReadOnlySpan<byte> input)
     {
         if (ShortestLength == int.MaxValue)

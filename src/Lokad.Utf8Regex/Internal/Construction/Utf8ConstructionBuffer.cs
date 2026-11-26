@@ -82,7 +82,7 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
         Count = count;
     }
 
-    private void EnsureCapacity(int required)
+    internal void EnsureCapacity(int required)
     {
         if (required > _items.Length)
         {

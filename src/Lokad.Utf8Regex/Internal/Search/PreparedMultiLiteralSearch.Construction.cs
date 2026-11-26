@@ -115,7 +115,7 @@ internal readonly partial struct PreparedMultiLiteralSearch
                 // this wrapper's flattened vector uses bucket order instead.
                 var trie = PreparedMultiLiteralTrieSearch.Create(literals);
                 return new(literals, PreparedMultiLiteralKind.ExactAutomaton, default, trie,
-                    PreparedMultiLiteralAutomatonSearch.Create(literals), new(literals), default, default);
+                    PreparedMultiLiteralAutomatonSearch.Create(literals, trie.StateCount), new(literals), default, default);
             }
             if (literals.Length >= TrieThreshold)
                 return new(literals, PreparedMultiLiteralKind.ExactTrie, default, PreparedMultiLiteralTrieSearch.Create(literals), default, default, default, default);
