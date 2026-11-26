@@ -347,27 +347,14 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void EmittedUnconstrainedExactLiteralFamilyMatchesInstructionExecutor()
+    public void UnconstrainedExactLiteralFamilyFindsByteRangesInMixedText()
     {
-        var regex = new Utf8Regex("alpha|bravo|charlie|delta|echo", options: RegexOptions.CultureInvariant);
-        var input = Encoding.UTF8.GetBytes("\u00e9 ALPHA alpha bravo CHARLIE delta echo \ud83d\ude00");
-        var plan = regex.Inspection.SearchPlan;
+        using var regex = new Utf8Regex("alpha|bravo|charlie|delta|echo", options: RegexOptions.CultureInvariant);
+        var input = "é ALPHA alpha bravo CHARLIE delta echo 😀"u8;
 
-        Assert.Equal(Utf8ConfirmationKind.None, plan.SearchOperation.Confirmation.Kind);
-        Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(plan, plan.SearchOperation, out var counter));
-        Assert.NotNull(counter);
-        Assert.Equal(
-            Utf8BackendInstructionExecutor.CountLiteralFamily(plan, plan.SearchOperation, input, budget: Utf8ExecutionDeadline.Infinite),
-            counter!.Count(input));
-        Assert.Equal(
-            Utf8BackendInstructionExecutor.IsMatchLiteralFamily(plan, plan.SearchOperation, input, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false),
-            counter.IsMatch(input));
-
-        Assert.True(counter.TryMatch(input, out var emittedIndex, out var emittedLength));
-        var interpreted = Utf8BackendInstructionExecutor.MatchLiteralFamily(plan, plan.SearchOperation, input, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false);
-        Assert.True(interpreted.Success);
-        Assert.Equal(interpreted.StartOffsetInBytes, emittedIndex);
-        Assert.Equal((interpreted.EndOffsetInBytes - interpreted.StartOffsetInBytes), emittedLength);
+        Assert.Equal(4, regex.Count(input));
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(new Utf8CaptureRange(9, 14), regex.Match(input));
     }
 
     [Fact]
