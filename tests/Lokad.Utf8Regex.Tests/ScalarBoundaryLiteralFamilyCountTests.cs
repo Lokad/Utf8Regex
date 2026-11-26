@@ -77,6 +77,24 @@ public sealed class ScalarBoundaryLiteralFamilyCountTests
     }
 
     [Fact]
+    public void RejectedHeadAtWindowEndLeavesTheNextBoundaryCandidate()
+    {
+        const string pattern = @"\b(?:and|that|have|for|!)\b";
+        const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.Compiled;
+        var input = Encoding.UTF8.GetBytes(new string('q', 2047) + "t!a and");
+        using var ordinary = new Utf8Regex(pattern, options);
+        using var funded = new Utf8Regex(pattern, options, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 10_000 }
+        });
+        using var cancellation = new CancellationTokenSource();
+
+        Assert.Equal(2, ordinary.Count(input));
+        Assert.Equal(2, funded.Count(input, cancellation.Token));
+        Assert.Equal(2048, ordinary.Match(input).StartOffsetInBytes);
+    }
+
+    [Fact]
     public void CountHandlesBorrowedOffsetsAndTailPositions()
     {
         var regex = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);

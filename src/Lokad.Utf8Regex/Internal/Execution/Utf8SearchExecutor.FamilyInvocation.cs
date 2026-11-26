@@ -382,8 +382,29 @@ internal static partial class Utf8SearchExecutor
                     admittedEnd = low + count;
                     // Borrow the prepared union instead of rescanning this
                     // bounded window once per branch at every false candidate.
-                    var relative = search.IndexOf(block);
-                    if (relative >= 0) candidateByte = blockStart + relative;
+                    while (true)
+                    {
+                        var relative = search.IndexOf(block);
+                        if (relative < 0) break;
+                        var at = admittedEnd - block.Length + relative;
+                        if (candidateBoundary != Utf8BoundaryRequirement.None)
+                        {
+                            breach = invocation.TryChargeBoundedCheck();
+                            if (breach != Utf8ExecutionLimitKind.None) return breach;
+                            if (!Utf8ScalarWordBoundary.MatchesRequirement(candidateBoundary, input, at))
+                            {
+                                // Resume within the same window with the usual
+                                // work and interruption check for each seek.
+                                block = block[(relative + 1)..];
+                                if (block.IsEmpty) break;
+                                breach = invocation.TryChargeBoundedCheck();
+                                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                                continue;
+                            }
+                        }
+                        candidateByte = at;
+                        break;
+                    }
                 }
                 else if (!confirm && !reverse && !folded && literals.Length == 2 &&
                     literals[0].Length > 0 && literals[1].Length > 0)
@@ -450,7 +471,7 @@ internal static partial class Utf8SearchExecutor
                     continue;
                 }
 
-                if (candidateBoundary != Utf8BoundaryRequirement.None)
+                if (candidateBoundary != Utf8BoundaryRequirement.None && firstByteSearch is null)
                 {
                     // Forward candidates are UTF-8 lead bytes. Every branch at
                     // this start has the same leading boundary requirement.
