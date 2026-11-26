@@ -39,27 +39,26 @@ public sealed class Utf8OwnedFindContinuationTests
 
     [Theory]
     [MemberData(nameof(DeepFactsCases))]
-    public void EntireFindFactsPipelineKeepsWrapperSemantics(string pattern, RegexOptions options, int wrapperKind, int depth)
+    public void FindScansKeepWrapperSemantics(string pattern, RegexOptions options, int wrapperKind, int depth)
     {
         var kind = (Utf8TreeNodeKind)wrapperKind;
         var shallow = Wrapped(pattern, options, kind, 1);
         var deep = Wrapped(pattern, options, kind, depth);
         // Existing pinned tests independently define shallow semantics. Extra
-        // identical transparent wrappers must preserve the whole facts object;
+        // identical transparent wrappers must preserve the individual search facts;
         // one atomic wrapper also preserves its established literal exclusions.
-        var expected = Utf8OwnedFindFacts.FromTree(shallow);
-        var actual = Utf8OwnedFindFacts.FromTree(deep);
-        Assert.NotNull(expected);
-        Assert.NotNull(actual);
-        Assert.Equal(expected.MinRequiredLength, actual.MinRequiredLength);
-        Assert.Equal(expected.MaxPossibleLength, actual.MaxPossibleLength);
-        Assert.Equal(expected.IsFixedLength, actual.IsFixedLength);
-        Assert.Equal(expected.TrailingAnchor, actual.TrailingAnchor);
-        Assert.Equal(expected.LeadingLiteral, actual.LeadingLiteral);
-        Assert.Equal(expected.LongestLiteral, actual.LongestLiteral);
-        Assert.Equal(expected.AlternatePrefixes, actual.AlternatePrefixes);
-        Assert.Equal(expected.FixedDistanceLiteral, actual.FixedDistanceLiteral);
-        Assert.Equal(Sets(expected.FixedDistanceSets), Sets(actual.FixedDistanceSets));
+        var expected = shallow.Root;
+        var actual = deep.Root;
+        Assert.Equal(Utf8OwnedFindOptimizations.ComputeByteWidth(expected), Utf8OwnedFindOptimizations.ComputeByteWidth(actual));
+        Assert.Equal(Utf8OwnedFindOptimizations.FindTrailingAnchor(expected), Utf8OwnedFindOptimizations.FindTrailingAnchor(actual));
+        Assert.Equal(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(expected), Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(actual));
+        Assert.Equal(Utf8OwnedFindOptimizations.TryExtractLongestLiteral(expected), Utf8OwnedFindOptimizations.TryExtractLongestLiteral(actual));
+        Assert.Equal(Utf8OwnedFindOptimizations.FindAlternatePrefixes(expected, shallow.Options),
+            Utf8OwnedFindOptimizations.FindAlternatePrefixes(actual, deep.Options));
+        Assert.Equal(Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(expected),
+            Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(actual));
+        Assert.Equal(Sets(Utf8OwnedFindOptimizations.FindFixedDistanceSets(expected)),
+            Sets(Utf8OwnedFindOptimizations.FindFixedDistanceSets(actual)));
     }
 
     private static string[]? Sets(Utf8OwnedFindOptimizations.OwnedSet[]? sets)

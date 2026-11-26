@@ -9,152 +9,75 @@ internal static class Utf8FrontEndSearchAnalyzer
 
     public static Utf8SearchFacts Analyze(Utf8SemanticRegex semanticRegex)
     {
-        var runtimeTree = semanticRegex.RuntimeTree;
-        var findOptimizations = Utf8OwnedFindFacts.FromTree(runtimeTree);
-        if (findOptimizations is null || runtimeTree is null)
-        {
+        if (semanticRegex.RuntimeTree is not { } tree)
             return Utf8SearchFacts.Create(Utf8SearchKind.None);
-        }
 
-        TrySelectRequiredLiteralPrefilter(runtimeTree.Root, out var requiredPrefilterLiteral, out var requiredPrefilterAlternateLiterals);
-        TrySelectFallbackStartTransform(runtimeTree.Root, out var fallbackStartTransform);
-        TrySelectBoundaryRequirements(runtimeTree.Root, out var leadingBoundary, out var trailingBoundary);
-        requiredPrefilterLiteral ??= [];
-        requiredPrefilterAlternateLiterals ??= [];
-        int? exactRequiredLength = findOptimizations.IsFixedLength ? findOptimizations.MinRequiredLength : null;
-        var maxPossibleLength = findOptimizations.IsFixedLength ? null : findOptimizations.MaxPossibleLength;
+        using var construction = Utf8ConstructionScope.Enter();
+        var result = AnalyzeTree(tree, semanticRegex.ExecutionOptions);
+        construction.Complete();
+        return result;
+    }
 
-        if (TrySelectTrailingFixedLengthAnchor(findOptimizations, out var trailingKind, out var trailingLength))
+    private static Utf8SearchFacts AnalyzeTree(Utf8OwnedRegexTree tree, RegexOptions options)
+    {
+        var root = tree.Root;
+        var width = Utf8OwnedFindOptimizations.ComputeByteWidth(root);
+        TrySelectRequiredLiteralPrefilter(root, out var requiredLiteral, out var requiredAlternatives);
+        TrySelectFallbackStartTransform(root, out var fallbackStartTransform);
+        TrySelectBoundaryRequirements(root, out var leadingBoundary, out var trailingBoundary);
+        var facts = new Utf8SearchFactData
         {
-            return Utf8SearchFacts.Create(
-                       trailingKind,
-                       new Utf8SearchFactData
-                       {
-                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
-                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           FallbackStartTransform = fallbackStartTransform,
-                           MinRequiredLength = trailingLength,
-                           ExactRequiredLength = exactRequiredLength,
-                           MaxPossibleLength = maxPossibleLength,
-                           LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary
-                       });
-        }
+            RequiredPrefilterLiteralUtf8 = requiredLiteral ?? [],
+            RequiredPrefilterAlternateLiteralsUtf8 = requiredAlternatives ?? [],
+            FallbackStartTransform = fallbackStartTransform,
+            ExactRequiredLength = width.IsFixed ? width.Minimum : null,
+            MaxPossibleLength = width.IsFixed ? null : width.Maximum,
+            LeadingBoundary = leadingBoundary,
+            TrailingBoundary = trailingBoundary,
+        };
 
-        if (TrySelectFixedDistanceSets(findOptimizations, UsesInvariantIgnoreCase(semanticRegex.ExecutionOptions), out var fixedDistanceSets, out var fixedDistanceMinRequiredLength))
-        {
-            return Utf8SearchFacts.Create(
-                       Utf8SearchKind.FixedDistanceAsciiSets,
-                       new Utf8SearchFactData
-                       {
-                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
-                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           FallbackStartTransform = fallbackStartTransform,
-                           FixedDistanceSets = fixedDistanceSets,
-                           MinRequiredLength = fixedDistanceMinRequiredLength,
-                           ExactRequiredLength = exactRequiredLength,
-                           MaxPossibleLength = maxPossibleLength,
-                           LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary
-                       });
-        }
+        // Keep search priority and prepare each candidate only when it can be used.
+        if (TrySelectTrailingFixedLengthAnchor(root, width, out var trailingKind))
+            return Utf8SearchFacts.Create(trailingKind, facts with { MinRequiredLength = width.Minimum });
 
-        if (TrySelectDeterministicPrefixSets(runtimeTree.Root, findOptimizations.MinRequiredLength, fallbackStartTransform, out var deterministicPrefixSets, out var deterministicPrefixMinRequiredLength))
-        {
-            return Utf8SearchFacts.Create(
-                       Utf8SearchKind.FixedDistanceAsciiSets,
-                       new Utf8SearchFactData
-                       {
-                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
-                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           FallbackStartTransform = fallbackStartTransform,
-                           FixedDistanceSets = deterministicPrefixSets,
-                           MinRequiredLength = deterministicPrefixMinRequiredLength,
-                           ExactRequiredLength = exactRequiredLength,
-                           MaxPossibleLength = maxPossibleLength,
-                           LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary
-                       });
-        }
+        var invariantIgnoreCase = UsesInvariantIgnoreCase(options);
+        if (TrySelectFixedDistanceSets(root, invariantIgnoreCase, out var fixedSets))
+            return Utf8SearchFacts.Create(Utf8SearchKind.FixedDistanceAsciiSets,
+                facts with { FixedDistanceSets = fixedSets, MinRequiredLength = width.Minimum });
 
-        if (TrySelectFixedDistanceLiteral(findOptimizations, UsesInvariantIgnoreCase(semanticRegex.ExecutionOptions), out var fixedLiteral, out var distance, out var minRequiredLength))
-        {
-            return Utf8SearchFacts.Create(
-                       Utf8SearchKind.FixedDistanceAsciiLiteral,
-                       new Utf8SearchFactData
-                       {
-                           LiteralUtf8 = fixedLiteral,
-                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
-                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           FallbackStartTransform = fallbackStartTransform,
-                           Distance = distance,
-                           MinRequiredLength = minRequiredLength,
-                           ExactRequiredLength = exactRequiredLength,
-                           MaxPossibleLength = maxPossibleLength,
-                           LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary
-                       });
-        }
+        if (TrySelectDeterministicPrefixSets(root, width.Minimum, fallbackStartTransform,
+            out var deterministicSets, out var deterministicMinimum))
+            return Utf8SearchFacts.Create(Utf8SearchKind.FixedDistanceAsciiSets,
+                facts with { FixedDistanceSets = deterministicSets, MinRequiredLength = deterministicMinimum });
 
-        if (TrySelectAlternatePrefixes(findOptimizations, UsesInvariantIgnoreCase(semanticRegex.ExecutionOptions), out var alternateLiterals))
+        if (TrySelectFixedDistanceLiteral(root, invariantIgnoreCase, out var fixedLiteral, out var distance))
+            return Utf8SearchFacts.Create(Utf8SearchKind.FixedDistanceAsciiLiteral,
+                facts with { LiteralUtf8 = fixedLiteral, Distance = distance, MinRequiredLength = width.Minimum });
+
+        var prefixes = Utf8OwnedFindOptimizations.FindAlternatePrefixes(root, tree.Options);
+        if (!invariantIgnoreCase && prefixes is { Length: > 1 })
         {
-            var searchKind = alternateLiterals.Any(static literal => literal.Any(static b => b > 0x7F))
+            var kind = prefixes.Any(static literal => literal.Any(static b => b > 0x7F))
                 ? Utf8SearchKind.ExactUtf8Literals
                 : Utf8SearchKind.ExactAsciiLiterals;
-            return Utf8SearchFacts.Create(
-                       searchKind,
-                       new Utf8SearchFactData
-                       {
-                           AlternateLiteralsUtf8 = alternateLiterals,
-                           CanGuideFallbackStarts = CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
-                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
-                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           FallbackStartTransform = fallbackStartTransform,
-                           ExactRequiredLength = exactRequiredLength,
-                           MaxPossibleLength = maxPossibleLength,
-                           LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary
-                       });
+            return Utf8SearchFacts.Create(kind,
+                facts with { AlternateLiteralsUtf8 = prefixes, CanGuideFallbackStarts = CanGuideFallbackStarts(options) });
         }
 
-        var leadingLiteral = findOptimizations.LeadingLiteral;
+        var leadingLiteral = Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(root);
         var hasAsciiLeadingLiteral = leadingLiteral is { Length: > 0 } && IsAscii(leadingLiteral);
-        var candidate = hasAsciiLeadingLiteral ? EncodeLiteral(leadingLiteral!) : SelectAsciiCandidateLiteral(findOptimizations);
+        var candidate = hasAsciiLeadingLiteral ? EncodeLiteral(leadingLiteral!) : SelectAsciiCandidateLiteral(root, prefixes);
         if (candidate.Length != 0)
         {
-            var searchKind = UsesInvariantIgnoreCase(semanticRegex.ExecutionOptions)
-                ? Utf8SearchKind.AsciiFoldedByteLiteral
-                : Utf8SearchKind.ExactAsciiLiteral;
-
-            return Utf8SearchFacts.Create(
-                       searchKind,
-                       new Utf8SearchFactData
-                       {
-                           LiteralUtf8 = candidate,
-                           CanGuideFallbackStarts = hasAsciiLeadingLiteral && CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
-                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
-                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           FallbackStartTransform = fallbackStartTransform,
-                           ExactRequiredLength = exactRequiredLength,
-                           MaxPossibleLength = maxPossibleLength,
-                           LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary
-                       });
+            var kind = invariantIgnoreCase ? Utf8SearchKind.AsciiFoldedByteLiteral : Utf8SearchKind.ExactAsciiLiteral;
+            return Utf8SearchFacts.Create(kind, facts with
+            {
+                LiteralUtf8 = candidate,
+                CanGuideFallbackStarts = hasAsciiLeadingLiteral && CanGuideFallbackStarts(options),
+            });
         }
 
-        return Utf8SearchFacts.Create(
-                   Utf8SearchKind.None,
-                   new Utf8SearchFactData
-                   {
-                       RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral,
-                       RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals,
-                       FallbackStartTransform = fallbackStartTransform,
-                       MinRequiredLength = findOptimizations.MinRequiredLength,
-                       ExactRequiredLength = exactRequiredLength,
-                       MaxPossibleLength = maxPossibleLength,
-                       LeadingBoundary = leadingBoundary,
-                       TrailingBoundary = trailingBoundary
-                   });
+        return Utf8SearchFacts.Create(Utf8SearchKind.None, facts with { MinRequiredLength = width.Minimum });
     }
 
     private struct ScanFrame(Utf8TreeNode node)
@@ -198,14 +121,14 @@ internal static class Utf8FrontEndSearchAnalyzer
                    });
     }
 
-    private static byte[] SelectAsciiCandidateLiteral(Utf8OwnedFindFacts findOptimizations)
+    private static byte[] SelectAsciiCandidateLiteral(Utf8TreeNode root, byte[][]? alternatePrefixes)
     {
-        if (findOptimizations.AlternatePrefixes is [{ Length: > 0 } prefix])
+        if (alternatePrefixes is [{ Length: > 0 } prefix])
             return IsAscii(prefix) ? prefix : [];
 
         // Leading literals were already screened. Check the interior fragment
         // before allocating UTF-8 for an ASCII-only candidate.
-        return findOptimizations.LongestLiteral is { Length: > 0 } literal && IsAscii(literal)
+        return Utf8OwnedFindOptimizations.TryExtractLongestLiteral(root) is { Length: > 0 } literal && IsAscii(literal)
             ? EncodeLiteral(literal)
             : [];
     }
@@ -376,64 +299,34 @@ internal static class Utf8FrontEndSearchAnalyzer
             mask.ActualLowMask == 0x100003e00UL && mask.ActualHighMask == 0;
     }
 
-    private static bool TrySelectAlternatePrefixes(Utf8OwnedFindFacts findOptimizations, bool ignoreCase, out byte[][] alternateLiterals)
-    {
-        alternateLiterals = [];
-        if (ignoreCase ||
-            findOptimizations.AlternatePrefixes is not { Length: > 1 } alternatePrefixes)
-        {
-            return false;
-        }
-
-        alternateLiterals = alternatePrefixes;
-        return true;
-    }
-
-    private static bool TrySelectTrailingFixedLengthAnchor(Utf8OwnedFindFacts findOptimizations, out Utf8SearchKind kind, out int minRequiredLength)
+    private static bool TrySelectTrailingFixedLengthAnchor(Utf8TreeNode root,
+        Utf8OwnedFindOptimizations.ByteWidth width, out Utf8SearchKind kind)
     {
         kind = Utf8SearchKind.None;
-        minRequiredLength = 0;
-        if (!findOptimizations.IsFixedLength)
-        {
-            return false;
-        }
+        if (!width.IsFixed || width.Minimum == 0) return false;
 
-        kind = findOptimizations.TrailingAnchor switch
+        kind = Utf8OwnedFindOptimizations.FindTrailingAnchor(root) switch
         {
             Utf8TreeNodeKind.End => Utf8SearchKind.TrailingAnchorFixedLengthEnd,
             Utf8TreeNodeKind.EndZ => Utf8SearchKind.TrailingAnchorFixedLengthEndZ,
             _ => Utf8SearchKind.None,
         };
-        if (kind == Utf8SearchKind.None)
-        {
-            return false;
-        }
-
-        minRequiredLength = findOptimizations.MinRequiredLength;
-        return minRequiredLength > 0;
+        return kind != Utf8SearchKind.None;
     }
 
-    private static bool TrySelectFixedDistanceLiteral(
-        Utf8OwnedFindFacts findOptimizations,
-        bool ignoreCase,
-        out byte[] literalUtf8,
-        out int distance,
-        out int minRequiredLength)
+    private static bool TrySelectFixedDistanceLiteral(Utf8TreeNode root, bool ignoreCase,
+        out byte[] literalUtf8, out int distance)
     {
         literalUtf8 = [];
         distance = 0;
-        minRequiredLength = 0;
         if (ignoreCase ||
-            findOptimizations.FixedDistanceLiteral is not { } fixedDistance ||
+            Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(root) is not { } fixedDistance ||
             !IsAscii(fixedDistance.Literal) ||
             fixedDistance.Literal.Length <= 1)
-        {
             return false;
-        }
 
         literalUtf8 = EncodeLiteral(fixedDistance.Literal);
         distance = fixedDistance.Distance;
-        minRequiredLength = findOptimizations.MinRequiredLength;
         return true;
     }
 
@@ -505,15 +398,11 @@ internal static class Utf8FrontEndSearchAnalyzer
     }
 
     private static bool TrySelectFixedDistanceSets(
-        Utf8OwnedFindFacts findOptimizations,
-        bool ignoreCase,
-        out Utf8FixedDistanceSet[] fixedDistanceSets,
-        out int minRequiredLength)
+        Utf8TreeNode root, bool ignoreCase, out Utf8FixedDistanceSet[] fixedDistanceSets)
     {
         fixedDistanceSets = [];
-        minRequiredLength = 0;
         if (ignoreCase ||
-            findOptimizations.FixedDistanceSets is not { Length: > 0 } runtimeSets)
+            Utf8OwnedFindOptimizations.FindFixedDistanceSets(root) is not { Length: > 0 } runtimeSets)
         {
             return false;
         }
@@ -529,7 +418,6 @@ internal static class Utf8FrontEndSearchAnalyzer
         }
         construction.Complete();
 
-        minRequiredLength = findOptimizations.MinRequiredLength;
         return true;
     }
 

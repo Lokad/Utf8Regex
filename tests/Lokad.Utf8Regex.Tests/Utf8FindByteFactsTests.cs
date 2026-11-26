@@ -282,12 +282,17 @@ public sealed class Utf8FindByteFactsTests
         {
             var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
             Assert.NotNull(tree);
+            var semantic = new Utf8SemanticRegex(pattern, tree.Options, pattern, tree.Options, tree);
+            object? Produce(bool facts) => facts
+                ? Utf8FrontEndSearchAnalyzer.Analyze(semantic)
+                : Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, tree.Options);
+
             foreach (var facts in new[] { false, true })
             {
                 ulong work;
                 using (var measured = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
                 {
-                    var result = Produce(tree, facts);
+                    var result = Produce(facts);
                     Assert.NotNull(result);
                     work = measured.Budget.WorkSteps;
                 }
@@ -299,12 +304,12 @@ public sealed class Utf8FindByteFactsTests
                     var checkpoint = owner.Budget.ReservedBytes;
                     if (cutoff < work)
                     {
-                        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Produce(tree, facts));
+                        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Produce(facts));
                         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
                         Assert.Equal(128ul, owner.Budget.ReservedBytes);
                         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                     }
-                    else Assert.NotNull(Produce(tree, facts));
+                    else Assert.NotNull(Produce(facts));
                     Assert.Equal(17, parent.Value);
                     Assert.Equal(0ul, owner.Budget.Depth);
                     Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2);
@@ -314,7 +319,7 @@ public sealed class Utf8FindByteFactsTests
                     using var owner = new Utf8ConstructionScope(0, depthDenial ? ulong.MaxValue : 128, ulong.MaxValue, depthDenial ? 0ul : ulong.MaxValue);
                     var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
                     var checkpoint = owner.Budget.ReservedBytes;
-                    var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Produce(tree, facts));
+                    var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Produce(facts));
                     Assert.Equal(depthDenial ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
                     Assert.Equal(128ul, owner.Budget.ReservedBytes);
                     Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
@@ -340,8 +345,6 @@ public sealed class Utf8FindByteFactsTests
         Assert.True(recovery.Budget.WorkSteps > 2);
         Assert.Equal(17, held.Value);
 
-        static object? Produce(Utf8OwnedRegexTree tree, bool facts) => facts
-            ? Utf8OwnedFindFacts.FromTree(tree) : Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, tree.Options)?.Select(Encoding.UTF8.GetString).ToArray();
     }
 
     [Fact]

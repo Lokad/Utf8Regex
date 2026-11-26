@@ -12,44 +12,34 @@ namespace Lokad.Utf8Regex.Tests;
 /// </summary>
 public sealed class Utf8LengthArithmeticTests
 {
-    private static Utf8OwnedFindFacts Analyze(string pattern)
+    private static Utf8OwnedFindOptimizations.ByteWidth Measure(string pattern)
     {
         var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(tree);
-        var facts = Utf8OwnedFindFacts.FromTree(tree);
-        Assert.NotNull(facts);
-        return facts;
+        return Utf8OwnedFindOptimizations.ComputeByteWidth(tree.Root);
     }
 
     [Fact]
     public void SmallShapesStayExact()
     {
-        Assert.Equal(3, Analyze("abc").MinRequiredLength);
-        Assert.Equal(3, Analyze("abc").MaxPossibleLength);
-        Assert.Equal(9, Analyze("(?:abc){3}").MinRequiredLength);
-        Assert.Equal(9, Analyze("(?:abc){3}").MaxPossibleLength);
-        Assert.Equal(10, Analyze("(?:ab){3}(?:cd){2}").MinRequiredLength);
-        Assert.Equal(10, Analyze("(?:ab){3}(?:cd){2}").MaxPossibleLength);
-        Assert.Equal(2, Analyze("(?:ab|abcdef)").MinRequiredLength);
-        Assert.Equal(6, Analyze("(?:ab|abcdef)").MaxPossibleLength);
-        Assert.Equal(0, Analyze("(?:ab)*").MinRequiredLength);
-        Assert.Null(Analyze("(?:ab)*").MaxPossibleLength);
+        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(3, 3), Measure("abc"));
+        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(9, 9), Measure("(?:abc){3}"));
+        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(10, 10), Measure("(?:ab){3}(?:cd){2}"));
+        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(2, 6), Measure("(?:ab|abcdef)"));
+        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(0, null), Measure("(?:ab)*"));
     }
 
     [Fact]
     public void HugeLoopProductSaturatesMinimumAndNullsMaximum()
     {
-        var analysis = Analyze("(?:abc){2000000000}");
-        Assert.Equal(int.MaxValue, analysis.MinRequiredLength);
-        Assert.Null(analysis.MaxPossibleLength);
+        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(int.MaxValue, null), Measure("(?:abc){2000000000}"));
     }
 
     [Fact]
     public void HugeConcatenationSumSaturatesMinimumAndNullsMaximum()
     {
-        var analysis = Analyze("(?:a){1500000000}(?:b){1500000000}");
-        Assert.Equal(int.MaxValue, analysis.MinRequiredLength);
-        Assert.Null(analysis.MaxPossibleLength);
+        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(int.MaxValue, null),
+            Measure("(?:a){1500000000}(?:b){1500000000}"));
     }
 
     [Fact]
