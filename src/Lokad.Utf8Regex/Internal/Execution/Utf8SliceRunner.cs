@@ -559,7 +559,7 @@ internal static partial class Utf8SliceRunner
         {
             var orderedStart = fromByte;
             var breach = TrySeedOrderedClassFamily(program, input, candidatePlan,
-                ref orderedStart, ref invocation, out var orderedEnd);
+                ref orderedStart, ref invocation, out var orderedEnd, out var provedPrefix);
             if (breach != Utf8ExecutionLimitKind.None || orderedStart < 0) return new(false, -1, -1, breach);
             var selected = orderedEnd < 0
                 ? FindOrderedRegularRange(program, input, orderedStart, ref invocation)
@@ -571,8 +571,11 @@ internal static partial class Utf8SliceRunner
             var replayInput = !reverse && program.NonBacktrackingOrderedConditions == 0
                 ? input[..selected.EndByte] : input;
             var origin = reverse ? selected.EndByte : selected.StartByte;
-            var replay = TryMatchAt(program, replayInput, origin, captureStarts, captureEnds,
-                collectHistory, false, true, ref workspace, ref invocation);
+            var replay = orderedEnd >= 0 && !collectHistory && !program.ReadsCaptures && program.HasSingleCapturePerGroup
+                ? ReplayOrderedFamilyPrefix(program, replayInput, origin, captureStarts, captureEnds,
+                    provedPrefix, ref workspace, ref invocation)
+                : TryMatchAt(program, replayInput, origin, captureStarts, captureEnds,
+                    collectHistory, false, true, ref workspace, ref invocation);
             return replay.IsMatch
                 ? new(true, Math.Min(origin, replay.EndIndex), Math.Max(origin, replay.EndIndex),
                     replay.Breach)

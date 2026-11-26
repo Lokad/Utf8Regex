@@ -134,6 +134,24 @@ public sealed class Utf8ClassPrefixCandidateTests
             Encoding.UTF8.GetByteCount(text.AsSpan(0, group.Index + group.Length)));
     }
 
+    [Fact]
+    public void ProvedClassPrefixKeepsTheCaptureAtASupplementaryByteFloor()
+    {
+        const string pattern = @"(\w+)\s+(Holmes|Watson)";
+        using var regex = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 32, MaxDepth = 128, MaxWorkingBytes = 4096 }
+        });
+        using var source = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes(new string('!', 512) + "Ω𐐀\u2003Watson!" + new string('!', 320));
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];
+        var match = regex.Match(input, startOffsetInBytes: 514, captures: slots, cancellationToken: source.Token);
+        Assert.Equal(new Utf8CaptureRange(514, 527), match);
+        Assert.Equal(match, slots[0]);
+        Assert.Equal(new Utf8CaptureRange(514, 518), slots[1]);
+        Assert.Equal(new Utf8CaptureRange(521, 527), slots[2]);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

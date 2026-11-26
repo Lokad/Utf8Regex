@@ -853,9 +853,10 @@ internal static partial class Utf8SliceRunner
 
     private static Utf8ExecutionLimitKind TrySeedOrderedClassFamily(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, in Utf8SearchPlan candidatePlan, ref int position, ref Utf8SliceInvocation invocation,
-        out int acceptedEnd)
+        out int acceptedEnd, out (int SpaceInstruction, int FirstEnd, int LiteralStart) provedPrefix)
     {
         acceptedEnd = -1;
+        provedPrefix = default;
         if (!HasOrderedClassFamilyPrefix(program, candidatePlan))
             return Utf8ExecutionLimitKind.None;
 
@@ -870,7 +871,8 @@ internal static partial class Utf8SliceRunner
         position = found ? hit.Index : -1;
         if (!found) return Utf8ExecutionLimitKind.None;
 
-        breach = TryProveOrderedClassFamily(program, input, floor, position, ref invocation, out var earliest, out acceptedEnd);
+        breach = TryProveOrderedClassFamily(program, input, floor, position, ref invocation,
+            out var earliest, out acceptedEnd, out provedPrefix);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         if (earliest >= 0)
         {
@@ -888,6 +890,31 @@ internal static partial class Utf8SliceRunner
             program.LeadingClassDelimiter is { Literal: < 0, LeadingClass: > 0, GapMaximum: 0, LiteralIndex: >= 0 } prefix &&
             program.Instructions[prefix.LeadingClass].Kind != Utf8SliceInstructionKind.Dot;
 
+    private static Utf8SliceMatchOutcome ReplayOrderedFamilyPrefix(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int start, scoped Span<int> captureStarts, scoped Span<int> captureEnds,
+        (int SpaceInstruction, int FirstEnd, int LiteralStart) provedPrefix, ref AttemptWorkspace workspace,
+        ref Utf8SliceInvocation invocation)
+    {
+        // A single opening before the first four-instruction run closes
+        // immediately before the second. Resume at the first tail instruction,
+        // including capture markers. The tail cannot observe the omitted slot.
+        var code = program.Instructions;
+        if (program.LeadingClassDelimiter.LeadingClass != 2 || provedPrefix.SpaceInstruction != 6 ||
+            code[0] is not { Kind: Utf8SliceInstructionKind.CaptureStart, A: var slot } ||
+            code[5] is not { Kind: Utf8SliceInstructionKind.CaptureEnd, A: var close } || close != slot)
+            return TryMatchAt(program, input, start, captureStarts, captureEnds, false, false, true,
+                ref workspace, ref invocation);
+
+        var replay = TryMatchAt(program, input, start, captureStarts, captureEnds, false, false, true,
+            ref workspace, ref invocation, verifiedPrefix: (provedPrefix.SpaceInstruction + 4, provedPrefix.LiteralStart - start));
+        if (replay.IsMatch && (uint)slot < (uint)captureStarts.Length)
+        {
+            captureStarts[slot] = start;
+            captureEnds[slot] = provedPrefix.FirstEnd;
+        }
+        return replay;
+    }
+
     internal static Utf8ExecutionLimitKind TryProveScreenedOrderedClassFamily(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, in Utf8SearchPlan candidatePlan, int floor, int screenedLiteral,
         ref Utf8SliceInvocation invocation, out bool found)
@@ -900,7 +927,7 @@ internal static partial class Utf8SliceRunner
         var breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
 
-        breach = TryProveOrderedClassFamily(program, input, floor, screenedLiteral, ref invocation, out _, out var end);
+        breach = TryProveOrderedClassFamily(program, input, floor, screenedLiteral, ref invocation, out _, out var end, out _);
         if (breach != Utf8ExecutionLimitKind.None || end < 0) return breach;
         breach = invocation.TryReserveWorking(0);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
@@ -912,9 +939,10 @@ internal static partial class Utf8SliceRunner
 
     private static Utf8ExecutionLimitKind TryProveOrderedClassFamily(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int floor, int position, ref Utf8SliceInvocation invocation,
-        out int earliest, out int acceptedEnd)
+        out int earliest, out int acceptedEnd, out (int SpaceInstruction, int FirstEnd, int LiteralStart) provedPrefix)
     {
         earliest = acceptedEnd = -1;
+        provedPrefix = default;
         var prefix = program.LeadingClassDelimiter;
         var code = program.Instructions.AsSpan();
         if (program.NonBacktrackingOrderedConditions != 0 ||
@@ -932,14 +960,16 @@ internal static partial class Utf8SliceRunner
             return Utf8ExecutionLimitKind.None;
 
         var breach = TryNarrowDisjointRepeatPrefix(program, input, floor, position, prefix.LiteralIndex,
-            ref invocation, out earliest, out _);
+            ref invocation, out earliest, out var firstEnd, out _);
         if (breach != Utf8ExecutionLimitKind.None || earliest < 0) return breach;
 
         // Both nonempty runs end at the screened literal. The suffix must
         // also succeed before this proof can replace state traversal.
         MayMatchBranchedAsciiPrefix(program, input, position, prefix.LiteralIndex, out acceptedEnd,
             proveMatch: true, BranchedPrefixInstructionLimit - prefix.LiteralIndex);
-        return acceptedEnd >= 0 ? invocation.TryChargeInputStep() : Utf8ExecutionLimitKind.None;
+        if (acceptedEnd < 0) return Utf8ExecutionLimitKind.None;
+        provedPrefix = (space, firstEnd, position);
+        return invocation.TryChargeInputStep();
     }
 
     private static PreparedSubstringSearch? GetRepeatPrefixSearch(Utf8SliceProgram program,
@@ -1646,7 +1676,7 @@ internal static partial class Utf8SliceRunner
                     if (!rejected && repeatPrefix.DisjointEnd != 0)
                     {
                         breach = TryNarrowDisjointRepeatPrefix(program, input, floor, position,
-                            repeatPrefix.DisjointEnd, ref invocation, out earliest, out rejected);
+                            repeatPrefix.DisjointEnd, ref invocation, out earliest, out _, out rejected);
                         if (breach != Utf8ExecutionLimitKind.None) break;
                     }
                     if (!rejected) break;
@@ -1747,9 +1777,9 @@ internal static partial class Utf8SliceRunner
 
     private static Utf8ExecutionLimitKind TryNarrowDisjointRepeatPrefix(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int floor, int position, int instruction, ref Utf8SliceInvocation invocation,
-        out int earliest, out bool rejected)
+        out int earliest, out int lastRunStart, out bool rejected)
     {
-        earliest = -1;
+        earliest = lastRunStart = -1;
         rejected = false;
         // One bounded probe, plus at most the remainder of a scalar at its
         // lower edge. Leave longer runs to the existing conservative search.
@@ -1791,6 +1821,7 @@ internal static partial class Utf8SliceRunner
                 rejected = true;
                 return Utf8ExecutionLimitKind.None;
             }
+            if (lastRunStart < 0) lastRunStart = position;
         }
 
         // Disjoint adjacent classes force every internal split. The start of
