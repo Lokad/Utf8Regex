@@ -53,6 +53,17 @@ public sealed class Pcre2SliceLookaroundTests
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
     }
 
+    [Theory]
+    [InlineData(@"(?=(?=[\da])).")]
+    [InlineData(@"(?=(?=\b)).")]
+    public void NestedAssertionsKeepAsciiPredicatesWithoutUcp(string pattern)
+    {
+        using var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
+        Assert.True(regex.IsMatch("a"u8));
+        Assert.False(regex.IsMatch("٠"u8));
+        Assert.Equal(0, regex.Count("٠"u8));
+    }
+
     public static IEnumerable<object?[]> IsMatchCases()
     {
         yield return new object?[] { "(?=a)a", "xaa", true };

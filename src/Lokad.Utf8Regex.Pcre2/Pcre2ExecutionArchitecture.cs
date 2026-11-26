@@ -635,7 +635,6 @@ internal static class Pcre2CompiledProgramOverlay
              request.Settings.Newline is not Pcre2NewlineConvention.Lf) ||
             sliceProgram.RequiresUnicodeWordBoundary ||
             sliceProgram.RequiresUnicodeShorthand ||
-            sliceProgram.RequiresUnicodeCategory ||
             sliceProgram.IgnoreCase ||
             sliceProgram.HasNonFixedLookbehind ||
             // PCRE2 executes fixed lookbehind forward. Preserve its owned

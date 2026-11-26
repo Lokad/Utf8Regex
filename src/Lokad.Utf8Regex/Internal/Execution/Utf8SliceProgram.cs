@@ -466,7 +466,6 @@ internal sealed class Utf8SliceProgram
         string[] groupNames,
         bool requiresUnicodeWordBoundary,
         bool requiresUnicodeShorthand,
-        bool requiresUnicodeCategory,
         bool isRoot, Utf8BoundedProgramEmitter.Compilation proofCompilation,
         (int Start, int TrailingBoundary, byte[]? Bytes) terminalDotTail)
     {
@@ -509,7 +508,6 @@ internal sealed class Utf8SliceProgram
         GroupNames = groupNames;
         RequiresUnicodeWordBoundary = requiresUnicodeWordBoundary;
         RequiresUnicodeShorthand = requiresUnicodeShorthand;
-        RequiresUnicodeCategory = requiresUnicodeCategory;
         if (!rightToLeft && !isNonBacktracking && repeatCount != 0)
             TerminalRepeatsWithoutRewind = Utf8SliceRunner.FindTerminalRepeatsWithoutRewind(this, Utf8ConstructionScope.CurrentBudget);
         // An assertion executes at an edge chosen by its parent. It uses the
@@ -687,7 +685,7 @@ internal sealed class Utf8SliceProgram
                 { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 1 } body, ..] &&
             setMasks[head.A].Length == 16 && setMasks[body.A].Length == 16;
 
-    internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings,
+    internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, Utf8SliceAssertion[] assertions, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings,
         bool isRoot, (ulong[]? Closures, byte[]? Leaves, uint Conditions) nonBacktrackingOrdered = default,
         Utf8BoundedProgramEmitter.Compilation proofCompilation = default)
     {
@@ -699,7 +697,10 @@ internal sealed class Utf8SliceProgram
         var captureIsOpen = false;
         var hasClosedCapture = false;
         var readsCaptures = false;
+        var requiresUnicodeWordBoundary = false;
+        var requiresUnicodeShorthand = false;
         var hasUnicodePatternAtoms = false;
+        var hasNonFixedLookbehind = false;
         var hasOrderSensitiveLookbehind = false;
         var nonBacktrackingOrderedForwardOnly = nonBacktrackingOrdered.Closures is { Length: > 0 };
         var terminalDotTail = default((int Start, int TrailingBoundary, byte[]? Bytes));
@@ -747,9 +748,22 @@ internal sealed class Utf8SliceProgram
             // assertion slot has no local close and retains the journal.
             usesCaptureOpeningJournal |= instruction.Kind == Utf8SliceInstructionKind.Backref &&
                 (!canUseCompletedCapture || captureIsOpen || !hasClosedCapture);
-            hasUnicodePatternAtoms |= instruction.Kind == Utf8SliceInstructionKind.CategorySet ||
-                instruction.Kind == Utf8SliceInstructionKind.Boundary && instruction.C != 0 ||
-                instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.A >= 128;
+            switch (instruction.Kind)
+            {
+                case Utf8SliceInstructionKind.Boundary:
+                    requiresUnicodeWordBoundary = true;
+                    hasUnicodePatternAtoms |= instruction.C != 0;
+                    break;
+                case Utf8SliceInstructionKind.CategorySet:
+                case Utf8SliceInstructionKind.Shorthand:
+                case Utf8SliceInstructionKind.Hybrid:
+                    requiresUnicodeShorthand = true;
+                    hasUnicodePatternAtoms |= instruction.Kind == Utf8SliceInstructionKind.CategorySet;
+                    break;
+                case Utf8SliceInstructionKind.Literal:
+                    hasUnicodePatternAtoms |= instruction.A >= 128;
+                    break;
+            }
             if (nonBacktrackingEpsilonAncestors.Length == 0) continue;
             var bit = 1UL << pc;
             switch (instruction.Kind)
@@ -784,11 +798,16 @@ internal sealed class Utf8SliceProgram
         {
             usesCaptureOpeningJournal |= assertion.Body.UsesCaptureOpeningJournal;
             readsCaptures |= assertion.Body.ReadsCaptures;
+            requiresUnicodeWordBoundary |= assertion.Body.RequiresUnicodeWordBoundary;
+            requiresUnicodeShorthand |= assertion.Body.RequiresUnicodeShorthand;
             hasUnicodePatternAtoms |= assertion.Body.HasUnicodePatternAtoms;
+            hasNonFixedLookbehind |= assertion.Body.HasNonFixedLookbehind;
             hasOrderSensitiveLookbehind |= assertion.Body.HasOrderSensitiveLookbehind;
+            hasConditionalTest |= assertion.Body.HasConditionalTest;
             usesLiteralClassBracketSyntax |= assertion.Body.UsesLiteralClassBracketSyntax;
             if (assertion.IsLookbehind)
             {
+                hasNonFixedLookbehind |= assertion.MinLengthBytes != assertion.MaxLengthBytes;
                 budget.ChargeWork((ulong)assertion.Body.Instructions.Length);
                 foreach (var instruction in assertion.Body.Instructions)
                     hasOrderSensitiveLookbehind |= instruction.Kind is Utf8SliceInstructionKind.Backref
@@ -842,7 +861,6 @@ internal sealed class Utf8SliceProgram
             groupNames,
             requiresUnicodeWordBoundary,
             requiresUnicodeShorthand,
-            requiresUnicodeCategory,
             isRoot, proofCompilation, terminalDotTail);
         construction.Complete(); return result;
     }
@@ -1201,11 +1219,8 @@ internal sealed class Utf8SliceProgram
     // Consumers with ASCII-only boundaries decline programs using Unicode boundaries.
     internal bool RequiresUnicodeWordBoundary { get; }
 
-    // Consumers with ASCII-only shorthands decline programs using Unicode shorthands.
+    // Consumers with ASCII-only predicates decline shorthands, hybrid classes and Unicode categories.
     internal bool RequiresUnicodeShorthand { get; }
-
-    // Covers general categories, category groups and named Unicode blocks.
-    internal bool RequiresUnicodeCategory { get; }
 
 }
 
@@ -1490,58 +1505,7 @@ internal static class Utf8SliceLowerer
         Utf8BoundedProgramEmitter.Compilation proofCompilation)
     {
         lowerer.Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Accept, 0, 0, 0, 0));
-        var requiresUnicodeWordBoundary = false;
-        var requiresUnicodeShorthand = false;
-        var requiresUnicodeCategory = false;
-        static void Classify(
-            Utf8SliceInstruction instruction,
-            ref bool word,
-            ref bool shorthand,
-            ref bool category)
-        {
-            if (instruction.Kind == Utf8SliceInstructionKind.Boundary)
-            {
-                word = true;
-            }
-
-            if (instruction.Kind == Utf8SliceInstructionKind.Shorthand)
-            {
-                shorthand = true;
-            }
-
-            // These flags describe language features for consumers whose own
-            // predicates are ASCII-scoped; scalar execution needs no input fence.
-            shorthand |= instruction.Kind is Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.CategorySet;
-            category |= instruction.Kind is Utf8SliceInstructionKind.CategorySet;
-        }
-
-        foreach (var instruction in lowerer.Instructions)
-        {
-            Classify(instruction, ref requiresUnicodeWordBoundary, ref requiresUnicodeShorthand, ref requiresUnicodeCategory);
-            if (requiresUnicodeWordBoundary && requiresUnicodeShorthand && requiresUnicodeCategory)
-            {
-                break;
-            }
-        }
-
-        // Hoist nested language features and variable byte-length lookbehind
-        // facts for consumers with narrower native admission.
         var assertions = lowerer.Assertions?.Take() ?? [];
-        var hasNonFixedLookbehind = false;
-        foreach (var assertion in assertions)
-        {
-            if (assertion.IsLookbehind && assertion.MinLengthBytes != assertion.MaxLengthBytes)
-            {
-                hasNonFixedLookbehind = true;
-            }
-
-            // Hoist complete nested facts, including assertions below this body.
-            requiresUnicodeWordBoundary |= assertion.Body.RequiresUnicodeWordBoundary;
-            requiresUnicodeShorthand |= assertion.Body.RequiresUnicodeShorthand;
-            requiresUnicodeCategory |= assertion.Body.RequiresUnicodeCategory;
-            hasNonFixedLookbehind |= assertion.Body.HasNonFixedLookbehind;
-            lowerer.HasConditionalTest |= assertion.Body.HasConditionalTest;
-        }
 
         // Hand-built trees (tests, assertion bodies without renumbering
         // context) carry no names; decimal ordinals identify their slots since
@@ -1608,11 +1572,8 @@ internal static class Utf8SliceLowerer
             lowerer.CategorySetMembers?.Take() ?? [],
             lowerer.RepeatCount,
             lowerer.GroupCount,
-            requiresUnicodeWordBoundary,
-            requiresUnicodeShorthand,
-            requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.GetFacts(root).CanMatchEmpty, lowerer.CaptureCatalog,
+            resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.GetFacts(root).CanMatchEmpty, lowerer.CaptureCatalog,
             isRoot && usesInterpretedLazyLoopSemantics, isRoot && usesLiteralClassBracketSyntax, lowerer.CaseBehavior,
             lowerer.NonBacktracking, lowerer.CaptureOpeningCount,
             epsilonOrder, epsilonAncestors,
