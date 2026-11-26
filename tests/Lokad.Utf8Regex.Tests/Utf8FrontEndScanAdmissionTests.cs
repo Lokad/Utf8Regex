@@ -1,6 +1,4 @@
 using System.Globalization;
-using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -46,26 +44,16 @@ public sealed class Utf8FrontEndScanAdmissionTests
         return new(find, Semantic(find));
     }
 
-    private static object? Call(Type type, string name, params object?[] args)
-    {
-        var method = type.GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static)
-            ?? throw new InvalidOperationException();
-        try { return method.Invoke(null, args); }
-        catch (TargetInvocationException failure) when (failure.InnerException is { } inner)
-        {
-            ExceptionDispatchInfo.Capture(inner).Throw();
-            throw;
-        }
-    }
-
     private static void Run(int route, Input input)
     {
         // Discard the scan results and release their construction loans.
         using var discarded = Utf8ConstructionScope.Enter();
-        var analyzer = typeof(Utf8FrontEndSearchAnalyzer);
         switch (route)
         {
-            case 6: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryExtractDeterministicPrefixSets", input.Find, 0, null))); break;
+            case 6:
+                Span<(int, AsciiCharClass)> sets = stackalloc (int, AsciiCharClass)[Utf8FrontEndSearchAnalyzer.MaxDeterministicPrefixSets];
+                Assert.True(Utf8FrontEndSearchAnalyzer.ExtractDeterministicPrefixSets(input.Find, 0, sets) > 0);
+                break;
             case 9: Assert.Equal(1, Utf8RuntimeTreeFeatureAnalyzer.Analyze(input.Semantic).CaptureCount); break;
             case 10: Assert.Null(Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(input.Find)); break;
         }
@@ -189,27 +177,21 @@ public sealed class Utf8FrontEndScanAdmissionTests
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         var work = owner.Budget.WorkSteps;
-        var slice = Assert.IsType<ValueTuple<Utf8TreeNode, int>>(Call(typeof(Utf8FrontEndSearchAnalyzer), "SkipLeadingAsciiWhitespacePrefix", root));
-        Assert.Same(root, slice.Item1);
-        Assert.Equal(3, slice.Item2);
+        var (node, startIndex) = Utf8FrontEndSearchAnalyzer.SkipLeadingAsciiWhitespacePrefix(root);
+        Assert.Same(root, node);
+        Assert.Equal(3, startIndex);
         Assert.Equal(checkpoint, owner.Budget.PeakBytes);
         Assert.True(owner.Budget.WorkSteps > work);
-        using (var discarded = Utf8ConstructionScope.Enter())
+        Span<(int Distance, AsciiCharClass ByteSet)> scratch = stackalloc (int, AsciiCharClass)[Utf8FrontEndSearchAnalyzer.MaxDeterministicPrefixSets];
+        var count = Utf8FrontEndSearchAnalyzer.ExtractDeterministicPrefixSets(node!, startIndex, scratch);
+        var sets = scratch[..count].ToArray();
+        Assert.Equal(new[] { 0, 1, 2, 3 }, sets.Select(static set => set.Distance));
+        Assert.Equal(new[] { "a", "b", "0123456789", "c" }, sets.Select(static set =>
         {
-            object?[] args = [slice.Item1, slice.Item2, null];
-            Assert.True(Assert.IsType<bool>(Call(typeof(Utf8FrontEndSearchAnalyzer), "TryExtractDeterministicPrefixSets", args)));
-            var sets = Assert.IsType<Utf8FixedDistanceSet[]>(args[2]);
-            Assert.Equal(4, sets[^1].Distance + 1);
-            Assert.Equal(new[] { 0, 1, 2, 3 }, sets.Select(static set => set.Distance));
-            Assert.Equal(new[] { "a", "b", "0123456789", "c" }, sets.Select(static set =>
-            {
-                // Inspection borrows scratch; acquiring fresh class arrays would
-                // change the live owner whose rollback this fixture verifies.
-                Span<byte> bytes = stackalloc byte[128];
-                var count = set.ByteSet.CopyMatchBytes(bytes);
-                return System.Text.Encoding.ASCII.GetString(bytes[..count]);
-            }));
-        }
+            Span<byte> bytes = stackalloc byte[128];
+            var length = set.ByteSet.CopyMatchBytes(bytes);
+            return System.Text.Encoding.ASCII.GetString(bytes[..length]);
+        }));
         for (var index = 0; index < root.ChildCount; index++) Assert.Same(root, root.Child(index).Parent);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);

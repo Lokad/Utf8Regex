@@ -1,5 +1,3 @@
-using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -11,22 +9,11 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8DeterministicPrefixScalarTests
 {
-    private static object? Call(string name, params object?[] arguments)
+    private static (int Distance, AsciiCharClass ByteSet)[] Extract(Utf8TreeNode node)
     {
-        var method = typeof(Utf8FrontEndSearchAnalyzer).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(method);
-        try { return method.Invoke(null, arguments); }
-        catch (TargetInvocationException error) when (error.InnerException is { } inner)
-        { ExceptionDispatchInfo.Capture(inner).Throw(); throw; }
-    }
-
-    private static Utf8FixedDistanceSet[] Extract(Utf8TreeNode node, int startIndex = 0)
-    {
-        object?[] arguments = [node, startIndex, null];
-        var success = Assert.IsType<bool>(Call("TryExtractDeterministicPrefixSets", arguments));
-        var sets = Assert.IsType<Utf8FixedDistanceSet[]>(arguments[2]);
-        Assert.Equal(sets.Length != 0, success);
-        return sets;
+        Span<(int Distance, AsciiCharClass ByteSet)> sets = stackalloc (int, AsciiCharClass)[Utf8FrontEndSearchAnalyzer.MaxDeterministicPrefixSets];
+        var count = Utf8FrontEndSearchAnalyzer.ExtractDeterministicPrefixSets(node, 0, sets);
+        return sets[..count].ToArray();
     }
 
     [Fact]
@@ -39,8 +26,8 @@ public sealed class Utf8DeterministicPrefixScalarTests
             Assert.NotNull(tree);
             var sets = Extract(tree.Root);
             Assert.Equal([0, 1], sets.Select(set => set.Distance));
-            Assert.True(sets[0].Contains((byte)'a'));
-            Assert.True(sets[1].Contains((byte)'b'));
+            Assert.True(sets[0].ByteSet.Contains((byte)'a'));
+            Assert.True(sets[1].ByteSet.Contains((byte)'b'));
         }
     }
 
@@ -53,8 +40,8 @@ public sealed class Utf8DeterministicPrefixScalarTests
         for (var index = 0; index < sets.Length; index++)
         {
             Assert.Equal(index, sets[index].Distance);
-            Assert.True(sets[index].Contains((byte)(index + 'a')));
-            Assert.True(sets[index].Contains((byte)(index + 'A')));
+            Assert.True(sets[index].ByteSet.Contains((byte)(index + 'a')));
+            Assert.True(sets[index].ByteSet.Contains((byte)(index + 'A')));
         }
         var kelvin = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "abkcd");
         Assert.Equal([0, 1], Extract(kelvin).Select(set => set.Distance));
@@ -96,10 +83,10 @@ public sealed class Utf8DeterministicPrefixScalarTests
         Assert.True(ascii.FixedDistanceSets.Length >= 3);
         Assert.NotNull(ascii.FixedDistanceSets[0].AnchorSearch);
         Assert.All(ascii.FixedDistanceSets.Skip(1), set => Assert.Null(set.AnchorSearch));
-        var far = new Utf8FixedDistanceSet(int.MaxValue, AsciiCharClass.ForByte((byte)'c'));
-        Assert.True(Assert.IsType<long>(Call("ScoreDeterministicPrimarySet", far)) > int.MaxValue);
+        var far = (int.MaxValue, AsciiCharClass.ForByte((byte)'c'));
+        Assert.True(Utf8FrontEndSearchAnalyzer.ScoreDeterministicPrimarySet(far) > int.MaxValue);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 127, ulong.MaxValue);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Call("ScoreDeterministicPrimarySet", far));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8FrontEndSearchAnalyzer.ScoreDeterministicPrimarySet(far));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
         Assert.Equal(128ul, failure.Requested);
         Assert.Equal(0ul, owner.Budget.WorkSteps);
@@ -123,7 +110,7 @@ public sealed class Utf8DeterministicPrefixScalarTests
             Assert.NotNull(tree);
             var sets = Extract(tree.Root);
             var facts = Utf8FrontEndSearchAnalyzer.Analyze(Utf8FrontEnd.Analyze(pattern, options).SemanticRegex);
-            var selected = facts.FixedDistanceSets;
+            var selected = facts.FixedDistanceSets.Select(set => (set.Distance, set.ByteSet)).ToArray();
             var program = Utf8OwnedTreeSliceLowerer.TryLower(tree, options);
             Assert.NotNull(program);
             var starts = new int[program.GroupCount];
@@ -147,12 +134,12 @@ public sealed class Utf8DeterministicPrefixScalarTests
                     while (selectedBase < start + length && Utf8AsciiBytePredicates.IsSixByteWhitespace(input[selectedBase])) selectedBase++;
                 Check(selected, selectedBase);
 
-                void Check(Utf8FixedDistanceSet[] constraints, int origin)
+                void Check((int Distance, AsciiCharClass ByteSet)[] constraints, int origin)
                 {
                     foreach (var set in constraints)
                     {
                         Assert.InRange(set.Distance, 0, start + length - origin - 1);
-                        Assert.True(set.Contains(input[origin + set.Distance]), $"{pattern} / {rtl} / {Encoding.UTF8.GetString(input)}: {set.Distance}");
+                        Assert.True(set.ByteSet.Contains(input[origin + set.Distance]), $"{pattern} / {rtl} / {Encoding.UTF8.GetString(input)}: {set.Distance}");
                     }
                 }
             }
@@ -191,7 +178,7 @@ public sealed class Utf8DeterministicPrefixScalarTests
                 var sets = Extract(tree.Root);
                 expected = sets.Select(set => set.Distance).ToArray();
                 work = measured.Budget.WorkSteps;
-                if (sets.Length != 0) Assert.True(measured.Budget.ReservedBytes >= Utf8ConstructionBudget.ArrayBytes<Utf8FixedDistanceSet>(sets.Length));
+                Assert.Equal(0ul, measured.Budget.ReservedBytes);
             }
             Assert.InRange(work, 1ul, 10_000ul);
             for (ulong cutoff = 0; cutoff <= work; cutoff++)

@@ -1,6 +1,6 @@
-using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Planning;
 
@@ -63,13 +63,6 @@ public sealed class Utf8OwnedSearchContinuationTests
         return node;
     }
 
-    private static object? Call(string name, params object?[] args)
-    {
-        var method = typeof(Utf8FrontEndSearchAnalyzer).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(method);
-        return method.Invoke(null, args);
-    }
-
     [Theory]
     [InlineData(65)]
     [InlineData(16385)]
@@ -80,10 +73,9 @@ public sealed class Utf8OwnedSearchContinuationTests
                 Utf8TreeNode.Create(Utf8TreeNodeKind.PositiveLookaround, RegexOptions.CultureInvariant)),
             Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'c'));
         for (var index = 0; index < depth; index++) root = Parent(Utf8TreeNodeKind.Concatenate, root);
-        object?[] args = [root, 0, null];
-        Assert.True(Assert.IsType<bool>(Call("TryExtractDeterministicPrefixSets", args)));
-        var sets = Assert.IsType<Utf8FixedDistanceSet[]>(args[2]);
-        Assert.Equal(3, sets[^1].Distance + 1);
+        Span<(int Distance, AsciiCharClass ByteSet)> scratch = stackalloc (int, AsciiCharClass)[Utf8FrontEndSearchAnalyzer.MaxDeterministicPrefixSets];
+        var count = Utf8FrontEndSearchAnalyzer.ExtractDeterministicPrefixSets(root, 0, scratch);
+        var sets = scratch[..count].ToArray();
         Assert.Equal(new[] { 0, 1, 2 }, sets.Select(static set => set.Distance));
         Assert.Equal(new[] { "a", "b", "c" }, sets.Select(static set => System.Text.Encoding.ASCII.GetString(set.ByteSet.GetMatchBytes())));
         // A known assertion consumes zero bytes. An unknown inner atom has no
@@ -93,9 +85,8 @@ public sealed class Utf8OwnedSearchContinuationTests
                 Utf8TreeNode.Create(Utf8TreeNodeKind.Unknown, RegexOptions.CultureInvariant)),
             Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'c'));
         for (var index = 0; index < depth; index++) opaque = Parent(Utf8TreeNodeKind.Concatenate, opaque);
-        args = [opaque, 0, null];
-        Assert.True(Assert.IsType<bool>(Call("TryExtractDeterministicPrefixSets", args)));
-        sets = Assert.IsType<Utf8FixedDistanceSet[]>(args[2]);
+        count = Utf8FrontEndSearchAnalyzer.ExtractDeterministicPrefixSets(opaque, 0, scratch);
+        sets = scratch[..count].ToArray();
         Assert.Equal(new[] { 0, 1 }, sets.Select(static set => set.Distance));
         Assert.Equal(new[] { "a", "b" }, sets.Select(static set => System.Text.Encoding.ASCII.GetString(set.ByteSet.GetMatchBytes())));
     }

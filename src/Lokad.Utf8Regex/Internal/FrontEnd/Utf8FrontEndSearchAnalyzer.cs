@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static class Utf8FrontEndSearchAnalyzer
 {
-    private const int MaxDeterministicPrefixSets = 32;
+    internal const int MaxDeterministicPrefixSets = 32;
 
     public static Utf8SearchFacts Analyze(Utf8SemanticRegex semanticRegex)
     {
@@ -372,32 +372,35 @@ internal static class Utf8FrontEndSearchAnalyzer
         var prefix = fallbackStartTransform.Kind == Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace
             ? SkipLeadingAsciiWhitespacePrefix(root)
             : (Node: root, StartIndex: 0);
-        if (prefix.Node is null ||
-            !TryExtractDeterministicPrefixSets(prefix.Node, prefix.StartIndex, out var extractedSets) ||
-            extractedSets.Length < 3 ||
-            !TryChoosePrimaryDeterministicSet(extractedSets, out var primaryIndex) ||
-            primaryIndex <= 0)
+        if (prefix.Node is null) return false;
+
+        Span<(int Distance, AsciiCharClass ByteSet)> scratch = stackalloc (int, AsciiCharClass)[MaxDeterministicPrefixSets];
+        var count = ExtractDeterministicPrefixSets(prefix.Node, prefix.StartIndex, scratch);
+        var extractedSets = scratch[..count];
+        if (count < 3 || !TryChoosePrimaryDeterministicSet(extractedSets, out var primaryIndex) || primaryIndex <= 0)
         {
             return false;
         }
 
-        // The admitted extracted payload becomes the selected payload. Moving
-        // the primary entry preserves the order of every remaining constraint.
+        // Only a selected prefix acquires the retained set array. The primary
+        // moves to the front and the remaining constraints stay in source order.
+        var selected = budget.AllocateArray<Utf8FixedDistanceSet>(count, false);
+        budget.ChargeWork((ulong)count);
         var primary = extractedSets[primaryIndex];
-        for (var i = primaryIndex; i > 0; i--)
+        selected[0] = new Utf8FixedDistanceSet(primary.Distance, primary.ByteSet).PrepareAnchor();
+        for (var i = 1; i < count; i++)
         {
-            budget.ChargeWork(1);
-            extractedSets[i] = extractedSets[i - 1];
+            var entry = extractedSets[i <= primaryIndex ? i - 1 : i];
+            selected[i] = new(entry.Distance, entry.ByteSet);
         }
-        extractedSets[0] = primary.PrepareAnchor();
-        fixedDistanceSets = extractedSets;
+        fixedDistanceSets = selected;
 
         selectedMinRequiredLength = minRequiredLength;
         construction.Complete();
         return true;
     }
 
-    private static (Utf8TreeNode? Node, int StartIndex) SkipLeadingAsciiWhitespacePrefix(Utf8TreeNode node)
+    internal static (Utf8TreeNode? Node, int StartIndex) SkipLeadingAsciiWhitespacePrefix(Utf8TreeNode node)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var unwrapped = UnwrapStructuralNode(node);
@@ -450,15 +453,15 @@ internal static class Utf8FrontEndSearchAnalyzer
     // The tree keeps logical subject order in both execution directions. Stop
     // the whole walk at the first unproved width: an inner group's partial
     // prefix never certifies the distance of its following siblings.
-    private static bool TryExtractDeterministicPrefixSets(Utf8TreeNode node, int startIndex, out Utf8FixedDistanceSet[] fixedDistanceSets)
+    internal static int ExtractDeterministicPrefixSets(Utf8TreeNode node, int startIndex,
+        Span<(int Distance, AsciiCharClass ByteSet)> sets)
     {
-        fixedDistanceSets = [];
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
         using var frames = Utf8ConstructionFrames<ScanFrame>.Create(budget, new(node) { Index = startIndex });
-        using var sets = Utf8ConstructionBuffer<Utf8FixedDistanceSet>.Create(budget);
+        var count = 0;
         var distance = 0;
-        while (frames.Count != 0 && sets.Count < MaxDeterministicPrefixSets)
+        while (frames.Count != 0 && count < sets.Length)
         {
             budget.ChargeWork(1);
             var index = frames.Count - 1;
@@ -474,17 +477,14 @@ internal static class Utf8FrontEndSearchAnalyzer
                 frames.Push(new(child));
                 continue;
             }
-            if (!AppendAtom(node)) break;
+            if (!AppendAtom(node, sets)) break;
             frames.Pop();
         }
-        if (sets.Count == 0) return false;
-        fixedDistanceSets = sets.Take();
-        construction.Complete();
-        return true;
+        return count;
 
-        bool AppendAtom(Utf8TreeNode atom)
+        bool AppendAtom(Utf8TreeNode atom, Span<(int, AsciiCharClass)> destination)
         {
-            if (atom.Kind == Utf8TreeNodeKind.One) return AppendScalar(atom.Ch, atom);
+            if (atom.Kind == Utf8TreeNodeKind.One) return AppendScalar(atom.Ch, atom, destination);
             if (atom.Kind == Utf8TreeNodeKind.Multi && atom.Str is { } literal)
             {
                 // Admission bounds the pattern scan; UTF-16 is only the pattern
@@ -492,9 +492,9 @@ internal static class Utf8FrontEndSearchAnalyzer
                 budget.ChargeWork((ulong)literal.Length);
                 for (var offset = 0; offset < literal.Length;)
                 {
-                    if (sets.Count == MaxDeterministicPrefixSets) return false;
+                    if (count == destination.Length) return false;
                     if (Rune.DecodeFromUtf16(literal.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done ||
-                        !AppendScalar(scalar.Value, atom)) return false;
+                        !AppendScalar(scalar.Value, atom, destination)) return false;
                     offset += consumed;
                 }
                 return true;
@@ -504,22 +504,20 @@ internal static class Utf8FrontEndSearchAnalyzer
                 Utf8ScalarAsciiProjector.TryCloseAsciiCaseFiber(definition, atom.MatchCaseInsensitive, atom.Options, out var mask))
             {
                 if (distance == int.MaxValue) return false;
-                sets.Add(new(distance, mask));
-                distance++;
+                destination[count++] = (distance++, mask);
                 return true;
             }
             return Advance(Utf8OwnedFindOptimizations.ComputeByteWidth(atom));
         }
 
-        bool AppendScalar(int scalar, Utf8TreeNode atom)
+        bool AppendScalar(int scalar, Utf8TreeNode atom, Span<(int, AsciiCharClass)> destination)
         {
             if (scalar < 128 &&
                 Utf8ScalarAsciiProjector.TryCloseAsciiCaseFiber(AsciiCharClass.ForByte((byte)scalar),
                     atom.MatchCaseInsensitive, atom.Options, out var mask))
             {
                 if (distance == int.MaxValue) return false;
-                sets.Add(new(distance, mask));
-                distance++;
+                destination[count++] = (distance++, mask);
                 return true;
             }
             return Advance(Utf8OwnedFindOptimizations.ComputeScalarByteWidth(scalar, atom.MatchCaseInsensitive, atom.Options));
@@ -533,7 +531,8 @@ internal static class Utf8FrontEndSearchAnalyzer
         }
     }
 
-    private static bool TryChoosePrimaryDeterministicSet(Utf8FixedDistanceSet[] extractedSets, out int primaryIndex)
+    private static bool TryChoosePrimaryDeterministicSet(ReadOnlySpan<(int Distance, AsciiCharClass ByteSet)> extractedSets,
+        out int primaryIndex)
     {
         primaryIndex = -1;
         var bestScore = long.MinValue;
@@ -550,7 +549,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         return primaryIndex >= 0;
     }
 
-    private static long ScoreDeterministicPrimarySet(Utf8FixedDistanceSet set)
+    internal static long ScoreDeterministicPrimarySet((int Distance, AsciiCharClass ByteSet) set)
     {
         var cardinality = set.ByteSet.Count;
         if (cardinality == 0) return long.MinValue;
