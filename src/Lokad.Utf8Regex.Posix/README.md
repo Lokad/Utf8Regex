@@ -57,20 +57,20 @@ Warm .NET 11 public operations over prepared UTF-8; compilation and input prepar
 
 | Case | Operation | Utf8Regex (µs) | Native NFA (µs) | Managed B/op | Status | Ratio (lower is better) |
 |---|---|---:|---:|---:|---|---:|
-| `capture/ignorecase-disjoint` | Captures | 0.13 | 0.13 | 0 | Inconclusive | 1.02 |
-| `capture/newline-rewind` | Captures | 0.15 | 0.16 | 0 | Managed faster | 0.95 |
-| `projection/short-1` | Captures | 0.08 | 0.10 | 0 | Managed faster | 0.83 |
-| `projection/unicode-prefix-1` | Captures | 0.08 | 0.10 | 0 | Managed faster | 0.83 |
-| `capture/absent` | Captures | 0.11 | 0.13 | 0 | Managed faster | 0.82 |
-| `capture/nullable` | Captures | 0.15 | 0.18 | 0 | Managed faster | 0.81 |
+| `capture/ignorecase-disjoint` | Captures | 0.14 | 0.14 | 0 | Equivalent | 1.01 |
+| `capture/newline-rewind` | Captures | 0.15 | 0.16 | 0 | Managed faster | 0.93 |
+| `projection/short-1` | Captures | 0.08 | 0.10 | 0 | Managed faster | 0.81 |
 | `capture/empty` | Captures | 0.11 | 0.13 | 0 | Managed faster | 0.81 |
-| `projection/unicode-prefix-4` | Captures | 0.12 | 0.17 | 0 | Managed faster | 0.73 |
-| `projection/short-4` | Captures | 0.12 | 0.17 | 0 | Managed faster | 0.73 |
+| `projection/unicode-prefix-1` | Captures | 0.08 | 0.10 | 0 | Managed faster | 0.81 |
+| `capture/absent` | Captures | 0.10 | 0.13 | 0 | Managed faster | 0.81 |
+| `capture/nullable` | Captures | 0.15 | 0.20 | 0 | Managed faster | 0.75 |
+| `projection/unicode-prefix-4` | Captures | 0.12 | 0.18 | 0 | Managed faster | 0.67 |
+| `projection/short-4` | Captures | 0.12 | 0.18 | 0 | Managed faster | 0.67 |
 | `capture/ambiguous` | Captures | 0.87 | — | 680 | Excluded | — |
-| `capture/nested` | Captures | 1.14 | — | 680 | Excluded | — |
-| `capture/unicode-longest` | Captures | 0.87 | — | 680 | Excluded | — |
+| `capture/nested` | Captures | 1.18 | — | 680 | Excluded | — |
+| `capture/unicode-longest` | Captures | 0.88 | — | 680 | Excluded | — |
 | `count/ambiguous` | Count | 0.38 | — | 0 | Excluded | — |
-| `cursor/ambiguous` | Cursor | 1.52 | — | 1040 | Excluded | — |
+| `cursor/ambiguous` | Cursor | 1.55 | — | 1040 | Excluded | — |
 
 The ratio is the median paired managed/native time; raw samples retain 95% bootstrap intervals and lane-order observations. Excluded rows have different native ranges/captures and no ratio. All rows retain ordinary costs, even when no equivalent native result exists.
 
@@ -80,9 +80,9 @@ The same `(a|aa)*` capture operation at three lengths exposes ambiguity cost. Ea
 
 | Case | Input bytes | Utf8Regex (µs) | Managed B/op | Peak working B |
 |---|---:|---:|---:|---:|
-| `history/length-4` | 4 | 0.93 | 680 | 2320 |
-| `history/length-8` | 8 | 1.45 | 680 | 2320 |
-| `history/length-12` | 12 | 2.18 | 1920 | 5904 |
+| `history/length-4` | 4 | 0.94 | 680 | 2320 |
+| `history/length-8` | 8 | 1.47 | 680 | 2320 |
+| `history/length-12` | 12 | 2.19 | 1920 | 5904 |
 
 ### Historical adapter control
 
@@ -90,18 +90,18 @@ SKU is an unambiguous consumer control, not a POSIX selection claim. One timed b
 
 | Case | Utf8Regex / call (µs) | Native NFA / call (µs) | Managed B/call | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `capture/sku007` | 0.13 | 0.12 | 0 | 1.02 |
+| `capture/sku007` | 0.12 | 0.12 | 0 | 1.00 |
 
 ### Representative policy costs
 
 | Case | Finite + live token | Funded finite + live token | Finite + deadline + live token | Funded / unlimited |
 |---|---:|---:|---:|---:|
-| `capture/empty` | 0.12 µs | 0.16 µs | 0.19 µs | 1.46 |
-| `capture/ignorecase-disjoint` | 0.16 µs | 0.19 µs | 0.24 µs | 1.44 |
-| `capture/sku007` | 562.65 µs | 708.19 µs | 873.32 µs | 1.38 |
-| `cursor/ambiguous` | 1.76 µs | 1.99 µs | 2.05 µs | 1.31 |
+| `capture/ignorecase-disjoint` | 0.17 µs | 0.20 µs | 0.24 µs | 1.45 |
+| `capture/empty` | 0.13 µs | 0.15 µs | 0.18 µs | 1.43 |
+| `capture/sku007` | 600.21 µs | 708.00 µs | 847.80 µs | 1.39 |
+| `cursor/ambiguous` | 1.76 µs | 1.97 µs | 1.98 µs | 1.27 |
 
 Only the empty-capture, longest-cursor and SKU control rows time all policy lanes; SKU costs here remain per 4,096-call batch. Finite lanes enforce work/depth/working limits and a positive result limit under an original live token. Funded lanes add a thread-safe 16 MiB host allowance; the deadline lane adds a 30-second invocation timeout. Values/caller-owned capture destinations create no producer result payload. These are absolute public-operation costs, including useful metering; the unlimited native comparator has no corresponding host policy.
 
-[Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `D8AA754C17D0E11D33D043B8C24493BC6C7A9AABE8AB913DAF4C3D070ADAE1AE`.
+[Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `2BE188C3F140F48CBA564C9C6C6A26940D9A77B4DE49C8EA53ECE6D5E7D3DF16`.
 <!-- END GENERATED POSIX BENCHMARKS -->
