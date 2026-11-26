@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 
@@ -33,13 +34,15 @@ public sealed class Utf8UnobservedValueCaptureTests
     [InlineData(false)] [InlineData(true)]
     public void ValuesFitSmallWorkingBudgetWhileCursorCapturesRequireAdmission(bool rtl)
     {
-        var regex = new Utf8Regex("abcdef([0-9]+)", options: rtl ? RegexOptions.RightToLeft : RegexOptions.None, policy: new Utf8RegexPolicy
+        var forwardCaptureBytes = Utf8ConstructionBudget.ArrayBytes<int>(2) +
+            Utf8ConstructionBudget.ArrayBytes<Utf8CaptureRange>(2);
+        using var regex = new Utf8Regex("abcdef([0-9]+)", options: rtl ? RegexOptions.RightToLeft : RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
                 // Elided capture storage must not determine the value allowance.
-                MaxWorkingBytes = rtl ? 1280UL : 128UL,
+                MaxWorkingBytes = rtl ? 1280UL : forwardCaptureBytes - 1,
                 MaxWorkSteps = 100000
             }
         });
@@ -52,8 +55,9 @@ public sealed class Utf8UnobservedValueCaptureTests
         Assert.Equal(2, value.StartOffsetInBytes);
         Assert.Equal(9, (value.EndOffsetInBytes - value.StartOffsetInBytes));
         using var cursor = regex.CreateMatchCursor(input);
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _)).ResourceKind);
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, error.ResourceKind);
+        if (!rtl) Assert.Equal(forwardCaptureBytes, error.Requested);
     }
 
     [Theory]
