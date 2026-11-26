@@ -512,6 +512,23 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData("aaaaa ab")]
+    [InlineData("aaaa\u2003ab")]
+    [InlineData(null)]
+    public void PreparedPrefixCountKeepsOverlappingAndUnresolvedStarts(string? middle)
+    {
+        const string pattern = @"aaaa\s+ab";
+        var text = "😀aaaa ab! " + (middle ?? "aaaa" + new string(' ', 180) + "ab") + "! aaaa ab";
+        var input = Encoding.UTF8.GetBytes(text);
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+
+        Assert.Equal(4, regex.RequiredLiteralContinuation);
+        Assert.Equal(3, Regex.Count(text, pattern));
+        Assert.Equal(3, regex.Count(input, token.Token));
+    }
+
+    [Theory]
     [InlineData("abc", "cd.e", 0)]
     [InlineData("β-記", "δ.東", 0)]
     [InlineData("long", "end", 160)]

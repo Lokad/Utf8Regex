@@ -615,6 +615,23 @@ public sealed partial class Utf8Regex : IDisposable
         }
         if (RejectMissingRequiredInput(input, program, ref invocation, out var screenedLiteral)) return countedPrefix;
         if (_preparedRegex.SearchPlan.RequiredPrefilterSearcher.Kind != PreparedSearcherKind.ExactLiteral) screenedLiteral = -1;
+        if (ReferenceEquals(program, _ownedSliceProgram) && RequiredLiteralContinuation is > 0 and var continuation &&
+            _preparedRegex.SearchPlan.RequiredPrefilterSearcher.LiteralSearch is var prefix && prefix.Length == continuation &&
+            program.Instructions[continuation] is { Kind: Utf8SliceInstructionKind.RepeatGreedy,
+                RepeatMinimum: > 0, RepeatMaximum: long.MaxValue, HasSingleAtomBody: true } repeat &&
+            program.Instructions[repeat.A].RepeatExitRejectsShorterEndpoints)
+        {
+            // Count can consume proved ranges without preparing attempt storage.
+            // Keep the first unresolved origin and the same invocation for fallback.
+            while (Utf8SliceRunner.TryFindPreparedLiteralRange(program, input, ref startByte,
+                prefix, ref screenedLiteral, continuation, ref invocation, out var range))
+            {
+                if (range.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+                if (!range.Found) return countedPrefix;
+                countedPrefix++;
+                startByte = range.EndByte;
+            }
+        }
         var slots = Utf8SliceSlots.Empty;
         try
         {

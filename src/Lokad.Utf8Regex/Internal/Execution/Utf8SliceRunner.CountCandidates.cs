@@ -1769,7 +1769,7 @@ internal static partial class Utf8SliceRunner
         return end != BranchedPrefixRejected;
     }
 
-    private static bool TryFindPreparedLiteralRange(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+    internal static bool TryFindPreparedLiteralRange(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         ref int position, in PreparedSubstringSearch search, ref int screenedLiteral, int continuation,
         ref Utf8SliceInvocation invocation, out Utf8SliceSearchOutcome outcome)
     {
