@@ -163,7 +163,7 @@ internal static class Utf8StructuralSearchExecutor
 
         var primary = sets[0];
         var anchorStart = Math.Max(0, startIndex + primary.Distance);
-        var search = primary.Search;
+        var search = primary.AnchorSearch!;
         var position = anchorStart;
         while (position < input.Length)
         {

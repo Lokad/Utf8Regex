@@ -389,7 +389,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             budget.ChargeWork(1);
             extractedSets[i] = extractedSets[i - 1];
         }
-        extractedSets[0] = primary;
+        extractedSets[0] = primary.PrepareAnchor();
         fixedDistanceSets = extractedSets;
 
         selectedMinRequiredLength = minRequiredLength;
@@ -414,8 +414,10 @@ internal static class Utf8FrontEndSearchAnalyzer
         {
             budget.ChargeWork(1);
             var set = runtimeSets[index];
-            fixedDistanceSets[index] = Utf8FixedDistanceSet.FromMask(set.Distance, set.CharClass);
+            fixedDistanceSets[index] = new(set.Distance, set.CharClass);
         }
+        // Only the primary set scans the input. The remaining masks check one byte each.
+        fixedDistanceSets[0] = fixedDistanceSets[0].PrepareAnchor();
         construction.Complete();
 
         return true;
@@ -528,7 +530,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                 Utf8ScalarAsciiProjector.TryCloseAsciiCaseFiber(definition, atom.MatchCaseInsensitive, atom.Options, out var mask))
             {
                 if (distance == int.MaxValue) return false;
-                sets.Add(Utf8FixedDistanceSet.FromMask(distance, mask));
+                sets.Add(new(distance, mask));
                 distance++;
                 return true;
             }
@@ -542,7 +544,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                     atom.MatchCaseInsensitive, atom.Options, out var mask))
             {
                 if (distance == int.MaxValue) return false;
-                sets.Add(Utf8FixedDistanceSet.FromMask(distance, mask));
+                sets.Add(new(distance, mask));
                 distance++;
                 return true;
             }

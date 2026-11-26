@@ -862,7 +862,7 @@ internal static partial class Utf8SearchExecutor
         }
 
         var span = input[startIndex..];
-        var relative = set.Search.IndexOf(span);
+        var relative = set.AnchorSearch!.IndexOf(span);
         return relative < 0 ? -1 : startIndex + relative;
     }
 

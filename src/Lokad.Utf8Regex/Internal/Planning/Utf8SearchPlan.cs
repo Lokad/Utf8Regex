@@ -372,35 +372,17 @@ internal enum Utf8AlternateLiteralOverlapKind : byte
     ProperStart = 2,
 }
 
-internal readonly struct Utf8FixedDistanceSet
+internal readonly struct Utf8FixedDistanceSet(
+    int distance, AsciiCharClass byteSet, PreparedByteSet? anchorSearch = null)
 {
-    private Utf8FixedDistanceSet(
-        int distance, AsciiCharClass byteSet)
-    {
-        using var scope = Utf8ConstructionScope.Enter();
-        var budget = scope.Budget;
-        budget.EnterDepth();
-        try
-        {
-            Distance = distance;
-            ByteSet = byteSet;
-            Search = Utf8PreparedByteSearchFactory.CreateSet(byteSet);
-            scope.Complete();
-        }
-        finally { budget.LeaveDepth(); }
-    }
+    public int Distance { get; } = distance;
 
-    public int Distance { get; }
+    public AsciiCharClass ByteSet { get; } = byteSet;
 
-    public AsciiCharClass ByteSet { get; }
-
-    public PreparedByteSet Search { get; }
+    public PreparedByteSet? AnchorSearch { get; } = anchorSearch;
 
     public bool Contains(byte value) => ByteSet.Contains(value);
 
-    internal static Utf8FixedDistanceSet FromMask(int distance, AsciiCharClass byteSet) => new(distance, byteSet);
-
-    public static Utf8FixedDistanceSet FromBytes(int distance, byte[]? chars, bool negated)
-        => new(distance, AsciiCharClass.FromBytes(chars ?? [], negated));
-
+    internal Utf8FixedDistanceSet PrepareAnchor()
+        => new(Distance, ByteSet, Utf8PreparedByteSearchFactory.CreateSet(ByteSet));
 }

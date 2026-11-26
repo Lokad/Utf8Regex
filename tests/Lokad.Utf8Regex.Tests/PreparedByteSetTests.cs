@@ -1,6 +1,7 @@
 using System.Buffers;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -129,13 +130,14 @@ public sealed class PreparedByteSetTests
             var values = input[..count];
             var charClass = AsciiCharClass.FromBytes(values, negated);
             var direct = Utf8PreparedByteSearchFactory.CreateSet(charClass);
-            var fixedSet = Lokad.Utf8Regex.Internal.Planning.Utf8FixedDistanceSet.FromBytes(7, values, negated);
+            var fixedSet = new Utf8FixedDistanceSet(7, charClass).PrepareAnchor();
+            var anchor = Assert.IsType<PreparedByteSet>(fixedSet.AnchorSearch);
             var expected = input.Where(value => value < 128 && ((value < count) != negated)).ToArray();
             var oracle = SearchValues.Create(expected);
             foreach (var value in input)
             {
                 Assert.Equal(expected.Contains(value), direct.Contains(value));
-                Assert.Equal(expected.Contains(value), fixedSet.Search.Contains(value));
+                Assert.Equal(expected.Contains(value), anchor.Contains(value));
             }
             for (var offset = 0; offset < input.Length; offset++)
             {
@@ -144,7 +146,7 @@ public sealed class PreparedByteSetTests
                 Assert.Equal(subject.LastIndexOfAny(oracle), direct.LastIndexOf(subject));
                 Assert.Equal(subject.IndexOfAnyExcept(oracle), direct.IndexOfAnyExcept(subject));
                 Assert.Equal(subject.LastIndexOfAnyExcept(oracle), direct.LastIndexOfAnyExcept(subject));
-                Assert.Equal(subject.IndexOfAny(oracle), fixedSet.Search.IndexOf(subject));
+                Assert.Equal(subject.IndexOfAny(oracle), anchor.IndexOf(subject));
             }
         }
     }

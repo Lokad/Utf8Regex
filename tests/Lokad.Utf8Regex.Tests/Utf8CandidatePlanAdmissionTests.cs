@@ -35,7 +35,7 @@ public sealed class Utf8CandidatePlanAdmissionTests
     [Fact]
     public void SearchPreparationFundsItsStructuralPlan()
     {
-        var set = Utf8FixedDistanceSet.FromMask(0, AsciiCharClass.FromBytes("ab"u8));
+        var set = new Utf8FixedDistanceSet(0, AsciiCharClass.FromBytes("ab"u8)).PrepareAnchor();
         var facts = Utf8SearchFacts.Create(Utf8SearchKind.FixedDistanceAsciiSets, new() { FixedDistanceSets = [set] });
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var plan = Utf8SearchPlan.Prepare(facts);

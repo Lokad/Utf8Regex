@@ -58,10 +58,10 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
             case 3: Assert.Equal(caller, PreparedByteSearch.Create(caller).Values.ToArray()); break;
             case 4: Assert.Equal(4, Utf8PreparedByteSearchFactory.CreateFromPositiveClass(charClass).Count); break;
             case 7:
-                var positive = Utf8FixedDistanceSet.FromBytes(7, caller, false);
+                var positive = new Utf8FixedDistanceSet(7, AsciiCharClass.FromBytes(caller)).PrepareAnchor();
                 Assert.Equal(7, positive.Distance); Assert.True(positive.Contains(2)); Assert.False(positive.Contains(5)); break;
             default:
-                var complement = Utf8FixedDistanceSet.FromBytes(8, caller, true);
+                var complement = new Utf8FixedDistanceSet(8, AsciiCharClass.FromBytes(caller, true)).PrepareAnchor();
                 Assert.False(complement.Contains(2)); Assert.True(complement.Contains(5)); Assert.False(complement.Contains(128)); break;
         }
     }

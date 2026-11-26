@@ -93,8 +93,10 @@ public sealed class Utf8DeterministicPrefixScalarTests
         var ascii = Utf8FrontEndSearchAnalyzer.Analyze(Utf8FrontEnd.Analyze("[ \\t\\r\\n\\f\\v]*abc[0-9]", RegexOptions.CultureInvariant).SemanticRegex);
         Assert.Equal(Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace, ascii.FallbackStartTransform.Kind);
         Assert.Equal(Utf8SearchKind.FixedDistanceAsciiSets, ascii.Kind);
-        Assert.NotEmpty(ascii.FixedDistanceSets);
-        var far = Utf8FixedDistanceSet.FromMask(int.MaxValue, AsciiCharClass.ForByte((byte)'c'));
+        Assert.True(ascii.FixedDistanceSets.Length >= 3);
+        Assert.NotNull(ascii.FixedDistanceSets[0].AnchorSearch);
+        Assert.All(ascii.FixedDistanceSets.Skip(1), set => Assert.Null(set.AnchorSearch));
+        var far = new Utf8FixedDistanceSet(int.MaxValue, AsciiCharClass.ForByte((byte)'c'));
         Assert.True(Assert.IsType<long>(Call("ScoreDeterministicPrimarySet", far)) > int.MaxValue);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 127, ulong.MaxValue);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Call("ScoreDeterministicPrimarySet", far));

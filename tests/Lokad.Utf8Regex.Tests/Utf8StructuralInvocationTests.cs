@@ -292,7 +292,11 @@ public sealed class Utf8StructuralInvocationTests
     public void FixedDistanceSearchesKeepOffsetsAndAllSetGuards(bool set, bool reverse, int offset)
     {
         var sets = set
-            ? new[] { Utf8FixedDistanceSet.FromBytes(1, [(byte)'a'], false), Utf8FixedDistanceSet.FromBytes(3, [(byte)'c'], false) }
+            ? new[]
+            {
+                new Utf8FixedDistanceSet(1, AsciiCharClass.ForByte((byte)'a')).PrepareAnchor(),
+                new Utf8FixedDistanceSet(3, AsciiCharClass.ForByte((byte)'c')),
+            }
             : null;
         var kind = set ? Utf8SearchKind.FixedDistanceAsciiSets : Utf8SearchKind.FixedDistanceAsciiLiteral;
         var plan = Utf8StructuralSearchPlan.Create(kind, set ? 0 : 2, canGuideFallbackStarts: false,
