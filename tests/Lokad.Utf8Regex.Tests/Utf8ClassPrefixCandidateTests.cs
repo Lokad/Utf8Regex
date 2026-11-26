@@ -657,14 +657,15 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
-    [InlineData("abc", "cd.e", 0)]
-    [InlineData("β-記", "δ.東", 0)]
-    [InlineData("long", "end", 160)]
-    public void SeparatedClassRunsKeepGreedyByteRanges(string middle, string tail, int extra)
+    [InlineData("pé", "abc", "cd.e", 0)]
+    [InlineData("pé", "β-記", "δ.東", 0)]
+    [InlineData("p\U00010400é", "β-記", "δ.東", 0)]
+    [InlineData("pé", "long", "end", 160)]
+    public void SeparatedClassRunsKeepGreedyByteRanges(string label, string middle, string tail, int extra)
     {
         const string pattern = @"[\w.+-]+@[\w-]+\.[\w.-]+";
         const string prefix = "😀bad@.miss bad@empty. !";
-        var value = "pé@" + middle + new string('r', extra) + "." + tail;
+        var value = label + "@" + middle + new string('r', extra) + "." + tail;
         var start = Encoding.UTF8.GetByteCount(prefix);
         var end = start + Encoding.UTF8.GetByteCount(value);
         var input = Encoding.UTF8.GetBytes(prefix + value + "!");

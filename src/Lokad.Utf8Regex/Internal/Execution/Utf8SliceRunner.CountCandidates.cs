@@ -1818,8 +1818,16 @@ internal static partial class Utf8SliceRunner
                 return false;
             }
             if (!existenceOnly && classWindow)
-                breach = TryRewindClassWhitespace(program, input, position, program.LeadingClassDelimiter.LeadingClass,
-                    0, true, ref start, ref invocation);
+            {
+                var leadingClass = program.LeadingClassDelimiter.LeadingClass;
+                ref readonly var atom = ref program.Instructions[leadingClass];
+                var categories = program.GetCompleteAsciiCategoryMask(atom);
+                // The aligned delimiter is excluded by this complete, nonempty,
+                // unbounded prefix. A rewind that consumes nothing rejects it.
+                breach = categories != 0
+                    ? TryRewindCategoryRun(input, position, categories, program.ReadAsciiSetMask(atom), ref start, ref invocation)
+                    : TryRewindClassWhitespace(program, input, position, leadingClass, 0, true, ref start, ref invocation);
+            }
             if (breach == Utf8ExecutionLimitKind.None && (!classWindow || start < screenedLiteral))
                 breach = invocation.TryChargeInputStep();
             if (breach == Utf8ExecutionLimitKind.None)

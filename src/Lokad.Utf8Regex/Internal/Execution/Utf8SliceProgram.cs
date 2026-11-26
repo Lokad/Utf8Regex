@@ -1053,13 +1053,18 @@ internal sealed class Utf8SliceProgram
         }
         if (atom is not { Kind: Utf8SliceInstructionKind.Set, C: 0 } && GetCompleteAsciiCategoryMask(atom) == 0)
             return false;
+        ascii = ReadAsciiSetMask(atom);
+        asciiOnly = atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 };
+        return true;
+    }
+
+    internal Utf8SearchAsciiSet ReadAsciiSetMask(in Utf8SliceInstruction atom)
+    {
         var mask = SetMasks[atom.A].AsSpan();
         var low = BinaryPrimitives.ReadUInt64LittleEndian(mask);
         var high = BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]);
         if (atom.B != 0) { low = ~low; high = ~high; }
-        ascii = Utf8SearchAsciiSet.FromMasks(low, high);
-        asciiOnly = atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 };
-        return true;
+        return Utf8SearchAsciiSet.FromMasks(low, high);
     }
 
     private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) FindRequiredFinalAscii(
