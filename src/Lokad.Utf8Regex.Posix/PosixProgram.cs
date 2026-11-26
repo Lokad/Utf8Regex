@@ -79,20 +79,16 @@ internal sealed partial class PosixProgram
                 }
                 if (frame.Node is Utf8SliceNode.ConcatNode concat)
                     frame.Children = budget.AllocateArray<Utf8SliceNode>(concat.Children.Length, false);
-                if (frame.Node is Utf8SliceNode.AlternationNode alternate)
-                {
-                    frame.Branches = budget.AllocateArray<Utf8SliceNode[]>(alternate.Branches.Length, false);
-                    for (var branch = 0; branch < frame.Branches.Length; branch++)
-                        frame.Branches[branch] = budget.AllocateArray<Utf8SliceNode>(alternate.Branches[branch].Length, false);
-                }
+                else if (frame.Node is Utf8SliceNode.AlternationNode alternate)
+                    frame.Children = budget.AllocateArray<Utf8SliceNode>(alternate.Branches.Length, false);
             }
             if (frame.Awaiting)
             {
                 if (completed is null) throw new InvalidOperationException("A POSIX child did not complete.");
                 switch (frame.Node)
                 {
-                    case Utf8SliceNode.ConcatNode: frame.Children![frame.Child++] = completed; break;
-                    case Utf8SliceNode.AlternationNode: frame.Branches![frame.Branch][frame.Child++] = completed; break;
+                    case Utf8SliceNode.ConcatNode or Utf8SliceNode.AlternationNode:
+                        frame.Children![frame.Child++] = completed; break;
                     default: frame.Body = completed; frame.Child = 1; break;
                 }
                 frame.Awaiting = false;
@@ -102,11 +98,8 @@ internal sealed partial class PosixProgram
             {
                 case Utf8SliceNode.ConcatNode concat when frame.Child < concat.Children.Length:
                     child = concat.Children[frame.Child]; break;
-                case Utf8SliceNode.AlternationNode alternate:
-                    while (frame.Branch < alternate.Branches.Length && frame.Child == alternate.Branches[frame.Branch].Length)
-                    { frame.Branch++; frame.Child = 0; }
-                    if (frame.Branch < alternate.Branches.Length) child = alternate.Branches[frame.Branch][frame.Child];
-                    break;
+                case Utf8SliceNode.AlternationNode alternate when frame.Child < alternate.Branches.Length:
+                    child = alternate.Branches[frame.Child]; break;
                 case Utf8SliceNode.CaptureNode capture when frame.Child == 0: child = capture.Body; break;
                 case Utf8SliceNode.RepeatNode repeat when frame.Child == 0: child = repeat.Body; break;
             }
@@ -120,7 +113,7 @@ internal sealed partial class PosixProgram
             {
                 Utf8SliceNode.CaptureNode => frame.Body!,
                 Utf8SliceNode.ConcatNode => budget.AllocateObject(frame.Children!, static x => new Utf8SliceNode.ConcatNode(x)),
-                Utf8SliceNode.AlternationNode => budget.AllocateObject(frame.Branches!, static x => new Utf8SliceNode.AlternationNode(x)),
+                Utf8SliceNode.AlternationNode => budget.AllocateObject(frame.Children!, static x => new Utf8SliceNode.AlternationNode(x)),
                 Utf8SliceNode.RepeatNode repeat => budget.AllocateObject((frame.Body!, repeat.Minimum, repeat.Maximum),
                     static x => new Utf8SliceNode.RepeatNode(x.Item1, x.Minimum, x.Maximum, false)),
                 Utf8SliceNode.EmptyNode or Utf8SliceNode.LiteralNode or Utf8SliceNode.DotNode or
@@ -627,11 +620,8 @@ internal sealed partial class PosixProgram
             {
                 case Utf8SliceNode.ConcatNode concat when frame.Child < concat.Children.Length:
                     child = concat.Children[frame.Child++]; break;
-                case Utf8SliceNode.AlternationNode alternate:
-                    while (frame.Branch < alternate.Branches.Length && frame.Child == alternate.Branches[frame.Branch].Length)
-                    { frame.Branch++; frame.Child = 0; }
-                    if (frame.Branch < alternate.Branches.Length) child = alternate.Branches[frame.Branch][frame.Child++];
-                    break;
+                case Utf8SliceNode.AlternationNode alternate when frame.Child < alternate.Branches.Length:
+                    child = alternate.Branches[frame.Child++]; break;
                 case Utf8SliceNode.RepeatNode repeat when frame.Child++ == 0: child = repeat.Body; break;
             }
             if (child is null) frames.Pop();
@@ -645,10 +635,9 @@ internal sealed partial class PosixProgram
         internal Utf8SliceNode Node = node;
         internal readonly int Parent = parent;
         internal int Tag = -1;
-        internal int Child, Branch;
+        internal int Child;
         internal bool Awaiting;
         internal Utf8SliceNode[]? Children;
-        internal Utf8SliceNode[][]? Branches;
         internal Utf8SliceNode? Body;
     }
 }

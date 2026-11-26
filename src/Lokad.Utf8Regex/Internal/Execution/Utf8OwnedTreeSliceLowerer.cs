@@ -143,14 +143,13 @@ internal static class Utf8OwnedTreeSliceLowerer
                     }
                     return new Utf8SliceNode.ConcatNode(children);
                 case Utf8TreeNodeKind.Alternate:
-                    var branches = arena.Allocate<Utf8SliceNode[]>(node.ChildCount, false);
+                    var branches = arena.Allocate<Utf8SliceNode>(node.ChildCount, false);
                     for (var index = 0; index < branches.Length; index++)
                     {
                         Utf8ConstructionScope.ChargeWork(1);
                         var branch = nodes[node.Child(index)].Lowered;
                         if (branch is null) return null;
-                        branches[index] = arena.Allocate<Utf8SliceNode>(1, false);
-                        branches[index][0] = branch;
+                        branches[index] = branch;
                     }
                     return new Utf8SliceNode.AlternationNode(branches);
                 case Utf8TreeNodeKind.Oneloop:

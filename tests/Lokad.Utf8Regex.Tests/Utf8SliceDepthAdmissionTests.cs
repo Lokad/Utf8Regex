@@ -16,7 +16,9 @@ public sealed class Utf8SliceDepthAdmissionTests
                     new Utf8SliceNode.LiteralNode(0x1f600, false)]), 0, count, false),
                 new Utf8SliceNode.LiteralNode(0x1f600, false)])
             : new Utf8SliceNode.ConcatNode(Enumerable.Range(0, count).Select(_ => (Utf8SliceNode)
-                new Utf8SliceNode.AlternationNode([[new Utf8SliceNode.LiteralNode(0x1f600, false)], [new Utf8SliceNode.LiteralNode(0xe9, false)]])).ToArray());
+                new Utf8SliceNode.AlternationNode([
+                    new Utf8SliceNode.LiteralNode(0x1f600, false), new Utf8SliceNode.LiteralNode(0xe9, false),
+                ])).ToArray());
         return Utf8SliceLowerer.Lower(root, null, false, false, rtl)!;
     }
 

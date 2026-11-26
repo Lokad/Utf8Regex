@@ -15,7 +15,6 @@ internal static partial class PythonReScalarCompiler
         internal int Stage;
         internal int Index;
         internal Utf8SliceNode[]? Children;
-        internal Utf8SliceNode[][]? Branches;
         internal Utf8SliceNode? Yes;
     }
 
@@ -76,13 +75,11 @@ internal static partial class PythonReScalarCompiler
                     }
                     case PythonReAlternationNode alternation:
                     {
-                        if (frame.Stage == 0) frame.Branches = arena.Allocate<Utf8SliceNode[]>(alternation.Branches.Count, false);
-                        var branches = frame.Branches ?? throw new InvalidOperationException("Conversion branches are missing.");
+                        if (frame.Stage == 0) frame.Children = arena.Allocate<Utf8SliceNode>(alternation.Branches.Count, false);
+                        var branches = frame.Children ?? throw new InvalidOperationException("Conversion branches are missing.");
                         if (frame.Stage == 2)
                         {
-                            var converted = nodes[alternation.Branches[frame.Index]];
-                            branches[frame.Index] = arena.Allocate<Utf8SliceNode>(1, false);
-                            branches[frame.Index][0] = converted;
+                            branches[frame.Index] = nodes[alternation.Branches[frame.Index]];
                             frame.Index++;
                         }
                         if (frame.Index == branches.Length) nodes[node] = PythonReScalarNodeFactory.Alternation(branches);

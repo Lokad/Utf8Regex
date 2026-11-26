@@ -99,20 +99,8 @@ internal static partial class PythonReScalarCompiler
             branches.Add(ParseLeaf(PythonReAstFactory.CharacterClass(false, arena.Take(literals, true)), options, arena));
         if (branches.Count > 1 && TryCombineClassUnion(branches.Span, characterClass.IsNegated, arena) is { } combined)
             return combined;
-        Utf8SliceNode positive;
-        if (branches.Count == 1) positive = branches[0];
-        else
-        {
-            var alternatives = arena.Allocate<Utf8SliceNode[]>(branches.Count, true);
-            for (var index = 0; index < branches.Count; index++)
-            {
-                arena.Budget.ChargeWork(1);
-                var branch = arena.Allocate<Utf8SliceNode>(1, true);
-                branch[0] = branches[index];
-                alternatives[index] = branch;
-            }
-            positive = PythonReScalarNodeFactory.Alternation(alternatives);
-        }
+        var positive = branches.Count == 1 ? branches[0]
+            : PythonReScalarNodeFactory.Alternation(arena.Take(branches, true));
         return characterClass.IsNegated
             ? PythonReScalarNodeFactory.Concat(Pair(PythonReScalarNodeFactory.Lookahead(positive, false),
                 PythonReScalarNodeFactory.Dot(), arena))

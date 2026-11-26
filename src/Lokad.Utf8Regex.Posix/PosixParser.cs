@@ -156,9 +156,8 @@ internal sealed class PosixParser
         }
         else
         {
-            var branches = _budget.AllocateArray<Utf8SliceNode[]>(2, false);
-            branches[0] = _budget.AllocateArray<Utf8SliceNode>(1, false); branches[0][0] = left;
-            branches[1] = _budget.AllocateArray<Utf8SliceNode>(1, false); branches[1][0] = right;
+            var branches = _budget.AllocateArray<Utf8SliceNode>(2, false);
+            branches[0] = left; branches[1] = right;
             nodes.Push(_budget.AllocateObject(branches, static x => new Utf8SliceNode.AlternationNode(x)));
         }
     }

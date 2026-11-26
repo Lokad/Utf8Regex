@@ -47,7 +47,7 @@ internal static class PythonReScalarNodeFactory
         return tail;
     }
 
-    internal static Utf8SliceNode.AlternationNode Alternation(Utf8SliceNode[][] branches) =>
+    internal static Utf8SliceNode.AlternationNode Alternation(Utf8SliceNode[] branches) =>
         Create(branches, static state => new Utf8SliceNode.AlternationNode(state));
 
     internal static Utf8SliceNode.RepeatNode Repeat(Utf8SliceNode body, long minimum, long maximum, bool lazy) =>

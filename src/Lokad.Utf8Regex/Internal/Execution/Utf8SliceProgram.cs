@@ -50,7 +50,7 @@ internal abstract record Utf8SliceNode
 
     internal sealed record ConcatNode(Utf8SliceNode[] Children) : Utf8SliceNode;
 
-    internal sealed record AlternationNode(Utf8SliceNode[][] Branches) : Utf8SliceNode;
+    internal sealed record AlternationNode(Utf8SliceNode[] Branches) : Utf8SliceNode;
 
     // Finite bounds fit uint below UINT_MAX; long.MaxValue alone means unbounded.
     internal sealed record RepeatNode(Utf8SliceNode Body, long Minimum, long Maximum, bool Lazy) : Utf8SliceNode
@@ -1395,11 +1395,11 @@ internal static class Utf8SliceLowerer
                     foreach (var branch in alternation.Branches)
                     {
                         budget.ChargeWork(1);
-                        var sequence = SummarizeSequence(branch);
-                        anyEmpty |= sequence.CanMatchEmpty;
-                        allZeroWidth &= sequence.IsZeroWidth;
-                        minimum = Math.Min(minimum, sequence.Minimum);
-                        maximum = Math.Max(maximum, sequence.Maximum);
+                        var fact = Get(branch);
+                        anyEmpty |= fact.CanMatchEmpty;
+                        allZeroWidth &= fact.IsZeroWidth;
+                        minimum = Math.Min(minimum, fact.Minimum);
+                        maximum = Math.Max(maximum, fact.Maximum);
                     }
                     return new(anyEmpty, allZeroWidth, alternation.Branches.Length == 0 ? 0 : minimum, maximum);
                 case Utf8SliceNode.RepeatNode repeat:
@@ -1434,9 +1434,8 @@ internal static class Utf8SliceLowerer
     private struct AnalysisFrame(Utf8SliceNode node)
     {
         internal readonly Utf8SliceNode Node = node;
-        private int _index, _branch;
+        private int _index;
 
-        // Empty alternatives spend shared work even when they contain no child to push.
         internal Utf8SliceNode? NextChild(Utf8ConstructionBudget budget)
         {
             budget.ChargeWork(1);
@@ -1445,14 +1444,7 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.ConcatNode concat:
                     return _index == concat.Children.Length ? null : concat.Children[_index++];
                 case Utf8SliceNode.AlternationNode alternate:
-                    while (_branch < alternate.Branches.Length)
-                    {
-                        budget.ChargeWork(1);
-                        if (_index < alternate.Branches[_branch].Length)
-                            return alternate.Branches[_branch][_index++];
-                        _branch++; _index = 0;
-                    }
-                    return null;
+                    return _index == alternate.Branches.Length ? null : alternate.Branches[_index++];
                 case Utf8SliceNode.ConditionalNode conditional:
                     return _index++ switch
                     {
@@ -1486,7 +1478,7 @@ internal static class Utf8SliceLowerer
         internal bool RightToLeft = rightToLeft;
         internal Lowering? Owner = owner;
         internal int LookaheadPolarity = lookaheadPolarity;
-        internal int Stage, Index, Branch, Mark, Jump, RepeatId, Opening;
+        internal int Stage, Index, Mark, Jump, RepeatId, Opening;
         internal long Minimum, Maximum;
         internal bool NullableLoop;
         internal Utf8NonBacktrackingLoopScope? ParentScope;
@@ -1861,8 +1853,8 @@ internal static class Utf8SliceLowerer
                     }
                     break;
                 case Utf8SliceNode.AlternationNode { Branches:
-                    [[Utf8SliceNode.LiteralNode { FoldCase: false, Value: >= 0 and < 128 } firstByte],
-                     [Utf8SliceNode.LiteralNode { FoldCase: false, Value: >= 0 and < 128 } secondByte]] }:
+                    [Utf8SliceNode.LiteralNode { FoldCase: false, Value: >= 0 and < 128 } firstByte,
+                     Utf8SliceNode.LiteralNode { FoldCase: false, Value: >= 0 and < 128 } secondByte] }:
                     // Both alternatives consume one byte and share a continuation.
                     var choiceMask = Budget.AllocateArray<byte>(16, false);
                     choiceMask[firstByte.Value >> 3] |= (byte)(1 << (firstByte.Value & 7));
@@ -1880,30 +1872,25 @@ internal static class Utf8SliceLowerer
                         frame.Stage = 1;
                     }
                     var jumps = frame.Scratch ?? throw new InvalidOperationException("Missing alternation jumps.");
-                    while (frame.Branch < alternate.Branches.Length)
+                    while (frame.Index < alternate.Branches.Length)
                     {
                         Budget.ChargeWork(1);
                         if (frame.Stage == 1)
                         {
                             frame.Mark = Instructions.Count;
-                            if (frame.Branch + 1 < alternate.Branches.Length)
+                            if (frame.Index + 1 < alternate.Branches.Length)
                                 Emit(new(Utf8SliceInstructionKind.Fork, 0, 0, 0, 0));
-                            frame.Index = 0;
                             frame.Stage = 2;
-                        }
-                        var branch = alternate.Branches[frame.Branch];
-                        if (frame.Index < branch.Length)
-                        {
-                            request = new(branch[frame.Index++], false, MirrorExecute, 0);
+                            request = new(alternate.Branches[frame.Index], false, MirrorExecute, 0);
                             return true;
                         }
-                        if (frame.Branch + 1 < alternate.Branches.Length)
+                        if (frame.Index + 1 < alternate.Branches.Length)
                         {
                             jumps.Add(Instructions.Count);
                             Emit(new(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
                             Patch(frame.Mark, Instructions.Count);
                         }
-                        frame.Branch++;
+                        frame.Index++;
                         frame.Stage = 1;
                     }
                     foreach (var jump in jumps) { Budget.ChargeWork(1); Patch(jump, Instructions.Count); }
@@ -2370,9 +2357,7 @@ internal static class Utf8SliceLowerer
                     {
                         // Each preceding branch adds a fork and jump.
                         remaining -= 2;
-                        if (remaining < 0) return false;
-                        foreach (var child in branch)
-                            if (!IsSmallPureBody(child, ref remaining, fixedOuter)) return false;
+                        if (remaining < 0 || !IsSmallPureBody(branch, ref remaining, fixedOuter)) return false;
                     }
                     return true;
                 case Utf8SliceNode.RepeatNode { Maximum: <= 8, Body:

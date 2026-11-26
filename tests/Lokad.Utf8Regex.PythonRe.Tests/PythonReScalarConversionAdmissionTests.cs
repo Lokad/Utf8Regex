@@ -7,7 +7,6 @@ public sealed class PythonReScalarConversionAdmissionTests
 {
     private static readonly Utf8SliceNode Body = new Utf8SliceNode.EmptyNode();
     private static readonly Utf8SliceNode[] Children = [Body];
-    private static readonly Utf8SliceNode[][] Branches = [Children];
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
@@ -152,7 +151,7 @@ public sealed class PythonReScalarConversionAdmissionTests
     private static Utf8SliceNode Create(int kind) => kind switch
     {
         0 => PythonReScalarNodeFactory.Concat(Children),
-        1 => PythonReScalarNodeFactory.Alternation(Branches),
+        1 => PythonReScalarNodeFactory.Alternation(Children),
         2 => PythonReScalarNodeFactory.Repeat(Body, 1, 2, false),
         3 => PythonReScalarNodeFactory.Atomic(Body),
         4 => PythonReScalarNodeFactory.Capture(0, Body),

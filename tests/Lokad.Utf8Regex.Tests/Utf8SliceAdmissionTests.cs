@@ -47,11 +47,8 @@ public sealed class Utf8SliceAdmissionTests
     public void OverInstructionSyntheticTreeFailsOwnedAdmission()
     {
         var shared = new Utf8SliceNode.LiteralNode(97, false);
-        var branches = new Utf8SliceNode[400000][];
-        for (var index = 0; index < branches.Length; index++)
-        {
-            branches[index] = new Utf8SliceNode[] { shared };
-        }
+        var branches = new Utf8SliceNode[400000];
+        Array.Fill(branches, shared);
 
         // Resource exhaustion must not masquerade as unsupported grammar and
         // select a residual engine. Keep the large shared-node witness.
@@ -67,11 +64,8 @@ public sealed class Utf8SliceAdmissionTests
     public void UnderInstructionSyntheticTreeLowers()
     {
         var shared = new Utf8SliceNode.LiteralNode(97, false);
-        var branches = new Utf8SliceNode[100000][];
-        for (var index = 0; index < branches.Length; index++)
-        {
-            branches[index] = new Utf8SliceNode[] { shared };
-        }
+        var branches = new Utf8SliceNode[100000];
+        Array.Fill(branches, shared);
 
         Assert.NotNull(Utf8SliceLowerer.Lower(new Utf8SliceNode.AlternationNode(branches), null, false, false, false));
     }

@@ -139,8 +139,8 @@ public sealed class Utf8SliceRunnerTests
     public void RepeatedCaptureKeepsLastIteration(string inputText, string expectedGroup)
     {
         var program = Lower(Plus(new Utf8SliceNode.CaptureNode(0, new Utf8SliceNode.AlternationNode([
-            [Lit("ab")],
-            [Lit("cd")],
+            Lit("ab"),
+            Lit("cd"),
         ]))));
         var input = Encoding.ASCII.GetBytes(inputText);
         var invocation = Unmetered();
@@ -160,7 +160,7 @@ public sealed class Utf8SliceRunnerTests
     public void RollbackAlternativeMatchesOracle(string inputText, bool expected)
     {
         var program = Lower(new Utf8SliceNode.ConcatNode([
-            new Utf8SliceNode.AlternationNode([[Lit((byte)97)], [Lit("ab")]]),
+            new Utf8SliceNode.AlternationNode([Lit((byte)97), Lit("ab")]),
             Lit((byte)99),
         ]));
         AssertOracleParity(@"(a|ab)c", program, inputText);
@@ -229,8 +229,8 @@ public sealed class Utf8SliceRunnerTests
     public void UnmatchedAlternativeLeavesSlotsUnset(string inputText, bool expected, int s0, int e0, int s1, int e1)
     {
         var program = Lower(new Utf8SliceNode.AlternationNode([
-            [new Utf8SliceNode.CaptureNode(0, Lit((byte)97))],
-            [new Utf8SliceNode.CaptureNode(1, Lit((byte)98))],
+            new Utf8SliceNode.CaptureNode(0, Lit((byte)97)),
+            new Utf8SliceNode.CaptureNode(1, Lit((byte)98)),
         ]));
         var input = Encoding.ASCII.GetBytes(inputText);
         var invocation = Unmetered();

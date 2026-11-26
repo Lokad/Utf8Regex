@@ -38,7 +38,7 @@ public sealed class Utf8ScalarLoweringFrameAdmissionTests
             {
                 0 => new Utf8SliceNode.CaptureNode(0, root),
                 1 => new Utf8SliceNode.ConcatNode([root]),
-                2 => new Utf8SliceNode.AlternationNode([[root], []]),
+                2 => new Utf8SliceNode.AlternationNode([root, new Utf8SliceNode.EmptyNode()]),
                 3 => new Utf8SliceNode.RepeatNode(root, 1, 1, false),
                 4 => new Utf8SliceNode.LookaheadNode(root, true),
                 _ => new Utf8SliceNode.LookbehindNode(root, true),
@@ -90,8 +90,12 @@ public sealed class Utf8ScalarLoweringFrameAdmissionTests
         // probes remain the same. Include shared nodes, empty branches, finite
         // optional copies, a nullable loop, assertions and a conditional test.
         Utf8SliceNode root = new Utf8SliceNode.ConcatNode([
-            new Utf8SliceNode.AlternationNode([[], [new Utf8SliceNode.RepeatNode(Leaf, 1, 3, true)], [Leaf, Leaf]]),
-            new Utf8SliceNode.RepeatNode(new Utf8SliceNode.AlternationNode([[], [Leaf]]), 0, long.MaxValue, false),
+            new Utf8SliceNode.AlternationNode([
+                new Utf8SliceNode.EmptyNode(),
+                new Utf8SliceNode.RepeatNode(Leaf, 1, 3, true),
+                new Utf8SliceNode.ConcatNode([Leaf, Leaf]),
+            ]),
+            new Utf8SliceNode.RepeatNode(new Utf8SliceNode.AlternationNode([new Utf8SliceNode.EmptyNode(), Leaf]), 0, long.MaxValue, false),
             new Utf8SliceNode.ConditionalNode(-1, Leaf, new Utf8SliceNode.EmptyNode(), new Utf8SliceNode.LookaheadNode(Leaf, true)),
             new Utf8SliceNode.LookbehindNode(Leaf, true),
         ]);

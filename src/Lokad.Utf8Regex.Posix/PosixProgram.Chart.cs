@@ -45,9 +45,8 @@ internal sealed partial class PosixProgram
                     kind = ChartKind.Group; a = capture.Slot; first = capture.Body; break;
                 case Utf8SliceNode.ConcatNode concat when concat.Children.Length == 2:
                     kind = ChartKind.Concat; first = concat.Children[0]; second = concat.Children[1]; break;
-                case Utf8SliceNode.AlternationNode alternate when alternate.Branches.Length == 2 &&
-                    alternate.Branches[0].Length == 1 && alternate.Branches[1].Length == 1:
-                    kind = ChartKind.Alternate; first = alternate.Branches[0][0]; second = alternate.Branches[1][0]; break;
+                case Utf8SliceNode.AlternationNode { Branches: [var leftBranch, var rightBranch] }:
+                    kind = ChartKind.Alternate; first = leftBranch; second = rightBranch; break;
                 case Utf8SliceNode.RepeatNode repeat:
                     kind = ChartKind.Repeat; first = repeat.Body; a = checked((int)repeat.Minimum);
                     b = repeat.Maximum == long.MaxValue ? -1 : checked((int)repeat.Maximum); break;
