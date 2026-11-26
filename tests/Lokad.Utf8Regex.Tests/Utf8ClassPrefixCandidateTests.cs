@@ -282,6 +282,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.True(regex.IsMatch(input, source.Token));
         Assert.Equal(new Utf8CaptureRange(Encoding.UTF8.GetByteCount(prefix), input.Length),
             regex.Match(input, cancellationToken: source.Token));
+        Assert.Equal(1, regex.Count(input, source.Token));
 
         // The first wide scalar can begin before or after the proof's edge.
         foreach (var length in new[] { 88, 89, 90 })
@@ -397,6 +398,8 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var source = new CancellationTokenSource();
         Assert.True(regex.IsMatch("ababab end"u8, source.Token));
         Assert.False(regex.IsMatch("ababab en"u8, source.Token));
+        Assert.Equal(1, regex.Count("ababab end"u8, source.Token));
+        Assert.Equal(0, regex.Count("ababab en"u8, source.Token));
         Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
         Assert.Equal(new Utf8CaptureRange(2, 10), regex.Match("ababab end"u8, 0, slots, source.Token));
         Assert.False(regex.Match("ababab end"u8, 0, slots, source.Token, endOffsetInBytes: 9).Success);
@@ -425,6 +428,50 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.True(cursor.MoveNext(out result));
         Assert.Equal(new Utf8CaptureRange(input.Length - later.Length, input.Length), result.Value);
         Assert.False(cursor.MoveNext(out _));
+        Assert.Equal(3, regex.Count(input, token.Token));
+    }
+
+    [Theory]
+    [InlineData(2044)]
+    [InlineData(2045)]
+    [InlineData(2046)]
+    public void PreparedRepeatCountKeepsOverlappingPrefixesAcrossSearchWindows(int position)
+    {
+        using var regex = new Utf8Regex(@"abab\s+end", policy: new() { ResourcePolicy = Funded });
+        var text = "abab end!".PadRight(position, '!') + "ababab\u2003end!abab end";
+        Assert.Equal(3, regex.Count(Encoding.UTF8.GetBytes(text)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PreparedRepeatCountChecksInterruptionBeforeReturning(bool expire)
+    {
+        var reads = 0;
+        var stopAt = int.MaxValue;
+        using var source = new CancellationTokenSource();
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (++reads != stopAt) return 0;
+            if (expire) return 50;
+            source.Cancel();
+            return 0;
+        });
+        using var regex = new Utf8Regex(@"Sherlock\s+Holmes", policy: new()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Funded
+        });
+        var input = Encoding.UTF8.GetBytes("Sherlock Holmes " + new string('!', 4096) + "Sherlock\u2003Holmes");
+        reads = 0;
+        Assert.Equal(2, regex.Count(input, source.Token));
+        stopAt = reads;
+        Assert.True(stopAt > 1);
+        reads = 0;
+
+        var failure = Record.Exception(() => regex.Count(input, source.Token));
+        if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
+        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
     }
 
     [Theory]

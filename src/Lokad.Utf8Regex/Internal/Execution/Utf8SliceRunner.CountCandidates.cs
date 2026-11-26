@@ -895,6 +895,29 @@ internal static partial class Utf8SliceRunner
         return LiteralStartsAtInstruction(program, literal, needle) ? continuation : 0;
     }
 
+    internal static byte[]? PrepareRequiredLiteralTerminalSuffix(Utf8SliceProgram program, int index,
+        Utf8ConstructionBudget budget)
+    {
+        var code = program.Instructions;
+        var suffixStart = index + 4;
+        var length = code.Length - suffixStart - 1;
+        if (length is < 1 or > 16 || program.GroupCount != 0 || code[^1].Kind != Utf8SliceInstructionKind.Accept)
+            return null;
+        budget.ChargeWork((ulong)(length * 2 + 3));
+        if (code[index] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0,
+                RepeatMaximum: long.MaxValue, HasSingleAtomBody: true } repeat ||
+            repeat.A != suffixStart - 1 || !code[repeat.A].RepeatExitRejectsShorterEndpoints)
+            return null;
+        var literals = code.AsSpan(suffixStart, length);
+        foreach (var literal in literals)
+            if (literal is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 })
+                return null;
+        var suffix = budget.AllocateArray<byte>(length, false);
+        for (var offset = 0; offset < suffix.Length; offset++)
+            suffix[offset] = (byte)literals[offset].A;
+        return suffix;
+    }
+
     private static bool CanProveOptionalLiteralThenHybrid(ReadOnlySpan<Utf8SliceInstruction> code, int index,
         Utf8ConstructionBudget? budget = null)
     {
@@ -1876,6 +1899,68 @@ internal static partial class Utf8SliceRunner
         }
         return TryFindPreparedLiteralContinuation(program, input, ref position, search, screenedLiteral,
             continuation, ref invocation, out outcome, existenceOnly: false);
+    }
+
+    internal static Utf8SliceCountOutcome CountPreparedLiteralRepeat(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, ReadOnlySpan<byte> prefix, ReadOnlySpan<byte> suffix,
+        ref int position, ref int screenedLiteral, ref Utf8SliceInvocation invocation)
+    {
+        var count = 0;
+        ref readonly var repeat = ref program.Instructions[prefix.Length];
+        var last = input.Length - prefix.Length;
+        position = Math.Max(position, screenedLiteral);
+        screenedLiteral = -1;
+        while (position <= last)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+            // Each window admits every prefix start once, including the
+            // lookahead needed to recognize a literal across its right edge.
+            var limit = position + Math.Min(2049 - prefix.Length, last - position + 1);
+            var windowEnd = limit + (prefix.Length - 1);
+            while (position < limit)
+            {
+                var relative = input[position..windowEnd].IndexOf(prefix);
+                if (relative < 0)
+                {
+                    position = limit;
+                    break;
+                }
+
+                position += relative;
+                breach = invocation.TryChargeBoundedCheck();
+                if (breach == Utf8ExecutionLimitKind.None && invocation.Ledger.ReservedBytes != 0)
+                    breach = invocation.TryReserveWorking(0);
+                if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+
+                var remaining = BranchedPrefixInstructionLimit - prefix.Length - 1;
+                var end = TryMatchLongPrefixRepeat(program, input, position + prefix.Length,
+                    prefix.Length + 1, in repeat, ref remaining);
+                if (end == BranchedPrefixRejected)
+                {
+                    position++;
+                    continue;
+                }
+                if (end < 0 || remaining <= suffix.Length)
+                {
+                    // The ordinary verifier must begin at the first unproved
+                    // prefix. A later candidate could consume this match.
+                    screenedLiteral = position;
+                    break;
+                }
+                if (input[end..].StartsWith(suffix))
+                {
+                    count++;
+                    position = end + suffix.Length;
+                }
+                else position++;
+            }
+            if (screenedLiteral >= 0) break;
+        }
+        if (screenedLiteral < 0) position = input.Length;
+        var outcome = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return new(outcome == Utf8ExecutionLimitKind.None ? count : 0, outcome);
     }
 
     private static Utf8SliceSearchOutcome FindAlignedClassPair(Utf8SliceProgram program, ReadOnlySpan<byte> input,

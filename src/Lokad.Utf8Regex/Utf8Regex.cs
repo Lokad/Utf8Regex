@@ -622,15 +622,28 @@ public sealed partial class Utf8Regex : IDisposable
                 RepeatMinimum: > 0, RepeatMaximum: long.MaxValue, HasSingleAtomBody: true } repeat &&
             program.Instructions[repeat.A].RepeatExitRejectsShorterEndpoints)
         {
-            // Count can consume proved ranges without preparing attempt storage.
-            // Keep the first unresolved origin and the same invocation for fallback.
-            while (Utf8SliceRunner.TryFindPreparedLiteralRange(program, input, ref startByte,
-                prefix, ref screenedLiteral, continuation, ref invocation, out var range))
+            if (_preparedRegex.RequiredLiteralTerminalSuffix is { } suffix &&
+                invocation.Budget.Limits.MaxDepth is 0 or >= Utf8SliceRunner.BranchedPrefixInstructionLimit &&
+                Utf8BytePosition.IsScalarBoundary(input, startByte))
             {
-                if (range.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
-                if (!range.Found) return countedPrefix;
-                countedPrefix++;
-                startByte = range.EndByte;
+                var proved = Utf8SliceRunner.CountPreparedLiteralRepeat(program, input, prefix.Needle,
+                    suffix, ref startByte, ref screenedLiteral, ref invocation);
+                if (proved.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+                countedPrefix += proved.Count;
+                if (startByte == input.Length) return countedPrefix;
+            }
+            else
+            {
+                // Count can consume proved ranges without preparing attempt storage.
+                // Keep the first unresolved origin and the same invocation for fallback.
+                while (Utf8SliceRunner.TryFindPreparedLiteralRange(program, input, ref startByte,
+                    prefix, ref screenedLiteral, continuation, ref invocation, out var range))
+                {
+                    if (range.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+                    if (!range.Found) return countedPrefix;
+                    countedPrefix++;
+                    startByte = range.EndByte;
+                }
             }
         }
         var slots = Utf8SliceSlots.Empty;
