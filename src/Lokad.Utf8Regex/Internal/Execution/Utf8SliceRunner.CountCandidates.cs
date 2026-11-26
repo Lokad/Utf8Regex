@@ -1040,7 +1040,7 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static bool TryFindGuardedRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+    internal static bool TryFindGuardedRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         ref int position, ref Utf8SliceInvocation invocation, out Utf8SliceSearchOutcome outcome)
     {
         outcome = default;

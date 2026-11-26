@@ -130,13 +130,23 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             else if (program.GroupCount == 0 && _regex!.TryFindNativeLiteralForResult(_input.Span, _position,
                     ref _invocation, out var found, out var start, out var end, forCoreCursor: true))
                 outcome = new(found, start, end, Utf8ExecutionLimitKind.None);
-            else outcome = program.IsNonBacktracking
-                ? FindNonBacktracking(program)
-                : Utf8SliceRunner.TryFindFirst(program, _input.Span, _position, _slots.Starts, _slots.Ends,
-                    collectHistory, ref _workspace, ref _invocation, in _regex!.SearchPlan,
-                    requiredLiteralContinuation: _regex.RequiredLiteralContinuation,
-                    requiredLiteralTerminalSuffix: _regex.RequiredLiteralTerminalSuffix,
-                    requiredLiteralOptionalRun: _regex.RequiredLiteralOptionalRun);
+            else if (program.IsNonBacktracking)
+                outcome = FindNonBacktracking(program);
+            else
+            {
+                var input = _input.Span;
+                var fromByte = _position;
+                // Let the existing proof finish a capture-free range. Its
+                // undecided case leaves the first unresolved candidate.
+                if (program.GroupCount != 0 || program.Instructions[0].Kind != Utf8SliceInstructionKind.Lookbehind ||
+                    !_invocation.IsUnmetered || _invocation.CheckpointHook is not null ||
+                    !Utf8SliceRunner.TryFindGuardedRepeat(program, input, ref fromByte, ref _invocation, out outcome))
+                    outcome = Utf8SliceRunner.TryFindFirst(program, input, fromByte, _slots.Starts, _slots.Ends,
+                        collectHistory, ref _workspace, ref _invocation, in _regex!.SearchPlan,
+                        requiredLiteralContinuation: _regex.RequiredLiteralContinuation,
+                        requiredLiteralTerminalSuffix: _regex.RequiredLiteralTerminalSuffix,
+                        requiredLiteralOptionalRun: _regex.RequiredLiteralOptionalRun);
+            }
             if (outcome.Breach != Utf8ExecutionLimitKind.None) throw _invocation.Budget.CreateResourceFailure();
             if (!outcome.Found)
             {

@@ -759,16 +759,27 @@ public sealed class Utf8ClassPrefixCandidateTests
     [InlineData("\u2003", " ", 0)]
     [InlineData(" ", "\u3000", 0)]
     [InlineData(" ", " ", 160)]
-    public void GuardedCountKeepsProvedHitsWhenTheNextCandidateNeedsTheVerifier(string left, string right, int padding)
+    public void GuardedIterationKeepsProvedHitsWhenTheNextCandidateNeedsTheVerifier(string left, string right, int padding)
     {
         const string pattern = @"(?<=\s)[A-Z][a-z]+(?=\s)";
-        var text = " First Bad!" + left + "Wide" + new string('a', padding) + right + "Last End!";
+        const string prefix = "😀 ";
+        var text = prefix + "First Bad!" + left + "Wide" + new string('a', padding) + right + "Last End!";
         var input = Encoding.UTF8.GetBytes(text);
         using var token = new CancellationTokenSource();
         using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
 
-        Assert.Equal(3, Regex.Count(text, pattern));
+        var expected = new Regex(pattern).Matches(text, prefix.Length);
+        Assert.Equal(3, expected.Count);
         Assert.Equal(3, regex.Count(input, token.Token));
+
+        using var ordinary = new Utf8Regex(pattern);
+        using var cursor = ordinary.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(prefix));
+        foreach (Match match in expected)
+        {
+            Assert.True(cursor.MoveNext(out var selected));
+            Utf8MatchSequence.AssertRange(selected.Value, text, match.Index, match.Length);
+        }
+        Assert.False(cursor.MoveNext(out _));
     }
 
     [Theory]
