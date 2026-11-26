@@ -148,22 +148,22 @@ public sealed partial class Utf8Regex
         }
 
         var slots = Utf8SliceSlots.Empty;
+        Utf8CaptureRange match;
         try
         {
-            Utf8CaptureRange result;
             if (program.IsNonBacktracking && subject.Length - startOffsetInBytes >= 64 &&
                 program.NonBacktrackingOrderedClosures.Length != 0)
             {
                 var selected = Utf8SliceRunner.TryFindFirst(program, subject, startOffsetInBytes,
                     [], [], false, ref invocation);
                 if (selected.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
-                result = default;
+                match = default;
                 if (selected.Found)
                 {
                     slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
                     var replay = Utf8SliceRunner.ReplayOrderedRegularRange(program, subject, selected, slots, ref invocation);
                     if (replay.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
-                    result = new(selected.StartByte, selected.EndByte);
+                    match = new(selected.StartByte, selected.EndByte);
                 }
             }
             else
@@ -173,14 +173,14 @@ public sealed partial class Utf8Regex
                 var outcome = Utf8SliceRunner.TryFindFirst(program, subject, startOffsetInBytes,
                     slots.Starts, slots.Ends, false, ref invocation, search, screenedLiteral: screenedLiteral);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
-                result = outcome.Found ? new(outcome.StartByte, outcome.EndByte) : default;
+                match = outcome.Found ? new(outcome.StartByte, outcome.EndByte) : default;
             }
             for (var ordinal = 0; ordinal < output.Length; ordinal++)
             {
                 if ((ordinal & 255) == 0) Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
-                if (!result.Success || ordinal == 0)
+                if (!match.Success || ordinal == 0)
                 {
-                    output[ordinal] = result;
+                    output[ordinal] = match;
                     continue;
                 }
                 // A forward search can capture inside a mirrored lookbehind.
@@ -190,11 +190,13 @@ public sealed partial class Utf8Regex
                 output[ordinal] = opening < 0 || closing < 0 ? default :
                     new(Math.Min(opening, closing), Math.Max(opening, closing));
             }
-            FinishFundedInvocation(ref invocation);
-            if (result.Success) program.ObserveCaptureProofWork(ref invocation);
-            return result;
         }
         finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
+
+        // A caller allowance can run during the scratch refund.
+        FinishFundedInvocation(ref invocation);
+        if (match.Success) program.ObserveCaptureProofWork(ref invocation);
+        return match;
     }
 
     private static Utf8CaptureRange MatchEmittedCaptureSlots(ReadOnlySpan<byte> subject, int position,

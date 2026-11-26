@@ -908,11 +908,49 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.Equal(0UL, account.Held);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MatchChecksInterruptionAfterRefundingCaptureScratch(bool deadline)
+    {
+        long now = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex("(?<piece>😀)x", policy: new()
+        {
+            MatchTimeout = deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan
+        });
+        var sentinel = new Utf8CaptureRange(99, 100);
+        var output = new[] { sentinel, sentinel, sentinel };
+        var match = new Utf8CaptureRange(1, 6);
+        var capture = new Utf8CaptureRange(1, 5);
+        var refunded = 0;
+        var account = new Account();
+        account.AfterRelease = () =>
+        {
+            if (account.Held != 0 || !output[0].Equals(match) || !output[1].Equals(capture)) return;
+            refunded++;
+            if (deadline) now = 101;
+            else source.Cancel();
+        };
+
+        var error = Record.Exception(() =>
+            regex.Match("!😀x?"u8, captures: output, cancellationToken: source.Token, workingMemoryAllowance: account));
+        Assert.Equal(1, refunded);
+        if (deadline) Assert.Equal(string.Empty, Assert.IsType<RegexMatchTimeoutException>(error).Input);
+        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        Assert.False(output[0].Success);
+        Assert.False(output[1].Success);
+        Assert.Equal(sentinel, output[2]);
+        Assert.Equal(0UL, account.Held);
+    }
+
     private sealed class Account : IUtf8MemoryAllowance
     {
         internal ulong Held;
         internal ulong Peak;
         internal ulong Maximum = ulong.MaxValue;
+        internal Action? AfterRelease;
         public bool TryReserve(ulong bytes)
         {
             if (bytes > Maximum - Held) return false;
@@ -920,6 +958,6 @@ public sealed class Utf8CaptureSlotMatchTests
             Peak = Math.Max(Peak, Held);
             return true;
         }
-        public void Release(ulong bytes) { Assert.True(bytes <= Held); Held -= bytes; }
+        public void Release(ulong bytes) { Assert.True(bytes <= Held); Held -= bytes; AfterRelease?.Invoke(); }
     }
 }
