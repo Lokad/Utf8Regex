@@ -577,6 +577,71 @@ public sealed class Utf8MemoryCursorTests
         Assert.Equal(1, results.Attempts); Assert.Equal(0UL, root.Used);
     }
 
+    [Theory]
+    [InlineData(false, false)] [InlineData(false, true)]
+    [InlineData(true, false)] [InlineData(true, true)]
+    public void ResultRefundObservesInterruptionBeforePublication(bool deadline, bool retain)
+    {
+        var root = new Root();
+        var working = new Account(root);
+        var results = new Account(root);
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex("x", policy: new()
+        {
+            MatchTimeout = deadline ? TimeSpan.FromMilliseconds(200) : Timeout.InfiniteTimeSpan
+        });
+        using var cursor = regex.CreateMatchCursor("xx"u8.ToArray(), cancellationToken: source.Token,
+            workingMemoryAllowance: working);
+        Assert.True(cursor.MoveNext(out var first));
+
+        working.AfterRelease = deadline ? () => clock.Advance(250) : source.Cancel;
+        Utf8RangeMatch match = default;
+        Utf8RetainedRangeMatch? receipt = null;
+        var error = Record.Exception(() =>
+        {
+            if (retain) cursor.MoveNextRetained(out receipt, resultMemoryAllowance: results);
+            else cursor.MoveNext(out match);
+        });
+        using var unexpectedReceipt = receipt;
+        if (deadline) Assert.Equal(regex.Pattern, Assert.IsType<RegexMatchTimeoutException>(error).Pattern);
+        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        Assert.False(match.Success);
+        Assert.Null(receipt);
+        Assert.Equal(0UL, root.Used);
+        Assert.Equal(new Utf8CaptureRange(0, 1), first.Value);
+        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
+    }
+
+    [Theory]
+    [InlineData("x", false)] [InlineData("x", true)]
+    [InlineData("", false)] [InlineData("", true)]
+    public void ExhaustionObservesInterruptionDuringClosedProgramRefund(string pattern, bool deadline)
+    {
+        var root = new Root();
+        var program = new Account(root);
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new()
+        {
+            ProgramMemoryAllowance = program,
+            MatchTimeout = deadline ? TimeSpan.FromMilliseconds(200) : Timeout.InfiniteTimeSpan
+        });
+        using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(pattern), cancellationToken: source.Token);
+        regex.Dispose();
+        Assert.True(cursor.MoveNext(out var first));
+        Assert.True(root.Used > 0);
+
+        program.AfterRelease = deadline ? () => clock.Advance(250) : source.Cancel;
+        var alias = cursor;
+        var error = Record.Exception(() => alias.MoveNext(out _));
+        if (deadline) Assert.Equal(pattern, Assert.IsType<RegexMatchTimeoutException>(error).Pattern);
+        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        Assert.Equal(0UL, root.Used);
+        Assert.Equal(new Utf8CaptureRange(0, pattern.Length), first.Value);
+        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
+    }
+
     [Fact]
     public async Task ConcurrentAccessAndDisposeAreRejectedWhileAnAdvanceOwnsTheCursor()
     {
@@ -626,6 +691,7 @@ public sealed class Utf8MemoryCursorTests
         internal ulong Maximum = 64 << 20;
         internal int Attempts;
         internal Action? AfterGrant;
+        internal Action? AfterRelease;
         public bool TryReserve(ulong bytes)
         {
             Attempts++;
@@ -637,6 +703,7 @@ public sealed class Utf8MemoryCursorTests
         {
             if (bytes > Used) throw new InvalidOperationException("Unfunded release.");
             Used -= bytes; root.Used -= bytes;
+            AfterRelease?.Invoke();
         }
     }
 }

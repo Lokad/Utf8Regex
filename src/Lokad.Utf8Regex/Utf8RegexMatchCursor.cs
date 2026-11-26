@@ -111,7 +111,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
     {
         match = default; retained = null;
         Checkpoint();
-        if (_position < 0) { Close(Status.Ended); return false; }
+        if (_position < 0) { FinishExhausted(); return false; }
         var outcome = default(Utf8SliceSearchOutcome);
         var results = new Utf8InvocationResultLedger();
         var exhausted = false;
@@ -172,6 +172,8 @@ public sealed class Utf8RegexMatchCursor : IDisposable
                 receipt = results.AllocateObject((Match: completed, Allowance: allowance),
                     static state => new Utf8RetainedRangeMatch(state.Match, state.Allowance), ref _invocation);
             }
+            else results.Release(ref _invocation);
+            // A caller allowance may signal interruption while receiving a refund.
             Checkpoint();
             if (receipt is not null)
             {
@@ -182,9 +184,12 @@ public sealed class Utf8RegexMatchCursor : IDisposable
                 else
                 {
                     if (!allowance.TryReserve(bytes)) throw new Utf8MemoryAdmissionException(bytes);
-                    try { Checkpoint(); }
+                    try
+                    {
+                        results.Release(ref _invocation);
+                        Checkpoint();
+                    }
                     catch { allowance.Release(bytes); throw; }
-                    results.Release(ref _invocation);
                     receipt.SetTransferredBytes(bytes);
                 }
                 retained = receipt;
@@ -198,9 +203,9 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         }
         finally
         {
-            results.Release(ref _invocation);
+            if (results.ReservedBytes != 0) results.Release(ref _invocation);
             // Close only after transient reservations/roots have finished.
-            if (exhausted) Close(Status.Ended);
+            if (exhausted) FinishExhausted();
         }
     }
 
@@ -292,6 +297,23 @@ public sealed class Utf8RegexMatchCursor : IDisposable
 
     private System.Text.RegularExpressions.RegexMatchTimeoutException TimeoutFailure()
         => Utf8Regex.CreateMatchTimeoutException(default, _regex?.Pattern ?? string.Empty, _timeout, _invocation.Budget.Limits);
+
+    private void FinishExhausted()
+    {
+        var regex = _regex!;
+        var funded = _invocation.Ledger.HasMemoryAllowance || _programUse is not null;
+        Close(Status.Faulted);
+        if (funded)
+        {
+            _invocation.Budget.ThrowIfCancellationRequested();
+            try { _invocation.Budget.CheckDeadline(); }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw Utf8Regex.CreateMatchTimeoutException(default, regex.Pattern, _timeout, _invocation.Budget.Limits);
+            }
+        }
+        _status = Status.Ended;
+    }
 
     /// <summary>Closes every alias and refunds exclusive storage synchronously; previously returned ranges remain valid.</summary>
     public void Dispose()

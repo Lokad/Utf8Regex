@@ -285,6 +285,8 @@ When the cursor publishes participating single-capture slots for every group,
 the ranges already follow slot order and the cursor omits the history offsets.
 
 Ordinary publication ends working admission for the range result.
+An advance checks its original interruption authority after any caller-funded
+refund that completes a result or EOF.
 `MoveNextRetained` requires shared working funding and returns a
 `Utf8RetainedRangeMatch`. Captures, group numbers and the receipt are admitted.
 By default the staging loan transfers to the receipt. If a separate result
