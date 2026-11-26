@@ -2004,18 +2004,40 @@ internal static partial class Utf8SliceRunner
         // operands. Otherwise the separator must follow the first run.
         var remaining = BranchedPrefixInstructionLimit - index - 4;
         var code = program.Instructions;
-        var end = TryMatchLongPrefixRepeat(program, input, position, index + 1, in code[index], ref remaining);
-        if (end >= 0 && !skipCaptureOpening && !code[index + 3].RepeatExitSharesTerminalRun)
+        var separatedRuns = !skipCaptureOpening && !code[index + 3].RepeatExitSharesTerminalRun;
+        var end = separatedRuns
+            ? MatchProvedTerminalCategoryRun(program, input, position, in code[index + 1], ref remaining)
+            : TryMatchLongPrefixRepeat(program, input, position, index + 1, in code[index], ref remaining);
+        if (end >= 0 && separatedRuns)
         {
             if (end == input.Length || input[end] != code[index + 4].A)
                 end = BranchedPrefixRejected;
             else if (existenceOnly)
                 end = MatchFirstTerminalCategoryScalar(program, input, end + 1, in code[index + 6], remaining);
             else
-                end = TryMatchLongPrefixRepeat(program, input, end + 1, index + 6, in code[index + 5], ref remaining);
+                end = MatchProvedTerminalCategoryRun(program, input, end + 1, in code[index + 6], ref remaining);
         }
         acceptedEnd = end < 0 ? BranchedPrefixUndecided : end;
         return end != BranchedPrefixRejected;
+    }
+
+    private static int MatchProvedTerminalCategoryRun(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, in Utf8SliceInstruction atom, ref int remaining)
+    {
+        // Preparation proves a greedy category run requiring one scalar,
+        // with no shorter endpoint to consider. Only a wide byte needs its
+        // category table. Keep the shared byte window across both runs.
+        var available = input.Length - position;
+        var window = input.Slice(position, Math.Min(remaining, available));
+        var mask = program.SetMasks[atom.A];
+        var consumed = ScanAsciiMask(window, mask, category: false);
+        if (consumed < window.Length && window[consumed] >= 128)
+            consumed = ContinueUnfoldedClassPrefix(window, consumed, mask, program.GetCompleteAsciiCategoryMask(atom));
+        if (consumed < 0 || consumed == window.Length && window.Length < available)
+            return BranchedPrefixUndecided;
+        if (consumed == 0) return BranchedPrefixRejected;
+        remaining -= Math.Min(window.Length, consumed + 1);
+        return position + consumed;
     }
 
     private static int MatchFirstTerminalCategoryScalar(Utf8SliceProgram program, ReadOnlySpan<byte> input,

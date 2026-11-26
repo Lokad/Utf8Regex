@@ -803,6 +803,7 @@ public sealed class Utf8ClassPrefixCandidateTests
     [InlineData("pé", "abc", "cd.e", 0, 4096)]
     [InlineData("pé", "β-記", "δ.東", 0, 4096)]
     [InlineData("p\U00010400é", "β-記", "δ.東", 0, 4096)]
+    [InlineData("pé", "long", "end", 82, 4096)]
     [InlineData("pé", "long", "end", 160, 4096)]
     [InlineData("pé", "β-記", "δ.東", 0, 64)]
     public void SeparatedClassRunsKeepGreedyByteRanges(string label, string middle, string tail, int extra, int depth)
