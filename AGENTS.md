@@ -30,7 +30,9 @@ Follow the profile contracts and the ignored root PLAN.md.
 - Use `tools/bench.ps1` in Release, normally `-Job Short`, on .NET 11. Run
   focused comparisons sequentially and keep the public outputs equal.
   The quiet VM target for a complete refresh is one hour. Preserve raw
-  evidence and regenerate tables with the existing tools.
+  evidence and regenerate tables with the existing tools. Keep VM home
+  scratch matching `~/utf8regex-*` below 5 GiB and remove run directories
+  after verifying the copied evidence.
   [Benchmark procedure](docs/BENCHMARKS.md)
 
 ## Delivery
