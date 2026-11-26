@@ -76,11 +76,8 @@ public sealed partial class Utf8Regex
                 if (outcome.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
                 result = outcome.Found ? new(outcome.StartByte, outcome.EndByte) : default;
             }
-            if (!output.IsEmpty)
-            {
-                Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
-                output[0] = result;
-            }
+            if (!output.IsEmpty) output[0] = result;
+            // The final check also covers the single slot. Failure clears it below.
             FinishFundedInvocation(ref invocation);
             return result;
         }
