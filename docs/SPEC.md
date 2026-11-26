@@ -375,7 +375,8 @@ token, on engines built with default construction controls. Finite policies,
 funding and cooperative interruption retain their existing execution paths.
 The CLR can JIT the emitted method on first use. Construction admits the
 emitter's managed storage and bounded expansion. Native JIT storage is outside
-the construction byte limit. Eligible literal families also use emitted code.
+the construction byte limit. Small exact literal buckets and eligible
+shared-prefix families can use specialized emitted search loops.
 NativeAOT and trimming remain outside qualification.
 
 Byte search uses the same scalar semantics, including options, captures, branch

@@ -508,7 +508,7 @@ public sealed partial class Utf8Regex : IDisposable
         // For short automaton families the shared finder can reject a start
         // on its leading boundary before comparing any literals.
         if (CanStartNativeLiteralInvocation(cancellationToken, forCount: true) ||
-            !cancellationToken.CanBeCanceled && _scalarBoundaryLiteralFamilyCounter is not null &&
+            !cancellationToken.CanBeCanceled && _canUseUnmeteredScalarBoundaryLiterals &&
             _preparedRegex.SearchPlan.MultiLiteralSearch is
                 { Kind: PreparedMultiLiteralKind.ExactAutomaton, AutomatonSearch.LongestLength: <= 8 })
         {

@@ -1,6 +1,4 @@
-using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.ExceptionServices;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 
@@ -92,17 +90,8 @@ public sealed class Utf8EmissionConstructionAdmissionTests
         Assert.Equal(0UL, owner.Budget.Depth);
     }
 
-    private static Delegate CompileCount()
-    {
-        var method = typeof(Utf8EmittedLiteralFamilyCounter).GetMethod("CompileGenericCount", BindingFlags.NonPublic | BindingFlags.Static)
-            ?? throw new MissingMethodException("The production emitted Count compiler is missing.");
-        try { return Assert.IsType<Utf8EmittedDelegate<Utf8EmittedLiteralFamilyCounter.CountDelegate>>(method.Invoke(null, [false, false, false])).Callback; }
-        catch (TargetInvocationException error) when (error.InnerException is Exception cause)
-        {
-            ExceptionDispatchInfo.Capture(cause).Throw();
-            throw;
-        }
-    }
+    private static Delegate CompileCount() => Utf8EmittedLiteralFamilyCounter.CompileSingleLiteralBucketCount(
+        useScalarBoundaryOnlyConfirmation: true, ["Task"u8.ToArray(), "ValueTask"u8.ToArray()]).Callback;
 
     [Fact]
     public void EmittedCodeReachesTheEnclosingConstructionOwner()
