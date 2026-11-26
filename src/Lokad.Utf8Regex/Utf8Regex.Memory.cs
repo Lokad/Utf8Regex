@@ -19,21 +19,23 @@ public sealed partial class Utf8Regex
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token, working);
         try
         {
-            using var construction = Utf8ConstructionScope.Enter(
+            Utf8SliceReplacementResult result;
+            using (var construction = Utf8ConstructionScope.Enter(
                 new() { MaxBytes = Utf8ConstructionScope.DefaultBufferBytes }, Timeout.InfiniteTimeSpan,
-                token, invocation.BorrowWorkingMemoryAllowance());
-            var deadline = invocation.Budget.Deadline;
-            construction.Budget.Deadline = deadline;
-            var control = new ReplacementPreparationControl(deadline, token);
-            ValidateReplacementTemplateUtf8(replacementUtf8, control);
-            var replacement = GetParsedReplacement(replacementUtf8, control);
-            // Funded calls use the existing controlled scalar replacement route,
-            // including its native literal candidate discovery and NB/RTL rules.
-            var result = OwnedSliceReplace(input, _ownedSliceProgram, replacement,
-                Utf8SliceReplacementResultKind.Destination, destination, invocation);
+                token, invocation.BorrowWorkingMemoryAllowance()))
+            {
+                var deadline = invocation.Budget.Deadline;
+                construction.Budget.Deadline = deadline;
+                var control = new ReplacementPreparationControl(deadline, token);
+                ValidateReplacementTemplateUtf8(replacementUtf8, control);
+                var replacement = GetParsedReplacement(replacementUtf8, control);
+                // Keep the template loans through output and refund them before reporting its status.
+                result = OwnedSliceReplace(input, _ownedSliceProgram, replacement,
+                    Utf8SliceReplacementResultKind.Destination, destination, invocation);
+                construction.Complete();
+            }
             FinishFundedInvocation(ref invocation);
             bytesWritten = result.BytesWritten;
-            construction.Complete();
             return result.Status;
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&

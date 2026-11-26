@@ -465,6 +465,41 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Equal(0UL, working.Used); Assert.Equal(held, programs.Used);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FundedReplacementChecksInterruptionAfterRefundingPreparation(bool timeout)
+    {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var canceled = new CancellationTokenSource();
+        using var regex = new Utf8Regex("(a)", policy: new()
+        {
+            MatchTimeout = timeout ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan
+        });
+        var root = new SharedRoot();
+        var working = new Account(root);
+        var destination = new byte[16];
+        var refunds = 0;
+        working.AfterRelease = () =>
+        {
+            if (working.Used != 0 || !destination.AsSpan(0, 3).SequenceEqual("[a]"u8)) return;
+            refunds++;
+            if (timeout) ticks = 21;
+            else canceled.Cancel();
+        };
+
+        var written = -1;
+        var error = Record.Exception(() => regex.TryReplace("a"u8, "[$1]"u8, destination,
+            out written, canceled.Token, working));
+        Assert.Equal(1, refunds);
+        if (timeout) Assert.Empty(Assert.IsType<RegexMatchTimeoutException>(error).Input);
+        else Assert.Equal(canceled.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        Assert.Equal(0, written);
+        Assert.Equal(0UL, working.Used);
+        Assert.Equal(0UL, root.Used);
+    }
+
     [Fact]
     public void FundedTemplateCallRetainsProgramAcrossReentrantClose()
     {
@@ -544,6 +579,7 @@ public sealed class Utf8FundedProgramOwnerTests
         internal ulong Maximum = ulong.MaxValue;
         internal int Attempts;
         internal Action? AfterGrant;
+        internal Action? AfterRelease;
         public bool TryReserve(ulong bytes)
         {
             lock (root.Gate)
@@ -561,6 +597,7 @@ public sealed class Utf8FundedProgramOwnerTests
                 if (bytes > Used) throw new InvalidOperationException("Unfunded release.");
                 Used -= bytes; root.Used -= bytes;
             }
+            AfterRelease?.Invoke();
         }
     }
 }
