@@ -410,7 +410,7 @@ public sealed partial class Utf8Regex : IDisposable
             }
             if (!program.IsNonBacktracking && search.RequiredPrefilterSearcher.Kind == PreparedSearcherKind.MultiLiteral && screenedLiteral >= startByte)
             {
-                var proof = Utf8SliceRunner.TryProveScreenedOrderedClassFamily(program, input, search.RequiredPrefilterSearcher,
+                var proof = Utf8SliceRunner.TryProveScreenedOrderedClassFamily(program, input, search,
                     startByte, screenedLiteral, ref invocation, out var proved);
                 if (proof != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
                 if (proved) return true;

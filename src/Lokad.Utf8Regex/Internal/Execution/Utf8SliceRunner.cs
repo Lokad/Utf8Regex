@@ -558,7 +558,7 @@ internal static partial class Utf8SliceRunner
             CanAdmitOrderedRows(program, ref invocation))
         {
             var orderedStart = fromByte;
-            var breach = TrySeedOrderedClassFamily(program, input, candidatePlan.RequiredPrefilterSearcher,
+            var breach = TrySeedOrderedClassFamily(program, input, candidatePlan,
                 ref orderedStart, ref invocation, out var orderedEnd);
             if (breach != Utf8ExecutionLimitKind.None || orderedStart < 0) return new(false, -1, -1, breach);
             var selected = orderedEnd < 0
@@ -1020,7 +1020,8 @@ internal static partial class Utf8SliceRunner
                 var proofBreach = invocation.TryChargeInputStep();
                 if (proofBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, proofBreach);
-                classAlternatives = GetAlignedDelimiterAlternatives(program, literalIndex, candidatePlan.RequiredPrefilterSearcher);
+                if (ReferenceEquals(candidatePlan.AlignedClassDelimiterProgram, program))
+                    classAlternatives = candidatePlan.RequiredPrefilterSearcher.ExactMultiLiterals;
             }
             if (needsClassWindow && classLiteral < 0 && classAlternatives is null &&
                 GetRepeatPrefixSearch(program, candidatePlan, out repeatPrefix) is { } prefixSearch)

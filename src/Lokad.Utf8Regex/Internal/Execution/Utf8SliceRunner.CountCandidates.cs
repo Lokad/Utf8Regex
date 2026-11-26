@@ -815,18 +815,20 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static byte[][]? GetAlignedDelimiterAlternatives(Utf8SliceProgram program, int index,
-        in PreparedSearcher search)
+    internal static bool PrepareAlignedDelimiterAlternatives(Utf8SliceProgram program,
+        in PreparedSearcher search, Utf8ConstructionBudget budget)
     {
-        if (program.Instructions[index].Kind != Utf8SliceInstructionKind.Fork ||
-            search.ExactMultiLiterals is not { Length: >= 2 and <= 8 } literals) return null;
+        if (program.LeadingClassDelimiter is not { LeadingClass: >= 0, Literal: < 0, LiteralIndex: >= 0 and var index } ||
+            search.ExactMultiLiterals is not { Length: >= 2 and <= 8 } literals ||
+            program.Instructions[index].Kind != Utf8SliceInstructionKind.Fork) return false;
+        budget.ChargeWork(1);
         foreach (var literal in literals)
-            if (literal.Length is 0 or > 64) return null;
+            if (literal.Length is 0 or > 64) return false;
 
         // Each arm must begin with a prepared needle. Required literals farther
         // into a branch do not identify the end of the leading class window.
         var remaining = 16;
-        return CoversAllStarts(index) ? literals : null;
+        return CoversAllStarts(index);
 
         bool CoversAllStarts(int start)
         {
@@ -850,20 +852,20 @@ internal static partial class Utf8SliceRunner
     }
 
     private static Utf8ExecutionLimitKind TrySeedOrderedClassFamily(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, in PreparedSearcher search, ref int position, ref Utf8SliceInvocation invocation,
+        ReadOnlySpan<byte> input, in Utf8SearchPlan candidatePlan, ref int position, ref Utf8SliceInvocation invocation,
         out int acceptedEnd)
     {
         acceptedEnd = -1;
-        if (!HasOrderedClassFamilyPrefix(program, search))
+        if (!HasOrderedClassFamilyPrefix(program, candidatePlan))
             return Utf8ExecutionLimitKind.None;
 
         var prefix = program.LeadingClassDelimiter;
         var breach = invocation.TryChargeInputStep();
-        if (breach != Utf8ExecutionLimitKind.None || GetAlignedDelimiterAlternatives(program, prefix.LiteralIndex, search) is null)
-            return breach;
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
 
         var floor = position;
-        breach = search.TryFindMatch(input, position, input.Length, false, ref invocation, out var hit, out var found);
+        breach = candidatePlan.RequiredPrefilterSearcher.TryFindMatch(input, position, input.Length, false,
+            ref invocation, out var hit, out var found);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         position = found ? hit.Index : -1;
         if (!found) return Utf8ExecutionLimitKind.None;
@@ -881,24 +883,22 @@ internal static partial class Utf8SliceRunner
             ref position, ref invocation);
     }
 
-    private static bool HasOrderedClassFamilyPrefix(Utf8SliceProgram program, in PreparedSearcher search)
-        => search.Kind == PreparedSearcherKind.MultiLiteral &&
+    private static bool HasOrderedClassFamilyPrefix(Utf8SliceProgram program, in Utf8SearchPlan candidatePlan)
+        => ReferenceEquals(candidatePlan.AlignedClassDelimiterProgram, program) &&
             program.LeadingClassDelimiter is { Literal: < 0, LeadingClass: > 0, GapMaximum: 0, LiteralIndex: >= 0 } prefix &&
             program.Instructions[prefix.LeadingClass].Kind != Utf8SliceInstructionKind.Dot;
 
     internal static Utf8ExecutionLimitKind TryProveScreenedOrderedClassFamily(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, in PreparedSearcher search, int floor, int screenedLiteral,
+        ReadOnlySpan<byte> input, in Utf8SearchPlan candidatePlan, int floor, int screenedLiteral,
         ref Utf8SliceInvocation invocation, out bool found)
     {
         found = false;
         if (screenedLiteral < floor || invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit ||
-            !HasOrderedClassFamilyPrefix(program, search))
+            !HasOrderedClassFamilyPrefix(program, candidatePlan))
             return Utf8ExecutionLimitKind.None;
 
         var breach = invocation.TryChargeInputStep();
-        if (breach != Utf8ExecutionLimitKind.None ||
-            GetAlignedDelimiterAlternatives(program, program.LeadingClassDelimiter.LiteralIndex, search) is null)
-            return breach;
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
 
         breach = TryProveOrderedClassFamily(program, input, floor, screenedLiteral, ref invocation, out _, out var end);
         if (breach != Utf8ExecutionLimitKind.None || end < 0) return breach;

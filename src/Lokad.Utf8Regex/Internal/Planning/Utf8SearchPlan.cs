@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal readonly struct Utf8SearchPlan
 {
-    private Utf8SearchPlan(Utf8SearchFacts facts)
+    private Utf8SearchPlan(Utf8SearchFacts facts, Utf8SliceProgram? scalarProgram, Utf8ConstructionBudget budget)
     {
         var kind = facts.Kind;
         var literalUtf8 = NullIfEmpty(facts.LiteralUtf8);
@@ -58,6 +58,9 @@ internal readonly struct Utf8SearchPlan
             LiteralSearch is { IgnoreCase: false } exact && exact.Needle.AsSpan().SequenceEqual(requiredPrefilterLiteralUtf8)
             ? new PreparedSearcher(exact, ignoreCase: false)
             : CreateRequiredPrefilter(requiredPrefilterLiteralUtf8, requiredPrefilterAlternateLiteralsUtf8);
+        if (scalarProgram is not null && Utf8SliceRunner.PrepareAlignedDelimiterAlternatives(
+            scalarProgram, _requiredPrefilterSearcher, budget))
+            AlignedClassDelimiterProgram = scalarProgram;
         FixedDistanceSets = fixedDistanceSets;
         TrailingLiteralUtf8 = trailingLiteralUtf8;
         FallbackStartTransform = fallbackStartTransform;
@@ -79,7 +82,7 @@ internal readonly struct Utf8SearchPlan
         TrailingBoundary = trailingBoundary;
     }
 
-    public static Utf8SearchPlan Prepare(Utf8SearchFacts facts)
+    public static Utf8SearchPlan Prepare(Utf8SearchFacts facts, Utf8SliceProgram? scalarProgram = null)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
@@ -87,7 +90,7 @@ internal readonly struct Utf8SearchPlan
         try
         {
             budget.ChargeWork(1);
-            var plan = new Utf8SearchPlan(facts);
+            var plan = new Utf8SearchPlan(facts, scalarProgram, budget);
             scope.Complete();
             return plan;
         }
@@ -119,6 +122,9 @@ internal readonly struct Utf8SearchPlan
     public Utf8SearchPortfolioKind PortfolioKind { get; }
 
     private readonly PreparedSearcher _requiredPrefilterSearcher;
+
+    // The proof applies to these lowered instructions and this searcher's needles.
+    internal Utf8SliceProgram? AlignedClassDelimiterProgram { get; }
 
     [UnscopedRef]
     public ref readonly PreparedSearcher RequiredPrefilterSearcher => ref _requiredPrefilterSearcher;

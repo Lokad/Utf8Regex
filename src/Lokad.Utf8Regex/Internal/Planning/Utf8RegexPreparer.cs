@@ -22,7 +22,7 @@ internal static class Utf8RegexPreparer
                 anchoredLiteral.HasValue && anchoredLiteral.IsExact)
                 fallbackReason = null;
 
-            var searchPlan = Utf8SearchPlan.Prepare(analyzedRegex.SearchFacts);
+            var searchPlan = Utf8SearchPlan.Prepare(analyzedRegex.SearchFacts, scalarProgram);
             var operationPlans = Utf8OperationMatchCursorPlans.Create(searchPlan);
             var result = Utf8PreparedRegex.Create(
                 new Utf8PreparedSemanticRegex(analyzedRegex.SemanticRegex.Pattern, analyzedRegex.SemanticRegex.Options,
