@@ -62,6 +62,23 @@ public sealed class Utf8LiteralCountTests
     }
 
     [Theory]
+    [InlineData("夏A|夏A字F")]
+    [InlineData("夏A字F|夏A")]
+    public void WideThreeByteLeadingFamilyKeepsOrderAcrossCountWindows(string prefixAlternatives)
+    {
+        var pattern = prefixAlternatives + "|约A|阿B|雷C|莫D|文E|字F|语G";
+        var text = new string('x', 2046) + "夏A字F约A" + new string('x', 2052) + "字F莫D夏A";
+        var bytes = Encoding.UTF8.GetBytes("🙂" + text);
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
+        using var source = new CancellationTokenSource();
+        var expected = Regex.Count(text, pattern);
+
+        Assert.Equal(PreparedMultiLiteralKind.ExactAutomaton, regex.Inspection.SearchPlan.MultiLiteralSearch.Kind);
+        Assert.Equal(expected, regex.Count(bytes.AsSpan(4)));
+        Assert.Equal(expected, regex.Count(bytes.AsSpan(4), source.Token));
+    }
+
+    [Theory]
     [InlineData("夏洛克·福尔摩斯")]
     [InlineData("夏·é")]
     [InlineData("夏洛😀")]

@@ -126,8 +126,11 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             }
             var prepared = PreparedMultiLiteralCandidatePrefilter.CreateLeadingUtf8Segment(literals);
             if (!prepared.HasValue) return false;
-            var machine = PreparedMultiLiteralAutomatonSearch.Create(literals);
-            prefilter = prepared; automaton = machine;
+            // The portfolio automaton uses the same literal order and transitions.
+            var search = regexPlan.SearchPlan.MultiLiteralSearch;
+            automaton = search.Kind == PreparedMultiLiteralKind.ExactAutomaton
+                ? search.AutomatonSearch : PreparedMultiLiteralAutomatonSearch.Create(literals);
+            prefilter = prepared;
             scope.Complete(); return true;
         }
         finally { budget.LeaveDepth(); }
