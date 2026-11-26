@@ -558,7 +558,7 @@ internal static class Pcre2CompiledProgramOverlay
             Pcre2LiteralFamilyAnalyzer.CanReuseCoreExecution(
                 root,
                 request,
-                primary.ByteOffsetExecution.SearchPortfolioKind))
+                primary.SearchPlan.PortfolioKind))
         {
             var literalFamily = new Pcre2LiteralFamilyDirectProgram(primary, backtrackingProgram);
             operations = operations with
@@ -2373,9 +2373,11 @@ internal ref struct Pcre2DirectGlobalMatchCursor
 
 internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
 {
-    private Utf8PreparedValueMatchEnumerator _enumerator;
-    private ReadOnlySpan<byte> _input;
+    private readonly ReadOnlySpan<byte> _input;
+    private readonly PreparedSearcher _search;
     private readonly Pcre2FiniteLiteralBoundaryProjection? _boundaryProjection;
+    private int _position;
+    private PreparedMultiLiteralScanState _multiLiteralScanState;
     private Pcre2ResourceBudget _budget;
 
     [UnscopedRef]
@@ -2387,8 +2389,10 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
         Utf8BytePosition start,
         scoped in Pcre2ResourceBudget budget)
     {
-        _enumerator = program.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
         _input = input;
+        _search = program.Regex.SearchPlan.PreparedSearcher;
+        _position = start.Value;
+        _multiLiteralScanState = new(start.Value, start.Value, 0);
         _boundaryProjection = (program as Pcre2FiniteLiteralLanguageDirectProgram)?.BoundaryProjection;
         // The selector admits this route only for unmetered matching. Shaping
         // still owns an aggregate working ledger on this same operation cursor.
@@ -2400,14 +2404,18 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
 
     internal bool MoveNext()
     {
-        if (!_enumerator.MoveNext())
+        var found = _search.Kind == PreparedSearcherKind.MultiLiteral
+            ? _search.TryFindNextNonOverlappingLength(_input, ref _multiLiteralScanState,
+                out var consumedStart, out var length)
+            : _search.TryFindNextNonOverlappingLiteral(_input, ref _position,
+                out consumedStart, out length);
+        if (!found)
         {
             Current = default;
             return false;
         }
 
-        var consumedStart = _enumerator.StartOffsetInBytes;
-        var consumedEnd = _enumerator.EndOffsetInBytes;
+        var consumedEnd = consumedStart + length;
         var reportedStart = _boundaryProjection?.ProjectStartOffset(
             _input,
             consumedStart,

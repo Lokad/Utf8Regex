@@ -248,8 +248,6 @@ public sealed partial class Utf8Regex : IDisposable
 
     private Utf8PreparedRegex PreparedRegex => _preparedRegex;
 
-    internal Utf8ByteOffsetExecution ByteOffsetExecution => new(this); // PCRE2-INTEGRATION-POINT
-
     internal Utf8RegexInspection Inspection => new(this);
 
     internal ref readonly Utf8SearchPlan SearchPlan => ref _preparedRegex.SearchPlan;
