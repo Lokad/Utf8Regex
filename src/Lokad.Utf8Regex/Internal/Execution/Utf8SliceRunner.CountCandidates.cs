@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Text;
+using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 
@@ -1603,8 +1604,14 @@ internal static partial class Utf8SliceRunner
             MayMatchBranchedAsciiPrefix(program, input, screenedLiteral + search.Length, continuation,
                 out var end, proveMatch: true, BranchedPrefixInstructionLimit - continuation, existenceOnly))
         {
-            if (end < 0) return false;
-            if (!existenceOnly)
+            if (end < 0)
+            {
+                // An exact leading literal ruled out all earlier starts.
+                // A delimiter can still belong to a run starting before it.
+                if (!existenceOnly && !classWindow) position = screenedLiteral;
+                return false;
+            }
+            if (!existenceOnly && classWindow)
                 breach = TryRewindClassWhitespace(program, input, position, program.LeadingClassDelimiter.LeadingClass,
                     0, true, ref start, ref invocation);
             if (breach == Utf8ExecutionLimitKind.None && (!classWindow || start < screenedLiteral))
@@ -1635,21 +1642,33 @@ internal static partial class Utf8SliceRunner
         ref Utf8SliceInvocation invocation, out Utf8SliceSearchOutcome outcome)
     {
         outcome = default;
-        // Range publication needs the whole unbounded leading run and the
-        // greedy suffix. The separate adjacent-class proof only needs existence.
-        if (search.Length != 1 || continuation <= search.Length ||
-            program.LeadingClassWindowProof.CanAcceptAfterPair ||
+        var classWindow = continuation != search.Length;
+        // Eligible class windows can recover their full start from one
+        // excluded delimiter. The adjacent-class proof is existence-only.
+        if (program.GroupCount != 0 ||
+            classWindow && (search.Length != 1 || program.LeadingClassWindowProof.CanAcceptAfterPair) ||
+            !Utf8BytePosition.IsScalarBoundary(input, position) ||
             invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit)
             return false;
 
         if (screenedLiteral < position)
         {
-            screenedLiteral = position;
-            var literal = search.Needle[0];
-            var breach = TrySeekAsciiCandidate(input, ref screenedLiteral, literal, literal, ref invocation);
+            Utf8ExecutionLimitKind breach;
+            if (search.Length == 1)
+            {
+                screenedLiteral = position;
+                var literal = search.Needle[0];
+                breach = TrySeekAsciiCandidate(input, ref screenedLiteral, literal, literal, ref invocation);
+            }
+            else
+            {
+                breach = Utf8SearchExecutor.TryFindLiteralCandidate(search, input, position, input.Length - search.Length,
+                    false, ref invocation, out screenedLiteral);
+            }
             if (breach != Utf8ExecutionLimitKind.None || screenedLiteral < 0)
             {
                 invocation.Budget.ThrowIfCancellationRequested();
+                invocation.Budget.CheckDeadline();
                 outcome = new(false, -1, -1, breach);
                 return true;
             }

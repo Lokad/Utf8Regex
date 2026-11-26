@@ -465,6 +465,11 @@ internal static partial class Utf8SliceRunner
         ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default,
         bool existenceOnly = false, int screenedLiteral = -1, int requiredLiteralContinuation = 0)
     {
+        if (requiredLiteralContinuation > 0 && !existenceOnly && !collectHistory &&
+            TryFindPreparedLiteralRange(program, input, ref fromByte, candidatePlan.RequiredPrefilterSearcher.LiteralSearch,
+                ref screenedLiteral, requiredLiteralContinuation, ref invocation, out var range))
+            return range;
+
         // The prepared forward proof needs no attempt workspace at byte zero.
         if (fromByte == 0 && program.TerminalRoot == Utf8SliceTerminalRootKind.AsciiSetThenRepeat &&
             TryFindFirstShortAsciiRepeat(program, input, fromByte, candidatePlan.MinRequiredLength,
@@ -490,7 +495,7 @@ internal static partial class Utf8SliceRunner
             }
         }
         return FindFirstWithLocalWorkspace(program, input, fromByte, captureStarts, captureEnds,
-            collectHistory, ref invocation, candidatePlan, existenceOnly, screenedLiteral, singleOrigin, requiredLiteralContinuation);
+            collectHistory, ref invocation, candidatePlan, existenceOnly, screenedLiteral, singleOrigin);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -498,7 +503,7 @@ internal static partial class Utf8SliceRunner
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
         scoped Span<int> captureStarts, scoped Span<int> captureEnds, bool collectHistory,
         ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan,
-        bool existenceOnly, int screenedLiteral, bool singleOrigin, int requiredLiteralContinuation)
+        bool existenceOnly, int screenedLiteral, bool singleOrigin)
     {
         var workspace = new AttemptWorkspace();
         try
@@ -507,8 +512,7 @@ internal static partial class Utf8SliceRunner
                 ? MatchSingleOrigin(program, input, fromByte, captureStarts, captureEnds, collectHistory,
                     ref workspace, ref invocation, existenceOnly, seekVeryEnd: false)
                 : TryFindFirst(program, input, fromByte, captureStarts, captureEnds,
-                    collectHistory, ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral,
-                    requiredLiteralContinuation);
+                    collectHistory, ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral);
         }
         finally
         {
@@ -538,7 +542,7 @@ internal static partial class Utf8SliceRunner
             !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty &&
             invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit)
             return FindTerminalDecimalWithOptionalFraction(input, fromByte, ref invocation, existenceOnly);
-        if (requiredLiteralContinuation > 1 && !existenceOnly && !collectHistory && program.GroupCount == 0 &&
+        if (requiredLiteralContinuation > 0 && !existenceOnly && !collectHistory &&
             TryFindPreparedLiteralRange(program, input, ref fromByte, candidatePlan.RequiredPrefilterSearcher.LiteralSearch,
                 ref screenedLiteral, requiredLiteralContinuation, ref invocation, out var range))
             return range;

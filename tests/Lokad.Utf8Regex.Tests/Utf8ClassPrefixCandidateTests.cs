@@ -316,6 +316,34 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var source = new CancellationTokenSource();
         Assert.True(regex.IsMatch("ababab end"u8, source.Token));
         Assert.False(regex.IsMatch("ababab en"u8, source.Token));
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+        Assert.Equal(new Utf8CaptureRange(2, 10), regex.Match("ababab end"u8, 0, slots, source.Token));
+        Assert.False(regex.Match("ababab end"u8, 0, slots, source.Token, endOffsetInBytes: 9).Success);
+        Assert.False(slots[0].Success);
+        Assert.False(regex.Match("aba"u8, 0, slots, source.Token).Success);
+    }
+
+    [Fact]
+    public void PreparedLeadingLiteralKeepsAnUnresolvedSuffixAtTheFirstHit()
+    {
+        const string prefix = "Sherlock Holmes! 😀 ";
+        var first = "Sherlock" + new string(' ', 180) + "\u2003Holmes";
+        const string later = "Sherlock Holmes";
+        var text = prefix + first + "! " + later;
+        var input = Encoding.UTF8.GetBytes(text);
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        var end = floor + Encoding.UTF8.GetByteCount(first);
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(@"Sherlock\s+Holmes", policy: new() { ResourcePolicy = Funded });
+
+        Assert.Equal(new Utf8CaptureRange(floor, end), regex.Match(input, floor, cancellationToken: token.Token));
+        Assert.False(regex.Match(input, floor, cancellationToken: token.Token, endOffsetInBytes: end - 1).Success);
+        using var cursor = regex.CreateMatchCursor(input, floor, token.Token);
+        Assert.True(cursor.MoveNext(out var result));
+        Assert.Equal(new Utf8CaptureRange(floor, end), result.Value);
+        Assert.True(cursor.MoveNext(out result));
+        Assert.Equal(new Utf8CaptureRange(input.Length - later.Length, input.Length), result.Value);
+        Assert.False(cursor.MoveNext(out _));
     }
 
     [Theory]
