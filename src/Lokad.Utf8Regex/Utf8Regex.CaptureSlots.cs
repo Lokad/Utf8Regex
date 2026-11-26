@@ -103,11 +103,12 @@ public sealed partial class Utf8Regex
 
         var screenedLiteral = -1;
         ref readonly var search = ref _preparedRegex.SearchPlan;
-        if (program.LeadingClassWindowProof is { Completion: Utf8SliceClassWindowCompletion.CapturedRepeat } window &&
+        var window = program.LeadingClassWindowProof;
+        if (window.CanFinishCapturedRuns &&
             RequiredLiteralContinuation is > 0 and var continuation &&
             search.RequiredPrefilterSearcher.LiteralSearch is var delimiter && delimiter.Length == window.LiteralLength &&
             Utf8SliceRunner.TryFindPreparedLiteralRange(program, subject, ref startOffsetInBytes, delimiter,
-                ref screenedLiteral, continuation, ref invocation, out var captured, capturedRepeat: true))
+                ref screenedLiteral, continuation, ref invocation, out var captured, capturedWindow: true))
         {
             if (captured.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
             if (!captured.Found)
@@ -117,16 +118,33 @@ public sealed partial class Utf8Regex
                 return default;
             }
 
-            // The complete opposed runs give both captures directly. Dense
-            // slot order can differ from the order of their opening markers.
-            var result = output[0] = new(captured.StartByte, captured.EndByte);
-            var prefixSlot = program.Instructions[0].A + 1;
-            var suffixSlot = program.Instructions[continuation].A + 1;
-            if (prefixSlot < output.Length) output[prefixSlot] = new(captured.StartByte, screenedLiteral);
-            if (suffixSlot < output.Length) output[suffixSlot] = new(screenedLiteral + delimiter.Length, captured.EndByte);
-            FinishFundedInvocation(ref invocation);
-            program.ObserveCaptureProofWork(ref invocation);
-            return result;
+            var suffixStart = screenedLiteral + delimiter.Length;
+            var suffixEnd = captured.EndByte;
+            var lastSlot = output.Length;
+            var code = program.Instructions;
+            if (window.Completion == Utf8SliceClassWindowCompletion.CapturedSharedRun)
+            {
+                // Both repeats consume the same run. The last internal
+                // separator gives the first repeat its greedy endpoint.
+                var breach = Utf8SliceRunner.FindPreviousRepeatStart(subject, suffixStart + 1, suffixEnd - 1,
+                    code[continuation + 4].RepeatExitRewindStarts, ref invocation, out suffixEnd);
+                if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+                lastSlot = code[continuation + 7].A + 1;
+            }
+
+            if (suffixEnd >= 0)
+            {
+                // Dense slot order can differ from instruction order.
+                var result = output[0] = new(captured.StartByte, captured.EndByte);
+                var prefixSlot = code[0].A + 1;
+                var suffixSlot = code[continuation].A + 1;
+                if (prefixSlot < output.Length) output[prefixSlot] = new(captured.StartByte, screenedLiteral);
+                if (suffixSlot < output.Length) output[suffixSlot] = new(suffixStart, suffixEnd);
+                if (lastSlot < output.Length) output[lastSlot] = new(suffixEnd + 1, captured.EndByte);
+                FinishFundedInvocation(ref invocation);
+                program.ObserveCaptureProofWork(ref invocation);
+                return result;
+            }
         }
 
         var slots = Utf8SliceSlots.Empty;

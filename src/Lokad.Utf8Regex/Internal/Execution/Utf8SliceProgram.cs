@@ -411,6 +411,8 @@ internal readonly record struct Utf8SliceClassWindowProof(
     internal Utf8SliceClassWindowCompletion Completion { get; init; }
     internal bool CanFinishWhitespace => Completion == Utf8SliceClassWindowCompletion.Whitespace;
     internal bool CanFinishTerminalRuns => Completion == Utf8SliceClassWindowCompletion.TerminalRuns;
+    internal bool CanFinishCapturedRuns =>
+        Completion is Utf8SliceClassWindowCompletion.CapturedRepeat or Utf8SliceClassWindowCompletion.CapturedSharedRun;
 
     internal (int First, int Second) SuffixAfter(int length)
         => length == LiteralLength ? (FirstSuffixClass, SecondSuffixClass) : default;

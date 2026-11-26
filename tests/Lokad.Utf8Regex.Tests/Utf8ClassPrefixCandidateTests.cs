@@ -845,6 +845,21 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.Equal(program.LeadingClassDelimiter.LiteralIndex + 1, regex.RequiredLiteralContinuation);
         Assert.Equal(3, Regex.Count(text, pattern));
         Assert.Equal(3, regex.Count(input, token.Token));
+        if (captured)
+        {
+            var firstStart = Encoding.UTF8.GetByteCount(prefix) + padding.Length;
+            var firstEnd = firstStart + "λ@β.γ."u8.Length;
+            var keyEnd = firstStart + "λ"u8.Length;
+            var suffixStart = keyEnd + 1;
+            var split = suffixStart + "β"u8.Length;
+            using var tight = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded with { MaxWorkingBytes = 1 } });
+            Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[4];
+            Assert.Equal(new Utf8CaptureRange(firstStart, firstEnd),
+                tight.Match(input, firstStart, slots, token.Token, endOffsetInBytes: firstEnd));
+            Assert.Equal(new Utf8CaptureRange(firstStart, keyEnd), slots[1]);
+            Assert.Equal(new Utf8CaptureRange(suffixStart, split), slots[2]);
+            Assert.Equal(new Utf8CaptureRange(split + 1, firstEnd), slots[3]);
+        }
         using var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token);
         foreach (var value in new[] { first, unresolved, last })
         {

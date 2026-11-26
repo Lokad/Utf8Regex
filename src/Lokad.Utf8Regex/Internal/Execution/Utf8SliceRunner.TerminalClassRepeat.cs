@@ -1919,7 +1919,7 @@ internal static partial class Utf8SliceRunner
         }
     }
 
-    private static Utf8ExecutionLimitKind FindPreviousRepeatStart(ReadOnlySpan<byte> input, int lower,
+    internal static Utf8ExecutionLimitKind FindPreviousRepeatStart(ReadOnlySpan<byte> input, int lower,
         int upper, int starts, ref Utf8SliceInvocation invocation, out int position)
     {
         // ASCII bytes are scalar boundaries. Exclude the endpoint already tried

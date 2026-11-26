@@ -1152,7 +1152,7 @@ internal static partial class Utf8SliceRunner
         var classContinuation = verifiedClassLiteralLength != 0 ? classDelimiter.LiteralIndex + verifiedClassLiteralLength : 0;
         var classWindowProof = program.LeadingClassWindowProof;
         var terminalClassCapture = classCapture >= 0 && verifiedClassLiteralLength == classWindowProof.LiteralLength &&
-            classWindowProof.Completion is Utf8SliceClassWindowCompletion.CapturedRepeat or Utf8SliceClassWindowCompletion.CapturedSharedRun;
+            classWindowProof.CanFinishCapturedRuns;
         var prefixContinuation = classContinuation != 0 ? classContinuation : verifiedLeadingPrefix.Item1;
         var proofRepeatIndex = classContinuation != 0 && program.GroupCount != 0
             ? Utf8SliceInstruction.SkipLeadingCaptureMarkers(program.Instructions, classContinuation) : prefixContinuation;
