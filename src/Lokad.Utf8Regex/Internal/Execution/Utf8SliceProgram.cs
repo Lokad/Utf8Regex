@@ -1328,19 +1328,21 @@ internal static class Utf8SliceLowerer
         }
     }
 
-    private static NodeFacts ReadNodeFacts(Utf8SliceNode node, Utf8ConstructionMap<Utf8SliceNode, NodeFacts> facts,
+    private static NodeFacts ReadNodeFacts(Utf8SliceNode node, Utf8ConstructionMap<Utf8SliceNode, NodeFacts>? facts,
         bool nonBacktracking, Utf8ConstructionBudget budget)
     {
-        if (!TryGetLeafFacts(node, nonBacktracking, out var leaf)) return facts[node];
+        if (!TryGetLeafFacts(node, nonBacktracking, out var leaf)) return facts![node];
         budget.ChargeWork(1);
         return leaf;
     }
 
-    private static Utf8ConstructionMap<Utf8SliceNode, NodeFacts> AnalyzeNodes(Utf8SliceNode root, bool nonBacktracking, Utf8ConstructionBudget budget)
+    private static Utf8ConstructionMap<Utf8SliceNode, NodeFacts>? AnalyzeNodes(Utf8SliceNode root, bool nonBacktracking, Utf8ConstructionBudget budget)
     {
         // Slice nodes are records. Reference identity avoids recursive hashing.
-        // The main and assertion programs share composite facts. Leaf facts are
-        // cheap to derive from the node and need no table entry.
+        // The main and assertion programs share composite facts. Leaf facts
+        // are derived on demand, so this traversal visits only composite nodes.
+        if (TryGetLeafFacts(root, nonBacktracking, out _)) return null;
+
         using var frames = Utf8ConstructionFrames<AnalysisFrame>.Create(budget, new(root));
         var facts = Utf8ConstructionMap<Utf8SliceNode, NodeFacts>.Create(budget, ReferenceEqualityComparer.Instance);
         try
@@ -1353,12 +1355,12 @@ internal static class Utf8SliceLowerer
                 if (frame.NextChild(budget) is { } child)
                 {
                     frames[index] = frame;
-                    if (!facts.TryGetValue(child, out _)) frames.Push(new(child));
+                    if (!TryGetLeafFacts(child, nonBacktracking, out _) && !facts.TryGetValue(child, out _))
+                        frames.Push(new(child));
                     continue;
                 }
                 frames.Pop();
-                if (!TryGetLeafFacts(frame.Node, nonBacktracking, out _))
-                    facts[frame.Node] = Summarize(frame.Node);
+                facts[frame.Node] = Summarize(frame.Node);
             }
             return facts;
         }
@@ -1728,11 +1730,11 @@ internal static class Utf8SliceLowerer
         internal readonly Utf8ScalarCaseBehavior CaseBehavior;
         internal readonly bool MirrorExecute;
         internal readonly bool NonBacktracking;
-        private readonly Utf8ConstructionMap<Utf8SliceNode, NodeFacts> _facts;
+        private readonly Utf8ConstructionMap<Utf8SliceNode, NodeFacts>? _facts;
         internal Utf8SliceProgram? LastSubprogram;
         internal bool Failed;
 
-        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool mirrorExecute, Utf8ConstructionMap<Utf8SliceNode, NodeFacts> facts, Utf8ScalarCaseBehavior caseBehavior, bool nonBacktracking, Utf8ConstructionBudget budget)
+        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool mirrorExecute, Utf8ConstructionMap<Utf8SliceNode, NodeFacts>? facts, Utf8ScalarCaseBehavior caseBehavior, bool nonBacktracking, Utf8ConstructionBudget budget)
         {
             Budget = budget;
             Instructions = new(budget, true);

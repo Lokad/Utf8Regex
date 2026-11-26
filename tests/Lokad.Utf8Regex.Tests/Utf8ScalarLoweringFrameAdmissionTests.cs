@@ -16,7 +16,8 @@ public sealed class Utf8ScalarLoweringFrameAdmissionTests
             denial == 2 ? 2ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SliceLowerer.Lower(Leaf, null, false, false, false));
+        var root = new Utf8SliceNode.ConcatNode([Leaf]);
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SliceLowerer.Lower(root, null, false, false, false));
         Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, 1 => Utf8ResourceLimitKind.ConstructionDepth,
             _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, failure.ResourceKind);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
