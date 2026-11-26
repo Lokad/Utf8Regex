@@ -826,6 +826,10 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.False(regex.IsMatch("a@b.😀rest"u8, token.Token));
         Assert.False(regex.IsMatch("a@b."u8, token.Token));
         Assert.True(regex.IsMatch("a@b.😀rest c@d.é"u8, token.Token));
+        var invalidHeads = new string('!', 320) + "!@b.cd 😀@b.cd";
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(invalidHeads), token.Token));
+        Assert.Equal(0, regex.Count(Encoding.UTF8.GetBytes(invalidHeads), token.Token));
+        Assert.Equal(2, regex.Count(Encoding.UTF8.GetBytes(invalidHeads + " +@b.cd Ω@b.cd"), token.Token));
     }
 
     [Theory]

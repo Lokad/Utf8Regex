@@ -1901,11 +1901,11 @@ internal static partial class Utf8SliceRunner
             // An excluded delimiter fixes the end of the leading run.
             // Its last scalar suffices for this Boolean result.
             start = -1;
-            if (screenedLiteral > position && TryReadScalar(input, screenedLiteral, true, out var scalar, out var width))
+            if (screenedLiteral > position)
             {
                 var leadingClass = program.LeadingClassDelimiter.LeadingClass;
-                breach = TryMatchScalarClass(program, program.Instructions[leadingClass], scalar, ref invocation, out var member);
-                if (member) start = screenedLiteral - width;
+                breach = TryMatchClassBefore(program, input, screenedLiteral, program.Instructions[leadingClass],
+                    ref invocation, out start);
             }
         }
         int end;
@@ -2026,6 +2026,25 @@ internal static partial class Utf8SliceRunner
             ? position + width : BranchedPrefixRejected;
     }
 
+    private static Utf8ExecutionLimitKind TryMatchClassBefore(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int edge, in Utf8SliceInstruction atom, ref Utf8SliceInvocation invocation, out int start)
+    {
+        // The admitted delimiter has exactly one predecessor here. Complete
+        // category masks describe every ASCII member without scalar decoding.
+        var previous = input[edge - 1];
+        if (previous < 128 && program.GetCompleteAsciiCategoryMask(atom) != 0)
+        {
+            start = MatchesAsciiHybridClass(program.SetMasks[atom.A], false, previous) ? edge - 1 : -1;
+            return Utf8ExecutionLimitKind.None;
+        }
+
+        start = -1;
+        if (!TryReadScalar(input, edge, true, out var scalar, out var width)) return Utf8ExecutionLimitKind.None;
+        var breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var member);
+        if (member) start = edge - width;
+        return breach;
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     internal static Utf8SliceCountOutcome CountTerminalClassWindows(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> delimiter, ref int position, int firstDelimiter, ref Utf8SliceInvocation invocation)
@@ -2057,11 +2076,11 @@ internal static partial class Utf8SliceRunner
                 // One preceding member suffices for Count, including at a block seam.
                 breach = invocation.TryChargeBoundedCheck();
                 if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
-                if (at > position && TryReadScalar(input, at, true, out var scalar, out _))
+                if (at > position)
                 {
-                    breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var member);
+                    breach = TryMatchClassBefore(program, input, at, atom, ref invocation, out var preceding);
                     if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
-                    if (member && MayFinishTerminalClassRuns(program, input, at + delimiter.Length,
+                    if (preceding >= 0 && MayFinishTerminalClassRuns(program, input, at + delimiter.Length,
                         continuation, out var end, skipCaptureOpening))
                     {
                         // Replay from the previous proved floor if a run exceeds
