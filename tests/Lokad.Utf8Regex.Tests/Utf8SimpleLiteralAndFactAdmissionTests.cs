@@ -40,10 +40,9 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     private static object Input(int route) => route switch
     {
         0 => Data(),
-        1 => "ASCII\0"u8.ToArray(),
-        2 => AsciiCharClass.FromBytes("AaBb"u8),
-        3 => AsciiCharClass.FromBytes("Aa"u8),
-        4 => new AsciiPatternToken[][] { [new AsciiPatternToken(AsciiCharClass.FromBytes("Ab"u8)), new AsciiPatternToken((byte)'!')] },
+        1 => AsciiCharClass.FromBytes("AaBb"u8),
+        2 => AsciiCharClass.FromBytes("Aa"u8),
+        3 => new AsciiPatternToken[][] { [new AsciiPatternToken(AsciiCharClass.FromBytes("Ab"u8)), new AsciiPatternToken((byte)'!')] },
         _ => Utf8OwnedTreeParser.TryParse("[Aa]x", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)
             ?? throw new InvalidOperationException("Owned parsing failed.")
     };
@@ -59,32 +58,31 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
                     Assert.Equal(property.GetValue(data), view.GetValue(facts));
                 }
                 break;
-            case 1: Assert.Equal("ASCII\0", Utf8ConstructionScope.CurrentBudget.CopyAsciiText(Assert.IsType<byte[]>(input))); break;
-            case 2:
+            case 1:
                 object?[] bytesArgs = [input, true, null];
                 Assert.True(Assert.IsType<bool>(Call(typeof(Utf8FiniteLiteralLowerer), "TryExtractLiteralBytes", bytesArgs)));
                 Assert.Equal("ab"u8.ToArray(), Assert.IsType<byte[]>(bytesArgs[2])); break;
-            case 3:
+            case 2:
                 object?[] foldedArgs = [input, (byte)0];
                 Assert.True(Assert.IsType<bool>(Call(typeof(Utf8FiniteLiteralLowerer), "TryExtractIgnoreCaseLiteral", foldedArgs)));
                 Assert.Equal((byte)'a', foldedArgs[1]); break;
-            case 4:
+            case 3:
                 Assert.True(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(Assert.IsType<AsciiPatternToken[][]>(input), false, out var literals));
                 Assert.Equal(new[] { "A!", "b!" }, literals.Select(Encoding.ASCII.GetString)); break;
             default:
                 var options = RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
                 var semantic = new Utf8SemanticRegex("[Aa]x", options, "[Aa]x", options, Assert.IsType<Utf8OwnedRegexTree>(input));
                 Assert.True(Utf8NativeExecutionAnalyzer.TryAnalyze(semantic, default, "[Aa]x", options, out var analysis));
-                Assert.Equal("ax", analysis.ExecutionPattern);
+                Assert.Equal("ax"u8.ToArray(), analysis.LiteralUtf8);
                 Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCase, analysis.ExecutionKind);
                 Assert.Same(analysis.LiteralUtf8, analysis.SearchFacts.LiteralUtf8); break;
         }
     }
     public static IEnumerable<object[]> RootDenials()
     {
-        for (var route = 0; route < 6; route++)
+        for (var route = 0; route < 5; route++)
         for (var denial = 0; denial < 3; denial++)
-            if ((denial != 1 || route >= 2) && (denial != 0 || route != 3)) yield return [route, denial];
+            if ((denial != 1 || route >= 1) && (denial != 0 || route != 2)) yield return [route, denial];
     }
     [Theory]
     [MemberData(nameof(RootDenials))]
@@ -100,7 +98,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
     public void EveryWorkCutoffRestoresParentAndAcceptedOutputsRetainLoans(int route)
     {
         var input = Input(route); ulong work;
@@ -117,7 +115,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
                 Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
                 Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             }
-            else { Assert.Null(error); Assert.Equal(route != 3, owner.Budget.ReservedBytes > 128); }
+            else { Assert.Null(error); Assert.Equal(route != 2, owner.Budget.ReservedBytes > 128); }
             Assert.Equal(0ul, owner.Budget.Depth); Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2); Assert.Equal(17, parent.Value);
         }
     }
@@ -345,86 +343,6 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         Assert.Equal(4, regex.Match(input).StartOffsetInBytes);
         Assert.Equal(513, (regex.Match(input).EndOffsetInBytes - regex.Match(input).StartOffsetInBytes));
     }
-    [Fact]
-    public void AsciiMetadataRejectsNonAsciiBeforeAcquisition()
-    {
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        Assert.Throws<ArgumentException>(() => owner.Budget.CopyAsciiText([0x80]));
-        Assert.Equal(0ul, owner.Budget.ReservedBytes);
-        Assert.Equal(string.Empty, owner.Budget.CopyAsciiText([]));
-    }
-
-    [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2047)] [InlineData(2048)]
-    [InlineData(2049)] [InlineData(4096)] [InlineData(4097)]
-    public void AsciiMetadataBlocksKeepBulkWorkAndAdmittedText(int length)
-    {
-        var input = Enumerable.Range(0, length).Select(i => (byte)(i & 127)).ToArray();
-        using var owner = Utf8ConstructionScope.Enter();
-        owner.Budget.ReserveBytes(7);
-        var steps = owner.Budget.WorkSteps;
-        var result = owner.Budget.CopyAsciiText(input);
-        Assert.Equal(Encoding.ASCII.GetString(input), result);
-        Assert.Equal(7 + Utf8ConstructionBudget.StringBytes(length), owner.Budget.ReservedBytes);
-        Assert.Equal(steps + (length == 0 ? 0UL : 2UL * (ulong)length + 1), owner.Budget.WorkSteps);
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void AsciiMetadataObservesOriginalInterruptionBeforeAnUnvisitedInvalidTail(bool timeout)
-    {
-        var input = Enumerable.Repeat((byte)'x', 8193).ToArray();
-        input[^1] = 0x80;
-        using var owner = Utf8ConstructionScope.Enter();
-        owner.Budget.ReserveBytes(7);
-        using var token = new CancellationTokenSource();
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(50));
-        owner.Budget.Deadline = deadline; owner.Budget.CancellationToken = token.Token;
-        var points = 0;
-        owner.Budget.CheckpointHook = _ => { if (++points == 2) { if (timeout) ticks = 50; else token.Cancel(); } };
-        var error = Record.Exception(() => owner.Budget.CopyAsciiText(input));
-        if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
-        else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
-        Assert.Same(deadline, owner.Budget.Deadline);
-        Assert.Equal(7UL, owner.Budget.ReservedBytes);
-        Assert.Equal((ulong)input.Length, owner.Budget.WorkSteps);
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void AsciiMetadataEveryCheckpointReleasesOnlyItsAcquisition(bool timeout)
-    {
-        var input = Enumerable.Repeat((byte)'x', 4097).ToArray();
-        var checkpoints = 0;
-        using (var probe = Utf8ConstructionScope.Enter())
-        {
-            probe.Budget.CheckpointHook = _ => checkpoints++;
-            Assert.Equal(new string('x', input.Length), probe.Budget.CopyAsciiText(input));
-        }
-        Assert.True(checkpoints >= 7, "Validation, conversion and publication need bounded interruption.");
-        for (var target = 1; target <= checkpoints; target++)
-        {
-            using var owner = Utf8ConstructionScope.Enter();
-            owner.Budget.ReserveBytes(7);
-            using var token = new CancellationTokenSource();
-            long ticks = 0;
-            using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-            var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(50));
-            owner.Budget.Deadline = deadline; owner.Budget.CancellationToken = token.Token;
-            var current = 0;
-            owner.Budget.CheckpointHook = _ => { if (++current == target) { if (timeout) ticks = 50; else token.Cancel(); } };
-            string? published = null;
-            var error = Record.Exception(() => published = owner.Budget.CopyAsciiText(input));
-            if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
-            else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
-            Assert.Null(published);
-            Assert.Same(deadline, owner.Budget.Deadline);
-            Assert.Equal(7UL, owner.Budget.ReservedBytes);
-        }
-    }
-
     [Theory]
     [InlineData(false, 3000)]
     [InlineData(true, 3000)]

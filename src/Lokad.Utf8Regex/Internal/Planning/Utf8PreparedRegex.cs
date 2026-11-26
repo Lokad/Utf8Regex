@@ -18,7 +18,7 @@ internal sealed class Utf8PreparedRegex
 
     private Utf8PreparedRegex(
         Utf8AnchoredLiteralPlan anchoredLiteral, in Utf8SearchPlan searchPlan,
-        Utf8PreparedSemanticRegex semanticRegex, Utf8RegexFeatures features, string? executionPattern,
+        Utf8PreparedSemanticRegex semanticRegex, Utf8RegexFeatures features,
         NativeExecutionKind executionKind, Utf8SliceProgram? scalarProgram, byte[]? literalUtf8,
         bool requiredLiteralProvesMatch, int requiredLiteralContinuation, byte[]? requiredLiteralTerminalSuffix,
         int requiredLiteralOptionalRun)
@@ -27,7 +27,6 @@ internal sealed class Utf8PreparedRegex
         _searchPlan = searchPlan;
         SemanticRegex = semanticRegex;
         Features = features;
-        ExecutionPattern = executionPattern;
         ExecutionKind = executionKind;
         ScalarProgram = scalarProgram;
         LiteralUtf8 = literalUtf8;
@@ -38,7 +37,7 @@ internal sealed class Utf8PreparedRegex
     }
 
     internal static Utf8PreparedRegex Create(
-        Utf8PreparedSemanticRegex semanticRegex, Utf8RegexFeatures features, string? executionPattern,
+        Utf8PreparedSemanticRegex semanticRegex, Utf8RegexFeatures features,
         NativeExecutionKind executionKind, Utf8SliceProgram? scalarProgram, in Utf8SearchPlan searchPlan,
         byte[]? literalUtf8, Utf8AnchoredLiteralPlan anchoredLiteral)
     {
@@ -67,7 +66,7 @@ internal sealed class Utf8PreparedRegex
         }
         scope.Budget.ReserveBytes(ObjectBytes);
         var result = new Utf8PreparedRegex(
-            anchoredLiteral, searchPlan, semanticRegex, features, executionPattern,
+            anchoredLiteral, searchPlan, semanticRegex, features,
             executionKind, scalarProgram, literalUtf8, requiredLiteralProvesMatch,
             requiredLiteralContinuation, requiredLiteralTerminalSuffix, requiredLiteralOptionalRun);
         scope.Complete();
@@ -78,7 +77,6 @@ internal sealed class Utf8PreparedRegex
 
     public Utf8RegexFeatures Features { get; }
 
-    public string? ExecutionPattern { get; }
 
     public NativeExecutionKind ExecutionKind { get; }
 

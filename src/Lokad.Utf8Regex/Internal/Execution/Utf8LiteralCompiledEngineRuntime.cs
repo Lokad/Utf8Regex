@@ -22,6 +22,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     private readonly PreparedMultiLiteralCandidatePrefilter _leadingUtf8SegmentLiteralFamilyPrefilter;
     private readonly PreparedMultiLiteralAutomatonSearch _leadingUtf8SegmentLiteralFamilyAutomaton;
     internal readonly PreparedSmallAsciiLiteralFamilySearch? _smallAsciiLiteralFamilyPrimitive;
+    private readonly bool _allowsSmallAsciiFamilyOutput;
     private readonly PreparedShortAsciiLiteralFamilyCounter _shortAsciiLiteralFamilyCounter;
     private readonly bool _hasThreeByteLiteralFamily;
     private readonly CompositeTrailingLiteralSearch? _compositeTrailingLiteralSearch;
@@ -39,14 +40,15 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         _leadingUtf8SegmentLiteralFamilyPrefilter = state.LeadingPrefilter;
         _leadingUtf8SegmentLiteralFamilyAutomaton = state.LeadingAutomaton;
         _smallAsciiLiteralFamilyPrimitive = state.Primitive;
+        _allowsSmallAsciiFamilyOutput = state.AllowsSmallAsciiFamilyOutput;
         _shortAsciiLiteralFamilyCounter = state.ShortCounter;
         _hasThreeByteLiteralFamily = state.HasThreeByteLiteralFamily;
         _compositeTrailingLiteralSearch = state.CompositeSearch;
     }
 
-    internal bool TryGetSmallAsciiLiteralFamilyPrimitive(out PreparedSmallAsciiLiteralFamilySearch primitive)
+    internal bool TryGetSmallAsciiLiteralFamilyOutput(out PreparedSmallAsciiLiteralFamilySearch primitive)
     {
-        if (_smallAsciiLiteralFamilyPrimitive is { } candidate)
+        if (_allowsSmallAsciiFamilyOutput && _smallAsciiLiteralFamilyPrimitive is { } candidate)
         {
             primitive = candidate;
             return true;

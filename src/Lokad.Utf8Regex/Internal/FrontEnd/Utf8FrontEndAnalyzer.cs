@@ -28,7 +28,6 @@ internal static class Utf8FrontEndAnalyzer
         var searchFacts = Utf8FrontEndSearchAnalyzer.Analyze(semanticRegex);
         return Utf8RegexAnalysis.Create(
             semanticRegex,
-            executionPattern,
             features,
             searchFacts,
             NativeExecutionKind.FallbackRegex);

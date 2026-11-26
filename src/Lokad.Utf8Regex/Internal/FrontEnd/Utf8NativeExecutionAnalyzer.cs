@@ -166,7 +166,6 @@ internal static class Utf8NativeExecutionAnalyzer
             {
                 analyzedRegex = Utf8RegexAnalysis.Create(
                     semanticRegex,
-                    executionPattern,
                     features,
                     Utf8SearchFacts.Create(
                         lookaheadAlternationSearchKind,
@@ -187,7 +186,6 @@ internal static class Utf8NativeExecutionAnalyzer
             {
                 analyzedRegex = Utf8RegexAnalysis.Create(
                     semanticRegex,
-                    executionPattern,
                     features,
                     Utf8SearchFacts.Create(
                         Utf8SearchKind.AsciiFoldedByteLiterals,
@@ -226,7 +224,6 @@ internal static class Utf8NativeExecutionAnalyzer
                     : NativeExecutionKind.ExactUtf8Literals;
                 analyzedRegex = Utf8RegexAnalysis.Create(
                     semanticRegex,
-                    executionPattern,
                     features,
                     Utf8SearchFacts.Create(
                         searchKind,
@@ -275,7 +272,7 @@ internal static class Utf8NativeExecutionAnalyzer
         if (folded && !ascii) { analyzedRegex = default; return false; }
         var kind = folded ? NativeExecutionKind.AsciiLiteralIgnoreCase :
             ascii ? NativeExecutionKind.ExactAsciiLiteral : NativeExecutionKind.ExactUtf8Literal;
-        analyzedRegex = Utf8RegexAnalysis.CreateLiteral(semanticRegex, semanticRegex.ExecutionPattern,
+        analyzedRegex = Utf8RegexAnalysis.CreateLiteral(semanticRegex,
             features, Utf8FrontEndSearchAnalyzer.AnalyzeLiteral(literalUtf8, kind, trailingLiteralUtf8 ?? [],
                 Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None), kind, literalUtf8);
         return true;
@@ -315,7 +312,6 @@ internal static class Utf8NativeExecutionAnalyzer
 
             analyzedRegex = Utf8RegexAnalysis.CreateLiteral(
                 semanticRegex,
-                literalPattern,
                 features,
                 Utf8FrontEndSearchAnalyzer.AnalyzeLiteral(literalUtf8, executionKind, trailingLiteralUtf8 ?? [], leadingBoundary, trailingBoundary),
                 executionKind,
@@ -343,17 +339,13 @@ internal static class Utf8NativeExecutionAnalyzer
             {
                 if (literalBranches.Length == 1)
                 {
-                    // Keep literal-pattern text for diagnostics/classification,
-                    // while byte execution shares the admitted expansion payload.
                     var bytes = literalBranches[0];
-                    var text = executionPattern is null ? null : owner.CopyAsciiText(bytes);
                     var plainAscii = IsPlainAsciiLiteral(bytes);
                     var folded = (executionOptions & RegexOptions.IgnoreCase) != 0;
                     if (folded && !plainAscii) { analyzedRegex = default; return false; }
                     var kind = folded ? NativeExecutionKind.AsciiLiteralIgnoreCase :
                         plainAscii ? NativeExecutionKind.ExactAsciiLiteral : NativeExecutionKind.ExactUtf8Literal;
-                    analyzedRegex = Utf8RegexAnalysis.CreateLiteral(semanticRegex, text,
-                        features,
+                    analyzedRegex = Utf8RegexAnalysis.CreateLiteral(semanticRegex, features,
                         Utf8FrontEndSearchAnalyzer.AnalyzeLiteral(bytes, kind), kind, bytes);
                     owner.ReleaseArray(literalBranches, false);
                     construction.Complete(); return true;
@@ -380,7 +372,6 @@ internal static class Utf8NativeExecutionAnalyzer
                 var ignoreCase = (executionOptions & RegexOptions.IgnoreCase) != 0;
                 analyzedRegex = Utf8RegexAnalysis.Create(
                     semanticRegex,
-                    executionPattern,
                     features,
                     Utf8SearchFacts.Create(
                         ignoreCase ? Utf8SearchKind.AsciiFoldedByteLiterals : Utf8SearchKind.ExactAsciiLiterals,

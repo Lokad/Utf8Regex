@@ -1195,7 +1195,6 @@ public sealed partial class Utf8Regex : IDisposable
     internal bool TryGetSmallAsciiLiteralFamilySearch(out PreparedSmallAsciiLiteralFamilySearch search)
     {
         if (MatchTimeout != Regex.InfiniteMatchTimeout ||
-            _preparedRegex.ExecutionPattern is null || _preparedRegex.ExecutionPattern.IndexOf('(') >= 0 ||
             CompiledEngineKind != Utf8CompiledEngineKind.LiteralFamily ||
             _program.CompiledEngineRuntime is not { } literalFamilyRuntime)
         {
@@ -1203,7 +1202,7 @@ public sealed partial class Utf8Regex : IDisposable
             return false;
         }
 
-        return literalFamilyRuntime.TryGetSmallAsciiLiteralFamilyPrimitive(out search);
+        return literalFamilyRuntime.TryGetSmallAsciiLiteralFamilyOutput(out search);
     }
 
     private bool UsesRightToLeft()

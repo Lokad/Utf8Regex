@@ -22,7 +22,6 @@ internal static class Utf8RegexPreparer
                     analyzedRegex.SemanticRegex.ExecutionPattern, analyzedRegex.SemanticRegex.ExecutionOptions,
                     analyzedRegex.SemanticRegex.RuntimeTree?.CaptureCatalog),
                 analyzedRegex.Features,
-                analyzedRegex.ExecutionPattern,
                 analyzedRegex.ExecutionKind,
                 scalarProgram,
                 searchPlan,

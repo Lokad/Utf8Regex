@@ -5,10 +5,10 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 internal readonly struct Utf8RegexAnalysis
 {
     private Utf8RegexAnalysis(
-        Utf8SemanticRegex semanticRegex, string? executionPattern, Utf8RegexFeatures features, Utf8SearchFacts searchFacts, NativeExecutionKind executionKind, byte[]? literalUtf8)
+        Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, Utf8SearchFacts searchFacts,
+        NativeExecutionKind executionKind, byte[]? literalUtf8)
     {
         SemanticRegex = semanticRegex;
-        ExecutionPattern = executionPattern;
         Features = features;
         SearchFacts = searchFacts;
         ExecutionKind = executionKind;
@@ -17,7 +17,6 @@ internal readonly struct Utf8RegexAnalysis
 
     public Utf8SemanticRegex SemanticRegex { get; }
 
-    public string? ExecutionPattern { get; }
 
     public Utf8RegexFeatures Features { get; }
 
@@ -28,10 +27,10 @@ internal readonly struct Utf8RegexAnalysis
     public byte[]? LiteralUtf8 { get; }
 
     public static Utf8RegexAnalysis Create(
-        Utf8SemanticRegex semanticRegex, string? executionPattern, Utf8RegexFeatures features, Utf8SearchFacts searchFacts, NativeExecutionKind executionKind)
-        => new(semanticRegex, executionPattern, features, searchFacts, executionKind, null);
+        Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, Utf8SearchFacts searchFacts, NativeExecutionKind executionKind)
+        => new(semanticRegex, features, searchFacts, executionKind, null);
 
     public static Utf8RegexAnalysis CreateLiteral(
-        Utf8SemanticRegex semanticRegex, string? executionPattern, Utf8RegexFeatures features, Utf8SearchFacts searchFacts, NativeExecutionKind executionKind, byte[] literalUtf8)
-        => new(semanticRegex, executionPattern, features, searchFacts, executionKind, literalUtf8);
+        Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, Utf8SearchFacts searchFacts, NativeExecutionKind executionKind, byte[] literalUtf8)
+        => new(semanticRegex, features, searchFacts, executionKind, literalUtf8);
 }

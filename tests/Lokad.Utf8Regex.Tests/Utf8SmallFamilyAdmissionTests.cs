@@ -263,17 +263,18 @@ public sealed class Utf8SmallFamilyAdmissionTests
         }
     }
 
-    [Fact]
-    public void LiteralOutputPreservesMixedUtf8AcrossFamilyRoutes()
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void LiteralOutputPreservesMixedUtf8AcrossFamilyRoutes(bool bytePattern)
     {
         const string text = "😀tempus émagna 中semper! TEMPUS";
         var input = Encoding.UTF8.GetBytes(text);
-        foreach (var pattern in new[] { "tempus|magna|semper", "(tempus)|(magna)|(semper)", @"\b(?:tempus|magna|semper)\b" })
+        foreach (var pattern in new[] { "tempus|magna|semper", "(tempus)|(magna)|(semper)", "(?:tempus|magna|semper)", @"\b(?:tempus|magna|semper)\b" })
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.IgnoreCase })
         {
             var flags = options | RegexOptions.CultureInvariant;
-            var regex = new Utf8Regex(pattern, options: flags);
-            Assert.Equal(pattern == "tempus|magna|semper" && options != RegexOptions.IgnoreCase,
+            using var regex = bytePattern ? Utf8Regex.Compile(Encoding.UTF8.GetBytes(pattern), flags) : new Utf8Regex(pattern, flags);
+            Assert.Equal(!bytePattern && pattern == "tempus|magna|semper" && options != RegexOptions.IgnoreCase,
                 regex.TryGetSmallAsciiLiteralFamilySearch(out _));
             var reference = new Regex(pattern, flags);
             Assert.Equal(Encoding.UTF8.GetBytes(reference.Replace(text, "[x]")), regex.Replace(input, "[x]"u8));
