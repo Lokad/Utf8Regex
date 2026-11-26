@@ -219,6 +219,10 @@ public sealed class Utf8ControlledDecimalBooleanTests
     [InlineData(@"\b\d{1,2}/\d{1,3}/X\b", "1/X! 2/123/X!", 5, 12)]
     [InlineData(@"\b\d{1,2}/[0-9A-Z]{1,2}/X\b", "1/AB/X!", 0, 6)]
     [InlineData(@"\b\d{1,2}/\d{1,3}1X\b", "1/121X!", 0, 6)]
+    [InlineData(@"\b(?:\d{1,3}\.){3}\d{1,3}\b", "é123.1.2.3! 😀١.2.３.4!", 17, 27)]
+    [InlineData(@"\b(?:\d{1,3}\.){3}\d{1,3}\b", "😀𝟙.٢.3.4!", 4, 15)]
+    [InlineData(@"\b(?:\d{1,3}\.){3}\d{1,3}\b", "1.2.3.4.5!", 0, 7)]
+    [InlineData(@"\b(?:\d{1,3}\.){3}\d{1,3}\b", "1.2.3.4x.5.6.7.8!", 9, 16)]
     public void ShortDecimalProofPreservesThePreferredWholeRange(string pattern, string text, int start, int end)
     {
         var input = Encoding.UTF8.GetBytes(text);
@@ -229,6 +233,9 @@ public sealed class Utf8ControlledDecimalBooleanTests
         var expected = new Utf8CaptureRange(start, end);
         Assert.Equal(expected, ordinary.Match(input));
         Assert.Equal(expected, limited.Match(input, cancellationToken: tokenSource.Token));
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+        Assert.Equal(expected, limited.Match(input, 0, slots, tokenSource.Token));
+        Assert.Equal(expected, slots[0]);
     }
 
     [Theory]

@@ -629,15 +629,14 @@ internal static partial class Utf8SliceRunner
         }
         if (program.FollowingDecimalContinuation.Aligned &&
             !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty &&
-            screenedLiteral < fromByte && candidatePlan.LiteralUtf8 is [var delimiter] &&
-            program.LeadingClassDelimiter is var window && window.Literal == delimiter)
+            screenedLiteral < fromByte && program.LeadingClassDelimiter is var window)
         {
             if (invocation.Ledger.ReservedBytes != 0)
             {
                 var admission = invocation.TryReserveWorking(0);
                 if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
             }
-            return ScanAlignedDecimalWindows(program, input, fromByte, delimiter, window.LiteralIndex,
+            return ScanAlignedDecimalWindows(program, input, fromByte, (byte)window.Literal, window.LiteralIndex,
                 ref workspace, ref invocation, countAll: false, existenceOnly, out _);
         }
 
