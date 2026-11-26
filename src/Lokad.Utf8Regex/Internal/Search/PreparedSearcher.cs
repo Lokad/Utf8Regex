@@ -42,7 +42,7 @@ internal readonly partial struct PreparedSearcher
 
     private PreparedByteSearch ByteSearch { get; }
 
-    private PreparedMultiLiteralSearch MultiLiteralSearch { get; }
+    internal readonly PreparedMultiLiteralSearch MultiLiteralSearch;
 
     public PreparedSearcherKind Kind { get; }
 

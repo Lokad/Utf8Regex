@@ -53,19 +53,16 @@ internal readonly struct Utf8SearchPlan
         {
             BoundaryFamilyCounter = Utf8PackedNibbleLiteralFamilyCountStrategy.CreateBoundaryCounter(boundaryLiterals);
         }
-        MultiLiteralSearch = CreateMultiLiteralSearch(kind, alternateLiteralsUtf8);
+        _preparedSearcher = CreatePreparedSearcher(kind, LiteralSearch, CreateMultiLiteralSearch(kind, alternateLiteralsUtf8));
+        ref readonly var multiLiteralSearch = ref _preparedSearcher.MultiLiteralSearch;
         // Direct portfolios already own the exact tables used by compatibility
         // consumers. Borrow them instead of acquiring the same payload twice.
         AlternateLiteralSearch = alternateLiteralsUtf8 is { Length: > 0 } && kind != Utf8SearchKind.AsciiFoldedByteLiterals
-            ? MultiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactDirect
-                ? MultiLiteralSearch.ExactSearch
+            ? multiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactDirect
+                ? multiLiteralSearch.ExactSearch
                 : new PreparedLiteralSetSearch(alternateLiteralsUtf8)
             : null;
-        AlternateIgnoreCaseLiteralSearch = MultiLiteralSearch.Kind == PreparedMultiLiteralKind.AsciiIgnoreCase
-            ? MultiLiteralSearch.IgnoreCaseSearch
-            : null;
-        PreparedSearcher = CreatePreparedSearcher(kind, LiteralSearch, MultiLiteralSearch);
-        PortfolioKind = DeterminePortfolioKind(kind, PreparedSearcher, MultiLiteralSearch);
+        PortfolioKind = DeterminePortfolioKind(kind, _preparedSearcher.Kind, multiLiteralSearch.Kind);
         // A short exact prefilter can share the same prepared needle as
         // candidate discovery. The runner can then reuse its first occurrence.
         _requiredPrefilterSearcher = requiredPrefilterLiteralUtf8 is { Length: <= 64 } &&
@@ -82,7 +79,7 @@ internal readonly struct Utf8SearchPlan
             kind,
             distance,
             canGuideFallbackStarts,
-            PreparedSearcher,
+            in _preparedSearcher,
             fixedDistanceSets,
             fallbackStartTransform,
             leadingBoundary, trailingBoundary, trailingLiteralUtf8,
@@ -147,11 +144,16 @@ internal readonly struct Utf8SearchPlan
 
     public readonly PreparedLiteralSetSearch? AlternateLiteralSearch;
 
-    public PreparedAsciiIgnoreCaseLiteralSetSearch? AlternateIgnoreCaseLiteralSearch { get; }
+    public PreparedAsciiIgnoreCaseLiteralSetSearch? AlternateIgnoreCaseLiteralSearch =>
+        MultiLiteralSearch.Kind == PreparedMultiLiteralKind.AsciiIgnoreCase ? MultiLiteralSearch.IgnoreCaseSearch : null;
 
-    public PreparedMultiLiteralSearch MultiLiteralSearch { get; }
+    private readonly PreparedSearcher _preparedSearcher;
 
-    public PreparedSearcher PreparedSearcher { get; }
+    public PreparedSearcher PreparedSearcher => _preparedSearcher;
+
+    // Borrow the same literal tables used by the selected searcher.
+    [UnscopedRef]
+    public ref readonly PreparedMultiLiteralSearch MultiLiteralSearch => ref _preparedSearcher.MultiLiteralSearch;
 
     public Utf8SearchPortfolioKind PortfolioKind { get; }
 
@@ -247,33 +249,33 @@ internal readonly struct Utf8SearchPlan
     }
 
     private static Utf8SearchPortfolioKind DeterminePortfolioKind(
-        Utf8SearchKind kind, PreparedSearcher preparedSearcher, PreparedMultiLiteralSearch multiLiteralSearch)
+        Utf8SearchKind kind, PreparedSearcherKind searcherKind, PreparedMultiLiteralKind multiLiteralKind)
     {
         return kind switch
         {
             Utf8SearchKind.ExactAsciiLiteral
-                when preparedSearcher.Kind == PreparedSearcherKind.ExactLiteral
+                when searcherKind == PreparedSearcherKind.ExactLiteral
                 => Utf8SearchPortfolioKind.ExactLiteral,
             Utf8SearchKind.AsciiFoldedByteLiteral
-                when preparedSearcher.Kind == PreparedSearcherKind.IgnoreCaseLiteral
+                when searcherKind == PreparedSearcherKind.IgnoreCaseLiteral
                 => Utf8SearchPortfolioKind.IgnoreCaseLiteral,
             Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals
-                when multiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactDirect
+                when multiLiteralKind == PreparedMultiLiteralKind.ExactDirect
                 => Utf8SearchPortfolioKind.ExactDirectFamily,
             Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals
-                when multiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactTrie
+                when multiLiteralKind == PreparedMultiLiteralKind.ExactTrie
                 => Utf8SearchPortfolioKind.ExactTrieFamily,
             Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals
-                when multiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactAutomaton
+                when multiLiteralKind == PreparedMultiLiteralKind.ExactAutomaton
                 => Utf8SearchPortfolioKind.ExactAutomatonFamily,
             Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals
-                when multiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactPacked
+                when multiLiteralKind == PreparedMultiLiteralKind.ExactPacked
                 => Utf8SearchPortfolioKind.ExactPackedFamily,
             Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals
-                when multiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactEarliest
+                when multiLiteralKind == PreparedMultiLiteralKind.ExactEarliest
                 => Utf8SearchPortfolioKind.ExactEarliestFamily,
             Utf8SearchKind.AsciiFoldedByteLiterals
-                when multiLiteralSearch.Kind == PreparedMultiLiteralKind.AsciiIgnoreCase
+                when multiLiteralKind == PreparedMultiLiteralKind.AsciiIgnoreCase
                 => Utf8SearchPortfolioKind.AsciiIgnoreCaseFamily,
             _ => Utf8SearchPortfolioKind.None,
         };
