@@ -1879,7 +1879,8 @@ internal static partial class Utf8SliceRunner
 
     internal static bool TryFindPreparedLiteralContinuation(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         ref int position, in PreparedSubstringSearch search, int screenedLiteral, int continuation, ref Utf8SliceInvocation invocation,
-        out Utf8SliceSearchOutcome outcome, bool existenceOnly = true, byte[]? terminalSuffix = null, int optionalLiteralRun = 0)
+        out Utf8SliceSearchOutcome outcome, bool existenceOnly = true, byte[]? terminalSuffix = null, int optionalLiteralRun = 0,
+        bool checkedBySeek = false)
     {
         outcome = default;
         var classWindow = continuation != search.Length;
@@ -1896,10 +1897,11 @@ internal static partial class Utf8SliceRunner
             return true;
         }
 
-        // The literal continuation probes a fixed window. The accepted range
-        // checks the deadline, and unresolved candidates enter checked discovery.
-        var breach = !classWindow ? invocation.TryChargeBoundedCheck()
-            : pair ? invocation.TryChargeStep() : invocation.TryChargeInputStep();
+        // A fresh one-byte seek can cover this fixed continuation window.
+        // Keep the work charge, direct checks on rewind and publication, and
+        // the entry check for a candidate handed off by another search.
+        var breach = pair ? invocation.TryChargeStep()
+            : !classWindow || checkedBySeek ? invocation.TryChargeBoundedCheck() : invocation.TryChargeInputStep();
         if (breach == Utf8ExecutionLimitKind.None && pair)
         {
             var (literal, leadingClass, _, _, _) = program.LeadingClassDelimiter;
@@ -2173,7 +2175,8 @@ internal static partial class Utf8SliceRunner
             invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit)
             return false;
 
-        if (screenedLiteral < position)
+        var seek = screenedLiteral < position;
+        if (seek)
         {
             Utf8ExecutionLimitKind breach;
             if (search.Length == 1)
@@ -2197,7 +2200,8 @@ internal static partial class Utf8SliceRunner
         }
         return TryFindPreparedLiteralContinuation(program, input, ref position, search, screenedLiteral,
             continuation, ref invocation, out outcome, existenceOnly: false,
-            terminalSuffix: terminalSuffix, optionalLiteralRun: optionalLiteralRun);
+            terminalSuffix: terminalSuffix, optionalLiteralRun: optionalLiteralRun,
+            checkedBySeek: seek && search.Length == 1 && invocation.CheckpointHook is null);
     }
 
     private static int MatchPreparedLiteralTail(Utf8SliceProgram program, ReadOnlySpan<byte> input,
