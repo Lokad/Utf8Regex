@@ -1874,10 +1874,12 @@ internal static partial class Utf8SliceRunner
         var classWindow = continuation != search.Length;
         var proof = program.LeadingClassWindowProof;
         var pair = classWindow && proof.CanAcceptAfterPair;
-        if (!pair && invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit)
+        // The range caller checks depth and the scalar floor before seeking
+        // its literal. Boolean search arrives with only a screened literal.
+        if (existenceOnly && !pair && invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit)
             return false;
         invocation.Budget.ThrowIfCancellationRequested();
-        if ((uint)position > (uint)input.Length || position < input.Length && (input[position] & 0xC0) == 0x80)
+        if (existenceOnly && !Utf8BytePosition.IsScalarBoundary(input, position))
         {
             outcome = new(false, -1, -1, Utf8ExecutionLimitKind.None);
             return true;

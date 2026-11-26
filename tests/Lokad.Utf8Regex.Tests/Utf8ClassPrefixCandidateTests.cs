@@ -781,11 +781,12 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
-    [InlineData("pé", "abc", "cd.e", 0)]
-    [InlineData("pé", "β-記", "δ.東", 0)]
-    [InlineData("p\U00010400é", "β-記", "δ.東", 0)]
-    [InlineData("pé", "long", "end", 160)]
-    public void SeparatedClassRunsKeepGreedyByteRanges(string label, string middle, string tail, int extra)
+    [InlineData("pé", "abc", "cd.e", 0, 4096)]
+    [InlineData("pé", "β-記", "δ.東", 0, 4096)]
+    [InlineData("p\U00010400é", "β-記", "δ.東", 0, 4096)]
+    [InlineData("pé", "long", "end", 160, 4096)]
+    [InlineData("pé", "β-記", "δ.東", 0, 64)]
+    public void SeparatedClassRunsKeepGreedyByteRanges(string label, string middle, string tail, int extra, int depth)
     {
         const string pattern = @"[\w.+-]+@[\w-]+\.[\w.-]+";
         const string prefix = "😀bad@.miss bad@empty. !";
@@ -794,15 +795,19 @@ public sealed class Utf8ClassPrefixCandidateTests
         var end = start + Encoding.UTF8.GetByteCount(value);
         var input = Encoding.UTF8.GetBytes(prefix + value + "!");
         using var token = new CancellationTokenSource();
-        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded with { MaxDepth = (uint)depth } });
         Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
 
         Assert.True(regex.Inspection.AvailableOwnedSliceProgram.LeadingClassWindowProof.CanFinishTerminalRuns);
         Assert.Equal(new Utf8CaptureRange(start, end), regex.Match(input, 0, slots, token.Token));
         Assert.Equal(new Utf8CaptureRange(start, end), slots[0]);
         Assert.Equal(new Utf8CaptureRange(start + 1, end), regex.Match(input, start + 1, slots, token.Token));
-        Assert.False(regex.Match(input, start, slots, token.Token,
-            endOffsetInBytes: end - Encoding.UTF8.GetByteCount(tail)).Success);
+        var tailStart = end - Encoding.UTF8.GetByteCount(tail);
+        var clipped = tailStart + Rune.GetRuneAt(tail, 0).Utf8SequenceLength;
+        Assert.Equal(new Utf8CaptureRange(start, clipped),
+            regex.Match(input, start, slots, token.Token, endOffsetInBytes: clipped));
+        Assert.Equal(new Utf8CaptureRange(start, clipped), slots[0]);
+        Assert.False(regex.Match(input, start, slots, token.Token, endOffsetInBytes: tailStart).Success);
     }
 
     [Fact]
