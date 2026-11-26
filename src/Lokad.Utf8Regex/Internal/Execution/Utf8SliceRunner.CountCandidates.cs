@@ -1864,14 +1864,17 @@ internal static partial class Utf8SliceRunner
     }
 
     private static bool MayFinishTerminalClassRuns(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int position, int index, out int acceptedEnd)
+        int position, int index, out int acceptedEnd, bool capturedRepeat = false)
     {
+        // A value-only call can skip the opening capture marker. The repeat
+        // is followed only by its closing marker and Accept.
+        if (capturedRepeat) index++;
         // A shared run already verifies the interior separator and both
         // operands. Otherwise the separator must follow the first run.
         var remaining = BranchedPrefixInstructionLimit - index - 4;
         var code = program.Instructions;
         var end = TryMatchLongPrefixRepeat(program, input, position, index + 1, in code[index], ref remaining);
-        if (end >= 0 && !code[index + 3].RepeatExitSharesTerminalRun)
+        if (end >= 0 && !capturedRepeat && !code[index + 3].RepeatExitSharesTerminalRun)
         {
             end = end == input.Length || input[end] != code[index + 4].A
                 ? BranchedPrefixRejected
@@ -1883,10 +1886,12 @@ internal static partial class Utf8SliceRunner
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     internal static Utf8SliceCountOutcome CountTerminalClassWindows(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        ref int position, int firstDelimiter, ref Utf8SliceInvocation invocation)
+        ReadOnlySpan<byte> delimiter, ref int position, int firstDelimiter, ref Utf8SliceInvocation invocation)
     {
-        var (literal, leadingClass, literalIndex, _, _) = program.LeadingClassDelimiter;
-        var delimiter = (byte)literal;
+        var (_, leadingClass, literalIndex, _, _) = program.LeadingClassDelimiter;
+        var continuation = literalIndex + delimiter.Length;
+        var capturedRepeat = program.LeadingClassWindowProof.Completion == Utf8SliceClassWindowCompletion.CapturedRepeat;
+        var firstByte = delimiter[0];
         ref readonly var atom = ref program.Instructions[leadingClass];
         var count = 0;
         var scan = Math.Max(position, firstDelimiter);
@@ -1895,11 +1900,15 @@ internal static partial class Utf8SliceRunner
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
             var limit = scan + Math.Min(2048, input.Length - scan);
+            var windowEnd = limit + Math.Min(delimiter.Length - 1, input.Length - limit);
             while (scan < limit)
             {
-                var relative = input[scan..limit].IndexOf(delimiter);
+                var window = input[scan..windowEnd];
+                var relative = delimiter.Length == 1 ? window.IndexOf(firstByte) : window.IndexOf(delimiter);
                 if (relative < 0) break;
                 var at = scan + relative;
+                // An unsuccessful delimiter can overlap the next one, and a
+                // later byte can belong to its leading class.
                 scan = at + 1;
 
                 // An excluded delimiter fixes the end of the leading run.
@@ -1910,7 +1919,8 @@ internal static partial class Utf8SliceRunner
                 {
                     breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var member);
                     if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
-                    if (member && MayFinishTerminalClassRuns(program, input, scan, literalIndex + 1, out var end))
+                    if (member && MayFinishTerminalClassRuns(program, input, at + delimiter.Length,
+                        continuation, out var end, capturedRepeat))
                     {
                         // Replay from the previous proved floor if a run exceeds
                         // the bounded suffix proof's allowance.

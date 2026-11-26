@@ -755,6 +755,37 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData(": ", ": orphan")]
+    [InlineData("#x#", "#x#x#overlap")]
+    public void CapturedTerminalCountPreservesOverlappingDelimitersAndBlockSeams(string delimiter, string prefix)
+    {
+        var pattern = @"(\w+)" + Regex.Escape(delimiter) + @"(\w+)";
+        // The successful delimiter starts at the last byte of the first block.
+        var padding = new string('!', 2047 - Encoding.UTF8.GetByteCount(prefix + "λ"));
+        var text = prefix + padding + "λ" + delimiter + "β ! long" + delimiter + new string('δ', 128) +
+            " ! tail" + delimiter + "value";
+        var input = Encoding.UTF8.GetBytes(text);
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        Assert.Equal(Utf8SliceClassWindowCompletion.CapturedRepeat, program.LeadingClassWindowProof.Completion);
+        Assert.Equal(program.LeadingClassDelimiter.LiteralIndex + delimiter.Length, regex.RequiredLiteralContinuation);
+
+        var expected = Regex.Matches(text, pattern);
+        Assert.Equal(delimiter == ": " ? 3 : 4, expected.Count);
+        Assert.Equal(expected.Count, regex.Count(input, token.Token));
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token);
+        foreach (Match wanted in expected)
+        {
+            Assert.True(cursor.MoveNext(out var match));
+            Assert.Equal(wanted.Value, Encoding.UTF8.GetString(match.GetValueMemory().Span));
+            for (var group = 1; group <= 2; group++)
+                Assert.Equal(wanted.Groups[group].Value, Encoding.UTF8.GetString(match.GetGroupMemory(group).Span));
+        }
+        Assert.False(cursor.MoveNext(out _));
+    }
+
+    [Theory]
     [InlineData(@"\s[a-z]{0,12}ing[\s.,;]", "\u2003inging;")]
     [InlineData(@"\s[a-z]{0,12}ing\s", " inging\u2028")]
     [InlineData(@"\s[a-z]{0,12}ing[\sx]", " ingxing ")]

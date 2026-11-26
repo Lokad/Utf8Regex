@@ -616,13 +616,17 @@ public sealed partial class Utf8Regex : IDisposable
         }
         if (RejectMissingRequiredInput(input, program, ref invocation, out var screenedLiteral)) return countedPrefix;
         if (_preparedRegex.SearchPlan.RequiredPrefilterSearcher.Kind != PreparedSearcherKind.ExactLiteral) screenedLiteral = -1;
+        var classWindow = program.LeadingClassWindowProof;
         if (screenedLiteral >= 0 && input.Length - startByte >= 256 &&
-            program.LeadingClassWindowProof is { CanFinishTerminalRuns: true, LiteralLength: 1 } &&
-            RequiredLiteralContinuation == program.LeadingClassDelimiter.LiteralIndex + 1 &&
+            classWindow.Completion is Utf8SliceClassWindowCompletion.TerminalRuns or Utf8SliceClassWindowCompletion.CapturedRepeat &&
+            _preparedRegex.SearchPlan.RequiredPrefilterSearcher.LiteralSearch is var delimiter &&
+            delimiter.Length == classWindow.LiteralLength &&
+            RequiredLiteralContinuation == program.LeadingClassDelimiter.LiteralIndex + delimiter.Length &&
             invocation.Budget.Limits.MaxDepth is 0 or >= Utf8SliceRunner.BranchedPrefixInstructionLimit &&
             Utf8BytePosition.IsScalarBoundary(input, startByte))
         {
-            var proved = Utf8SliceRunner.CountTerminalClassWindows(program, input, ref startByte, screenedLiteral, ref invocation);
+            var proved = Utf8SliceRunner.CountTerminalClassWindows(program, input, delimiter.Needle,
+                ref startByte, screenedLiteral, ref invocation);
             if (proved.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
             countedPrefix += proved.Count;
             if (startByte == input.Length) return countedPrefix;
