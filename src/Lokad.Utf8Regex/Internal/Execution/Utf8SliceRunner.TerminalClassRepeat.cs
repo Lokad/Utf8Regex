@@ -123,14 +123,16 @@ internal static partial class Utf8SliceRunner
             ? (index + 1, code[index].A - 1, code[index].A)
             : (index, code.Length - 1, code.Length - 1);
 
+    // The prepared caller checks the root kind before entering this scanner.
+    // Keep its bounded stack tables out of the general match entry points.
+    [MethodImpl(MethodImplOptions.NoInlining)]
     internal static bool TryScanTerminalAsciiSuffixAlternatives(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int position, bool firstOnly, ref Utf8SliceInvocation invocation, out Utf8SliceCountOutcome outcome,
         out Utf8CaptureRange range)
     {
         outcome = default;
         range = default;
-        if (program.TerminalRoot != Utf8SliceTerminalRootKind.AsciiSuffixAlternatives ||
-            invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit ||
+        if (invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit ||
             !Utf8BytePosition.IsScalarBoundary(input, position)) return false;
 
         invocation.Budget.ThrowIfCancellationRequested();

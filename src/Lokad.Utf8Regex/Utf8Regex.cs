@@ -387,7 +387,8 @@ public sealed partial class Utf8Regex : IDisposable
             if (range.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
             return range.Found;
         }
-        if (Utf8SliceRunner.TryScanTerminalAsciiSuffixAlternatives(program, input, startByte, firstOnly: true,
+        if (program.TerminalRoot == Utf8SliceTerminalRootKind.AsciiSuffixAlternatives &&
+            Utf8SliceRunner.TryScanTerminalAsciiSuffixAlternatives(program, input, startByte, firstOnly: true,
                 ref invocation, out var suffixes, out _))
         {
             if (suffixes.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
