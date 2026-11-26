@@ -668,7 +668,7 @@ internal static partial class Utf8SliceRunner
             invocation.AnchorOriginByte = start;
             outcome = root == Utf8SliceTerminalRootKind.DecimalWithOptionalFraction
                 ? CountDecimalsWithOptionalFractions(input, start, ref invocation)
-                : CountMultilineSeparatedClasses(program, input, start, ref invocation);
+                : ScanMultilineSeparatedClasses(program, input, start, firstOnly: false, ref invocation, out _);
             return true;
         }
         var repeatIndex = -1;

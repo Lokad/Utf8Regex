@@ -5,10 +5,21 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SliceRunner
 {
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Utf8SliceCountOutcome CountMultilineSeparatedClasses(Utf8SliceProgram program,
+    private static Utf8SliceSearchOutcome FindMultilineSeparatedClasses(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int position, ref Utf8SliceInvocation invocation)
     {
+        var outcome = ScanMultilineSeparatedClasses(program, input, position, firstOnly: true, ref invocation, out var range);
+        return outcome.Breach == Utf8ExecutionLimitKind.None && range.Success
+            ? new(true, range.StartOffsetInBytes, range.EndOffsetInBytes, outcome.Breach)
+            : new(false, -1, -1, outcome.Breach);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Utf8SliceCountOutcome ScanMultilineSeparatedClasses(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, bool firstOnly, ref Utf8SliceInvocation invocation,
+        out Utf8CaptureRange range)
+    {
+        range = default;
         var count = 0;
         var literal = (byte)program.Instructions[9].A;
         var firstDelimiter = position;
@@ -32,6 +43,11 @@ internal static partial class Utf8SliceRunner
             if ((uint)label.EndIndex < (uint)input.Length && input[label.EndIndex] == literal)
             {
                 count++;
+                if (firstOnly)
+                {
+                    range = new(position, label.EndIndex + 1);
+                    break;
+                }
                 position = label.EndIndex + 1;
             }
             else

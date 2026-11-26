@@ -18,13 +18,40 @@ public sealed class Utf8AnchoredLineCountTests
             ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 4096 }
         });
         using var live = new CancellationTokenSource();
-        Assert.Equal(2, regex.Count(Encoding.UTF8.GetBytes(text), live.Token));
+        var bytes = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(2, regex.Count(bytes, live.Token));
+        Assert.True(regex.IsMatch(bytes, live.Token));
+    }
+
+    [Fact]
+    public void DisjointMultilineFinderRetainsTheOriginalLineStart()
+    {
+        const string pattern = @"(?m)^\s*\w+:";
+        const string text = "😀 no\n\n\r\n\u2003é: yes\n\tfinal:";
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern);
+        using var regex = new Utf8Regex(pattern);
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+        for (var start = 0; start <= text.Length; start++)
+        {
+            if (start < text.Length && char.IsLowSurrogate(text[start])) continue;
+            var expected = oracle.Match(text, start);
+            var fromByte = Encoding.UTF8.GetByteCount(text.AsSpan(0, start));
+            var range = regex.Match(bytes, fromByte, slots);
+            Assert.Equal(expected.Success, range.Success);
+            Assert.Equal(range, slots[0]);
+            if (!range.Success) continue;
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), range.StartOffsetInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index + expected.Length)), range.EndOffsetInBytes);
+        }
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void DisjointMultilineCountObservesInterruptionWhileScanningBlankLines(bool expire)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void DisjointMultilineSearchObservesInterruptionWhileScanningBlankLines(bool expire, bool firstOnly)
     {
         var input = Encoding.UTF8.GetBytes(new string('\n', 8192) + "é: yes");
         using var live = new CancellationTokenSource();
@@ -42,7 +69,9 @@ public sealed class Utf8AnchoredLineCountTests
         });
         try
         {
-            var failure = Record.Exception(() => regex.Count(input, live.Token));
+            var failure = firstOnly
+                ? Record.Exception(() => regex.IsMatch(input, live.Token))
+                : Record.Exception(() => regex.Count(input, live.Token));
             if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
             else Assert.Equal(live.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         }

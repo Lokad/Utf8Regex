@@ -465,14 +465,19 @@ internal static partial class Utf8SliceRunner
         ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default,
         bool existenceOnly = false, int screenedLiteral = -1, int requiredLiteralContinuation = 0)
     {
-        // The complete lazy-dot range needs no attempt workspace.
-        if (program.TerminalRoot == Utf8SliceTerminalRootKind.LazyDotLiteral &&
-            !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty)
+        // Complete terminal ranges can finish without an attempt workspace.
+        var root = program.TerminalRoot;
+        if (root is Utf8SliceTerminalRootKind.LazyDotLiteral or Utf8SliceTerminalRootKind.MultilineSeparatedClasses &&
+            !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+            (root == Utf8SliceTerminalRootKind.LazyDotLiteral ||
+                invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit))
         {
             invocation.Budget.ThrowIfCancellationRequested();
-            return Utf8BytePosition.IsScalarBoundary(input, fromByte)
+            if (!Utf8BytePosition.IsScalarBoundary(input, fromByte))
+                return new(false, -1, -1, Utf8ExecutionLimitKind.None);
+            return root == Utf8SliceTerminalRootKind.LazyDotLiteral
                 ? FindTerminalLazyDotLiteral(program, input, fromByte, ref invocation)
-                : new(false, -1, -1, Utf8ExecutionLimitKind.None);
+                : FindMultilineSeparatedClasses(program, input, fromByte, ref invocation);
         }
         if (requiredLiteralContinuation > 0 && !existenceOnly && !collectHistory &&
             TryFindPreparedLiteralRange(program, input, ref fromByte, candidatePlan.RequiredPrefilterSearcher.LiteralSearch,
@@ -557,10 +562,13 @@ internal static partial class Utf8SliceRunner
                 ref invocation, out var suffixes, out var suffixRange))
             return suffixRange.Success ? new(true, suffixRange.StartOffsetInBytes, suffixRange.EndOffsetInBytes, suffixes.Breach)
                 : new(false, -1, -1, suffixes.Breach);
-        if (program.TerminalRoot == Utf8SliceTerminalRootKind.DecimalWithOptionalFraction &&
+        var root = program.TerminalRoot;
+        if (root is Utf8SliceTerminalRootKind.DecimalWithOptionalFraction or Utf8SliceTerminalRootKind.MultilineSeparatedClasses &&
             !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty &&
             invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit)
-            return FindTerminalDecimalWithOptionalFraction(input, fromByte, ref invocation, existenceOnly);
+            return root == Utf8SliceTerminalRootKind.DecimalWithOptionalFraction
+                ? FindTerminalDecimalWithOptionalFraction(input, fromByte, ref invocation, existenceOnly)
+                : FindMultilineSeparatedClasses(program, input, fromByte, ref invocation);
         if (requiredLiteralContinuation > 0 && !existenceOnly && !collectHistory &&
             TryFindPreparedLiteralRange(program, input, ref fromByte, candidatePlan.RequiredPrefilterSearcher.LiteralSearch,
                 ref screenedLiteral, requiredLiteralContinuation, ref invocation, out var range))
