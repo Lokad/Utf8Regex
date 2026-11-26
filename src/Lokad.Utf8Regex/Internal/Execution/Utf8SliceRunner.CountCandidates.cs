@@ -1896,7 +1896,10 @@ internal static partial class Utf8SliceRunner
             return true;
         }
 
-        var breach = pair ? invocation.TryChargeStep() : invocation.TryChargeInputStep();
+        // The literal continuation probes a fixed window. The accepted range
+        // checks the deadline, and unresolved candidates enter checked discovery.
+        var breach = !classWindow ? invocation.TryChargeBoundedCheck()
+            : pair ? invocation.TryChargeStep() : invocation.TryChargeInputStep();
         if (breach == Utf8ExecutionLimitKind.None && pair)
         {
             var (literal, leadingClass, _, _, _) = program.LeadingClassDelimiter;

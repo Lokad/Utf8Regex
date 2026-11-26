@@ -319,7 +319,10 @@ internal static partial class Utf8SliceRunner
         out Utf8CaptureRange range)
     {
         range = default;
-        var breach = invocation.TryReserveWorking(0);
+        // Each scan block and the exit check interruption. Revisit admission
+        // only when this search inherits working storage or a prior denial.
+        var breach = invocation.Ledger.ReservedBytes != 0 || invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None
+            ? invocation.TryReserveWorking(0) : Utf8ExecutionLimitKind.None;
         if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
         var count = 0;
         var start = -1;

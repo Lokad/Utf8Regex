@@ -159,6 +159,21 @@ public sealed class Utf8ClassFamilyQualificationTests
     }
 
     [Fact]
+    public void DelimitedRepeatChecksInheritedWorkingStorageOnAnEmptyWindow()
+    {
+        using var regex = new Utf8Regex("\"[^\"\\n]*\"");
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        var invocation = Utf8SliceInvocation.CreateExclusive(new(0, 0, 4), Timeout.InfiniteTimeSpan, default);
+        Assert.True(invocation.Ledger.TryReserve(8));
+
+        var result = Utf8SliceRunner.FindDelimitedClassRepeat(program, [], 0, ref invocation);
+
+        Assert.False(result.Found);
+        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, result.Breach);
+        Assert.Equal(8UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Fact]
     public void NegatedRunFinderPreservesGreedyEndpointsAndTheCallerFloor()
     {
         var fixedRegex = new Utf8Regex("[^x]+:[^y]+");
