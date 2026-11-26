@@ -496,6 +496,22 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData("\u2003", " ", 0)]
+    [InlineData(" ", "\u3000", 0)]
+    [InlineData(" ", " ", 160)]
+    public void GuardedCountKeepsProvedHitsWhenTheNextCandidateNeedsTheVerifier(string left, string right, int padding)
+    {
+        const string pattern = @"(?<=\s)[A-Z][a-z]+(?=\s)";
+        var text = " First Bad!" + left + "Wide" + new string('a', padding) + right + "Last End!";
+        var input = Encoding.UTF8.GetBytes(text);
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+
+        Assert.Equal(3, Regex.Count(text, pattern));
+        Assert.Equal(3, regex.Count(input, token.Token));
+    }
+
+    [Theory]
     [InlineData("abc", "cd.e", 0)]
     [InlineData("β-記", "δ.東", 0)]
     [InlineData("long", "end", 160)]

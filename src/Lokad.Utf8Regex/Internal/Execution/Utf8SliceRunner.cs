@@ -1507,6 +1507,18 @@ internal static partial class Utf8SliceRunner
             fromByte < input.Length && (input[fromByte] & 0xC0) == 0x80)
             return new Utf8SliceCountOutcome(0, Utf8ExecutionLimitKind.None);
         var count = 0;
+        if (program.Instructions[0].Kind == Utf8SliceInstructionKind.Lookbehind &&
+            captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures)
+        {
+            // A completed guard proof starts and ends on the original subject.
+            // Its undecided case leaves the first unresolved candidate in fromByte.
+            while (TryFindGuardedRepeat(program, input, ref fromByte, ref invocation, out var guarded))
+            {
+                if (!guarded.Found) return new(count, guarded.Breach);
+                count++;
+                fromByte = guarded.EndByte;
+            }
+        }
         var position = fromByte;
         invocation.AnchorOriginByte = fromByte;
         // Nullable roots retain the caller's empty-match progression below.
