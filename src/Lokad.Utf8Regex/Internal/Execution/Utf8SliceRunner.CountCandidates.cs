@@ -358,9 +358,6 @@ internal static partial class Utf8SliceRunner
         return first;
     }
 
-    private static bool IsNonDecimalWideStart(ReadOnlySpan<byte> input, int position)
-        => input[position] >= 128 && TryReadScalar(input, position, false, out var scalar, out _) && !Rune.IsDigit(scalar);
-
     private static bool CanSkipShortRepeatChain(Utf8SliceProgram program)
     {
         var code = program.Instructions;
@@ -472,9 +469,12 @@ internal static partial class Utf8SliceRunner
         byte first, byte last, bool decimalSet, ref Utf8SliceInvocation invocation,
         scoped ReadOnlySpan<byte> exactPrefix = default, bool sparsePair = false, bool includeKelvin = false)
     {
+        if (decimalSet && exactPrefix.IsEmpty)
+            return TrySeekDecimalStart(input, ref position, ref invocation);
+
         if (invocation.IsUnmetered && invocation.CheckpointHook is null)
         {
-            var relative = exactPrefix.IsEmpty ? IndexOfLeadingByte(input[position..], first, last, decimalSet, sparsePair, includeKelvin)
+            var relative = exactPrefix.IsEmpty ? IndexOfLeadingByte(input[position..], first, last, sparsePair, includeKelvin)
                 : input[position..].IndexOf(exactPrefix);
             position = relative < 0 ? -1 : position + relative;
             return Utf8ExecutionLimitKind.None;
@@ -489,7 +489,7 @@ internal static partial class Utf8SliceRunner
             var length = Math.Min(2048, input.Length - position);
             var block = input.Slice(position, length);
             var relative = exactPrefix.IsEmpty
-                ? IndexOfLeadingByte(block, first, last, decimalSet, sparsePair, includeKelvin) : block.IndexOf(exactPrefix);
+                ? IndexOfLeadingByte(block, first, last, sparsePair, includeKelvin) : block.IndexOf(exactPrefix);
             if (relative >= 0) { position += relative; return Utf8ExecutionLimitKind.None; }
             position += length - overlap;
         }
@@ -497,10 +497,43 @@ internal static partial class Utf8SliceRunner
         return Utf8ExecutionLimitKind.None;
     }
 
-    private static int IndexOfLeadingByte(ReadOnlySpan<byte> input, byte first, byte last, bool decimalSet, bool sparsePair,
+    private static Utf8ExecutionLimitKind TrySeekDecimalStart(ReadOnlySpan<byte> input, ref int position,
+        ref Utf8SliceInvocation invocation)
+    {
+        var metered = !invocation.IsUnmetered || invocation.CheckpointHook is not null;
+        while (position < input.Length)
+        {
+            if (metered)
+            {
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+            }
+            var end = metered ? position + Math.Min(2048, input.Length - position) : input.Length;
+            while (position < end)
+            {
+                var next = Utf8AsciiBytePredicates.DecimalOrScalarLead.IndexOf(input[position..end]);
+                if (next < 0) { position = end; break; }
+                position += next;
+                if (input[position] < 128) return Utf8ExecutionLimitKind.None;
+                if (metered)
+                {
+                    var breach = invocation.TryChargeStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                }
+                // A lead inside this block admits one scalar. Its last bytes
+                // may lie in the following block of the same subject.
+                if (TryReadScalar(input, position, false, out var scalar, out var width) && Rune.IsDigit(scalar))
+                    return Utf8ExecutionLimitKind.None;
+                position += Math.Max(1, width);
+            }
+        }
+        position = -1;
+        return Utf8ExecutionLimitKind.None;
+    }
+
+    private static int IndexOfLeadingByte(ReadOnlySpan<byte> input, byte first, byte last, bool sparsePair,
         bool includeKelvin)
-        => decimalSet ? Utf8AsciiBytePredicates.DecimalOrScalarLead.IndexOf(input)
-            : includeKelvin ? input.IndexOfAny(first, last, "K"u8[0])
+        => includeKelvin ? input.IndexOfAny(first, last, "K"u8[0])
             : sparsePair ? input.IndexOfAny(first, last)
             : first == last ? input.IndexOf(first) : input.IndexOfAnyInRange(first, last);
 
@@ -1462,7 +1495,7 @@ internal static partial class Utf8SliceRunner
         {
             // Fixed scalar width gives one increasing candidate start per follower.
             var search = floor + digits;
-            var relative = IndexOfLeadingByte(input[search..], first, last, decimalSet: false,
+            var relative = IndexOfLeadingByte(input[search..], first, last,
                 sparsePair: first != last, includeKelvin: false);
             if (relative < 0) break;
             var follower = search + relative;

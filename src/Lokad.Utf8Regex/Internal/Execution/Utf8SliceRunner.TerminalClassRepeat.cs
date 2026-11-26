@@ -16,7 +16,8 @@ internal enum Utf8SliceTerminalRootKind : byte
     ClassRepeat,
     AsciiSetThenRepeat,
     DelimitedClassRepeat,
-    LazyDotLiteral
+    LazyDotLiteral,
+    DecimalWithOptionalFraction
 }
 
 internal static partial class Utf8SliceRunner
@@ -60,7 +61,57 @@ internal static partial class Utf8SliceRunner
                 { Kind: Utf8SliceInstructionKind.Accept }
             ])
             return Utf8SliceTerminalRootKind.LazyDotLiteral;
+        if (program.GroupCount == 0 && program.Instructions is
+            [
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 3, B: 0, RepeatMinimum: 1, RepeatMaximum: long.MaxValue },
+                { IsDecimalDigitSet: true },
+                { Kind: Utf8SliceInstructionKind.RepeatEnd, A: 0 },
+                { Kind: Utf8SliceInstructionKind.RepeatExit, A: 0 },
+                { Kind: Utf8SliceInstructionKind.Fork, A: 10, B: 0, C: 0, D: 0 },
+                { Kind: Utf8SliceInstructionKind.Literal, A: '.', B: 0 },
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 9, B: 1, RepeatMinimum: 1, RepeatMaximum: long.MaxValue },
+                { IsDecimalDigitSet: true },
+                { Kind: Utf8SliceInstructionKind.RepeatEnd, A: 6 },
+                { Kind: Utf8SliceInstructionKind.RepeatExit, A: 1 },
+                { Kind: Utf8SliceInstructionKind.Accept }
+            ])
+            return Utf8SliceTerminalRootKind.DecimalWithOptionalFraction;
         return CanRunTerminalClassRepeat(program) ? Utf8SliceTerminalRootKind.ClassRepeat : Utf8SliceTerminalRootKind.None;
+    }
+
+    private static Utf8SliceSearchOutcome FindTerminalDecimalWithOptionalFraction(ReadOnlySpan<byte> input,
+        int start, ref Utf8SliceInvocation invocation, bool existenceOnly)
+    {
+        var breach = TrySeekDecimalStart(input, ref start, ref invocation);
+        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+
+        var end = start;
+        if (start >= 0)
+        {
+            if (existenceOnly)
+            {
+                // A single digit and the empty optional branch suffice.
+                end = AdvancePastScalar(input, start, reverse: false);
+            }
+            else
+            {
+                var whole = RunUnboundedDecimalDigits(input, start, ref invocation, checkExitDeadline: false);
+                if (whole.Breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, whole.Breach);
+                end = whole.EndIndex;
+                if (end < input.Length - 1 && input[end] == '.')
+                {
+                    var fractionStart = end + 1;
+                    var fraction = RunUnboundedDecimalDigits(input, fractionStart, ref invocation, checkExitDeadline: false);
+                    if (fraction.Breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, fraction.Breach);
+                    if (fraction.EndIndex > fractionStart) end = fraction.EndIndex;
+                }
+            }
+        }
+
+        breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return start >= 0 && breach == Utf8ExecutionLimitKind.None
+            ? new(true, start, end, breach) : new(false, -1, -1, breach);
     }
 
     private static Utf8SliceSearchOutcome FindTerminalLazyDotLiteral(Utf8SliceProgram program,

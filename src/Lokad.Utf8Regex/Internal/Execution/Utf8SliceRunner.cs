@@ -531,6 +531,10 @@ internal static partial class Utf8SliceRunner
         if (program.TerminalRoot == Utf8SliceTerminalRootKind.LazyDotLiteral &&
             !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty)
             return FindTerminalLazyDotLiteral(program, input, fromByte, ref invocation);
+        if (program.TerminalRoot == Utf8SliceTerminalRootKind.DecimalWithOptionalFraction &&
+            !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+            invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit)
+            return FindTerminalDecimalWithOptionalFraction(input, fromByte, ref invocation, existenceOnly);
         if (requiredLiteralContinuation > 1 && !existenceOnly && !collectHistory && program.GroupCount == 0 &&
             TryFindPreparedLiteralRange(program, input, ref fromByte, candidatePlan.RequiredPrefilterSearcher.LiteralSearch,
                 ref screenedLiteral, requiredLiteralContinuation, ref invocation, out var range))
@@ -1175,8 +1179,7 @@ internal static partial class Utf8SliceRunner
                         new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
             }
             if (leading >= 0 && ((uint)position >= (uint)input.Length ||
-                !MayStartAtByte(input[position], leading, leadingLast, sparsePair, includeKelvin) &&
-                !(seekDecimal && input[position] is >= 0xc2 and <= 0xf4) ||
+                !MayStartAtByte(input[position], leading, leadingLast, sparsePair, includeKelvin) ||
                 !leadingPrefix.IsEmpty && !input[position..].StartsWith(leadingPrefix)))
             {
                 var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leading, leadingLast, seekDecimal,
@@ -1240,8 +1243,6 @@ internal static partial class Utf8SliceRunner
                     provedAsciiBoundary = previous < 128;
                 }
             }
-            if (seekDecimal && IsNonDecimalWideStart(input, position))
-                continue;
             if (shortRepeatWindow.Min != 0 && !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal))
                 continue;
             // The metered rewind proved the nonempty leading class and its
@@ -1788,11 +1789,6 @@ internal static partial class Utf8SliceRunner
                     if (position < 0)
                         return CompleteCandidateCount(program, count, interpretedVisits,
                             new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
-                    if (seekDecimal && IsNonDecimalWideStart(input, position))
-                    {
-                        position = AdvancePastScalar(input, position, false);
-                        continue;
-                    }
                     if (leadingFirst < 128 && (shortRepeatWindow.Min != 0 ? !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal) :
                         (leadingPrefix.IsEmpty && leadingSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                         (uint)(input[position + 1] - leadingSecond) > (uint)(leadingSecondLast - leadingSecond))) ||

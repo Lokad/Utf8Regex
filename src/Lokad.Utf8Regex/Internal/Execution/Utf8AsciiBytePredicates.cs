@@ -6,8 +6,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal static class Utf8AsciiBytePredicates
 {
     internal const ulong DecimalMask = 0x3ffUL << '0';
-    // All valid multibyte leads are possible candidates. The scalar VM tests
-    // actual decimal membership. No continuation byte can become a start.
+    // The decimal search checks the scalar at each multibyte lead. No
+    // continuation byte can become a start.
     private const ulong MultibyteLeadMask = ((1UL << (0xf4 - 0xc2 + 1)) - 1) << (0xc2 - 0xc0);
     internal static readonly PreparedByteSetState DecimalOrScalarLead =
         PreparedByteSetState.FromMasks(DecimalMask, 0, 0, MultibyteLeadMask);

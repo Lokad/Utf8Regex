@@ -593,6 +593,33 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.Equal((1, input.Length - 1), (result.StartOffsetInBytes, result.EndOffsetInBytes));
     }
 
+    [Theory]
+    [InlineData("𝟚.٣", "𝟚.٣")]
+    [InlineData("𝟚.😀", "𝟚")]
+    [InlineData("𝟚.", "𝟚")]
+    public void TerminalDecimalKeepsScalarRangesAndRequiresAFractionDigit(string initial, string expected)
+    {
+        const int start = 2047;
+        var input = Encoding.UTF8.GetBytes(new string('!', start) + initial + "! ٤.5");
+        var selectedEnd = start + Encoding.UTF8.GetByteCount(initial);
+        var first = new Utf8CaptureRange(start, start + Encoding.UTF8.GetByteCount(expected));
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(@"\d+(?:\.\d+)?", policy: new() { ResourcePolicy = Funded });
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+
+        Assert.True(regex.IsMatch(input, token.Token));
+        Assert.Equal(first, regex.Match(input, 0, slots, token.Token, endOffsetInBytes: selectedEnd));
+        Assert.Equal(first, slots[0]);
+        Assert.Equal(new Utf8CaptureRange(start, start + "𝟚"u8.Length),
+            regex.Match(input, start, slots, token.Token, endOffsetInBytes: start + "𝟚."u8.Length));
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(first, match.Value);
+        Assert.True(cursor.MoveNext(out match));
+        Assert.Equal(new Utf8CaptureRange(input.Length - "٤.5"u8.Length, input.Length), match.Value);
+        Assert.False(cursor.MoveNext(out _));
+    }
+
     [Fact]
     public void DecimalCandidateScanObservesTheOriginalTokenAndWorkLimit()
     {
