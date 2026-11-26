@@ -1124,7 +1124,7 @@ internal static partial class Utf8SliceRunner
         var classContinuation = verifiedClassLiteralLength != 0 ? classDelimiter.LiteralIndex + verifiedClassLiteralLength : 0;
         var classWindowProof = program.LeadingClassWindowProof;
         var terminalClassCapture = classCapture >= 0 && verifiedClassLiteralLength == classWindowProof.LiteralLength &&
-            classWindowProof.Completion == Utf8SliceClassWindowCompletion.CapturedRepeat;
+            classWindowProof.Completion is Utf8SliceClassWindowCompletion.CapturedRepeat or Utf8SliceClassWindowCompletion.CapturedSharedRun;
         var prefixContinuation = classContinuation != 0 ? classContinuation : verifiedLeadingPrefix.Item1;
         var proofRepeatIndex = classContinuation != 0 && program.GroupCount != 0
             ? Utf8SliceInstruction.SkipLeadingCaptureMarkers(program.Instructions, classContinuation) : prefixContinuation;
@@ -1367,7 +1367,7 @@ internal static partial class Utf8SliceRunner
             }
             var outcome = terminalClassCapture && position < classWindowEnd
                 ? MatchTerminalCapturedRepeat(program, input, position + verifiedPrefix.Item2, classContinuation,
-                    captureStarts, captureEnds, ref invocation)
+                    captureStarts, captureEnds, ref invocation, classWindowProof.Completion == Utf8SliceClassWindowCompletion.CapturedSharedRun)
                 : TryMatchAt(program, input, position, captureStarts, captureEnds,
                     collectHistory, false, true, ref workspace, ref invocation, existenceOnly, verifiedPrefix);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)

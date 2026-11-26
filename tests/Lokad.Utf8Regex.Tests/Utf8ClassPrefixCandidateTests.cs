@@ -218,7 +218,8 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
         using var source = new CancellationTokenSource();
         Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[captures ? 4 : 1];
-        foreach (var suffix in new[] { "a@.β", "a@β.", "a@β..", "a@β.γ", "a@β.γ.δ", "a@" + new string('β', 48) + ".γ" })
+        foreach (var suffix in new[] { "a@.β", "a@β.", "a@β..", "a@β.γ", "a@β.γ.δ", "a@....",
+            "a@" + new string('β', 48) + ".γ", "a@β." + new string('γ', 1200) + "." })
         {
             var text = new string('!', 260) + suffix;
             var input = Encoding.UTF8.GetBytes(text);
@@ -230,14 +231,38 @@ public sealed class Utf8ClassPrefixCandidateTests
                 : default;
             Assert.Equal(range, regex.Match(input, cancellationToken: source.Token));
             Assert.Equal(reference.Count(text), regex.Count(input, source.Token));
-            if (captures && expected.Success)
+            if (captures)
             {
                 Assert.Equal(range, regex.Match(input, 0, slots, source.Token));
+                if (!expected.Success)
+                {
+                    foreach (var slot in slots) Assert.False(slot.Success);
+                    continue;
+                }
                 for (var group = 1; group < slots.Length; group++)
                 {
                     var capture = expected.Groups[group];
                     Assert.Equal(new Utf8CaptureRange(Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index)),
                         Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index + capture.Length))), slots[group]);
+                }
+                var second = slots[2];
+                Assert.Equal(range, regex.Match(input, 0, slots[..3], source.Token));
+                Assert.Equal(second, slots[2]);
+
+                // Clipping at the selected separator can leave an earlier dot
+                // in the clipped subject. Compare all slots at that end too.
+                var end = expected.Groups[2].Index + expected.Groups[2].Length;
+                var clipped = reference.Match(text[..end]);
+                var match = regex.Match(input, 0, slots, source.Token, endOffsetInBytes: second.EndOffsetInBytes);
+                Assert.Equal(clipped.Success, match.Success);
+                for (var group = 0; group < slots.Length; group++)
+                {
+                    var capture = clipped.Groups[group];
+                    var expectedSlot = capture.Success
+                        ? new Utf8CaptureRange(Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index)),
+                            Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index + capture.Length)))
+                        : default;
+                    Assert.Equal(expectedSlot, slots[group]);
                 }
             }
         }
