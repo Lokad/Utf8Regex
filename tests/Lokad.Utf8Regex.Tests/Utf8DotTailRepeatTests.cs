@@ -200,11 +200,15 @@ public sealed class Utf8DotTailRepeatTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void CaptureFreeLazyDotObservesInterruptionInTheDelimiterSearch(bool deadline)
+    [InlineData(140_000, false)]
+    [InlineData(140_000, true)]
+    [InlineData(84_000, false)]
+    [InlineData(84_000, true)]
+    public void CaptureFreeLazyDotObservesInterruptionInTheDelimiterSearchAndRewind(int padding, bool deadline)
     {
-        var input = Encoding.UTF8.GetBytes(new string('x', 140_000) + ",");
+        // The hook runs during the forward search at 140,000 bytes and during
+        // the rewind at 84,000 bytes, with both scans charged in 2 KiB blocks.
+        var input = Encoding.UTF8.GetBytes(new string('x', padding) + ",");
         using var regex = new Utf8Regex(".*?,", policy: new() { MatchTimeout = TimeSpan.FromMilliseconds(20) });
         using var token = new CancellationTokenSource();
         long ticks = 0;

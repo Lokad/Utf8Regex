@@ -295,10 +295,11 @@ internal static partial class Utf8SliceRunner
         var start = delimiter;
         if (delimiter >= 0)
         {
+            // The rewind checks the deadline before returning the start.
             breach = TryRewindClassWhitespace(program, input, floor, 1, 0, true, ref start, ref invocation);
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
         }
-        breach = invocation.TryChargeInputStep();
+        else breach = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();
         return delimiter >= 0 && breach == Utf8ExecutionLimitKind.None
             ? new(true, start, delimiter + 1, breach) : new(false, -1, -1, breach);
