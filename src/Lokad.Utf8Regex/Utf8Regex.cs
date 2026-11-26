@@ -254,6 +254,7 @@ public sealed partial class Utf8Regex : IDisposable
 
     internal ref readonly Utf8SearchPlan SearchPlan => ref _preparedRegex.SearchPlan;
     internal int RequiredLiteralContinuation => _preparedRegex.RequiredLiteralContinuation;
+    internal int RequiredLiteralOptionalRun => _preparedRegex.RequiredLiteralOptionalRun;
     internal byte[]? RequiredLiteralTerminalSuffix => _preparedRegex.RequiredLiteralTerminalSuffix;
 
     private Utf8StructuralSearchPlan StructuralSearchPlan => _preparedRegex.SearchPlan.StructuralSearchPlan;

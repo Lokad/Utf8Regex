@@ -556,7 +556,7 @@ internal static partial class Utf8SliceRunner
         scoped Span<int> captureStarts, scoped Span<int> captureEnds, bool collectHistory,
         ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default,
         bool existenceOnly = false, int screenedLiteral = -1, int requiredLiteralContinuation = 0,
-        byte[]? requiredLiteralTerminalSuffix = null)
+        byte[]? requiredLiteralTerminalSuffix = null, int requiredLiteralOptionalRun = 0)
     {
         invocation.Budget.ThrowIfCancellationRequested();
         if ((uint)fromByte > (uint)input.Length ||
@@ -583,7 +583,8 @@ internal static partial class Utf8SliceRunner
                 : FindMultilineSeparatedClasses(program, input, fromByte, ref invocation);
         if (requiredLiteralContinuation > 0 && !existenceOnly && !collectHistory &&
             TryFindPreparedLiteralRange(program, input, ref fromByte, candidatePlan.RequiredPrefilterSearcher.LiteralSearch,
-                ref screenedLiteral, requiredLiteralContinuation, ref invocation, out var range, requiredLiteralTerminalSuffix))
+                ref screenedLiteral, requiredLiteralContinuation, ref invocation, out var range,
+                requiredLiteralTerminalSuffix, optionalLiteralRun: requiredLiteralOptionalRun))
             return range;
         if (program.IsNonBacktracking)
         {

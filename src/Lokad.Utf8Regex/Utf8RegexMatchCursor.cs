@@ -135,7 +135,8 @@ public sealed class Utf8RegexMatchCursor : IDisposable
                 : Utf8SliceRunner.TryFindFirst(program, _input.Span, _position, _slots.Starts, _slots.Ends,
                     collectHistory, ref _workspace, ref _invocation, in _regex!.SearchPlan,
                     requiredLiteralContinuation: _regex.RequiredLiteralContinuation,
-                    requiredLiteralTerminalSuffix: _regex.RequiredLiteralTerminalSuffix);
+                    requiredLiteralTerminalSuffix: _regex.RequiredLiteralTerminalSuffix,
+                    requiredLiteralOptionalRun: _regex.RequiredLiteralOptionalRun);
             if (outcome.Breach != Utf8ExecutionLimitKind.None) throw _invocation.Budget.CreateResourceFailure();
             if (!outcome.Found)
             {
