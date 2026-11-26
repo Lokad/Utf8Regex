@@ -49,7 +49,10 @@ internal static class Utf8CountKernelCensus
         if (plan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
             Utf8LiteralCompiledEngineRuntime.TryGetLeadingUtf8SegmentLength(literal, out _))
         {
-            metrics = InspectFullSequenceSearchMetrics(input, literal, "SpanSequenceSearch");
+            var route = "SpanSequenceSearch";
+            if (literal.Length > 16 && plan.SearchPlan.LiteralSearch is { HasExactAnchors: true } prepared)
+                route = prepared.GetExactCountAnchor(input.Length) > 0 ? "BoundedByteAnchor" : "PreparedPrefixSearch";
+            metrics = InspectFullSequenceSearchMetrics(input, literal, route);
             return true;
         }
 
@@ -67,9 +70,9 @@ internal static class Utf8CountKernelCensus
         }
 
         if (plan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            Utf8LiteralCompiledEngineRuntime.TryGetExactUtf8LiteralAnchor(literal, out var anchorIndex, out var anchorByte))
+            Utf8LiteralCompiledEngineRuntime.TryGetExactUtf8LiteralAnchor(literal, out _, out _))
         {
-            metrics = InspectAnchoredMetrics(input, literal, anchorIndex, anchorByte);
+            metrics = InspectFullSequenceSearchMetrics(input, literal, "BoundedByteAnchor");
             return true;
         }
 
@@ -141,48 +144,6 @@ internal static class Utf8CountKernelCensus
         return new Utf8SelectedCountKernelMetrics(
             "CorrelatedTwoBytePrefix",
             "starts matching literal bytes 0, 1, and 3",
-            candidates,
-            candidates,
-            matches);
-    }
-
-    private static Utf8SelectedCountKernelMetrics InspectAnchoredMetrics(
-        ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> literal,
-        int anchorIndex,
-        byte anchorByte)
-    {
-        var candidates = 0;
-        var matches = 0;
-        var searchIndex = anchorIndex;
-        var maxStart = input.Length - literal.Length;
-        while (searchIndex < input.Length)
-        {
-            var relative = input[searchIndex..].IndexOf(anchorByte);
-            if (relative < 0)
-            {
-                break;
-            }
-
-            var anchorPosition = searchIndex + relative;
-            var candidate = anchorPosition - anchorIndex;
-            searchIndex = anchorPosition + 1;
-            if ((uint)candidate > (uint)maxStart)
-            {
-                continue;
-            }
-
-            candidates++;
-            if (input.Slice(candidate, literal.Length).SequenceEqual(literal))
-            {
-                matches++;
-                searchIndex = candidate + literal.Length + anchorIndex;
-            }
-        }
-
-        return new Utf8SelectedCountKernelMetrics(
-            "RareByteAnchored",
-            $"byte 0x{anchorByte:X2} hits at literal offset {anchorIndex}",
             candidates,
             candidates,
             matches);

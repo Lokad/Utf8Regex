@@ -172,6 +172,9 @@ internal readonly struct PreparedSubstringSearch
 
     internal bool HasExactAnchors => _exactAnchors.Anchor2 > 0;
 
+    internal int GetExactCountAnchor(int inputLength) =>
+        Length > 16 && inputLength >= 256 ? _exactAnchors.Anchor2 : 0;
+
     public int IndexOf(ReadOnlySpan<byte> input)
     {
         return IgnoreCase

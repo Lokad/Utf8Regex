@@ -345,7 +345,11 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             TryGetLeadingUtf8SegmentLength(literal, out _))
         {
             if (literal.Length > 16 && _regexPlan.SearchPlan.LiteralSearch is { HasExactAnchors: true } prepared)
+            {
+                var anchor = prepared.GetExactCountAnchor(input.Length);
+                if (anchor > 0) return CountExactUtf8LiteralAnchored(input, literal, anchor, literal[anchor]);
                 return prepared.Count(input);
+            }
             // Reuse complete-sequence search instead of restarting a scalar
             // anchor and rechecking each prefix. The exact byte sequence
             // already identifies scalar boundaries in valid UTF-8.
@@ -498,33 +502,25 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     internal static int CountExactUtf8LiteralAnchored(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal, int anchorIndex, byte anchorByte)
     {
         var count = 0;
-        var searchIndex = anchorIndex;
-        var maxStart = input.Length - literal.Length;
+        var closeMisses = 0;
 
-        while (searchIndex < input.Length)
+        while (input.Length >= literal.Length)
         {
-            var relative = input[searchIndex..].IndexOf(anchorByte);
-            if (relative < 0)
+            var candidate = input.Slice(anchorIndex, input.Length - literal.Length + 1).IndexOf(anchorByte);
+            if (candidate < 0) break;
+            if (input.Slice(candidate, literal.Length).SequenceEqual(literal))
             {
-                return count;
-            }
-
-            var anchorPosition = searchIndex + relative;
-            var candidate = anchorPosition - anchorIndex;
-            searchIndex = anchorPosition + 1;
-
-            if ((uint)candidate > (uint)maxStart)
-            {
+                count++;
+                closeMisses = 0;
+                input = input[(candidate + literal.Length)..];
                 continue;
             }
 
-            if (!input.Slice(candidate, literal.Length).SequenceEqual(literal))
-            {
-                continue;
-            }
-
-            count++;
-            searchIndex = candidate + literal.Length + anchorIndex;
+            input = input[(candidate + 1)..];
+            // Nearby misses favor one vectorized sequence search over repeated
+            // calls to find a byte and verify a complete candidate.
+            if (candidate >= Vector256<byte>.Count) closeMisses = 0;
+            else if (++closeMisses == 4) return count + PreparedSubstringSearch.CountExactSequence(input, literal);
         }
 
         return count;

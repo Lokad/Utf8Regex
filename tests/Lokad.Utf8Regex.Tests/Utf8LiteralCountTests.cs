@@ -138,6 +138,22 @@ public sealed class Utf8LiteralCountTests
     }
 
     [Fact]
+    public void MixedWidthCountResumesPastDenseFalseAnchorsWithinBorrowedView()
+    {
+        const string pattern = "夏洛克·福尔摩斯";
+        using var regex = new Utf8Regex(pattern);
+        using var source = new CancellationTokenSource();
+        var text = pattern + new string('¡', 256) + pattern + pattern[..^1];
+        var storage = Encoding.UTF8.GetBytes(pattern + text + "斯" + pattern);
+        var prefix = Encoding.UTF8.GetByteCount(pattern);
+        var input = storage.AsSpan(prefix, Encoding.UTF8.GetByteCount(text));
+
+        Assert.Equal(2, regex.Count(input));
+        Assert.Equal(2, regex.Count(input, source.Token));
+        Assert.Equal(1, regex.Count(input[..prefix]));
+    }
+
+    [Fact]
     public void AsciiAnchorCountsExactUtf8Literals()
     {
         var needle = "abé"u8.ToArray();
