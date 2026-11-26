@@ -57,10 +57,7 @@ public sealed partial class Utf8Regex
                 return MatchDetailedCaptureSlots(program, subject, startOffsetInBytes, output, ref invocation);
 
             Utf8CaptureRange result;
-            if (program.GroupCount == 0 &&
-                (_preparedRegex.SearchPlan.HasBoundaryRequirements
-                    ? CanUseControlledScalarBoundaryLiteralSearch(program)
-                    : CanUseNativeLiteralSearch(program, maximumAlternatives: 8)))
+            if (_canUseLiteralForValueSlots)
             {
                 // The bounded finder sees the prefix before the byte floor.
                 // The selected end still clips the subject's right context.

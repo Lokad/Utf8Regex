@@ -37,6 +37,7 @@ public sealed partial class Utf8Regex : IDisposable
 
     private readonly Utf8RegexProgram _program;
     private readonly int _asciiLiteralCountAnchorOffset;
+    private readonly bool _canUseLiteralForValueSlots;
     private readonly bool _canUseUnmeteredScalarBoundaryLiterals;
     private readonly Utf8EmittedLiteralFamilyCounter? _scalarBoundaryLiteralFamilyCounter;
     private readonly bool _requiresKelvinSignFallback;
@@ -123,13 +124,18 @@ public sealed partial class Utf8Regex : IDisposable
             var ownedSliceProgram = preparedRegex.ScalarProgram
                 ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
             _ownedSliceProgram = ownedSliceProgram;
-            if (matchTimeout == Regex.InfiniteMatchTimeout &&
-                _program.CompiledEngineRuntime is { } literalRuntime && HasScalarBoundaryLiteralSearch(ownedSliceProgram))
+            var usesLiteralEngine = preparedRegex.HasLiteralPlan;
+            var hasScalarBoundaryLiterals = usesLiteralEngine && HasScalarBoundaryLiteralSearch(ownedSliceProgram);
+            _canUseLiteralForValueSlots = usesLiteralEngine && ownedSliceProgram.GroupCount == 0 &&
+                (preparedRegex.SearchPlan.HasBoundaryRequirements
+                    ? !ownedSliceProgram.IsNonBacktracking && hasScalarBoundaryLiterals
+                    : CanUseNativeLiteralSearch(ownedSliceProgram, maximumAlternatives: 8));
+            if (hasScalarBoundaryLiterals && matchTimeout == Regex.InfiniteMatchTimeout &&
+                _program.CompiledEngineRuntime is { } literalRuntime)
             {
                 _canUseUnmeteredScalarBoundaryLiterals = true;
                 _scalarBoundaryLiteralFamilyCounter = literalRuntime._emittedLiteralFamilyCounter;
             }
-            var usesLiteralEngine = preparedRegex.HasLiteralPlan;
             var captureRoot = usesLiteralEngine || _anchoredLiteral.HasValue ? root : null;
             _hasCaptures = ownedSliceProgram.GroupCount != 0 &&
                 (captureRoot is null || preparedRegex.Features.HasCaptureNodes);
