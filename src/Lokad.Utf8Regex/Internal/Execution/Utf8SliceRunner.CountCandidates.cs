@@ -1685,7 +1685,7 @@ internal static partial class Utf8SliceRunner
         Utf8ExecutionLimitKind breach;
         while (true)
         {
-            if (screenedDelimiter >= floor)
+            if (screenedDelimiter >= floor && !repeatPrefix.Any.HasValue)
             {
                 position = screenedDelimiter;
                 if (requiredSuffix.Second != 0 && position > searchEnd - search.GetValueOrDefault().Length)
@@ -1704,9 +1704,19 @@ internal static partial class Utf8SliceRunner
                 breach = Utf8ExecutionLimitKind.None;
                 while (position <= lastStart)
                 {
-                    breach = Utf8SearchExecutor.TryFindLiteralCandidate(prepared, input, position, lastStart,
-                        false, ref invocation, out position);
-                    if (breach != Utf8ExecutionLimitKind.None || position < 0) break;
+                    if (screenedDelimiter >= position)
+                    {
+                        // The same first hit still needs the repeat-prefix checks.
+                        position = screenedDelimiter;
+                        screenedDelimiter = -1;
+                        if (position > lastStart) break;
+                    }
+                    else
+                    {
+                        breach = Utf8SearchExecutor.TryFindLiteralCandidate(prepared, input, position, lastStart,
+                            false, ref invocation, out position);
+                        if (breach != Utf8ExecutionLimitKind.None || position < 0) break;
+                    }
                     var rejected = repeatPrefix.Last.HasValue &&
                         (position == floor || input[position - 1] < 128 && !repeatPrefix.Last.Contains(input[position - 1]));
                     if (!rejected && repeatPrefix.DisjointEnd != 0)

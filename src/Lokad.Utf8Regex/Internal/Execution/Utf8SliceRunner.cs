@@ -1039,6 +1039,9 @@ internal static partial class Utf8SliceRunner
             {
                 classSearch = prefixSearch;
                 classLiteral = prefixSearch.Needle[0];
+                if (screenedLiteral >= fromByte &&
+                    ReferenceEquals(candidatePlan.RequiredPrefilterSearcher.LiteralSearch.Needle, prefixSearch.Needle))
+                    screenedDelimiter = screenedLiteral;
             }
         }
         // Keep existing literal guidance when available. The decimal scan
