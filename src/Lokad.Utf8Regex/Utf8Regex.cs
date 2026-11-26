@@ -248,6 +248,7 @@ public sealed partial class Utf8Regex : IDisposable
 
     internal ref readonly Utf8SearchPlan SearchPlan => ref _preparedRegex.SearchPlan;
     internal int RequiredLiteralContinuation => _preparedRegex.RequiredLiteralContinuation;
+    internal byte[]? RequiredLiteralTerminalSuffix => _preparedRegex.RequiredLiteralTerminalSuffix;
 
     private Utf8StructuralSearchPlan StructuralSearchPlan => _preparedRegex.SearchPlan.StructuralSearchPlan;
 
@@ -430,7 +431,8 @@ public sealed partial class Utf8Regex : IDisposable
         if (search.RequiredPrefilterSearcher.Kind != PreparedSearcherKind.ExactLiteral) screenedLiteral = -1;
         if (screenedLiteral < startByte || _preparedRegex.RequiredLiteralContinuation is not (> 0 and var continuation) ||
             !Utf8SliceRunner.TryFindPreparedLiteralContinuation(program, input, ref startByte,
-                search.RequiredPrefilterSearcher.LiteralSearch, screenedLiteral, continuation, ref invocation, out var outcome))
+                search.RequiredPrefilterSearcher.LiteralSearch, screenedLiteral, continuation, ref invocation, out var outcome,
+                terminalSuffix: RequiredLiteralTerminalSuffix))
             outcome = FindOwnedSliceValue(program, input, startByte, ref invocation, search,
                 existenceOnly: true, screenedLiteral: screenedLiteral);
         if (outcome.Breach != Utf8ExecutionLimitKind.None)
@@ -714,7 +716,8 @@ public sealed partial class Utf8Regex : IDisposable
         return groupCount == 0
             ? Utf8SliceRunner.TryFindFirst(program, input, startByte, [], [],
                 false, ref invocation, search, existenceOnly, screenedLiteral,
-                !existenceOnly && ReferenceEquals(program, _ownedSliceProgram) ? RequiredLiteralContinuation : 0)
+                !existenceOnly && ReferenceEquals(program, _ownedSliceProgram) ? RequiredLiteralContinuation : 0,
+                RequiredLiteralTerminalSuffix)
             : FindOwnedSliceValueWithSlots(program, groupCount, input, startByte, ref invocation,
                 search, existenceOnly, screenedLiteral);
     }

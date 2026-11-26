@@ -1786,7 +1786,7 @@ internal static partial class Utf8SliceRunner
 
     internal static bool TryFindPreparedLiteralContinuation(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         ref int position, in PreparedSubstringSearch search, int screenedLiteral, int continuation, ref Utf8SliceInvocation invocation,
-        out Utf8SliceSearchOutcome outcome, bool existenceOnly = true)
+        out Utf8SliceSearchOutcome outcome, bool existenceOnly = true, byte[]? terminalSuffix = null)
     {
         outcome = default;
         var classWindow = continuation != search.Length;
@@ -1824,9 +1824,13 @@ internal static partial class Utf8SliceRunner
                 if (member) start = screenedLiteral - width;
             }
         }
+        int end;
         if (breach == Utf8ExecutionLimitKind.None && start >= 0 &&
-            (classWindow && proof.CanFinishTerminalRuns
-                ? MayFinishTerminalClassRuns(program, input, screenedLiteral + search.Length, continuation, out var end)
+            (terminalSuffix is not null
+                ? (end = MatchPreparedLiteralTail(program, input, screenedLiteral + search.Length, continuation,
+                    in program.Instructions[continuation], terminalSuffix)) != BranchedPrefixRejected
+                : classWindow && proof.CanFinishTerminalRuns
+                ? MayFinishTerminalClassRuns(program, input, screenedLiteral + search.Length, continuation, out end)
                 : MayMatchBranchedAsciiPrefix(program, input, screenedLiteral + search.Length, continuation,
                     out end, proveMatch: true, BranchedPrefixInstructionLimit - continuation, existenceOnly)))
         {
@@ -1954,7 +1958,7 @@ internal static partial class Utf8SliceRunner
 
     internal static bool TryFindPreparedLiteralRange(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         ref int position, in PreparedSubstringSearch search, ref int screenedLiteral, int continuation,
-        ref Utf8SliceInvocation invocation, out Utf8SliceSearchOutcome outcome)
+        ref Utf8SliceInvocation invocation, out Utf8SliceSearchOutcome outcome, byte[]? terminalSuffix = null)
     {
         outcome = default;
         var classWindow = continuation != search.Length;
@@ -1989,7 +1993,17 @@ internal static partial class Utf8SliceRunner
             }
         }
         return TryFindPreparedLiteralContinuation(program, input, ref position, search, screenedLiteral,
-            continuation, ref invocation, out outcome, existenceOnly: false);
+            continuation, ref invocation, out outcome, existenceOnly: false, terminalSuffix: terminalSuffix);
+    }
+
+    private static int MatchPreparedLiteralTail(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int start, int continuation, in Utf8SliceInstruction repeat, ReadOnlySpan<byte> suffix)
+    {
+        var remaining = BranchedPrefixInstructionLimit - continuation - 1;
+        var end = TryMatchLongPrefixRepeat(program, input, start, continuation + 1, in repeat, ref remaining);
+        if (end < 0) return end;
+        if (remaining <= suffix.Length) return BranchedPrefixUndecided;
+        return input[end..].StartsWith(suffix) ? end + suffix.Length : BranchedPrefixRejected;
     }
 
     internal static Utf8SliceCountOutcome CountPreparedLiteralRanges(Utf8SliceProgram program,
@@ -2029,25 +2043,21 @@ internal static partial class Utf8SliceRunner
                 var start = position + prefix.Length;
                 var end = branched
                     ? ProbeBranchedAsciiPrefix(program, input, start, prefix.Length, ref remaining, proveMatch: true)
-                    : TryMatchLongPrefixRepeat(program, input, start, prefix.Length + 1, in repeat, ref remaining);
+                    : MatchPreparedLiteralTail(program, input, start, prefix.Length, in repeat, suffix);
                 if (end == BranchedPrefixRejected)
                 {
                     position++;
                     continue;
                 }
-                if (end < 0 || !branched && remaining <= suffix.Length)
+                if (end < 0)
                 {
                     // The ordinary verifier must begin at the first unproved
                     // prefix. A later candidate could consume this match.
                     screenedLiteral = position;
                     break;
                 }
-                if (branched || input[end..].StartsWith(suffix))
-                {
-                    count++;
-                    position = end + suffix.Length;
-                }
-                else position++;
+                count++;
+                position = end;
             }
             if (screenedLiteral >= 0) break;
         }
