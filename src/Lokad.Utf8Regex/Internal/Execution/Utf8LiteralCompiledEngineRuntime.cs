@@ -600,7 +600,11 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         if (budget.IsInfinite &&
             _leadingUtf8SegmentLiteralFamilyPrefilter.HasValue)
         {
-            return CountLeadingUtf8SegmentLiteralFamilyHybrid(input, _leadingUtf8SegmentLiteralFamilyPrefilter, _leadingUtf8SegmentLiteralFamilyAutomaton, 2048);
+            var search = _regexPlan.SearchPlan.MultiLiteralSearch;
+            var rootSearch = search.Kind == PreparedMultiLiteralKind.ExactAutomaton
+                ? search.TrieSearch.RootSearch : default;
+            return CountLeadingUtf8SegmentLiteralFamilyHybrid(
+                input, _leadingUtf8SegmentLiteralFamilyPrefilter, _leadingUtf8SegmentLiteralFamilyAutomaton, rootSearch);
         }
 
         if (_hasThreeByteLiteralFamily)
@@ -658,8 +662,10 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     }
 
     private static int CountLeadingUtf8SegmentLiteralFamilyHybrid(
-        ReadOnlySpan<byte> input, PreparedMultiLiteralCandidatePrefilter prefilter, PreparedMultiLiteralAutomatonSearch automaton, int chunkBytes)
+        ReadOnlySpan<byte> input, PreparedMultiLiteralCandidatePrefilter prefilter,
+        PreparedMultiLiteralAutomatonSearch automaton, in PreparedByteSearch rootSearch)
     {
+        const int chunkBytes = 2048;
         var count = 0;
         var position = 0;
         var shortestLength = prefilter.ShortestLength;
@@ -678,9 +684,10 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
                 continue;
             }
 
-            var automatonState = new PreparedMultiLiteralScanState(0, 0, 0);
+            // Every literal starts with a probed segment, so no match can start earlier.
+            var automatonState = new PreparedMultiLiteralScanState(candidateIndex, candidateIndex, 0);
             var nextPosition = chunkEnd;
-            while (automaton.TryFindNextNonOverlappingMatch(probeWindow, ref automatonState, out var matchIndex, out _, out _))
+            while (automaton.TryFindNextNonOverlappingMatch(probeWindow, ref automatonState, out var matchIndex, out _, out _, rootSearch))
             {
                 if (matchIndex >= chunkEnd - position)
                 {
