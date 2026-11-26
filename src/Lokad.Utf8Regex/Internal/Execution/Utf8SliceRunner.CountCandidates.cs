@@ -1911,8 +1911,8 @@ internal static partial class Utf8SliceRunner
         int end;
         if (breach == Utf8ExecutionLimitKind.None && start >= 0 &&
             (optionalLiteralRun != 0
-                ? (end = MatchOptionalLiteralRunMember(program, input, screenedLiteral + search.Length, continuation,
-                    optionalLiteralRun)) != BranchedPrefixRejected
+                ? (end = MatchPreparedOptionalLiteralRun(program, input, screenedLiteral + search.Length, continuation,
+                    optionalLiteralRun, existenceOnly)) != BranchedPrefixRejected
                 : terminalSuffix is not null
                 ? (end = MatchPreparedLiteralTail(program, input, screenedLiteral + search.Length, continuation,
                     in program.Instructions[continuation], terminalSuffix)) != BranchedPrefixRejected
@@ -1963,8 +1963,8 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static int MatchOptionalLiteralRunMember(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int position, int optional, int requiredRun)
+    private static int MatchPreparedOptionalLiteralRun(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, int optional, int requiredRun, bool existenceOnly)
     {
         var code = program.Instructions;
         if (position < input.Length && input[position] == code[optional + 1].A) position++;
@@ -1974,8 +1974,16 @@ internal static partial class Utf8SliceRunner
         for (var i = 0; i < literals.Length; i++)
             if (suffix[i] != literals[i].A) return BranchedPrefixRejected;
 
-        // One member of the run can reach its proved empty tail.
         position += literals.Length;
+        if (!existenceOnly)
+        {
+            // The disjoint optional byte and fixed literals prove the prefix.
+            // Retain the same bounded allowance for the greedy tail.
+            var remaining = BranchedPrefixInstructionLimit - requiredRun;
+            return ProbeBranchedAsciiPrefix(program, input, position, requiredRun, ref remaining, proveMatch: true);
+        }
+
+        // One member of the run can reach its proved empty tail.
         ref readonly var atom = ref code[requiredRun + 1];
         var value = input[position];
         if (value < 128)
@@ -2108,7 +2116,7 @@ internal static partial class Utf8SliceRunner
     internal static bool TryFindPreparedLiteralRange(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         ref int position, in PreparedSubstringSearch search, ref int screenedLiteral, int continuation,
         ref Utf8SliceInvocation invocation, out Utf8SliceSearchOutcome outcome, byte[]? terminalSuffix = null,
-        bool capturedWindow = false)
+        bool capturedWindow = false, int optionalLiteralRun = 0)
     {
         outcome = default;
         var classWindow = continuation != search.Length;
@@ -2143,7 +2151,8 @@ internal static partial class Utf8SliceRunner
             }
         }
         return TryFindPreparedLiteralContinuation(program, input, ref position, search, screenedLiteral,
-            continuation, ref invocation, out outcome, existenceOnly: false, terminalSuffix: terminalSuffix);
+            continuation, ref invocation, out outcome, existenceOnly: false,
+            terminalSuffix: terminalSuffix, optionalLiteralRun: optionalLiteralRun);
     }
 
     private static int MatchPreparedLiteralTail(Utf8SliceProgram program, ReadOnlySpan<byte> input,

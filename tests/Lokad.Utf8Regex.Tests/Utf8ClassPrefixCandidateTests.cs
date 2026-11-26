@@ -595,7 +595,9 @@ public sealed class Utf8ClassPrefixCandidateTests
     {
         using var regex = new Utf8Regex(@"httpx?xy[^\s?]+", policy: new() { ResourcePolicy = Funded });
         Assert.Equal(4, regex.RequiredLiteralContinuation);
-        Assert.Equal(found, regex.IsMatch(Encoding.UTF8.GetBytes(text)));
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(found, regex.IsMatch(input));
+        Assert.Equal(found ? new Utf8CaptureRange(0, input.Length) : default, regex.Match(input));
     }
 
     [Fact]
@@ -620,6 +622,10 @@ public sealed class Utf8ClassPrefixCandidateTests
         {
             Assert.True(cursor.MoveNext(out var result));
             Utf8MatchSequence.AssertRange(result.Value, text, match.Index, match.Length);
+            var start = Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index));
+            var direct = regex.Match(input, start, slots, source.Token);
+            Assert.Equal(result.Value, direct);
+            Assert.Equal(direct, slots[0]);
         }
         Assert.False(cursor.MoveNext(out _));
     }
@@ -665,6 +671,8 @@ public sealed class Utf8ClassPrefixCandidateTests
             var actual = regex.Match(input, 0, slots, source.Token, endOffsetInBytes: Encoding.UTF8.GetByteCount(text[..end]));
             Utf8MatchSequence.AssertRange(actual, text, expected.Index, expected.Length);
             Assert.Equal(actual, slots[0]);
+            var start = Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index));
+            Assert.Equal(actual, regex.Match(input, start, slots, source.Token, endOffsetInBytes: Encoding.UTF8.GetByteCount(text[..end])));
         }
     }
 

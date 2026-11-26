@@ -731,7 +731,7 @@ public sealed partial class Utf8Regex : IDisposable
             ? Utf8SliceRunner.TryFindFirst(program, input, startByte, [], [],
                 false, ref invocation, search, existenceOnly, screenedLiteral,
                 !existenceOnly && ReferenceEquals(program, _ownedSliceProgram) ? RequiredLiteralContinuation : 0,
-                RequiredLiteralTerminalSuffix)
+                RequiredLiteralTerminalSuffix, _preparedRegex.RequiredLiteralOptionalRun)
             : FindOwnedSliceValueWithSlots(program, groupCount, input, startByte, ref invocation,
                 search, existenceOnly, screenedLiteral);
     }
