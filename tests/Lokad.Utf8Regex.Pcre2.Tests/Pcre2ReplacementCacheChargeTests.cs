@@ -52,6 +52,19 @@ public sealed class Pcre2ReplacementCacheChargeTests
     }
 
     [Fact]
+    public void LargeBasicTemplateFitsOneLiteralPayloadAndItsKey()
+    {
+        var template = Encoding.UTF8.GetBytes("[${name}]" + new string('é', 48 * 1024));
+        var value = new Pcre2ReplacementPreparation(null,
+            Pcre2PreparedReplacementParser.Parse(template, Pcre2SubstitutionOptions.None));
+        var available = (256UL << 10) - ArrayBytes<byte>(template.Length);
+        using var owner = Utf8ConstructionScope.Enter();
+
+        Assert.True(Compute(value, available, default, out var charge));
+        Assert.InRange(charge, PhysicalBytes(value), available);
+    }
+
+    [Fact]
     public void SharedPayloadSlotsAndNullInstructionsNeedNoAccountingAllocations()
     {
         var bytes = "é😀"u8.ToArray();

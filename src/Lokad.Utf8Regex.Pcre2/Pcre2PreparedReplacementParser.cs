@@ -83,7 +83,7 @@ internal static class Pcre2PreparedReplacementParser
             for (var index = 0; index < roots.Length; index++)
             {
                 Work(); var fragment = fragments[index];
-                roots[index] = new(fragment.Normal[0], fragment.Quoted[0]);
+                roots[index] = new(fragment.Normal[0], fragment.Quoted.Length == 0 ? 0 : fragment.Quoted[0]);
             }
             // Admit the exact final instruction extent while scratch code is
             // still live. The enclosing scope rolls both loans back on failure.
@@ -99,12 +99,14 @@ internal static class Pcre2PreparedReplacementParser
             Work();
             var count = checked(end - start + 1);
             var normal = storage.Allocate<int>(count, false);
-            var quoted = storage.Allocate<int>(count, false);
-            storage.Budget.ChargeWork((ulong)count * 2);
+            // Only extended escapes can enter quoted execution.
+            var quoted = Extended ? storage.Allocate<int>(count, false) : [];
+            storage.Budget.ChargeWork((ulong)count + (ulong)quoted.Length);
             normal.AsSpan().Fill(-1); quoted.AsSpan().Fill(-1);
             var id = fragments.Count;
             fragments.Add(new(start, end, normal, quoted));
-            _ = Node(id, start, false); _ = Node(id, start, true);
+            _ = Node(id, start, false);
+            if (quoted.Length != 0) _ = Node(id, start, true);
             return id;
         }
 
@@ -142,12 +144,12 @@ internal static class Pcre2PreparedReplacementParser
         {
             next = position;
             if (position == end) return Op(Pcre2ReplacementOpcode.Return);
-            if (Extended && (char)text[position] == '\\' && position + 1 < end && (char)text[position + 1] == 'E')
+            if ((char)text[position] == '\\' && position + 1 < end && (char)text[position + 1] == 'E')
             { next = position + 2; return Op(Pcre2ReplacementOpcode.EndQuote); }
             while (next < end)
             {
                 Work();
-                if (Extended && (char)text[next] == '\\' && next + 1 < end && (char)text[next + 1] == 'E') break;
+                if ((char)text[next] == '\\' && next + 1 < end && (char)text[next + 1] == 'E') break;
                 next++;
             }
             return Literal(position, next - position);
