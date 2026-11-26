@@ -8,6 +8,25 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8NativeCapturePreparationTests
 {
     [Theory]
+    [InlineData("(?x)(a b)", "ab")]
+    [InlineData("(?x)(a# comment\nb)", "ab")]
+    [InlineData("(?ix)foo | bar", "FOO")]
+    [InlineData("(?ix)foo | bar", "bar")]
+    public void FreeSpacingLiteralsUseTheParsedMatchBytes(string pattern, string value)
+    {
+        var input = Encoding.UTF8.GetBytes(value);
+        using var textPattern = new Utf8Regex(pattern);
+        using var bytePattern = Utf8Regex.Compile(Encoding.UTF8.GetBytes(pattern));
+        foreach (var regex in new[] { textPattern, bytePattern })
+        {
+            Assert.True(regex.IsMatch(input));
+            Assert.Equal(1, regex.Count(input));
+            var match = regex.Match(input);
+            Assert.Equal((0, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        }
+    }
+
+    [Theory]
     [InlineData(false)] [InlineData(true)]
     public void CapturedUnicodeFamilyPreservesScalarOperations(bool compiled)
     {

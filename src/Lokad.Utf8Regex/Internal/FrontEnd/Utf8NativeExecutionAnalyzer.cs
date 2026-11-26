@@ -104,7 +104,8 @@ internal static class Utf8NativeExecutionAnalyzer
                 return false;
             }
 
-            if (executionPattern is not null && IsPlainLiteral(executionPattern) && IsNativeLiteralExecutionPattern(executionPattern, executionOptions))
+            var freeSpacing = (executionOptions & RegexOptions.IgnorePatternWhitespace) != 0;
+            if (executionPattern is not null && IsPlainLiteral(executionPattern, freeSpacing))
             {
                 var accepted = TryCreateLiteralAnalyzedRegex(semanticRegex, features, executionPattern, executionOptions, out analyzedRegex);
                 if (accepted) construction.Complete();
@@ -154,7 +155,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 return accepted;
             }
 
-            if (executionPattern is not null && TryExtractSingleCapturedLiteralPattern(executionPattern, out var capturedLiteral))
+            if (executionPattern is not null && TryExtractSingleCapturedLiteralPattern(executionPattern, freeSpacing, out var capturedLiteral))
             {
                 var accepted = TryCreateLiteralAnalyzedRegex(semanticRegex, features, capturedLiteral, executionOptions, out analyzedRegex);
                 if (accepted) construction.Complete();
@@ -182,7 +183,7 @@ internal static class Utf8NativeExecutionAnalyzer
             if ((executionOptions & RegexOptions.RightToLeft) == 0 &&
                 (executionOptions & RegexOptions.IgnoreCase) != 0 &&
                 executionPattern is not null &&
-                TryExtractPlainAsciiLiteralAlternationPattern(executionPattern, out var ignoreCaseAlternateLiterals))
+                TryExtractPlainAsciiLiteralAlternationPattern(executionPattern, freeSpacing, out var ignoreCaseAlternateLiterals))
             {
                 analyzedRegex = Utf8RegexAnalysis.Create(
                     semanticRegex,
@@ -598,12 +599,12 @@ internal static class Utf8NativeExecutionAnalyzer
         return true;
     }
 
-    private static bool IsPlainLiteral(ReadOnlySpan<char> pattern)
+    private static bool IsPlainLiteral(ReadOnlySpan<char> pattern, bool freeSpacing = false)
     {
         Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
         foreach (var ch in pattern)
         {
-            if (Utf8RegexSyntax.IsRegexMetaCharacter(ch))
+            if (Utf8RegexSyntax.IsRegexMetaCharacter(ch) || freeSpacing && IsFreeSpacingSyntax(ch))
             {
                 return false;
             }
@@ -612,7 +613,7 @@ internal static class Utf8NativeExecutionAnalyzer
         return true;
     }
 
-    private static bool TryExtractSingleCapturedLiteralPattern(string pattern, out string literal)
+    internal static bool TryExtractSingleCapturedLiteralPattern(string pattern, bool freeSpacing, out string literal)
     {
         literal = string.Empty;
         using var construction = Utf8ConstructionScope.Enter();
@@ -622,7 +623,7 @@ internal static class Utf8NativeExecutionAnalyzer
             owner.ChargeWork(1);
             if (pattern.Length < 3 || pattern[0] != '(' || pattern[^1] != ')') return false;
             var inner = pattern.AsSpan(1, pattern.Length - 2);
-            if (!IsPlainLiteral(inner)) return false;
+            if (!IsPlainLiteral(inner, freeSpacing)) return false;
             literal = owner.CopyText(inner); construction.Complete(); return true;
         }
         finally { owner.LeaveDepth(); }
@@ -651,7 +652,7 @@ internal static class Utf8NativeExecutionAnalyzer
         return true;
     }
 
-    private static bool TryExtractPlainAsciiLiteralAlternationPattern(string pattern, out byte[][] alternateLiteralsUtf8)
+    internal static bool TryExtractPlainAsciiLiteralAlternationPattern(string pattern, bool freeSpacing, out byte[][] alternateLiteralsUtf8)
     {
         alternateLiteralsUtf8 = [];
         using var construction = Utf8ConstructionScope.Enter();
@@ -666,7 +667,11 @@ internal static class Utf8NativeExecutionAnalyzer
                 if (value == '|')
                 { if (length == 0) return false; count++; length = 0; }
                 else
-                { if (value > 0x7f || Utf8RegexSyntax.IsRegexMetaCharacter(value)) return false; length++; }
+                {
+                    if (value > 0x7f || Utf8RegexSyntax.IsRegexMetaCharacter(value) || freeSpacing && IsFreeSpacingSyntax(value))
+                        return false;
+                    length++;
+                }
             }
             if (count <= 1) return false;
             var result = owner.AllocateArray<byte[]>(count, false);
@@ -1166,7 +1171,7 @@ internal static class Utf8NativeExecutionAnalyzer
 
         foreach (var ch in executionPattern)
         {
-            if (char.IsWhiteSpace(ch) || ch == '#')
+            if (IsFreeSpacingSyntax(ch))
             {
                 return false;
             }
@@ -1174,4 +1179,6 @@ internal static class Utf8NativeExecutionAnalyzer
 
         return true;
     }
+
+    private static bool IsFreeSpacingSyntax(char ch) => char.IsWhiteSpace(ch) || ch == '#';
 }
