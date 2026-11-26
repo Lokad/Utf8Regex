@@ -8,18 +8,14 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ScalarIrAdmissionTests
 {
     [Fact]
-    public void SharedTreeClassIsConvertedOnceAndRetainsOnePayloadLoan()
+    public void ParsedClassPayloadsRemainAdmittedAfterLoweringScratchReleases()
     {
         var tree = Utf8OwnedTreeParser.TryParse("[abc][def]", RegexOptions.None);
         Assert.NotNull(tree);
-        var concat = tree.Root.Child(0);
-        Assert.Equal(Utf8TreeNodeKind.Concatenate, concat.Kind);
-        Assert.IsType<Utf8TreeNode[]>(concat.Children)[1] = concat.Child(0);
         using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity);
         var program = Utf8OwnedTreeSliceLowerer.TryLower(tree, RegexOptions.None);
         Assert.NotNull(program);
         Assert.Equal(2, program.SetMasks.Length);
-        Assert.Same(program.SetMasks[0], program.SetMasks[1]);
         Assert.True(scope.Budget.ReservedBytes >= CountOwnedGraphArrays(program) + 128ul);
     }
 
