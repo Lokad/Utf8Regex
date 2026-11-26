@@ -10,7 +10,8 @@ internal sealed class Utf8OwnedRegexTree
     private readonly record struct ConstructionState(Utf8TreeNode Root, int CaptureCount, CultureInfo? Culture, string[]? CaptureNames,
         IReadOnlyDictionary<string, int>? CaptureNameToNumberMapping,
         IReadOnlyDictionary<int, int>? CaptureNumberSparseMapping, RegexOptions Options,
-        Utf8CaptureCatalog? CaptureCatalog, bool UsesLiteralClassBracketSyntax, bool UsesIgnoreCase);
+        Utf8CaptureCatalog? CaptureCatalog, bool UsesLiteralClassBracketSyntax, bool UsesIgnoreCase,
+        Utf8RegexFeatures Features);
 
     internal static Utf8OwnedRegexTree Create(
         Utf8TreeNode root,
@@ -22,12 +23,13 @@ internal sealed class Utf8OwnedRegexTree
         CultureInfo? culture,
         Utf8CaptureCatalog? captureCatalog,
         bool usesLiteralClassBracketSyntax,
-        bool usesIgnoreCase)
+        bool usesIgnoreCase,
+        Utf8RegexFeatures features)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var tree = scope.Budget.AllocateObject(new ConstructionState(root, captureCount, culture, captureNames,
             captureNameToNumberMapping, captureNumberSparseMapping, options, captureCatalog,
-            usesLiteralClassBracketSyntax, usesIgnoreCase), static state => new Utf8OwnedRegexTree(state));
+            usesLiteralClassBracketSyntax, usesIgnoreCase, features), static state => new Utf8OwnedRegexTree(state));
         scope.Complete();
         return tree;
     }
@@ -44,6 +46,7 @@ internal sealed class Utf8OwnedRegexTree
         CaptureCatalog = state.CaptureCatalog;
         UsesLiteralClassBracketSyntax = state.UsesLiteralClassBracketSyntax;
         UsesIgnoreCase = state.UsesIgnoreCase;
+        Features = state.Features;
     }
 
     public Utf8TreeNode Root { get; }
@@ -66,4 +69,6 @@ internal sealed class Utf8OwnedRegexTree
     internal bool UsesLiteralClassBracketSyntax { get; }
 
     internal bool UsesIgnoreCase { get; }
+
+    internal Utf8RegexFeatures Features { get; }
 }

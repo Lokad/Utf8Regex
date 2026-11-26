@@ -178,7 +178,7 @@ public sealed class Utf8LiteralEdgeQualificationTests
         var root = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, options);
         root.Children = new[] { Utf8TreeNode.Create(Utf8TreeNodeKind.Beginning, options), literal };
         var deep = Utf8OwnedRegexTree.Create(root, tree.CaptureCount, tree.CaptureNames, tree.CaptureNameToNumberMapping, tree.CaptureNumberSparseMapping,
-            tree.Options, tree.Culture, tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase);
+            tree.Options, tree.Culture, tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase, tree.Features);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 8);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
         Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8AnchoredLiteralClassifier.Classify(deep)).ResourceKind);

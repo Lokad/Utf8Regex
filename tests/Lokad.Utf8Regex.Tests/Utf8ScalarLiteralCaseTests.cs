@@ -47,11 +47,8 @@ public sealed class Utf8ScalarLiteralCaseTests
         Assert.Equal(NativeExecutionKind.FallbackRegex, prepared.ExecutionKind);
         Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiteral, prepared.SearchPlan.Kind);
         Assert.NotEqual(int.MaxValue, prepared.SearchPlan.MaxPossibleLength);
-        Assert.Equal(1, prepared.Features.CaptureCount);
-        Assert.False(prepared.Features.HasBackreferences);
-        Assert.False(prepared.Features.HasLookarounds);
-        Assert.False(prepared.Features.HasAtomicGroups);
-        Assert.False(prepared.Features.HasConditionals);
-        Assert.False(prepared.Features.HasLoops);
+        Assert.Equal(0, regex.CaptureGroupCount);
+        Assert.False(prepared.Features.HasAbsoluteStartAnchor);
+        Assert.False(prepared.Features.HasCaptureNodes);
     }
 }

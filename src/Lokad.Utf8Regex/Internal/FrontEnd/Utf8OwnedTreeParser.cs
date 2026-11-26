@@ -104,10 +104,10 @@ internal static class Utf8OwnedTreeParser
             tree.Children = root;
             root.Parent = tree;
             var culture = state.ConstructionCulture;
-            FreezeChildren(storage, tree);
+            var features = FreezeChildren(storage, tree);
             var result = Utf8OwnedRegexTree.Create(tree, captureCount, captureNames, captureNameToNumber,
                 captureSparseMapping, treeOptions, culture, state.CaptureCatalog,
-                state.UsesLiteralClassBracketSyntax, state.UsesIgnoreCase);
+                state.UsesLiteralClassBracketSyntax, state.UsesIgnoreCase, features);
             storage.Complete();
             construction.Complete();
             return result;
@@ -3327,8 +3327,10 @@ internal static class Utf8OwnedTreeParser
         }
     }
 
-    private static void FreezeChildren(Utf8ConstructionSession storage, Utf8TreeNode root)
+    private static Utf8RegexFeatures FreezeChildren(Utf8ConstructionSession storage, Utf8TreeNode root)
     {
+        var hasAbsoluteStart = false;
+        var hasCaptureNodes = false;
         using var frames = Utf8ConstructionFrames<(Utf8TreeNode Node, int NextChild)>.Create(storage.Budget, (root, 0));
         while (frames.Count > 0)
         {
@@ -3336,8 +3338,14 @@ internal static class Utf8OwnedTreeParser
             var index = frames.Count - 1;
             var frame = frames[index];
             var node = frame.Node;
-            if (frame.NextChild == 0 && node.Children is Utf8ConstructionBuffer<Utf8TreeNode> children)
-                node.Children = storage.Copy(children, true);
+            if (frame.NextChild == 0)
+            {
+                // Only the final tree represents live captures and anchors.
+                hasAbsoluteStart |= node.Kind is Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Beginning;
+                hasCaptureNodes |= node.Kind == Utf8TreeNodeKind.Capture && node.M > 0;
+                if (node.Children is Utf8ConstructionBuffer<Utf8TreeNode> children)
+                    node.Children = storage.Copy(children, true);
+            }
             if (frame.NextChild < node.ChildCount)
             {
                 frames[index] = (node, frame.NextChild + 1);
@@ -3345,6 +3353,7 @@ internal static class Utf8OwnedTreeParser
             }
             else frames.Pop();
         }
+        return new(hasAbsoluteStart, hasCaptureNodes);
     }
 
     private enum OwnedParseProduction { Alternation, Concatenation, Group, NamedGroup, Lookaround, Conditional }

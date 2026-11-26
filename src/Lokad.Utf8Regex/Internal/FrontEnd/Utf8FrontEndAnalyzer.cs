@@ -7,7 +7,7 @@ internal static class Utf8FrontEndAnalyzer
     public static Utf8RegexAnalysis Analyze(Utf8SemanticRegex semanticRegex)
     {
         var executionOptions = semanticRegex.ExecutionOptions;
-        var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex);
+        var features = semanticRegex.RuntimeTree?.Features ?? default;
         // Flat regular graphs can use the admitted native literal plans.
         if ((executionOptions & RegexOptions.NonBacktracking) != 0 &&
             Lokad.Utf8Regex.Internal.Execution.Utf8SliceParser.IsNonBacktrackingFlatGraph(semanticRegex.RuntimeTree) &&

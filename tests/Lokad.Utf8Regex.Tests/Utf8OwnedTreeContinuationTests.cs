@@ -111,7 +111,6 @@ public sealed class Utf8OwnedTreeContinuationTests
 
     private static void AssertDeepTree(Utf8OwnedRegexTree tree, int minimumDepth)
     {
-        var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(new("", tree.Options, 0, tree.Options, tree));
         var nodes = new HashSet<Utf8TreeNode>();
         var pending = new Stack<(Utf8TreeNode Node, int Depth)>();
         pending.Push((tree.Root, 0));
@@ -131,8 +130,6 @@ public sealed class Utf8OwnedTreeContinuationTests
         }
         Assert.True(maximumDepth >= minimumDepth);
         Assert.True(captures > 0);
-        Assert.Equal(tree.CaptureCount, features.CaptureCount);
-        Assert.Equal(tree.CaptureNameToNumberMapping is { Count: > 0 }, features.HasNamedCaptures);
     }
 
     public static IEnumerable<object[]> OwnedOperationCases()

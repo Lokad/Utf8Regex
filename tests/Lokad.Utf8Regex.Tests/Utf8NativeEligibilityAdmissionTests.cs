@@ -21,7 +21,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
         return node;
     }
 
-    private static Utf8OwnedRegexTree Tree(Utf8TreeNode root) => Utf8OwnedRegexTree.Create(root, Seed.CaptureCount, Seed.CaptureNames, Seed.CaptureNameToNumberMapping, Seed.CaptureNumberSparseMapping, RegexOptions.CultureInvariant, CultureInfo.InvariantCulture, Seed.CaptureCatalog, false, false);
+    private static Utf8OwnedRegexTree Tree(Utf8TreeNode root) => Utf8OwnedRegexTree.Create(root, Seed.CaptureCount, Seed.CaptureNames, Seed.CaptureNameToNumberMapping, Seed.CaptureNumberSparseMapping, RegexOptions.CultureInvariant, CultureInfo.InvariantCulture, Seed.CaptureCatalog, false, false, default);
 
     private static Utf8OwnedRegexTree Make(Route route, int depth)
     {

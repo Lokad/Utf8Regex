@@ -83,7 +83,7 @@ public sealed class Utf8TreeObjectAdmissionTests
     public void TreeAdmissionSharesTheParentAndBorrowsItsCanonicalCatalog(bool full, Utf8ResourceLimitKind kind)
     {
         var seed = Utf8OwnedTreeParser.TryParse("(?<9>😀)(?<x>b)", RegexOptions.CultureInvariant)!;
-        var loan = CompleteLoan(typeof(Utf8OwnedRegexTree), 10);
+        var loan = CompleteLoan(typeof(Utf8OwnedRegexTree), 11);
         var maximum = kind == Utf8ResourceLimitKind.ConstructionBytes ? loan : 2;
         foreach (var cutoff in new[] { 0ul, 1ul, maximum - 1, maximum, maximum + 1 }.Distinct())
         {
@@ -95,9 +95,9 @@ public sealed class Utf8TreeObjectAdmissionTests
             Utf8OwnedRegexTree? result = null;
             var failure = Record.Exception(() => result = full
                 ? Utf8OwnedRegexTree.Create(seed.Root, seed.CaptureCount, seed.CaptureNames, seed.CaptureNameToNumberMapping,
-                    seed.CaptureNumberSparseMapping, seed.Options, seed.Culture, seed.CaptureCatalog, true, true)
+                    seed.CaptureNumberSparseMapping, seed.Options, seed.Culture, seed.CaptureCatalog, true, true, seed.Features)
                 : Utf8OwnedRegexTree.Create(seed.Root, seed.CaptureCount, seed.CaptureNames, seed.CaptureNameToNumberMapping,
-                    seed.CaptureNumberSparseMapping, seed.Options, seed.Culture, null, false, false));
+                    seed.CaptureNumberSparseMapping, seed.Options, seed.Culture, null, false, false, seed.Features));
             Assert.Equal(0ul, owner.Budget.Depth);
             if (cutoff < maximum)
             {
@@ -119,6 +119,7 @@ public sealed class Utf8TreeObjectAdmissionTests
                 Assert.Same(CultureInfo.InvariantCulture, result.Culture);
                 Assert.Equal(full, result.UsesLiteralClassBracketSyntax);
                 Assert.Equal(full, result.UsesIgnoreCase);
+                Assert.Equal(seed.Features, result.Features);
                 if (full) Assert.Same(seed.CaptureCatalog, result.CaptureCatalog);
                 else Assert.Null(result.CaptureCatalog);
             }

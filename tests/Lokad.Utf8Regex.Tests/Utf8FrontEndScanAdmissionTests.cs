@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -10,7 +9,6 @@ public sealed class Utf8FrontEndScanAdmissionTests
 {
     private const string Digits = "[0-9]";
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
-    private sealed record Input(Utf8TreeNode Find, Utf8SemanticRegex Semantic);
 
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, string text, params Utf8TreeNode[] children)
     {
@@ -32,19 +30,15 @@ public sealed class Utf8FrontEndScanAdmissionTests
         return node;
     }
 
-    private static Utf8SemanticRegex Semantic(Utf8TreeNode root)
-        => new("a", RegexOptions.None, 0, RegexOptions.None,
-            Utf8OwnedRegexTree.Create(root, 1, null, null, null, RegexOptions.None, CultureInfo.InvariantCulture, null, false, false));
-
-    private static Input Make(int depth)
+    private static Utf8TreeNode Make(int depth)
     {
         var find = Node(Utf8TreeNodeKind.Multi, "ab");
         for (var index = 0; index < depth; index++)
             find = Node(Utf8TreeNodeKind.Concatenate, "", find, Node(Utf8TreeNodeKind.Multi, "c"));
-        return new(find, Semantic(find));
+        return find;
     }
 
-    private static void Run(int route, Input input)
+    private static void Run(int route, Utf8TreeNode input)
     {
         // Discard the scan results and release their construction loans.
         using var discarded = Utf8ConstructionScope.Enter();
@@ -52,16 +46,15 @@ public sealed class Utf8FrontEndScanAdmissionTests
         {
             case 6:
                 Span<(int, AsciiCharClass)> sets = stackalloc (int, AsciiCharClass)[Utf8FrontEndSearchAnalyzer.MaxDeterministicPrefixSets];
-                Assert.True(Utf8FrontEndSearchAnalyzer.ExtractDeterministicPrefixSets(input.Find, 0, sets) > 0);
+                Assert.True(Utf8FrontEndSearchAnalyzer.ExtractDeterministicPrefixSets(input, 0, sets) > 0);
                 break;
-            case 9: Assert.Equal(1, Utf8RuntimeTreeFeatureAnalyzer.Analyze(input.Semantic).CaptureCount); break;
-            case 10: Assert.Null(Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(input.Find)); break;
+            case 10: Assert.Null(Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(input)); break;
         }
     }
 
     public static IEnumerable<object[]> RootDenials()
     {
-        foreach (var route in new[] { 6, 9, 10 })
+        foreach (var route in new[] { 6, 10 })
         for (var denial = 0; denial < 3; denial++) yield return [route, denial];
     }
 
@@ -85,7 +78,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
     }
 
     [Theory]
-    [InlineData(6)] [InlineData(9)] [InlineData(10)]
+    [InlineData(6)] [InlineData(10)]
     public void ChildDepthDenialRestoresParentAndAllowsRecovery(int route)
     {
         var input = Make(32);
@@ -108,7 +101,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
     }
 
     [Theory]
-    [InlineData(6)] [InlineData(9)] [InlineData(10)]
+    [InlineData(6)] [InlineData(10)]
     public void ArrayGrowthDenialReleasesEveryScratchLoan(int route)
     {
         var input = Make(128);
@@ -126,7 +119,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
     }
 
     [Theory]
-    [InlineData(6)] [InlineData(9)] [InlineData(10)]
+    [InlineData(6)] [InlineData(10)]
     public void EveryWorkCutoffRestoresScratchWithoutRefundingWork(int route)
     {
         var input = Make(3);
@@ -205,17 +198,6 @@ public sealed class Utf8FrontEndScanAdmissionTests
         Assert.Equal("atomic groups", Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(root));
         root = Node(Utf8TreeNodeKind.Concatenate, "", Node(Utf8TreeNodeKind.Atomic, ""), Node(Utf8TreeNodeKind.Backreference, ""));
         Assert.Equal("backreferences", Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(root));
-    }
-
-    [Fact]
-    public void FeatureFlagsRetainTheCompleteGrammarCensus()
-    {
-        var lookbehind = Utf8TreeNode.Create(Utf8TreeNodeKind.PositiveLookaround, RegexOptions.RightToLeft);
-        var root = Node(Utf8TreeNodeKind.Concatenate, "", Node(Utf8TreeNodeKind.Beginning, ""), Node(Utf8TreeNodeKind.Boundary, ""),
-            Node(Utf8TreeNodeKind.Backreference, ""), lookbehind, Node(Utf8TreeNodeKind.Atomic, ""),
-            Node(Utf8TreeNodeKind.ExpressionConditional, ""), Node(Utf8TreeNodeKind.Setloop, Digits), Node(Utf8TreeNodeKind.Alternate, ""));
-        var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(Semantic(root));
-        Assert.Equal(new Utf8RegexFeatures(1, false, true, true, true, true, true, true, true, true, true, false), features);
     }
 
     [Fact]
