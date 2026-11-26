@@ -198,9 +198,10 @@ Admitted calls and cursors hold the program until they finish. Properties
 such as `Pattern` and `EffectiveOptions` remain accessible. Unfunded
 expression disposal has no effect.
 
-Replacement preparation is bounded. A cold lookup admits its immutable key
-before copying, under the operation's deadline and working limits as well
-as construction backstops. A key denial can report `ExecutionWorkingBytes`
+Replacement preparation uses a cache with 256 KiB of covered payload. Plans
+that exceed the cache limit use temporary preparation under the same limits.
+A cold lookup admits its immutable key before copying, under the operation's
+deadline, working limits and construction backstops. A key denial can report `ExecutionWorkingBytes`
 and a preparation denial can report `ConstructionBytes`. Failed templates
 are discarded. Active cache uses keep their program charge through eviction
 or disposal until the final use ends.

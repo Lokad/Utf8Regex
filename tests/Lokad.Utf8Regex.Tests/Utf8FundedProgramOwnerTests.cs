@@ -503,7 +503,9 @@ public sealed class Utf8FundedProgramOwnerTests
     [Fact]
     public void FundedTemplateCallRetainsProgramAcrossReentrantClose()
     {
-        var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
+        var root = new SharedRoot();
+        var programs = new Account(root) { Maximum = 512 << 10 };
+        var working = new Account(root);
         var owner = Compile("(a)", programs); var held = programs.Used;
         working.AfterGrant = () => { owner.Dispose(); Assert.Equal(held, programs.Used); };
         var destination = new byte[16];

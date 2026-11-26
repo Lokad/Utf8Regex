@@ -84,8 +84,11 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
             {
                 _unmeteredLiteralLanguage = literalLanguage;
             }
+            // Large prepared substitutions can cost much more to rebuild than to use.
             _replacementCache = Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>.CreateRetained(
-                16, EqualityComparer<Pcre2ReplacementCacheKey>.Default);
+                16, EqualityComparer<Pcre2ReplacementCacheKey>.Default,
+                Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>.DefaultMaximumMetadataBytes,
+                maximumPayloadBytes: 4 * 1024 * 1024);
             if (account is not null)
             {
                 // Cover bounded retained cache capacity before publication, with

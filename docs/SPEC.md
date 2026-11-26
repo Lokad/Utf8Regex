@@ -231,8 +231,10 @@ for its distinct failures.
 
 Set `ProgramMemoryAllowance` on `Utf8RegexPolicy` for shared admission of
 covered compiled program storage. Core reserves conservative capacity for its
-bounded replacement cache before publishing a funded program (4 MiB payload
-and 64 KiB metadata). This reservation does not eagerly allocate the cache.
+bounded replacement cache before publishing a funded program (256 KiB payload
+and 64 KiB metadata). The reservation covers future cache entries. Plans
+that exceed the cache limit use temporary preparation under the operation's
+existing limits.
 Disposal closes a funded program to new calls and refunds storage after
 admitted calls and persistent cursors finish. Unfunded disposal is a no-op.
 Pattern, options and policy properties remain readable after disposal.

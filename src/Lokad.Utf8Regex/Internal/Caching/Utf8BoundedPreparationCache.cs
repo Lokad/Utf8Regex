@@ -14,7 +14,7 @@ namespace Lokad.Utf8Regex.Internal.Caching;
 internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : notnull
 {
     internal const ulong DefaultMaximumMetadataBytes = 64 * 1024;
-    internal const ulong DefaultMaximumPayloadBytes = 4 * 1024 * 1024;
+    internal const ulong DefaultMaximumPayloadBytes = 256 * 1024;
     private CacheEntry? _first;
     private CacheEntry? _last;
     private readonly IEqualityComparer<TKey> _comparer;
