@@ -1066,7 +1066,7 @@ public sealed class Utf8OwnedFindOptimizationsTests
             Assert.Equal(expected[index].Distance, owned[index].Distance);
             var mask = ExpectedMask(expected[index]);
             for (var value = 0; value < 128; value++)
-                Assert.Equal(mask.Contains((byte)value), owned[index].CharClass.Contains((byte)value));
+                Assert.Equal(mask.Contains((byte)value), owned[index].Contains((byte)value));
         }
     }
 

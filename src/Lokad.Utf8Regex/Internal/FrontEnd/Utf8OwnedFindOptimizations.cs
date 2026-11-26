@@ -2,6 +2,7 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Planning;
 // Owned find-optimization facts: lengths, anchors, alternate prefixes and
 // fixed-distance literals and sets. Iterative walks over owned runtime-shaped
 // trees. Literal text is pattern interoperability text, not subject matching
@@ -555,17 +556,15 @@ internal static class Utf8OwnedFindOptimizations
 
     }
 
-    public readonly record struct OwnedSet(int Distance, AsciiCharClass CharClass);
-
     // Each retained mask is a whole-class one-byte certificate. Literal
     // prefixes contribute complete scalar byte widths; an opaque node declines
     // the entire optional result rather than guessing its distance.
-    public static OwnedSet[]? FindFixedDistanceSets(Utf8TreeNode node)
+    public static Utf8FixedDistanceSet[]? FindFixedDistanceSets(Utf8TreeNode node)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
         using var frames = Utf8ConstructionFrames<FactFrame>.Create(budget, new(node));
-        using var sets = Utf8ConstructionBuffer<OwnedSet>.Create(budget);
+        using var sets = Utf8ConstructionBuffer<Utf8FixedDistanceSet>.Create(budget);
         var distance = 0;
         while (frames.Count != 0)
         {
@@ -609,7 +608,10 @@ internal static class Utf8OwnedFindOptimizations
             frames.Pop();
         }
         if (sets.Count == 0) return null;
+        frames.Dispose();
         var result = sets.Take();
+        // Only the primary set scans the input.
+        result[0] = result[0].PrepareAnchor();
         construction.Complete();
         return result;
     }

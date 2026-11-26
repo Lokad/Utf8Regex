@@ -424,8 +424,8 @@ public sealed class Utf8FindByteFactsTests
             Assert.Equal(new[] { 4, 5 }, sets.Select(static set => set.Distance));
             for (var value = 0; value < 128; value++)
             {
-                Assert.Equal(value is 'a' or 'b', sets[0].CharClass.Contains((byte)value));
-                Assert.Equal(value is >= '0' and <= '9', sets[1].CharClass.Contains((byte)value));
+                Assert.Equal(value is 'a' or 'b', sets[0].Contains((byte)value));
+                Assert.Equal(value is >= '0' and <= '9', sets[1].Contains((byte)value));
             }
             Assert.Equal(0ul, measure.Budget.Depth);
             work = measure.Budget.WorkSteps;

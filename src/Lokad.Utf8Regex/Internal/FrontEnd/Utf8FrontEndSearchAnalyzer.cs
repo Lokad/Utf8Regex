@@ -41,7 +41,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             return Utf8SearchFacts.Create(trailingKind, facts with { MinRequiredLength = width.Minimum });
 
         var invariantIgnoreCase = UsesInvariantIgnoreCase(options);
-        if (TrySelectFixedDistanceSets(root, invariantIgnoreCase, out var fixedSets))
+        if (!invariantIgnoreCase && Utf8OwnedFindOptimizations.FindFixedDistanceSets(root) is { } fixedSets)
             return Utf8SearchFacts.Create(Utf8SearchKind.FixedDistanceAsciiSets,
                 facts with { FixedDistanceSets = fixedSets, MinRequiredLength = width.Minimum });
 
@@ -394,32 +394,6 @@ internal static class Utf8FrontEndSearchAnalyzer
 
         selectedMinRequiredLength = minRequiredLength;
         construction.Complete();
-        return true;
-    }
-
-    private static bool TrySelectFixedDistanceSets(
-        Utf8TreeNode root, bool ignoreCase, out Utf8FixedDistanceSet[] fixedDistanceSets)
-    {
-        fixedDistanceSets = [];
-        if (ignoreCase ||
-            Utf8OwnedFindOptimizations.FindFixedDistanceSets(root) is not { Length: > 0 } runtimeSets)
-        {
-            return false;
-        }
-
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        fixedDistanceSets = budget.AllocateArray<Utf8FixedDistanceSet>(runtimeSets.Length, false);
-        for (var index = 0; index < runtimeSets.Length; index++)
-        {
-            budget.ChargeWork(1);
-            var set = runtimeSets[index];
-            fixedDistanceSets[index] = new(set.Distance, set.CharClass);
-        }
-        // Only the primary set scans the input. The remaining masks check one byte each.
-        fixedDistanceSets[0] = fixedDistanceSets[0].PrepareAnchor();
-        construction.Complete();
-
         return true;
     }
 

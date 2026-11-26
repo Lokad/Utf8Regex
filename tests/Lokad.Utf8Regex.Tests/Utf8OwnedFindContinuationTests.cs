@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -62,9 +63,9 @@ public sealed class Utf8OwnedFindContinuationTests
             Sets(Utf8OwnedFindOptimizations.FindFixedDistanceSets(actual)));
     }
 
-    private static string[]? Sets(Utf8OwnedFindOptimizations.OwnedSet[]? sets)
-        => sets?.Select(static set => string.Join("|", set.Distance, set.CharClass.ActualLowMask,
-            set.CharClass.ActualHighMask)).ToArray();
+    private static string[]? Sets(Utf8FixedDistanceSet[]? sets)
+        => sets?.Select(static set => string.Join("|", set.Distance, set.ByteSet.ActualLowMask,
+            set.ByteSet.ActualHighMask)).ToArray();
 
     [Theory]
     [InlineData(false)]
