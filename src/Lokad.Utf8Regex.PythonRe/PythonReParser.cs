@@ -18,12 +18,12 @@ internal sealed partial class PythonReParser
     internal const string AsciiSpaceClass = "[" + AsciiSpaceClassFragment + "]";
     internal const string AsciiNonSpaceClass = @"(?:(?![\t\n\r\f\v ])" + UnicodeScalarPattern + ")";
     internal const string AsciiWordBoundary = @"(?:(?<![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<=[A-Za-z0-9_])(?![A-Za-z0-9_]))";
-    // `\B` fails on an empty range in CPython (beginning == end rejects both boundary kinds) while .NET matches empty. The guard fails only when the subject itself is empty, which coincides with an empty range because this API has no endpos parameter.
+    // CPython 3.13 rejects \B when the effective end is zero. A nonzero
+    // start at the selected end still observes the preceding scalar.
     internal const string AsciiNonWordBoundary = @"(?:(?!\A\z)(?:(?<=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<![A-Za-z0-9_])(?![A-Za-z0-9_])))";
     // Semantic fragments identify pinned predicates and native planning atoms.
     // The scalar compiler lowers them directly with pinned profile predicates;
     // host-category native routes are ineligible for these atoms/boundaries.
-    // C04's historical category census alone did not qualify new host versions.
     internal const string UnicodeWordClass = @"[\p{L}\p{N}_]";
     internal const string UnicodeNonWordClass = @"(?:(?![\p{L}\p{N}_])" + UnicodeScalarPattern + ")";
     internal const string UnicodeSpaceClass = @"[\s\x1c-\x1f]";

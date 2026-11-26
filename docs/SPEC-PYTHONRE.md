@@ -134,7 +134,9 @@ site. Scoped ASCII mode folds ASCII letters. Case partners may have different
 UTF-8 widths.
 
 Predefined classes and word boundaries use CPython 3.13.2 and Unicode 15.1
-predicates. ASCII `\s` excludes U+001C–U+001F, which an explicit class can
+predicates. `\B` fails when the effective end is zero. At a nonzero start
+equal to the selected end, it still evaluates the preceding scalar.
+ASCII `\s` excludes U+001C–U+001F, which an explicit class can
 include. Complements consume one scalar. On scoped-ASCII `\W` and `\D`, this
 profile consistently accepts supplementary scalars where CPython 3.13.2
 Search can skip a match that Match and FullMatch find.

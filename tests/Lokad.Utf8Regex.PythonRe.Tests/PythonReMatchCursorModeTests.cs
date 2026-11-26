@@ -49,6 +49,28 @@ public sealed class PythonReMatchCursorModeTests
         Assert.False(cursor.MoveNext(out _));
     }
 
+    [Theory]
+    [InlineData(@"\B", " 😀", 0, false)]
+    [InlineData(@"\B", " 😀", 1, true)]
+    [InlineData(@"\B", "π!", 2, false)]
+    [InlineData(@"(?a:\B)", "π!", 2, true)]
+    public void NonBoundaryAtTheSelectedEndUsesTheEffectiveSubject(
+        string pattern, string text, int offset, bool expected)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        using var regex = new Utf8PythonRegex(pattern);
+        var value = regex.Match(input, offset, mode: Utf8PythonMatchMode.FullMatch, endOffsetInBytes: offset);
+        using var cursor = regex.CreateMatchCursor(input, offset,
+            mode: Utf8PythonMatchMode.FullMatch, endOffsetInBytes: offset);
+        Assert.Equal(expected, value.Success);
+        Assert.Equal(expected, cursor.MoveNext(out var snapshot));
+        if (expected)
+        {
+            Assert.Equal((offset, offset), (value.StartOffsetInBytes, value.EndOffsetInBytes));
+            Assert.Equal((offset, offset), (snapshot.Value.StartOffsetInBytes, snapshot.Value.EndOffsetInBytes));
+        }
+    }
+
     [Theory] [InlineData(Utf8PythonMatchMode.Match)] [InlineData(Utf8PythonMatchMode.FullMatch)]
     public void PositionedSingleCursorRefundsScratchAndPreservesRetainedMetadata(Utf8PythonMatchMode mode)
     {
