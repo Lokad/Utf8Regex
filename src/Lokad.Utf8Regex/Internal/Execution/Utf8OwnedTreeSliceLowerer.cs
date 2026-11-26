@@ -49,37 +49,34 @@ internal static class Utf8OwnedTreeSliceLowerer
         Utf8ConstructionArena arena, Utf8ScalarCaseBehavior caseBehavior,
         ref bool hasBalancing, ref bool hasCaptureWritingLazyRange)
     {
-        using var frames = new Utf8ConstructionBuffer<(Utf8TreeNode Node, int Depth, int NextChild, int ChildStart)>(arena.Budget);
-        using var children = new Utf8ConstructionBuffer<(Utf8SliceNode? Lowered, bool WritesCaptures)>(arena.Budget);
-        frames.Push((root, 0, 0, 0));
+        using var frames = new Utf8ConstructionBuffer<(Utf8TreeNode Node, int Depth, int NextChild, int ChildStart, bool ChildWritesCaptures)>(arena.Budget);
+        using var children = new Utf8ConstructionBuffer<Utf8SliceNode?>(arena.Budget);
+        frames.Push((root, 0, 0, 0, false));
         while (true)
         {
-            var frame = frames.Pop();
             Utf8ConstructionScope.ChargeWork(1);
+            ref var frame = ref frames.Peek();
             var node = frame.Node;
             if (frame.NextChild < node.ChildCount)
             {
-                frames.Push((node, frame.Depth, frame.NextChild + 1, frame.ChildStart));
-                frames.Push((node.Child(frame.NextChild), frame.Depth + 1, 0, children.Count));
+                frames.Push((node.Child(frame.NextChild++), frame.Depth + 1, 0, children.Count, false));
                 continue;
             }
-            // Each completed child belongs to this frame until it reduces them to one result.
-            var loweredChildren = children.Span[frame.ChildStart..];
-            var captures = node.Kind == Utf8TreeNodeKind.Capture && (node.M > 0 || node.N >= 0);
-            for (var index = 0; !captures && index < loweredChildren.Length; index++)
-            {
-                Utf8ConstructionScope.ChargeWork(1);
-                captures = loweredChildren[index].WritesCaptures;
-            }
-            var lowered = ConvertNode(node, catalog, frame.Depth, loweredChildren, arena, caseBehavior,
+            var childStart = frame.ChildStart;
+            var captures = frame.ChildWritesCaptures || node.Kind == Utf8TreeNodeKind.Capture && (node.M > 0 || node.N >= 0);
+            var lowered = ConvertNode(node, catalog, frame.Depth, children.Span[childStart..], frame.ChildWritesCaptures, arena, caseBehavior,
                 ref hasBalancing, ref hasCaptureWritingLazyRange);
+            frames.Pop();
             if (frames.Count == 0) return lowered;
-            if (!loweredChildren.IsEmpty) children.Truncate(frame.ChildStart);
-            children.Add((lowered, captures));
+            if (children.Count != childStart) children.Truncate(childStart);
+            // Only the parent needs the combined capture fact. The child
+            // vector retains the lowered nodes in source order.
+            frames.Peek().ChildWritesCaptures |= captures;
+            children.Add(lowered);
         }
 
         static Utf8SliceNode? ConvertNode(Utf8TreeNode node, Utf8CaptureCatalog catalog, int depth,
-            ReadOnlySpan<(Utf8SliceNode? Lowered, bool WritesCaptures)> loweredChildren,
+            ReadOnlySpan<Utf8SliceNode?> loweredChildren, bool childWritesCaptures,
             Utf8ConstructionArena arena, Utf8ScalarCaseBehavior caseBehavior,
             ref bool hasBalancing, ref bool hasCaptureWritingLazyRange)
         {
@@ -140,7 +137,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     for (var index = 0; index < children.Length; index++)
                     {
                         Utf8ConstructionScope.ChargeWork(1);
-                        var child = loweredChildren[rightToLeft ? children.Length - 1 - index : index].Lowered;
+                        var child = loweredChildren[rightToLeft ? children.Length - 1 - index : index];
                         if (child is null) return null;
                         children[index] = child;
                     }
@@ -150,7 +147,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     for (var index = 0; index < branches.Length; index++)
                     {
                         Utf8ConstructionScope.ChargeWork(1);
-                        var branch = loweredChildren[index].Lowered;
+                        var branch = loweredChildren[index];
                         if (branch is null) return null;
                         branches[index] = branch;
                     }
@@ -171,9 +168,9 @@ internal static class Utf8OwnedTreeSliceLowerer
                 case Utf8TreeNodeKind.Loop:
                 case Utf8TreeNodeKind.Lazyloop:
                     if (loweredChildren.Length != 1) return null;
-                    var (repeatBody, writesCaptures) = loweredChildren[0];
+                    var repeatBody = loweredChildren[0];
                     hasCaptureWritingLazyRange |= node.Kind == Utf8TreeNodeKind.Lazyloop &&
-                        !node.IsUnboundedRepeat && node.N > 1 && node.N > node.M && writesCaptures;
+                        !node.IsUnboundedRepeat && node.N > 1 && node.N > node.M && childWritesCaptures;
                     return repeatBody is null ? null : new Utf8SliceNode.RepeatNode(repeatBody, node.M, node.IsUnboundedRepeat ? long.MaxValue : node.N,
                         node.Kind == Utf8TreeNodeKind.Lazyloop);
                 case Utf8TreeNodeKind.Group:
@@ -182,7 +179,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                 case Utf8TreeNodeKind.PositiveLookaround:
                 case Utf8TreeNodeKind.NegativeLookaround:
                     if (loweredChildren.Length != 1) return null;
-                    var body = loweredChildren[0].Lowered;
+                    var body = loweredChildren[0];
                     if (body is null) return null;
                     if (node.Kind == Utf8TreeNodeKind.Group) return body;
                     if (node.Kind == Utf8TreeNodeKind.Atomic) return new Utf8SliceNode.AtomicNode(body);
@@ -213,11 +210,11 @@ internal static class Utf8OwnedTreeSliceLowerer
                     var expression = node.Kind == Utf8TreeNodeKind.ExpressionConditional;
                     var firstBranch = expression ? 1 : 0;
                     if (loweredChildren.Length < firstBranch + 1 || loweredChildren.Length > firstBranch + 2) return null;
-                    var yes = loweredChildren[firstBranch].Lowered;
+                    var yes = loweredChildren[firstBranch];
                     var no = loweredChildren.Length == firstBranch + 2
-                        ? loweredChildren[firstBranch + 1].Lowered
+                        ? loweredChildren[firstBranch + 1]
                         : new Utf8SliceNode.EmptyNode();
-                    var test = expression ? loweredChildren[0].Lowered : null;
+                    var test = expression ? loweredChildren[0] : null;
                     return yes is null || no is null || expression && test is null ? null
                         : new Utf8SliceNode.ConditionalNode(expression ? -1 : catalog.OrdinalFromNumber(node.M) - 1, yes, no, test);
                 case Utf8TreeNodeKind.Bol:
