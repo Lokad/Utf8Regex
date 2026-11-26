@@ -1356,36 +1356,6 @@ var rangeResult61356 = enumerator.Current;
         return median.Elapsed.TotalMicroseconds / iterations;
     }
 
-    private static int CalibratePcre2SnapshotIterations(
-        Utf8Pcre2BenchmarkContext context,
-        Utf8Pcre2BenchmarkOperation operation,
-        int maximumIterations)
-    {
-        const int probeIterations = 3;
-        const double targetMicrosecondsPerSample = 250_000;
-
-        _ = ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, operation);
-        var checksum = 0;
-        var start = Stopwatch.GetTimestamp();
-        for (var probe = 0; probe < probeIterations; probe++)
-        {
-            checksum ^= ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, operation);
-        }
-
-        var elapsedMicroseconds = Stopwatch.GetElapsedTime(start).TotalMicroseconds / probeIterations;
-        GC.KeepAlive(checksum);
-        if (elapsedMicroseconds <= 0)
-        {
-            return maximumIterations;
-        }
-
-        var budgetedIterations = (int)Math.Clamp(
-            targetMicrosecondsPerSample / elapsedMicroseconds,
-            1,
-            maximumIterations);
-        return budgetedIterations;
-    }
-
     private static long MeasurePcre2FirstCallAllocatedBytes(
         Utf8Pcre2BenchmarkCase benchmarkCase,
         Utf8Pcre2BenchmarkOperation operation)

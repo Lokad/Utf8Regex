@@ -3318,12 +3318,6 @@ internal struct PythonReSemanticDigestBuilder
     }
 }
 
-internal readonly record struct PythonReBenchmarkRange(
-    int IndexInBytes,
-    int LengthInBytes,
-    int IndexInUtf16,
-    int LengthInUtf16);
-
 internal readonly record struct PythonReBenchmarkCaptureRange(
     bool Success,
     int StartOffsetInUtf16,
