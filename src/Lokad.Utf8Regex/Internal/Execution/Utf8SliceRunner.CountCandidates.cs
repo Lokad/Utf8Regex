@@ -1894,14 +1894,19 @@ internal static partial class Utf8SliceRunner
             screenedDelimiter = -1;
             earliest = -1;
         }
-        if (repeatPrefix.Any.HasValue)
+        if (earliest >= 0)
         {
-            if (earliest >= 0)
-            {
-                position = earliest;
-                if (repeatPrefix.Terminal) provedMatchEnd = windowEnd + search.GetValueOrDefault().Length;
-                return Utf8ExecutionLimitKind.None;
-            }
+            position = earliest;
+            if (repeatPrefix.Terminal) provedMatchEnd = windowEnd + search.GetValueOrDefault().Length;
+            return Utf8ExecutionLimitKind.None;
+        }
+        // The bounded proof can run out of input allowance inside a long
+        // run. Keep the existing whitespace rewind at its own delimiter.
+        if (repeatPrefix.Any.HasValue &&
+            !(repeatPrefix.Terminal && !direct && leadingClass >= 0 &&
+                program.LeadingClassDelimiter.Literal == literal &&
+                program.LeadingClassDelimiter.LiteralIndex == repeatPrefix.DisjointEnd))
+        {
             // Even if this hit is inside a repeat and the actual delimiter is
             // later, every byte from its viable start to here can occur in the
             // prefix. Only an excluded ASCII byte proves a barrier. Rewind no

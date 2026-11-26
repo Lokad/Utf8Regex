@@ -1006,6 +1006,33 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData(4)]
+    [InlineData(160)]
+    public void TerminalWhitespaceWindowKeepsTheScalarFloorAndFirstCompleteRun(int runLength)
+    {
+        var prefix = new string('!', 300) + "Holmes! ";
+        var first = "𐐀" + new string('a', runLength) + "\u2003Holmes";
+        const string second = "é Holmes";
+        var input = Encoding.UTF8.GetBytes(prefix + first + "! " + second);
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var floor = start + "𐐀"u8.Length;
+        var end = start + Encoding.UTF8.GetByteCount(first);
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(@"\w+\s+Holmes", policy: new() { ResourcePolicy = Funded });
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+
+        Assert.True(regex.IsMatch(input, token.Token));
+        Assert.Equal(new Utf8CaptureRange(start, end), regex.Match(input, 0, slots, token.Token));
+        Assert.Equal(new Utf8CaptureRange(floor, end), regex.Match(input, floor, slots, token.Token));
+        using var cursor = regex.CreateMatchCursor(input, floor, token.Token);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(new Utf8CaptureRange(floor, end), match.Value);
+        Assert.True(cursor.MoveNext(out match));
+        Assert.Equal(new Utf8CaptureRange(input.Length - "é Holmes"u8.Length, input.Length), match.Value);
+        Assert.False(cursor.MoveNext(out _));
+    }
+
+    [Theory]
     [InlineData(@"\w+\s+\w+\s+Holmes", "word Holmes! é Ω Holmes!", "é Ω Holmes")]
     [InlineData(@"\w+\s+\w{2,}\s+Holmes", "a b Holmes! a bc Holmes!", "a bc Holmes")]
     [InlineData("a+b+bbb", "!aabbbbbb!", "aabbbbbb")]

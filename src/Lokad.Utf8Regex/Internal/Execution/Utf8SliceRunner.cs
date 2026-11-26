@@ -1049,11 +1049,19 @@ internal static partial class Utf8SliceRunner
                 if (ReferenceEquals(candidatePlan.AlignedClassDelimiterProgram, program))
                     classAlternatives = candidatePlan.RequiredPrefilterSearcher.ExactMultiLiterals;
             }
-            if (needsClassWindow && classLiteral < 0 && classAlternatives is null &&
-                GetRepeatPrefixSearch(program, candidatePlan, out repeatPrefix) is { } prefixSearch)
+            if (needsClassWindow && classAlternatives is null &&
+                (classLiteral < 0 || !directClassLiteral && program.GroupCount == 0 &&
+                    !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+                    invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
+                    classSearch is { Length: > 1 } windowSearch &&
+                    literalIndex + windowSearch.Length == program.Instructions.Length - 1) &&
+                GetRepeatPrefixSearch(program, candidatePlan, out var repeated) is { } prefixSearch &&
+                (classLiteral < 0 || repeated.Terminal))
             {
+                // A complete repeat proof can finish at the same delimiter.
                 classSearch = prefixSearch;
                 classLiteral = prefixSearch.Needle[0];
+                repeatPrefix = repeated;
                 if (screenedLiteral >= fromByte &&
                     ReferenceEquals(candidatePlan.RequiredPrefilterSearcher.LiteralSearch.Needle, prefixSearch.Needle))
                     screenedDelimiter = screenedLiteral;
