@@ -119,6 +119,10 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
                     receipt = results.AllocateObject((Match: completed, Allowance: allowance!),
                         static state => new Utf8Pcre2RetainedRangeMatch(state.Match, state.Allowance), ref _budget.WorkingInvocation);
                 }
+                else
+                {
+                    _budget.ReleaseWorking(captureBytes); captureBytes = 0;
+                }
                 Checkpoint();
                 if (receipt is not null)
                 {
@@ -131,9 +135,13 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
                     else
                     {
                         if (!allowance!.TryReserve(bytes)) throw new Utf8MemoryAdmissionException(bytes);
-                        try { Checkpoint(); } catch { allowance.Release(bytes); throw; }
-                        _budget.ReleaseWorking(captureBytes); captureBytes = 0;
-                        results.Release(ref _budget.WorkingInvocation);
+                        try
+                        {
+                            _budget.ReleaseWorking(captureBytes); captureBytes = 0;
+                            results.Release(ref _budget.WorkingInvocation);
+                            Checkpoint();
+                        }
+                        catch { allowance.Release(bytes); throw; }
                     }
                     receipt.SetTransferredBytes(bytes); retained = receipt;
                 }
@@ -146,7 +154,12 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
                 results.Release(ref _budget.WorkingInvocation);
             }
         }
-        Close(Pcre2CursorStatus.Ended); return false;
+        // Refunding a caller account can consume the remaining deadline or signal cancellation.
+        var funded = _budget.WorkingInvocation.Ledger.HasMemoryAllowance || _programUse is not null;
+        Close(Pcre2CursorStatus.Faulted);
+        if (funded) Pcre2SliceDriver.CheckInvocation(ref _budget.WorkingInvocation);
+        _status = Pcre2CursorStatus.Ended;
+        return false;
     }
 
     private void Checkpoint()

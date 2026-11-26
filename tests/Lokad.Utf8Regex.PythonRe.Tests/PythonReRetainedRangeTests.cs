@@ -93,6 +93,65 @@ public sealed class PythonReRetainedRangeTests
         retained.Dispose(); Assert.Equal(held, inner.Used); Assert.Equal(releases + 1, account.ReleaseCalls);
     }
 
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void ResultRefundObservesInterruptionBeforePublication(bool deadline)
+    {
+        var inner = new Allowance(16 << 20);
+        var working = new ObservedAccount(inner);
+        using var original = new CancellationTokenSource();
+        using var current = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var regex = new Utf8PythonRegex("x", policy: new()
+        {
+            MatchTimeout = deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
+        });
+        using var cursor = regex.CreateMatchCursor("xx"u8.ToArray(), cancellationToken: original.Token,
+            workingMemoryAllowance: working);
+        Assert.True(cursor.MoveNext(out var first));
+
+        working.AfterRelease = deadline ? () => ticks = 100 : current.Cancel;
+        Utf8PythonRangeMatch match = default;
+        var error = Record.Exception(() => cursor.MoveNext(out match, current.Token));
+        if (deadline) Assert.Equal(regex.Pattern, Assert.IsType<RegexMatchTimeoutException>(error).Pattern);
+        else Assert.Equal(current.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        Assert.False(match.Success);
+        Assert.Equal(0UL, inner.Used);
+        Assert.True(first.GetValueMemory().Span.SequenceEqual("x"u8));
+        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
+    }
+
+    [Theory]
+    [InlineData(false, Utf8PythonMatchMode.Search)] [InlineData(true, Utf8PythonMatchMode.Search)]
+    [InlineData(false, Utf8PythonMatchMode.FullMatch)] [InlineData(true, Utf8PythonMatchMode.FullMatch)]
+    public void ProgramRefundObservesInterruptionBeforeExhaustion(bool deadline, Utf8PythonMatchMode mode)
+    {
+        var inner = new Allowance(16 << 20);
+        var programs = new ObservedAccount(inner);
+        var working = new Allowance(16 << 20);
+        using var original = new CancellationTokenSource();
+        using var current = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var regex = Compile("x", programs,
+            timeout: deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan);
+        using var cursor = regex.CreateMatchCursor("x"u8.ToArray(), cancellationToken: original.Token,
+            workingMemoryAllowance: working, mode: mode);
+        Assert.True(cursor.MoveNext(out var first));
+        regex.Dispose();
+        Assert.True(inner.Used > 0);
+
+        programs.AfterRelease = deadline ? () => ticks = 100 : () => { current.Cancel(); original.Cancel(); };
+        var error = Record.Exception(() => cursor.MoveNext(out _, current.Token));
+        if (deadline) Assert.Equal(regex.Pattern, Assert.IsType<RegexMatchTimeoutException>(error).Pattern);
+        else Assert.Equal(original.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        Assert.Equal(0UL, inner.Used);
+        Assert.Equal(0UL, working.Used);
+        Assert.True(first.GetValueMemory().Span.SequenceEqual("x"u8));
+        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
+    }
+
     [Fact]
     public void LiveRetainedResultsCanExhaustAdmissionAndRefundIndependently()
     {
@@ -205,9 +264,15 @@ public sealed class PythonReRetainedRangeTests
     internal sealed class ObservedAccount(Allowance inner) : IUtf8MemoryAllowance
     {
         private int _releases;
+        internal Action? AfterRelease;
         internal int ReleaseCalls => Volatile.Read(ref _releases);
         public bool TryReserve(ulong bytes) => inner.TryReserve(bytes);
-        public void Release(ulong bytes) { Interlocked.Increment(ref _releases); inner.Release(bytes); }
+        public void Release(ulong bytes)
+        {
+            Interlocked.Increment(ref _releases);
+            inner.Release(bytes);
+            AfterRelease?.Invoke();
+        }
     }
     [Fact]
     public async Task SeparateProgramsShareBudgetAcrossRetainedMatchAndOutputLifetimes()

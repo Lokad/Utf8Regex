@@ -217,7 +217,9 @@ deadline and cumulative limits apply across moves and host waits. Reference
 aliases share progress and disposal. Concurrent or reentrant use is rejected.
 `MoveNext` returns the snapshot for that advance. Completion, failure and
 disposal release exclusive workspace and the cursor's subject reference
-synchronously. Dispose an abandoned cursor. An exhausted cursor returns false.
+synchronously. Advances check interruption after caller refunds before
+publishing a result or reporting exhaustion. Dispose an abandoned cursor.
+An exhausted cursor returns false.
 Disposed and faulted cursors reject further advances.
 
 An optional advance token applies only during that synchronous move. It

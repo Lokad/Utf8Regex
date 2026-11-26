@@ -246,7 +246,9 @@ Memory cursor aliases share position and disposal. Concurrent or reentrant
 access is rejected. The original deadline and cumulative limits cover every
 advance. An advance token applies only to that call and the creation token
 wins if both are canceled. Completion, failure and disposal refund exclusive
-workspace and release program use synchronously. Dispose an abandoned cursor.
+workspace and release program use synchronously. Advances check interruption
+after caller refunds before publishing a result or reporting exhaustion.
+Dispose an abandoned cursor.
 Published ranges and MARK survive later advances, cursor disposal and program
 close. Keep the borrowed input and its memory manager alive during use.
 

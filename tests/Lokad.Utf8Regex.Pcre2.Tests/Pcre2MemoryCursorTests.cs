@@ -278,6 +278,77 @@ public sealed class Pcre2MemoryCursorTests
     }
 
     [Theory]
+    [InlineData(false, false)] [InlineData(false, true)]
+    [InlineData(true, false)] [InlineData(true, true)]
+    public void ResultRefundObservesInterruptionBeforePublication(bool deadline, bool retain)
+    {
+        var root = new Root();
+        var working = new Account(root);
+        var results = new Account(root);
+        using var original = new CancellationTokenSource();
+        using var current = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var regex = new Utf8Pcre2Regex("x", policy: new()
+        {
+            MatchTimeout = deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
+        });
+        using var cursor = regex.CreateMatchCursor("xx"u8.ToArray(), cancellationToken: original.Token,
+            workingMemoryAllowance: working);
+        Assert.True(cursor.MoveNext(out var first));
+
+        working.AfterRelease = deadline ? () => ticks = 100 : current.Cancel;
+        Utf8Pcre2RangeMatch match = default;
+        Utf8Pcre2RetainedRangeMatch? receipt = null;
+        var error = Record.Exception(() =>
+        {
+            if (retain) cursor.MoveNextRetained(out receipt, current.Token, results);
+            else cursor.MoveNext(out match, current.Token);
+        });
+        using var unexpectedReceipt = receipt;
+        if (deadline) Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(error).ErrorKind);
+        else Assert.Equal(current.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        Assert.False(match.Success);
+        Assert.Null(receipt);
+        Assert.Equal(retain ? 1 : 0, results.Attempts);
+        Assert.Equal(0UL, root.Used);
+        Assert.Equal(0, first.Value.StartOffsetInBytes);
+        Assert.True(first.GetValueMemory().Span.SequenceEqual("x"u8));
+        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void ProgramRefundObservesInterruptionBeforeExhaustion(bool deadline)
+    {
+        var root = new Root();
+        var programs = new Account(root);
+        var working = new Account(root);
+        using var original = new CancellationTokenSource();
+        using var current = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var regex = Utf8Pcre2Regex.Compile("x", policy: new()
+        {
+            MatchTimeout = deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = programs,
+        });
+        using var cursor = regex.CreateMatchCursor("x"u8.ToArray(), cancellationToken: original.Token,
+            workingMemoryAllowance: working);
+        Assert.True(cursor.MoveNext(out var first));
+        regex.Dispose();
+        Assert.True(programs.Used > 0);
+
+        programs.AfterRelease = deadline ? () => ticks = 100 : () => { current.Cancel(); original.Cancel(); };
+        var error = Record.Exception(() => cursor.MoveNext(out _, current.Token));
+        if (deadline) Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(error).ErrorKind);
+        else Assert.Equal(original.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        Assert.Equal(0UL, root.Used);
+        Assert.True(first.GetValueMemory().Span.SequenceEqual("x"u8));
+        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
+    }
+
+    [Theory]
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
@@ -457,7 +528,8 @@ public sealed class Pcre2MemoryCursorTests
     private sealed class Root { internal readonly object Gate = new(); internal ulong Used; }
     private sealed class Account(Root root) : IUtf8MemoryAllowance
     {
-        internal ulong Used, Peak; internal ulong Maximum = 64 << 20; internal int Attempts; internal Action? AfterGrant;
+        internal ulong Used, Peak; internal ulong Maximum = 64 << 20; internal int Attempts;
+        internal Action? AfterGrant, AfterRelease;
         public bool TryReserve(ulong bytes)
         {
             lock (root.Gate)
@@ -470,6 +542,7 @@ public sealed class Pcre2MemoryCursorTests
         public void Release(ulong bytes)
         {
             lock (root.Gate) { if (bytes > Used) throw new InvalidOperationException("Unfunded release."); Used -= bytes; root.Used -= bytes; }
+            AfterRelease?.Invoke();
         }
     }
 }

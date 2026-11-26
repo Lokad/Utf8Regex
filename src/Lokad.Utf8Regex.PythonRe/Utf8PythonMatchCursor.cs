@@ -142,22 +142,17 @@ public sealed class Utf8PythonMatchCursor : IDisposable
                 return false;
             }
             var marker = _discovery.ResultReservation;
+            var completed = _discovery.SnapshotRanges(_input);
+            var receipt = retain ? _discovery.RetainRanges(completed) : null;
+            if (receipt is null) _discovery.ReleaseResultsSince(marker);
+            _discovery.Checkpoint();
+            if (receipt is not null)
             {
-                var completed = _discovery.SnapshotRanges(_input);
-                var receipt = retain ? _discovery.RetainRanges(completed) : null;
-                _discovery.Checkpoint();
-                if (receipt is not null)
-                {
-                    receipt.SetTransferredBytes(_discovery.TransferResultsSince(marker));
-                    retained = receipt;
-                }
-                else
-                {
-                    _discovery.ReleaseResultsSince(marker);
-                    match = completed;
-                }
-                _status = _mode == Utf8PythonMatchMode.Search ? Status.Open : Status.Matched;
+                receipt.SetTransferredBytes(_discovery.TransferResultsSince(marker));
+                retained = receipt;
             }
+            else match = completed;
+            _status = _mode == Utf8PythonMatchMode.Search ? Status.Open : Status.Matched;
             return true;
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
@@ -207,10 +202,19 @@ public sealed class Utf8PythonMatchCursor : IDisposable
         }
         var programUse = _programUse;
         _programUse = null;
+        programUse?.Dispose();
+        if (status == Status.Ended && (_discovery.WorkingInvocation.Ledger.HasMemoryAllowance || programUse is not null))
+        {
+            // Keep the original timeout diagnostic state until the advance has checked the refund.
+            _status = Status.Faulted;
+            ref var budget = ref _discovery.WorkingInvocation.Budget;
+            budget.ThrowIfCancellationRequested();
+            budget.CheckDeadline();
+            budget.ThrowIfCancellationRequested();
+        }
         _discovery = default;
         _input = default;
         _status = status;
-        programUse?.Dispose();
     }
 
     internal ref Utf8SliceInvocation WorkingInvocation => ref _discovery.WorkingInvocation;
