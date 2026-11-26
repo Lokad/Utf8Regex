@@ -1194,6 +1194,31 @@ internal static partial class Utf8SliceRunner
         return Utf8ExecutionLimitKind.None;
     }
 
+    internal static Utf8ExecutionLimitKind TryProveScreenedTerminalRepeatPrefix(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, in Utf8SearchPlan candidatePlan, int floor, int screenedLiteral,
+        ref Utf8SliceInvocation invocation, out bool found)
+    {
+        found = false;
+        if (screenedLiteral <= floor || invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit ||
+            candidatePlan.GetRepeatPrefixSearch(program, out var prefix) is not { } search ||
+            !ReferenceEquals(search.Needle, candidatePlan.RequiredPrefilterSearcher.LiteralSearch.Needle) ||
+            !Utf8BytePosition.IsScalarBoundary(input, floor) ||
+            input[screenedLiteral - 1] is < 128 and var previous && !prefix.Last.Contains(previous))
+            return Utf8ExecutionLimitKind.None;
+
+        // The screened literal is the complete tail. Only the disjoint
+        // repeats to its left need verification for a Boolean result.
+        var breach = TryNarrowDisjointRepeatPrefix(program, input, floor, screenedLiteral, prefix.DisjointEnd,
+            ref invocation, out var start, out _, out _);
+        if (breach != Utf8ExecutionLimitKind.None || start < 0) return breach;
+        breach = invocation.TryReserveWorking(0);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        invocation.Budget.ThrowIfCancellationRequested();
+        invocation.Budget.CheckDeadline();
+        found = true;
+        return Utf8ExecutionLimitKind.None;
+    }
+
     private static Utf8ExecutionLimitKind TryProveOrderedClassFamily(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int floor, int position, ref Utf8SliceInvocation invocation,
         out int earliest, out int acceptedEnd, out (int SpaceInstruction, int FirstEnd, int LiteralStart) provedPrefix,

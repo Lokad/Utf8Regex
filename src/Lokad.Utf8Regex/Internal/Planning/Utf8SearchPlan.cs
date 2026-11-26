@@ -126,6 +126,8 @@ internal readonly struct Utf8SearchPlan
     private readonly Utf8SliceProgram? _repeatPrefixProgram;
     private readonly (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd, bool Terminal) _repeatPrefix;
 
+    internal bool HasTerminalRepeatPrefix => _repeatPrefix.Terminal;
+
     internal PreparedSubstringSearch? GetRepeatPrefixSearch(Utf8SliceProgram program,
         out (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd, bool Terminal) prefix)
     {

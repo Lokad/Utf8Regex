@@ -429,6 +429,13 @@ public sealed partial class Utf8Regex : IDisposable
             return found;
         }
         if (search.RequiredPrefilterSearcher.Kind != PreparedSearcherKind.ExactLiteral) screenedLiteral = -1;
+        if (screenedLiteral >= startByte && search.HasTerminalRepeatPrefix)
+        {
+            var breach = Utf8SliceRunner.TryProveScreenedTerminalRepeatPrefix(program, input, search,
+                startByte, screenedLiteral, ref invocation, out var found);
+            if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+            if (found) return true;
+        }
         if (screenedLiteral < startByte || _preparedRegex.RequiredLiteralContinuation is not (> 0 and var continuation) ||
             !Utf8SliceRunner.TryFindPreparedLiteralContinuation(program, input, ref startByte,
                 search.RequiredPrefilterSearcher.LiteralSearch, screenedLiteral, continuation, ref invocation, out var outcome,

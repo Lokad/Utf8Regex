@@ -453,6 +453,24 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.False(regex.Match("aba"u8, 0, slots, source.Token).Success);
     }
 
+    [Theory]
+    [InlineData("Sherlock Holmes", true)]
+    [InlineData("𐐀\u0085Holmesian", true)]
+    [InlineData("Holmes! 😀Ω\u2003Holmesian", true)]
+    [InlineData("Holmes! 😀\u2003Holmesian", false)]
+    [InlineData("word! Holmes", false)]
+    public void TerminalRepeatBooleanKeepsRejectedHitsAndWideScalars(string text, bool expected)
+    {
+        const string pattern = @"\w+\s+Holmes";
+        using var regex = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkingBytes = 1 }
+        });
+        using var token = new CancellationTokenSource();
+        Assert.True(regex.SearchPlan.HasTerminalRepeatPrefix);
+        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(text), token.Token));
+    }
+
     [Fact]
     public void PreparedLeadingLiteralKeepsAnUnresolvedSuffixAtTheFirstHit()
     {
