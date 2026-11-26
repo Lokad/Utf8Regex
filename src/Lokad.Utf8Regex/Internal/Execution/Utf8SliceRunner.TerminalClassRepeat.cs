@@ -221,16 +221,9 @@ internal static partial class Utf8SliceRunner
             }
             else
             {
-                var whole = RunUnboundedDecimalDigits(input, start, ref invocation, checkExitDeadline: false);
-                if (whole.Breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, whole.Breach);
-                end = whole.EndIndex;
-                if (end < input.Length - 1 && input[end] == '.')
-                {
-                    var fractionStart = end + 1;
-                    var fraction = RunUnboundedDecimalDigits(input, fractionStart, ref invocation, checkExitDeadline: false);
-                    if (fraction.Breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, fraction.Breach);
-                    if (fraction.EndIndex > fractionStart) end = fraction.EndIndex;
-                }
+                var number = RunDecimalWithOptionalFraction(input, start, ref invocation);
+                if (number.Breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, number.Breach);
+                end = number.EndIndex;
             }
         }
 
@@ -238,6 +231,39 @@ internal static partial class Utf8SliceRunner
         invocation.Budget.ThrowIfCancellationRequested();
         return start >= 0 && breach == Utf8ExecutionLimitKind.None
             ? new(true, start, end, breach) : new(false, -1, -1, breach);
+    }
+
+    private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunDecimalWithOptionalFraction(
+        ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
+    {
+        var whole = RunUnboundedDecimalDigits(input, start, ref invocation, checkExitDeadline: false);
+        if (whole.Breach != Utf8ExecutionLimitKind.None || whole.EndIndex >= input.Length - 1 || input[whole.EndIndex] != '.')
+            return whole;
+
+        var fractionStart = whole.EndIndex + 1;
+        var fraction = RunUnboundedDecimalDigits(input, fractionStart, ref invocation, checkExitDeadline: false);
+        // A dot with no digits after it belongs outside the match.
+        return fraction.Breach != Utf8ExecutionLimitKind.None || fraction.EndIndex > fractionStart ? fraction : whole;
+    }
+
+    private static Utf8SliceCountOutcome CountDecimalsWithOptionalFractions(ReadOnlySpan<byte> input, int position,
+        ref Utf8SliceInvocation invocation)
+    {
+        var count = 0;
+        var breach = invocation.Ledger.ReservedBytes != 0 ? invocation.TryReserveWorking(0) : Utf8ExecutionLimitKind.None;
+        while (breach == Utf8ExecutionLimitKind.None && position < input.Length)
+        {
+            breach = TrySeekDecimalStart(input, ref position, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None || position < 0) break;
+            var number = RunDecimalWithOptionalFraction(input, position, ref invocation);
+            breach = number.Breach;
+            if (breach != Utf8ExecutionLimitKind.None) break;
+            count++;
+            position = number.EndIndex;
+        }
+        if (breach == Utf8ExecutionLimitKind.None) breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return new(count, breach);
     }
 
     private static Utf8SliceSearchOutcome FindTerminalLazyDotLiteral(Utf8SliceProgram program,
@@ -617,6 +643,15 @@ internal static partial class Utf8SliceRunner
         int start, ref Utf8SliceInvocation invocation, out Utf8SliceCountOutcome outcome)
     {
         outcome = default;
+        if (program.TerminalRoot == Utf8SliceTerminalRootKind.DecimalWithOptionalFraction &&
+            invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit)
+        {
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (!Utf8BytePosition.IsScalarBoundary(input, start)) return true;
+            invocation.AnchorOriginByte = start;
+            outcome = CountDecimalsWithOptionalFractions(input, start, ref invocation);
+            return true;
+        }
         var repeatIndex = -1;
         var atomIndex = -1;
         (byte First, byte Second)? asciiStops = null;

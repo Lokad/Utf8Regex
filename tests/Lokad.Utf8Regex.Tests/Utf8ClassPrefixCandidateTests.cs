@@ -806,6 +806,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
 
         Assert.True(regex.IsMatch(input, token.Token));
+        Assert.Equal(2, regex.Count(input, token.Token));
         Assert.Equal(first, regex.Match(input, 0, slots, token.Token, endOffsetInBytes: selectedEnd));
         Assert.Equal(first, slots[0]);
         Assert.Equal(new Utf8CaptureRange(start, start + "𝟚"u8.Length),
@@ -818,8 +819,10 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.False(cursor.MoveNext(out _));
     }
 
-    [Fact]
-    public void DecimalCandidateScanObservesTheOriginalTokenAndWorkLimit()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DecimalCandidateScanObservesTheOriginalTokenAndWorkLimit(bool count)
     {
         const string pattern = @"\d+(?:\.\d+)?";
         var input = new byte[2048 * 96];
@@ -829,7 +832,7 @@ public sealed class Utf8ClassPrefixCandidateTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = Funded with { MaxWorkSteps = 32 }
         });
-        var limit = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input));
+        var limit = Assert.Throws<Utf8ResourceLimitExceededException>(() => Scan(regex));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, limit.ResourceKind);
 
         using var source = new CancellationTokenSource();
@@ -841,10 +844,13 @@ public sealed class Utf8ClassPrefixCandidateTests
         var session = Utf8SearchDiagnosticsSession.Start(_ => source.Cancel());
         try
         {
-            var canceled = Assert.Throws<OperationCanceledException>(() => interruptible.IsMatch(input, source.Token));
+            var canceled = Assert.Throws<OperationCanceledException>(() => Scan(interruptible, source.Token));
             Assert.Equal(source.Token, canceled.CancellationToken);
         }
         finally { session.Complete(); }
+
+        int Scan(Utf8Regex engine, CancellationToken token = default)
+            => count ? engine.Count(input, token) : engine.IsMatch(input, token) ? 1 : 0;
     }
 
     [Theory]
