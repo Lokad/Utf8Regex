@@ -1,9 +1,5 @@
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
-using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.FrontEnd;
-using Lokad.Utf8Regex.Internal.Planning;
 using Xunit;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -58,12 +54,4 @@ public sealed class Utf8ProgramPublicationTests
     }
 
     private sealed class Box(int value) { internal readonly int Value = value; }
-}
-
-internal static class Utf8PreparedTestPlans
-{
-    internal static Utf8PreparedRegex WithSearchPlan(Utf8PreparedRegex prepared, Utf8SearchPlan search)
-        => Utf8PreparedRegex.Create(prepared.SemanticRegex, prepared.Features, prepared.ExecutionPattern,
-            prepared.ExecutionKind, prepared.ScalarProgram, Utf8OperationMatchCursorPlans.Create(search),
-            prepared.LiteralUtf8, prepared.FallbackReason, prepared.AnchoredLiteral);
 }

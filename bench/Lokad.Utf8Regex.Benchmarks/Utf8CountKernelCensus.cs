@@ -30,6 +30,7 @@ internal static class Utf8CountKernelCensus
         var literal = plan.LiteralUtf8;
         if (plan.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal) ||
             literal is not { Length: > 0 } ||
+            !plan.SearchPlan.LiteralSearch.HasValue ||
             literal.Length == 3 && literal[0] is >= 0xE0 and < 0xF0)
         {
             metrics = default;
@@ -63,20 +64,7 @@ internal static class Utf8CountKernelCensus
             return true;
         }
 
-        if (plan.SearchPlan.LiteralSearch.HasValue)
-        {
-            metrics = InspectFullSequenceSearchMetrics(input, literal, "PreparedLiteralSearch");
-            return true;
-        }
-
-        if (plan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            Utf8LiteralCompiledEngineRuntime.TryGetExactUtf8LiteralAnchor(literal, out _, out _))
-        {
-            metrics = InspectFullSequenceSearchMetrics(input, literal, "BoundedByteAnchor");
-            return true;
-        }
-
-        metrics = InspectFullSequenceSearchMetrics(input, literal, "SequenceSearchFallback");
+        metrics = InspectFullSequenceSearchMetrics(input, literal, "PreparedLiteralSearch");
         return true;
     }
 

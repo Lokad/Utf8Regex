@@ -96,21 +96,4 @@ internal static class Utf8MatchInspection
         count = 0;
         return false;
     }
-
-    public static bool DebugTryCountExactUtf8LiteralAnchored(
-        this Utf8Regex.Utf8RegexInspection inspection, ReadOnlySpan<byte> input, out int count)
-    {
-        var prepared = inspection.PreparedRegex;
-        if (inspection.CompiledEngineKind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily &&
-            prepared.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            prepared.LiteralUtf8 is { Length: > 0 } literal &&
-            Utf8LiteralCompiledEngineRuntime.TryGetExactUtf8LiteralAnchor(literal, out var anchorIndex, out var anchorByte))
-        {
-            count = Utf8LiteralCompiledEngineRuntime.CountExactUtf8LiteralAnchored(input, literal, anchorIndex, anchorByte);
-            return true;
-        }
-        count = 0;
-        return false;
-    }
-
 }

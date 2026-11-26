@@ -148,7 +148,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         return _regexPlan.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal
-                => CountExactLiteral(input, budget),
+                => CountUnmeteredExactLiteral(input),
             NativeExecutionKind.AsciiLiteralIgnoreCase
                 => CountAsciiLiteralIgnoreCase(input, budget),
             NativeExecutionKind.ExactUtf8Literals
@@ -321,17 +321,16 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
 
 
 
-    private int CountExactLiteral(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
+    private int CountUnmeteredExactLiteral(ReadOnlySpan<byte> input)
     {
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
-        if (budget.IsInfinite && _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
+        if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
             literal.Length == 3 && literal[0] is >= 0xE0 and < 0xF0)
         {
             return CountThreeByteScalar(input, literal);
         }
 
-        if (budget.IsInfinite &&
-            _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
+        if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
             literal.Length >= 4 &&
             literal[0] is >= 0xC2 and < 0xE0 &&
             input.Length >= CorrelatedTwoByteLiteralCountThresholdBytes &&
@@ -340,14 +339,13 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             return CountExactUtf8LiteralCorrelatedTwoBytePrefix(input, literal);
         }
 
-        if (budget.IsInfinite &&
-            _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
+        if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
             HasLeadingThreeByteScalarAndTail(literal))
         {
             if (literal.Length > 16 && _regexPlan.SearchPlan.LiteralSearch is { HasExactAnchors: true } prepared)
             {
                 var anchor = prepared.GetExactCountAnchor(input.Length);
-                if (anchor > 0) return CountExactUtf8LiteralAnchored(input, literal, anchor, literal[anchor]);
+                if (anchor > 0) return CountExactUtf8LiteralAnchored(input, literal, anchor);
                 return prepared.Count(input);
             }
             // Reuse complete-sequence search instead of restarting a scalar
@@ -356,34 +354,8 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             return PreparedSubstringSearch.CountExactSequence(input, literal);
         }
 
-        if (budget.IsInfinite && _regexPlan.SearchPlan.LiteralSearch is { } literalSearch)
-        {
-            return literalSearch.Count(input);
-        }
-
-        if (budget.IsInfinite &&
-            _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            TryGetExactUtf8LiteralAnchor(literal, out var anchorIndex, out var anchorByte))
-        {
-            return CountExactUtf8LiteralAnchored(input, literal, anchorIndex, anchorByte);
-        }
-
-        var count = 0;
-        var index = 0;
-        while (index <= input.Length - literal.Length)
-        {
-            budget.Step();
-            var found = input[index..].IndexOf(literal);
-            if (found < 0)
-            {
-                return count;
-            }
-
-            count++;
-            index += found + literal.Length;
-        }
-
-        return count;
+        // Nonempty exact native plans publish the literal and its search together.
+        return (_regexPlan.SearchPlan.LiteralSearch ?? throw UnexpectedExecutionKind()).Count(input);
     }
 
     private static int CountThreeByteScalar(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal)
@@ -499,8 +471,9 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         return count;
     }
 
-    internal static int CountExactUtf8LiteralAnchored(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal, int anchorIndex, byte anchorByte)
+    private static int CountExactUtf8LiteralAnchored(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal, int anchorIndex)
     {
+        var anchorByte = literal[anchorIndex];
         var count = 0;
         var closeMisses = 0;
 
@@ -524,46 +497,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         }
 
         return count;
-    }
-
-    internal static bool TryGetExactUtf8LiteralAnchor(ReadOnlySpan<byte> literal, out int anchorIndex, out byte anchorByte)
-    {
-        anchorIndex = -1;
-        anchorByte = 0;
-
-        if (literal.Length < 4)
-        {
-            return false;
-        }
-
-        var bestScore = int.MaxValue;
-        for (var i = 1; i < literal.Length - 1; i++)
-        {
-            var value = literal[i];
-            var frequency = 0;
-            for (var j = 0; j < literal.Length; j++)
-            {
-                if (literal[j] == value)
-                {
-                    frequency++;
-                }
-            }
-
-            if (frequency >= bestScore)
-            {
-                continue;
-            }
-
-            bestScore = frequency;
-            anchorIndex = i;
-            anchorByte = value;
-            if (frequency == 1)
-            {
-                break;
-            }
-        }
-
-        return anchorIndex > 0 && anchorByte < 0x80;
     }
 
     internal static bool HasLeadingThreeByteScalarAndTail(ReadOnlySpan<byte> literal) =>

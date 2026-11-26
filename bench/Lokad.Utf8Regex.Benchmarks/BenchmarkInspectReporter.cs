@@ -2097,10 +2097,8 @@ internal static partial class BenchmarkInspectReporter
         }
 
         var hasPreparedSearch = isExactLiteral && regex.Inspection.DebugTryCountExactUtf8LiteralPreparedSearch(benchmarkCase.InputBytes, out _);
-        var hasAnchorByte = isExactLiteral && regex.Inspection.DebugTryCountExactUtf8LiteralAnchored(benchmarkCase.InputBytes, out _);
 
         Console.WriteLine($"HasPreparedSearch : {hasPreparedSearch}");
-        Console.WriteLine($"HasAnchorByte     : {hasAnchorByte}");
         if (regex.Inspection.SearchPlan.AlternateLiteralsUtf8 is { Length: > 0 } alternateLiterals)
         {
             Console.WriteLine($"SmallAsciiFamilyPrimitive: {PreparedSmallAsciiLiteralFamilySearch.TryCreate(alternateLiterals, out _)}");
@@ -2115,15 +2113,6 @@ internal static partial class BenchmarkInspectReporter
             Measure("PreparedLiteralSearch", iterations, () =>
             {
                 regex.Inspection.DebugTryCountExactUtf8LiteralPreparedSearch(benchmarkCase.InputBytes, out var count);
-                return count;
-            });
-        }
-
-        if (hasAnchorByte)
-        {
-            Measure("AnchorByteCount", iterations, () =>
-            {
-                regex.Inspection.DebugTryCountExactUtf8LiteralAnchored(benchmarkCase.InputBytes, out var count);
                 return count;
             });
         }
