@@ -12,6 +12,7 @@ public sealed class Utf8FiniteLiteralAdmissionTests
     [InlineData("ab[cd]ef", RegexOptions.None)]
     [InlineData("(?:ab|cd){1,2}[xy]", RegexOptions.None)]
     [InlineData("[Aa]x", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("[AaBbCcDd]{2}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     public void ReturnedLiteralBuffersRemainAdmitted(string pattern, RegexOptions options)
     {
         var semantic = Utf8FrontEnd.Analyze(pattern, options).SemanticRegex;
@@ -79,5 +80,22 @@ public sealed class Utf8FiniteLiteralAdmissionTests
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.True(owner.Budget.WorkSteps > 0);
+    }
+
+    [Theory]
+    [InlineData(RegexOptions.CultureInvariant)]
+    [InlineData(RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
+    public void WideClassRepeatDeclinesBeforeExpandingRepeatLengths(RegexOptions options)
+    {
+        Assert.Equal(Measure("[A-Za-z]{0,2}ing"), Measure("[A-Za-z]{0,12}ing"));
+
+        (ulong Work, ulong PeakBytes) Measure(string pattern)
+        {
+            var semantic = Utf8FrontEnd.Analyze(pattern, options).SemanticRegex;
+            using var owner = Utf8ConstructionScope.Enter();
+            Assert.False(Utf8FiniteLiteralLowerer.TryCreateLiteralBranches(semantic, options, out _));
+            Assert.Equal(0ul, owner.Budget.ReservedBytes);
+            return (owner.Budget.WorkSteps, owner.Budget.PeakBytes);
+        }
     }
 }

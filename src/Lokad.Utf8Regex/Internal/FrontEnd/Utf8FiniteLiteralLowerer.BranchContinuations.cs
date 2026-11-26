@@ -60,7 +60,15 @@ internal static partial class Utf8FiniteLiteralLowerer
                             {
                                 if (!TryLowerLiteral(node.Ch, out token)) return false;
                             }
-                            else if (!Utf8ScalarAsciiProjector.TryCreateToken(node.ScalarClass, out token)) return false;
+                            else
+                            {
+                                if (!Utf8ScalarAsciiProjector.TryCreateToken(node.ScalarClass, out token)) return false;
+                                // A consuming variant must expand the class. Each folded
+                                // ASCII value represents at most two members.
+                                if (node.Kind == Utf8TreeNodeKind.Setloop && node.N > 0 &&
+                                    token.Kind == AsciiPatternTokenKind.CharClass &&
+                                    token.CharClass.Count > MaxLiteralCharClassExpansion * (ignoreCase ? 2 : 1)) return false;
+                            }
                             var branch = EmptyBranch(storage);
                             branch.Tokens.Add(token);
                             result = SingleBranch(storage, branch);
