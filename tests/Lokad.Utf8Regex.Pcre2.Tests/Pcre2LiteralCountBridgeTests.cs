@@ -78,6 +78,8 @@ public sealed class Pcre2LiteralCountBridgeTests
     [InlineData("(cat|horse|dog)", "π😀horse catdog", 6, 3)]
     [InlineData("(a|aa)", "aaaa", 0, 4)]
     [InlineData("(aa|a)", "aaaa", 0, 2)]
+    [InlineData(@"(?>a\Kba|ab)", "π😀abab", 6, 1)]
+    [InlineData(@"(?>ab|a\Kba)", "π😀abab", 6, 2)]
     [InlineData("(😀)(é)", "π😀é x😀é", 2, 2)]
     [InlineData("(a)(b)", "π😀xx", 2, 0)]
     public void FiniteCountKeepsOrderedScalarsAndBorrowedOffsets(string pattern, string text, int start, int expected)

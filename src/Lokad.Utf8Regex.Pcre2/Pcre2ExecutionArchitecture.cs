@@ -1739,8 +1739,9 @@ internal static class Pcre2GlobalOperationDriver
                 var regex = literalFamilyProgram.Regex;
                 var remaining = input[start.Value..];
                 var prepared = regex.Inspection.PreparedRegex;
+                ref readonly var plan = ref prepared.SearchPlan;
                 if (prepared.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal &&
-                    prepared.SearchPlan.LiteralSearch is { Length: > 0 } literal)
+                    plan.LiteralSearch is { Length: > 0 } literal)
                 {
                     // Keep the prepared searcher's selective anchors on a
                     // single literal and advance over its full consumed range.
@@ -1753,7 +1754,26 @@ internal static class Pcre2GlobalOperationDriver
                         remaining = remaining[(found + literal.Length)..];
                     }
                 }
-                else result = regex.Count(remaining);
+                else
+                {
+                    ref readonly var family = ref Nullable.GetValueRefOrDefaultRef(in plan.AlternateLiteralSearch);
+                    if (plan.PortfolioKind == Utf8SearchPortfolioKind.ExactDirectFamily &&
+                        family.Strategy == PreparedLiteralSetStrategy.SingleBucketPrefix &&
+                        family.SearchData.Buckets[0].CommonPrefix.Length == family.SearchData.ShortestLength &&
+                        !plan.HasBoundaryRequirements && !plan.HasTrailingLiteralRequirement)
+                    {
+                        // Each prefix hit matches at least the shortest branch.
+                        // The bucket keeps priority when a longer branch matches too.
+                        result = 0;
+                        while (PreparedLiteralSetSearch.TryFindFirstMatchSingleBucketPrefix(
+                            remaining, family.SearchData, out var found, out var length, out _))
+                        {
+                            result++;
+                            remaining = remaining[(found + length)..];
+                        }
+                    }
+                    else result = regex.Count(remaining);
+                }
                 return true;
             }
 
