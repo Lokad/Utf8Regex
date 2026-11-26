@@ -50,8 +50,7 @@ internal partial struct PosixWorkspace
     private void CompleteChart(ChartFrame frame, bool result, int decision, ref Utf8SliceInvocation invocation)
     {
         _chartFrames.Pop();
-        if (!IsChartAtom(_program.Chart[frame.Key.Node]))
-            StoreChart(frame.Key, result ? decision : -1, ref invocation);
+        StoreChart(frame.Key, result ? decision : -1, ref invocation);
         _chartResult = result;
     }
 
@@ -160,7 +159,13 @@ internal partial struct PosixWorkspace
             {
                 if (node.MaximumBytes >= 0 && k.End - k.Start > node.MaximumBytes)
                 { _chartFrames.Pop(); _chartResult = false; continue; }
-                if (IsChartAtom(node)) { CompleteChart(frame, MatchChartAtom(node, k, input, ref invocation), 0, ref invocation); continue; }
+                if (IsChartAtom(node))
+                {
+                    var matches = MatchChartAtom(node, k, input, ref invocation);
+                    _chartFrames.Pop();
+                    _chartResult = matches;
+                    continue;
+                }
                 if (node.Kind == ChartKind.Group)
                 {
                     // Membership is the child's. Replay still visits the group to set its capture.
