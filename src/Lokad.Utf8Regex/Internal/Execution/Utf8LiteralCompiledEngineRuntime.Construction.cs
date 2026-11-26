@@ -121,8 +121,8 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         {
             foreach (var literal in literals)
             {
-                budget.ChargeWork(3); // Length and at most two leading-byte probes.
-                if (!TryGetLeadingUtf8SegmentLength(literal, out _)) return false;
+                budget.ChargeWork(3); // Admit the literal header check.
+                if (!HasLeadingThreeByteScalarAndTail(literal)) return false;
             }
             var prepared = PreparedMultiLiteralCandidatePrefilter.CreateLeadingUtf8Segment(literals);
             if (!prepared.HasValue) return false;

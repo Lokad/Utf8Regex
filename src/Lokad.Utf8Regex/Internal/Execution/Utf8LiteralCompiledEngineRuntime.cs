@@ -342,7 +342,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
 
         if (budget.IsInfinite &&
             _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            TryGetLeadingUtf8SegmentLength(literal, out _))
+            HasLeadingThreeByteScalarAndTail(literal))
         {
             if (literal.Length > 16 && _regexPlan.SearchPlan.LiteralSearch is { HasExactAnchors: true } prepared)
             {
@@ -566,31 +566,8 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         return anchorIndex > 0 && anchorByte < 0x80;
     }
 
-    internal static bool TryGetLeadingUtf8SegmentLength(ReadOnlySpan<byte> literal, out int segmentLength)
-    {
-        segmentLength = 0;
-
-        if (literal.Length <= 3)
-        {
-            return false;
-        }
-
-        var starter = literal[0];
-        if (starter is < 0xE0 or >= 0xF0)
-        {
-            return false;
-        }
-
-        if (literal.Length >= 6 &&
-            literal[3] is >= 0xE0 and < 0xF0)
-        {
-            segmentLength = 6;
-            return true;
-        }
-
-        segmentLength = 3;
-        return true;
-    }
+    internal static bool HasLeadingThreeByteScalarAndTail(ReadOnlySpan<byte> literal) =>
+        literal.Length > 3 && literal[0] is >= 0xE0 and < 0xF0;
 
     private int CountAsciiLiteralIgnoreCase(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {

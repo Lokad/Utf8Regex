@@ -47,7 +47,7 @@ internal static class Utf8CountKernelCensus
         }
 
         if (plan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            Utf8LiteralCompiledEngineRuntime.TryGetLeadingUtf8SegmentLength(literal, out _))
+            Utf8LiteralCompiledEngineRuntime.HasLeadingThreeByteScalarAndTail(literal))
         {
             var route = "SpanSequenceSearch";
             if (literal.Length > 16 && plan.SearchPlan.LiteralSearch is { HasExactAnchors: true } prepared)
