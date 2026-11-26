@@ -141,7 +141,11 @@ public sealed class Utf8PosixRegex : IDisposable
             InitializeWorkspace(out workspace, ref invocation, captureHistory);
             Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
             if (!workspace.Find(input, state, startOffsetInBytes, false, ref invocation, out var start, out var end, captureHistory))
-            { ClearOutput(output, ref invocation); return default; }
+            {
+                ClearOutput(output, ref invocation);
+                PosixWorkspace.Finish(ref invocation);
+                return default;
+            }
             var match = WriteCaptures(start, end, in workspace, state, output, ref invocation);
             PosixWorkspace.Finish(ref invocation);
             return match;
@@ -238,7 +242,6 @@ public sealed class Utf8PosixRegex : IDisposable
             var count = Math.Min(2048, output.Length - offset);
             output.Slice(offset, count).Clear(); offset += count;
         }
-        PosixWorkspace.Finish(ref invocation);
     }
 
     // Timeout diagnostics deliberately omit subject text; formatting cannot

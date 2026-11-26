@@ -171,6 +171,35 @@ public sealed class PosixProgramOwnershipTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CursorExhaustionObservesInterruptionDuringClosedProgramRefund(bool deadline)
+    {
+        long now = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
+        using var source = new CancellationTokenSource();
+        var account = new Account();
+        using var regex = new Utf8PosixRegex("(a|aa)", policy: new()
+        {
+            ProgramMemoryAllowance = account,
+            MatchTimeout = deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan
+        });
+        using var cursor = regex.CreateMatchCursor("aa"u8.ToArray(), cancellationToken: source.Token);
+        var alias = cursor;
+        regex.Dispose();
+        Assert.True(cursor.MoveNext(out var retained));
+        Assert.True(account.Used > 0);
+        account.AfterRelease = deadline ? () => now = 101 : source.Cancel;
+        var captures = new[] { retained, retained };
+        if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => alias.MoveNext(out _, captures));
+        else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => alias.MoveNext(out _, captures)).CancellationToken);
+        Assert.Equal(0UL, account.Used);
+        Assert.All(captures, value => Assert.False(value.Success));
+        Assert.Equal(new Utf8CaptureRange(0, 2), retained);
+        Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
+    }
+
+    [Theory]
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
@@ -229,12 +258,13 @@ public sealed class PosixProgramOwnershipTests
         internal ulong Used, Maximum = 16 << 20;
         internal int Attempts;
         internal Action? AfterGrant;
+        internal Action? AfterRelease;
         public bool TryReserve(ulong bytes)
         {
             Attempts++;
             if (bytes > Maximum - Used) return false;
             Used += bytes; AfterGrant?.Invoke(); return true;
         }
-        public void Release(ulong bytes) { Assert.InRange(bytes, 0UL, Used); Used -= bytes; }
+        public void Release(ulong bytes) { Assert.InRange(bytes, 0UL, Used); Used -= bytes; AfterRelease?.Invoke(); }
     }
 }

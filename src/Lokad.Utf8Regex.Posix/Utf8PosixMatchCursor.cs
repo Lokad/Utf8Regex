@@ -47,6 +47,7 @@ public sealed class Utf8PosixMatchCursor : IDisposable
             {
                 Utf8PosixRegex.ClearOutput(output, ref _invocation);
                 Complete();
+                PosixWorkspace.Finish(ref _invocation);
                 return false;
             }
             match = regex.WriteCaptures(start, end, in _workspace, _state, output, ref _invocation);
