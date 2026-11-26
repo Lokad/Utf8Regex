@@ -68,7 +68,6 @@ public sealed partial class Utf8Regex
                 var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan,
                     subject, startOffsetInBytes, subject.Length, false, ref invocation, out var selected, out var found);
                 if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
-                Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
                 result = found ? new(selected.Index, selected.Index + selected.Length) : default;
             }
             else if (program.IsNonBacktracking && output.Length > 1 && subject.Length - startOffsetInBytes >= 64 &&

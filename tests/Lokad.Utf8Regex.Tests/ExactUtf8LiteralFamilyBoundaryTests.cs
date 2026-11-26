@@ -303,6 +303,35 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         finally { session.Complete(); }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WordFamilySlotPublicationClearsOnlyItsWrittenSlotOnInterruption(bool expire)
+    {
+        using var regex = new Utf8Regex(@"\b(?:the|and|that|have|for)\b", policy: new()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(100),
+            ResourcePolicy = new() { MaxWorkSteps = 64, MaxWorkingBytes = 1 }
+        });
+        using var source = new CancellationTokenSource();
+        var sentinel = new Utf8CaptureRange(100, 101);
+        Utf8CaptureRange[] slots = [sentinel, sentinel];
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (slots[0].StartOffsetInBytes != 4) return 0;
+            if (expire) return 101;
+            source.Cancel();
+            return 0;
+        });
+
+        var loan = new NoWorkingStorage();
+        void Match() => regex.Match("😀andx"u8, 4, slots, source.Token, loan, endOffsetInBytes: 7);
+        if (expire) Assert.Throws<RegexMatchTimeoutException>(Match);
+        else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(Match).CancellationToken);
+        Assert.False(slots[0].Success);
+        Assert.Equal(sentinel, slots[1]);
+    }
+
     private sealed class NoWorkingStorage : IUtf8MemoryAllowance
     {
         public bool TryReserve(ulong bytes) => false;
