@@ -823,21 +823,46 @@ internal static partial class Utf8SliceRunner
                 { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } ||
                 program.GetCompleteAsciiCategoryMask(program.Instructions[index + 1]) != 0);
 
-    private static bool MayMatchGuardedRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
-        out int acceptedEnd)
+    private static byte[]? GetGuardedRepeatLookbehind(Utf8SliceProgram program, in Utf8SliceInstruction first)
+        => !program.RightToLeft && first is { Kind: Utf8SliceInstructionKind.Lookbehind, B: 1 } &&
+            program.Assertions[first.A] is { ForwardScalarCount: null,
+                InlineLiteralPrefixLength: Utf8SliceInstruction.InlineClassAssertion, Body.RightToLeft: true } assertion &&
+            assertion.Body.Instructions[0] is { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } guard &&
+            CanProveRepeatPrefix(program, 2)
+                ? assertion.Body.SetMasks[guard.A] : null;
+
+    private static bool TryGetGuardedRepeatLookahead(Utf8SliceProgram program, out Utf8SliceInstruction follower)
     {
-        acceptedEnd = -1;
+        follower = default;
         var code = program.Instructions;
         ref readonly var repeat = ref code[2];
-        // Candidate discovery has one preceding scalar guard. Reuse the
-        // bounded repeat proof when shortening cannot satisfy this follower.
-        if (code[1] is not { Kind: Utf8SliceInstructionKind.Set, D: not 0 } head ||
+        if (code[1] is not { Kind: Utf8SliceInstructionKind.Set, D: not 0 } ||
             !code[repeat.A].RepeatExitRejectsShorterEndpoints ||
             code[repeat.A + 1] is not { Kind: Utf8SliceInstructionKind.Fork, B: 1,
                 C: Utf8SliceInstruction.InlineClassAssertion } lookahead ||
             code[lookahead.A + lookahead.D].Kind != Utf8SliceInstructionKind.Accept ||
-            code[repeat.A + 2] is not { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } guard)
-            return true;
+            code[repeat.A + 2] is not { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 })
+            return false;
+        follower = lookahead;
+        return true;
+    }
+
+    private static bool MayMatchGuardedRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
+        out int acceptedEnd)
+    {
+        acceptedEnd = -1;
+        return !TryGetGuardedRepeatLookahead(program, out var lookahead) ||
+            MayMatchGuardedRepeat(program, input, position, lookahead, out acceptedEnd);
+    }
+
+    private static bool MayMatchGuardedRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
+        in Utf8SliceInstruction lookahead, out int acceptedEnd)
+    {
+        acceptedEnd = -1;
+        var code = program.Instructions;
+        ref readonly var repeat = ref code[2];
+        ref readonly var head = ref code[1];
+        ref readonly var guard = ref code[repeat.A + 2];
         if (position == input.Length || !head.MatchesAsciiInterval(input[position])) return false;
 
         var remaining = BranchedPrefixInstructionLimit - 5;
@@ -848,6 +873,58 @@ internal static partial class Utf8SliceRunner
         var matched = end < input.Length && MatchesAsciiHybridClass(program.SetMasks[guard.A], guard.B != 0, input[end]);
         if (matched != (lookahead.D != 0)) return false;
         acceptedEnd = end;
+        return true;
+    }
+
+    private static bool TryFindGuardedRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        ref int position, ref Utf8SliceInvocation invocation, out Utf8SliceSearchOutcome outcome)
+    {
+        outcome = default;
+        if (invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit ||
+            !Utf8BytePosition.IsScalarBoundary(input, position) ||
+            GetGuardedRepeatLookbehind(program, program.Instructions[0]) is not { } lookbehind ||
+            !TryGetGuardedRepeatLookahead(program, out var lookahead))
+            return false;
+
+        ref readonly var head = ref program.Instructions[1];
+        var first = (byte)head.AsciiIntervalStart;
+        var last = (byte)(first + head.AsciiIntervalWidth - 1);
+        while (position < input.Length)
+        {
+            if (!head.MatchesAsciiInterval(input[position]))
+            {
+                var search = TrySeekAsciiCandidate(input, ref position, first, last, ref invocation);
+                if (search != Utf8ExecutionLimitKind.None)
+                {
+                    outcome = new(false, -1, -1, search);
+                    return true;
+                }
+                if (position < 0) break;
+            }
+
+            // Retain the original subject and this exact candidate for the
+            // general verifier when the preceding scalar is wider than ASCII.
+            if (position > 0 && input[position - 1] >= 128) return false;
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None)
+            {
+                outcome = new(false, -1, -1, breach);
+                return true;
+            }
+            if (position > 0 && MatchesAsciiHybridClass(lookbehind, false, input[position - 1]) &&
+                MayMatchGuardedRepeat(program, input, position, lookahead, out var end))
+            {
+                if (end < 0) return false;
+                breach = invocation.TryChargeInputStep();
+                invocation.Budget.ThrowIfCancellationRequested();
+                outcome = breach == Utf8ExecutionLimitKind.None
+                    ? new(true, position, end, breach) : new(false, -1, -1, breach);
+                return true;
+            }
+            position++;
+        }
+        outcome = new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+        invocation.Budget.ThrowIfCancellationRequested();
         return true;
     }
 

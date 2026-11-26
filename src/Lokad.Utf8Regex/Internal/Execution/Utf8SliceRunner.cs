@@ -480,6 +480,10 @@ internal static partial class Utf8SliceRunner
         // an attempt workspace. The unresolved case keeps the same origin.
         var singleOrigin = false;
         ref readonly var first = ref program.Instructions[0];
+        if (first.Kind == Utf8SliceInstructionKind.Lookbehind && !collectHistory &&
+            captureStarts.IsEmpty && captureEnds.IsEmpty && !program.ReadsCaptures &&
+            TryFindGuardedRepeat(program, input, ref fromByte, ref invocation, out var guarded))
+            return guarded;
         if (fromByte == 0 && !program.IsNonBacktracking && !program.RightToLeft &&
             first is { Kind: Utf8SliceInstructionKind.Anchor, B: 0, D: not 0 })
         {
@@ -1055,8 +1059,8 @@ internal static partial class Utf8SliceRunner
                     screenedDelimiter = screenedLiteral;
             }
         }
-        // Keep existing literal guidance when available. The decimal scan
-        // lands at an ASCII digit or a wider scalar to classify below.
+        // Keep literal guidance when available. Decimal search classifies
+        // each candidate scalar before entering the verifier.
         var hasClassWindow = classLiteral >= 0 || classAlternatives is not null;
         if (hasClassWindow && leading >= 128) leading = -1;
         var screenDecimalWindow = hasClassWindow && leadingDecimalBoundary && leadingClass == leadingScalarIndex;
@@ -1067,14 +1071,8 @@ internal static partial class Utf8SliceRunner
             program.LeadingScalarIsDecimal;
         var canProveValue = !collectHistory && captureStarts.Length == 0 && !program.ReadsCaptures;
         var lookbehindMask = leading is >= 0 and < 128 && leadingScalarIndex == 1 && canProveValue && captureEnds.IsEmpty &&
-            !program.RightToLeft &&
-            invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
-            first is { Kind: Utf8SliceInstructionKind.Lookbehind, B: 1 } &&
-            program.Assertions[first.A] is { ForwardScalarCount: null,
-                InlineLiteralPrefixLength: Utf8SliceInstruction.InlineClassAssertion, Body.RightToLeft: true } assertion &&
-            assertion.Body.Instructions[0] is { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } guard &&
-            CanProveRepeatPrefix(program, 2)
-                ? assertion.Body.SetMasks[guard.A] : null;
+            invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit
+                ? GetGuardedRepeatLookbehind(program, first) : null;
         var proveBranchedMatch = canProveValue && checkBranchedPrefix &&
             (leadingScalarIndex == 0 ||
              Utf8SliceInstruction.SkipLeadingCaptureMarkers(program.Instructions, 0) == leadingScalarIndex);

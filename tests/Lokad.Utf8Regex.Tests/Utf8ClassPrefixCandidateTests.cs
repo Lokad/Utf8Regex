@@ -411,6 +411,29 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData(" ", " ", 2)]
+    [InlineData("\u2003", " ", 180)]
+    [InlineData(" ", "\u00a0", 2)]
+    public void GuardedRangeKeepsItsFirstUnresolvedCandidateAndRightContext(string left, string right, int count)
+    {
+        var prefix = "Wrong!Wrong work! 😀" + left;
+        var value = "Valid" + new string('a', count);
+        var input = Encoding.UTF8.GetBytes(prefix + value + right + " Later ");
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var end = start + value.Length;
+        var expected = new Utf8CaptureRange(start, end);
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(@"(?<=\s)[A-Z][a-z]+(?=\s)", policy: new() { ResourcePolicy = Funded });
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+
+        Assert.Equal(expected, regex.Match(input, 0, slots, token.Token));
+        Assert.Equal(expected, slots[0]);
+        Assert.Equal(expected, regex.Match(input, start, slots, token.Token));
+        Assert.False(regex.Match(input, start, slots, token.Token, endOffsetInBytes: end).Success);
+        Assert.False(slots[0].Success);
+    }
+
+    [Theory]
     [InlineData(@"(?:ab[0-9]|a[a-z][0-4]|a[a-z]?[0-9][0-9])\.OK", "éab2.X ab8.OK a22.OK")]
     [InlineData(@"(?:ab[0-9]|a[a-z][0-4]|a[a-z]??[0-9][0-9])\.OK", "😀ab2.X ab8.OK a22.OK")]
     [InlineData(@"(?:ab[0-9]|ab[0-9]\.[a-z])\.OK", "éab2.x.OK")]
