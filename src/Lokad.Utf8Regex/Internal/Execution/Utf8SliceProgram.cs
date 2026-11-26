@@ -82,17 +82,19 @@ internal abstract record Utf8SliceNode
         // An owned profile may supply a bounded simple-scalar lowercase table.
         internal Func<int, int>? LowerScalar { get; init; }
     }
-    internal sealed record CategorySetMember
+    internal readonly struct CategorySetMember
     {
-        private CategorySetMember(Utf8SliceCategoryTable table, bool negated) { Table = table; Negated = negated; }
+        internal CategorySetMember(Utf8SliceCategoryTable table, bool negated)
+        {
+            Table = table;
+            Negated = negated;
+            PlainCategoryMask = !negated && table is { Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null }
+                ? table.Mask : 0;
+        }
+
         internal Utf8SliceCategoryTable Table { get; }
         internal bool Negated { get; }
-        internal static CategorySetMember Create(Utf8SliceCategoryTable table, bool negated)
-        {
-            using var owner = Utf8ConstructionScope.Enter();
-            var result = owner.Budget.AllocateObject((table, negated), static state => new CategorySetMember(state.table, state.negated));
-            owner.Complete(); return result;
-        }
+        internal uint PlainCategoryMask { get; }
     }
     internal sealed record CategorySetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, CategorySetMember[] Categories, bool FoldCase) : Utf8SliceNode;
     internal sealed record LookaheadNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode;
@@ -1035,8 +1037,7 @@ internal sealed class Utf8SliceProgram
     internal static uint GetCompleteAsciiCategoryMask(in Utf8SliceInstruction atom,
         Utf8SliceNode.CategorySetMember[][] categories)
         => atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
-            categories[atom.D] is [{ Negated: false, Table: {
-                Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }] ? table.Mask : 0;
+            categories[atom.D] is [{ PlainCategoryMask: var mask }] ? mask : 0;
 
     internal bool TryGetUnfoldedAsciiSet(in Utf8SliceInstruction atom, out Utf8SearchAsciiSet ascii, out bool asciiOnly)
     {
@@ -2113,7 +2114,7 @@ internal static class Utf8SliceLowerer
                         // Borrow the existing category-table pool, with one-based
                         // operand C; zero preserves the builtin boundary encoding.
                         var members = Budget.AllocateArray<Utf8SliceNode.CategorySetMember>(1, false);
-                        members[0] = Utf8SliceNode.CategorySetMember.Create(
+                        members[0] = new Utf8SliceNode.CategorySetMember(
                             Utf8SliceCategoryTable.ForScalarPredicate(wordPredicate), false);
                         wordTable = CategorySetMembers.Count + 1;
                         CategorySetMembers.Add(members);
@@ -2129,8 +2130,7 @@ internal static class Utf8SliceLowerer
                     var categoryMask = categorySet.Mask16;
                     var foldCategorySet = categorySet.FoldCase;
                     var isDecimalDigitSet = false;
-                    var pureCategory = categorySet.Categories is [{ Negated: false, Table: {
-                        Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }] ? table.Mask : 0;
+                    var pureCategory = categorySet.Categories is [{ PlainCategoryMask: var mask }] ? mask : 0;
                     if (!categorySet.Negated && pureCategory == 1u << (int)UnicodeCategory.DecimalDigitNumber)
                     {
                         var low = BinaryPrimitives.ReadUInt64LittleEndian(categoryMask);

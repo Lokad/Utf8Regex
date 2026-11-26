@@ -9,7 +9,6 @@ public sealed class Utf8ScalarProgramMetadataTests
     [Theory]
     [InlineData("(?<=a).", "Utf8SliceAssertion")]
     [InlineData("\\p{L}", "Utf8SliceCategoryTable")]
-    [InlineData("\\p{L}", "Utf8SliceNode+CategorySetMember")]
     [InlineData("[\\p{L}-[AE]]", "Utf8SliceClassProgram")]
     [InlineData("(?:ab[0-9]{2})+", "Utf8SliceProgram")]
     public void PublishedScalarProgramFitsNumericAdmissionAndKeepsMetadataSemantics(string pattern, string type)
@@ -25,7 +24,6 @@ public sealed class Utf8ScalarProgramMetadataTests
         {
             case "Utf8SliceAssertion": Assert.NotEmpty(program.Assertions); break;
             case "Utf8SliceCategoryTable": Assert.True(regex.IsMatch("é"u8)); Assert.False(regex.IsMatch("0"u8)); break;
-            case "Utf8SliceNode+CategorySetMember": Assert.True(regex.IsMatch("é"u8)); Assert.False(regex.IsMatch("0"u8)); break;
             case "Utf8SliceClassProgram": Assert.True(regex.IsMatch("é"u8)); Assert.False(regex.IsMatch("A"u8)); break;
             default: Assert.NotEmpty(program.Instructions); break;
         }
@@ -65,7 +63,7 @@ public sealed class Utf8ScalarProgramMetadataTests
     }
 
     [Theory]
-    [InlineData("category")] [InlineData("predicate")] [InlineData("member")] [InlineData("assertion")] [InlineData("program")]
+    [InlineData("category")] [InlineData("predicate")] [InlineData("assertion")] [InlineData("program")]
     public void CompleteMetadataLoansHaveExactByteBoundariesAndRollback(string kind)
     {
         var body = Utf8SliceParser.TryParse("", System.Text.RegularExpressions.RegexOptions.None);
@@ -74,7 +72,6 @@ public sealed class Utf8ScalarProgramMetadataTests
         var loan = Math.Max(128ul, kind switch
         {
             "category" or "predicate" => Utf8SliceCategoryTable.ObjectBytes,
-            "member" => Utf8ConstructionBudget.ObjectBytes<(Utf8SliceCategoryTable, bool)>(),
             "assertion" => Utf8SliceAssertion.ObjectBytes,
             _ => Utf8SliceProgram.ObjectBytes,
         });
@@ -95,7 +92,7 @@ public sealed class Utf8ScalarProgramMetadataTests
     }
 
     [Theory]
-    [InlineData("category")] [InlineData("predicate")] [InlineData("member")] [InlineData("assertion")] [InlineData("program")]
+    [InlineData("category")] [InlineData("predicate")] [InlineData("assertion")] [InlineData("program")]
     public void EveryMetadataWorkCutoffRestoresParentLoansAndKeepsSpentWork(string kind)
     {
         var body = Utf8SliceParser.TryParse("", System.Text.RegularExpressions.RegexOptions.None);
@@ -133,7 +130,6 @@ public sealed class Utf8ScalarProgramMetadataTests
     {
         "category" => Utf8SliceCategoryTable.ForScalarRanges(category.Ranges),
         "predicate" => Utf8SliceCategoryTable.ForScalarPredicate(static scalar => scalar == 0x1F600),
-        "member" => Utf8SliceNode.CategorySetMember.Create(category, true),
         "assertion" => Utf8SliceAssertion.Create(body, 0, 0, false),
         _ => Utf8SliceProgram.Create(body.Instructions, body.SetMasks, body.CategorySetMembers,
             body.RepeatCount, body.GroupCount, body.RequiresUnicodeWordBoundary, body.RequiresUnicodeShorthand,

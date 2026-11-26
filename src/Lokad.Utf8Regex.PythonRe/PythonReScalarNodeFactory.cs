@@ -95,7 +95,7 @@ internal static class PythonReScalarNodeFactory
     internal static Utf8SliceNode.CategorySetNode Class(byte[] ascii, bool negated, Func<int, bool> predicate, Utf8ConstructionArena arena)
     {
         var members = arena.Allocate<Utf8SliceNode.CategorySetMember>(1, true);
-        members[0] = Utf8SliceNode.CategorySetMember.Create(Utf8SliceCategoryTable.ForScalarPredicate(predicate), false);
+        members[0] = new Utf8SliceNode.CategorySetMember(Utf8SliceCategoryTable.ForScalarPredicate(predicate), false);
         return Class(ascii, negated, members);
     }
 

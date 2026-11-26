@@ -54,11 +54,11 @@ public sealed class Utf8RepeatProofPredicateTests
             calls.Add(value);
             return Rune.IsWhiteSpace(new Rune(value));
         });
-        var first = Utf8SliceNode.CategorySetMember.Create(table, tableNegated);
+        var first = new Utf8SliceNode.CategorySetMember(table, tableNegated);
         // An extra false table preserves the language and uses the generic
         // member dispatcher. The first predicate's observable order stays equal.
         Utf8SliceNode.CategorySetMember[] members = generic
-            ? [first, Utf8SliceNode.CategorySetMember.Create(Utf8SliceCategoryTable.ForScalarPredicate(static _ => false), false)]
+            ? [first, new Utf8SliceNode.CategorySetMember(Utf8SliceCategoryTable.ForScalarPredicate(static _ => false), false)]
             : [first];
         var atom = new Utf8SliceNode.CategorySetNode(mask, outerNegated, [], members, folded);
         var root = new Utf8SliceNode.ConcatNode([

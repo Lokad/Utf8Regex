@@ -264,7 +264,7 @@ internal sealed class PosixParser
         {
             var table = Utf8SliceCategoryTable.ForScalarRanges(merged.Take());
             members = _budget.AllocateArray<Utf8SliceNode.CategorySetMember>(1, false);
-            members[0] = Utf8SliceNode.CategorySetMember.Create(table, false);
+            members[0] = new Utf8SliceNode.CategorySetMember(table, false);
         }
         return _budget.AllocateObject((mask, negated, members, fold),
             static x => new Utf8SliceNode.CategorySetNode(x.mask, x.negated, [], x.members, x.fold));

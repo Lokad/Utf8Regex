@@ -89,12 +89,12 @@ public sealed class Utf8PreparedCategoryMaskTests
     {
         var mask = new byte[16]; mask['+' >> 3] = (byte)(1 << ('+' & 7));
         var original = mask.ToArray();
-        var letters = Utf8SliceNode.CategorySetMember.Create(
+        var letters = new Utf8SliceNode.CategorySetMember(
             Utf8SliceCategoryTable.Create(1u << (int)UnicodeCategory.UppercaseLetter, []), false);
         var source = new Utf8SliceNode.CategorySetNode(mask, false, [], [letters], false);
         Assert.NotNull(Utf8SliceLowerer.Lower(source, null, false, false, false));
         Assert.Equal(original, mask);
-        var digits = Utf8SliceNode.CategorySetMember.Create(
+        var digits = new Utf8SliceNode.CategorySetMember(
             Utf8SliceCategoryTable.Create(1u << (int)UnicodeCategory.DecimalDigitNumber, []), false);
         var reused = source with { Categories = [digits] };
         var program = Utf8SliceLowerer.Lower(reused, null, false, false, false)!;

@@ -311,7 +311,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     }
                 }
                 if (covered != unicode.Count)
-                    categories.Add(Utf8SliceNode.CategorySetMember.Create(
+                    categories.Add(new Utf8SliceNode.CategorySetMember(
                         Utf8SliceCategoryTable.ForScalarRanges(arena.Take(unicode, true)), false));
                 // Hybrid instructions consult the precomputed mask on ASCII;
                 // their shorthand bits classify only the Unicode remainder.
@@ -367,7 +367,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     }
                     for (var range = 0; range < length; range += 2)
                         if (ranges[range] < 0 || ranges[range] >= ranges[range + 1] || ranges[range + 1] > 0x110000) return false;
-                    categories.Add(Utf8SliceNode.CategorySetMember.Create(Utf8SliceCategoryTable.ForScalarRanges(ranges), negated));
+                    categories.Add(new Utf8SliceNode.CategorySetMember(Utf8SliceCategoryTable.ForScalarRanges(ranges), negated));
                     continue;
                 }
                 var code = encoded[index];
@@ -395,14 +395,14 @@ internal static class Utf8OwnedTreeSliceLowerer
                         else negative |= 1u << (number - 1);
                     }
                     var mask = positive == 0 ? negative : positive & ~negative;
-                    categories.Add(Utf8SliceNode.CategorySetMember.Create(Utf8SliceCategoryTable.Create(mask, []),
+                    categories.Add(new Utf8SliceNode.CategorySetMember(Utf8SliceCategoryTable.Create(mask, []),
                         positive == 0));
                     index = close;
                     continue;
                 }
                 var category = Math.Abs((int)code);
                 if (category is < 1 or > 30) return false;
-                categories.Add(Utf8SliceNode.CategorySetMember.Create(Utf8SliceCategoryTable.Create(1u << (category - 1), []), code < 0));
+                categories.Add(new Utf8SliceNode.CategorySetMember(Utf8SliceCategoryTable.Create(1u << (category - 1), []), code < 0));
             }
             return true;
         }

@@ -316,7 +316,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
             if (armed && !expireAtAdmission && visits == 1) ticks = 100;
             return false;
         });
-        var members = Enumerable.Range(0, 33).Select(_ => Utf8SliceNode.CategorySetMember.Create(table, false)).ToArray();
+        var members = Enumerable.Range(0, 33).Select(_ => new Utf8SliceNode.CategorySetMember(table, false)).ToArray();
         var root = new Utf8SliceNode.CategorySetNode(new byte[16], false, [], members, false);
         var program = Utf8SliceLowerer.Lower(root, null, false, false, false, null, false, false,
             Utf8ScalarCaseBehavior.Invariant, true)!;
