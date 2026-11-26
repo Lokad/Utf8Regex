@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -6,6 +7,35 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8OperationCursorArchitectureTests
 {
+    [Theory]
+    [InlineData("é", 2)]
+    [InlineData("é|中", 3)]
+    public void LiteralCursorCopiesKeepTheirPlanAcrossCompaction(string pattern, int expectedCount)
+    {
+        var cursor = OpenTemporaryLiteralCursor(pattern);
+        var alias = cursor;
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+
+        var count = 0;
+        while (cursor.MoveNext())
+        {
+            Assert.True(alias.MoveNext());
+            Assert.Equal(cursor.Current, alias.Current);
+            count++;
+        }
+        Assert.Equal(expectedCount, count);
+        Assert.False(alias.MoveNext());
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Utf8ValueMatchEnumerator OpenTemporaryLiteralCursor(string pattern)
+    {
+        using var regex = new Utf8Regex(pattern, policy: new() { MatchTimeout = Regex.InfiniteMatchTimeout });
+        var cursor = regex.EnumerateMatches("é é 中"u8);
+        Assert.False(cursor.DebugIsOwnedSlice);
+        return cursor;
+    }
+
     [Fact]
     public void DiagnosticSessionsNestWithoutChangingResults()
     {

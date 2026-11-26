@@ -11,20 +11,20 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 internal sealed class Utf8PreparedRegex
 {
     private readonly Utf8AnchoredLiteralPlan _anchoredLiteral;
-    private readonly Utf8OperationMatchCursorPlans _operationMatchCursorPlans;
+    private readonly Utf8SearchPlan _searchPlan;
 
-    // Conservative carrier allowance; major children have separate admission.
+    // Includes the inline search plan. Its referenced buffers are admitted separately.
     internal static ulong ObjectBytes => 2048;
 
     private Utf8PreparedRegex(
-        Utf8AnchoredLiteralPlan anchoredLiteral, Utf8OperationMatchCursorPlans operationMatchCursorPlans,
+        Utf8AnchoredLiteralPlan anchoredLiteral, in Utf8SearchPlan searchPlan,
         Utf8PreparedSemanticRegex semanticRegex, Utf8RegexFeatures features, string? executionPattern,
         NativeExecutionKind executionKind, Utf8SliceProgram? scalarProgram, byte[]? literalUtf8, string? fallbackReason,
         bool requiredLiteralProvesMatch, int requiredLiteralContinuation, byte[]? requiredLiteralTerminalSuffix,
         int requiredLiteralOptionalRun)
     {
         _anchoredLiteral = anchoredLiteral;
-        _operationMatchCursorPlans = operationMatchCursorPlans;
+        _searchPlan = searchPlan;
         SemanticRegex = semanticRegex;
         Features = features;
         ExecutionPattern = executionPattern;
@@ -40,20 +40,19 @@ internal sealed class Utf8PreparedRegex
 
     internal static Utf8PreparedRegex Create(
         Utf8PreparedSemanticRegex semanticRegex, Utf8RegexFeatures features, string? executionPattern,
-        NativeExecutionKind executionKind, Utf8SliceProgram? scalarProgram, Utf8OperationMatchCursorPlans operationMatchCursorPlans,
+        NativeExecutionKind executionKind, Utf8SliceProgram? scalarProgram, in Utf8SearchPlan searchPlan,
         byte[]? literalUtf8, string? fallbackReason, Utf8AnchoredLiteralPlan anchoredLiteral)
     {
         using var scope = Utf8ConstructionScope.Enter();
         scope.Budget.CheckBytes(ObjectBytes);
         scope.Budget.ChargeWork(2);
-        ref readonly var search = ref operationMatchCursorPlans.SearchPlan;
-        ref readonly var prefilter = ref search.RequiredPrefilterSearcher;
+        ref readonly var prefilter = ref searchPlan.RequiredPrefilterSearcher;
         var requiredLiteralProvesMatch = false;
         var requiredLiteralContinuation = 0;
         byte[]? requiredLiteralTerminalSuffix = null;
         var requiredLiteralOptionalRun = 0;
         if (scalarProgram is { RightToLeft: false, HasContiguousAnchor: false } &&
-            !features.HasAbsoluteStartAnchor && !search.CanGuideFallbackStarts &&
+            !features.HasAbsoluteStartAnchor && !searchPlan.CanGuideFallbackStarts &&
             prefilter.Kind == PreparedSearcherKind.ExactLiteral)
         {
             var needle = prefilter.LiteralSearch.Needle;
@@ -69,7 +68,7 @@ internal sealed class Utf8PreparedRegex
         }
         scope.Budget.ReserveBytes(ObjectBytes);
         var result = new Utf8PreparedRegex(
-            anchoredLiteral, operationMatchCursorPlans, semanticRegex, features, executionPattern,
+            anchoredLiteral, searchPlan, semanticRegex, features, executionPattern,
             executionKind, scalarProgram, literalUtf8, fallbackReason, requiredLiteralProvesMatch,
             requiredLiteralContinuation, requiredLiteralTerminalSuffix, requiredLiteralOptionalRun);
         scope.Complete();
@@ -93,9 +92,7 @@ internal sealed class Utf8PreparedRegex
 
     public Utf8SliceProgram? ScalarProgram { get; }
 
-    public ref readonly Utf8SearchPlan SearchPlan => ref _operationMatchCursorPlans.SearchPlan;
-
-    public Utf8OperationMatchCursorPlans OperationMatchCursorPlans => _operationMatchCursorPlans;
+    public ref readonly Utf8SearchPlan SearchPlan => ref _searchPlan;
 
     public byte[]? LiteralUtf8 { get; }
 

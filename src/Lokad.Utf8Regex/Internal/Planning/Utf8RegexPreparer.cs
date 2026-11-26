@@ -23,7 +23,6 @@ internal static class Utf8RegexPreparer
                 fallbackReason = null;
 
             var searchPlan = Utf8SearchPlan.Prepare(analyzedRegex.SearchFacts, scalarProgram);
-            var operationPlans = Utf8OperationMatchCursorPlans.Create(searchPlan);
             var result = Utf8PreparedRegex.Create(
                 new Utf8PreparedSemanticRegex(analyzedRegex.SemanticRegex.Pattern, analyzedRegex.SemanticRegex.Options,
                     analyzedRegex.SemanticRegex.ExecutionPattern, analyzedRegex.SemanticRegex.ExecutionOptions,
@@ -32,7 +31,7 @@ internal static class Utf8RegexPreparer
                 analyzedRegex.ExecutionPattern,
                 analyzedRegex.ExecutionKind,
                 scalarProgram,
-                operationPlans,
+                searchPlan,
                 analyzedRegex.LiteralUtf8,
                 fallbackReason,
                 anchoredLiteral);

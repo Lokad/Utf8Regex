@@ -94,12 +94,11 @@ public sealed class Utf8ScalarPreparationAdmissionTests
     }
 
     [Fact]
-    public void CompletePreparedAndCursorDescriptorsBorrowTheirScalarAndNativePayloads()
+    public void PreparedRegexBorrowsTheScalarCaptureCatalog()
     {
         using var owner = Utf8ConstructionScope.Enter();
         var prepared = Utf8FrontEnd.Compile("[A-Z]+", RegexOptions.CultureInvariant);
         Assert.NotNull(prepared);
-        Assert.NotNull(prepared.OperationMatchCursorPlans);
         Assert.True(owner.Budget.ReservedBytes >= Utf8PreparedRegex.ObjectBytes);
         Assert.NotNull(prepared.ScalarProgram);
         Assert.Same(prepared.SemanticRegex.CaptureCatalog, prepared.ScalarProgram.CaptureCatalog);

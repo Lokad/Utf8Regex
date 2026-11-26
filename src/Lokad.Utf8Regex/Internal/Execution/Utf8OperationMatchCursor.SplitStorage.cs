@@ -13,7 +13,7 @@ internal ref partial struct Utf8OperationMatchCursor
     private Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SliceInvocation invocation)
     {
         _input = input;
-        _plans = Utf8OperationMatchCursorPlans.Empty;
+        _searchPlan = ref s_emptySearchPlan;
         _budget = invocation.Budget.Deadline;
         _sliceInvocation = invocation;
         _mode = EnumeratorMode.Exhausted;

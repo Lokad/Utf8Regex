@@ -38,7 +38,8 @@ internal ref partial struct Utf8OperationMatchCursor
 
     private bool _hasAnchoredLiteralInvocation;
     private readonly EnumeratorMode _mode;
-    private readonly Utf8OperationMatchCursorPlans _plans;
+    private static readonly Utf8SearchPlan s_emptySearchPlan = default;
+    private readonly ref readonly Utf8SearchPlan _searchPlan;
     private readonly PreparedSmallAsciiLiteralFamilySearch _smallAsciiLiteralFamilySearch;
     private readonly byte[]? _literal;
     private readonly ReadOnlySpan<byte> _input;
@@ -60,8 +61,7 @@ internal ref partial struct Utf8OperationMatchCursor
 
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
     {
-        ref readonly var searchPlan = ref regexPlan.SearchPlan;
-        _plans = regexPlan.OperationMatchCursorPlans;
+        _searchPlan = ref regexPlan.SearchPlan;
         _smallAsciiLiteralFamilySearch = default;
         _literal = literal;
         _input = input;
@@ -105,8 +105,7 @@ internal ref partial struct Utf8OperationMatchCursor
     // fences, so the arms below stay branch-free.
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget, bool rightToLeft)
     {
-        ref readonly var searchPlan = ref regexPlan.SearchPlan;
-        _plans = regexPlan.OperationMatchCursorPlans;
+        _searchPlan = ref regexPlan.SearchPlan;
         _smallAsciiLiteralFamilySearch = default;
         _literal = literal;
         _input = input;
@@ -135,7 +134,7 @@ internal ref partial struct Utf8OperationMatchCursor
 
     internal Utf8OperationMatchCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input, Utf8SliceInvocation invocation, int startByte)
     {
-        _plans = Utf8OperationMatchCursorPlans.Empty;
+        _searchPlan = ref s_emptySearchPlan;
         _smallAsciiLiteralFamilySearch = default;
         _literal = null;
         _input = input;
@@ -228,7 +227,7 @@ internal ref partial struct Utf8OperationMatchCursor
     public Utf8OperationMatchCursor(
         ReadOnlySpan<byte> input, byte[] literal, Utf8ExecutionDeadline budget, Utf8AnchoredLiteralKind familyKind)
     {
-        _plans = Utf8OperationMatchCursorPlans.Empty;
+        _searchPlan = ref s_emptySearchPlan;
         _smallAsciiLiteralFamilySearch = default;
         _literal = literal;
         _input = input;
@@ -406,14 +405,13 @@ internal ref partial struct Utf8OperationMatchCursor
 
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, Utf8ExecutionDeadline budget)
     {
-        ref readonly var searchPlan = ref regexPlan.SearchPlan;
-        _plans = regexPlan.OperationMatchCursorPlans;
+        _searchPlan = ref regexPlan.SearchPlan;
         _smallAsciiLiteralFamilySearch = default;
         _literal = literal;
         _input = input;
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _program = searchPlan.SearchOperation;
+        _program = _searchPlan.SearchOperation;
         _remaining = input;
         _consumed = 0;
         _multiLiteralScanState = default;
@@ -444,14 +442,13 @@ internal ref partial struct Utf8OperationMatchCursor
     private Utf8OperationMatchCursor(
         ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, NativeExecutionKind executionKind, Utf8SliceInvocation invocation)
     {
-        ref readonly var searchPlan = ref regexPlan.SearchPlan;
-        _plans = regexPlan.OperationMatchCursorPlans;
+        _searchPlan = ref regexPlan.SearchPlan;
         _smallAsciiLiteralFamilySearch = default;
         _literal = null;
         _input = input;
         _budget = invocation.Budget.Deadline;
         _sliceInvocation = invocation;
-        _program = searchPlan.SearchOperation;
+        _program = _searchPlan.SearchOperation;
         _remaining = input;
         _consumed = 0;
         _multiLiteralScanState = default;
@@ -463,7 +460,7 @@ internal ref partial struct Utf8OperationMatchCursor
 
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
-        _plans = Utf8OperationMatchCursorPlans.Empty;
+        _searchPlan = ref s_emptySearchPlan;
         _smallAsciiLiteralFamilySearch = default;
         _literal = Array.Empty<byte>();
         _input = input;
@@ -480,7 +477,7 @@ internal ref partial struct Utf8OperationMatchCursor
     public Utf8OperationMatchCursor(
         ReadOnlySpan<byte> input, PreparedSmallAsciiLiteralFamilySearch smallAsciiLiteralFamilySearch, Utf8ExecutionDeadline budget)
     {
-        _plans = Utf8OperationMatchCursorPlans.Empty;
+        _searchPlan = ref s_emptySearchPlan;
         _smallAsciiLiteralFamilySearch = smallAsciiLiteralFamilySearch;
         _literal = null;
         _input = input;
@@ -526,7 +523,7 @@ internal ref partial struct Utf8OperationMatchCursor
         if (literal is not { Length: > 0 }) return Utf8ExecutionLimitKind.None;
         var reverse = _mode is EnumeratorMode.RtlExactAsciiLiteral or
             EnumeratorMode.RtlAsciiLiteralIgnoreCase or EnumeratorMode.RtlExactUtf8Literal;
-        ref readonly var plan = ref _plans.SearchPlan;
+        ref readonly var plan = ref _searchPlan;
         var breach = Utf8SearchExecutor.TryFindLiteral(plan, _input, reverse ? 0 : _consumed,
             reverse ? _remaining.Length : _input.Length, reverse, ref _sliceInvocation, out var index);
         if (breach != Utf8ExecutionLimitKind.None || index < 0) return breach;
@@ -565,7 +562,7 @@ internal ref partial struct Utf8OperationMatchCursor
         found = false;
         _current = default(Utf8CaptureRange);
         var pendingState = _multiLiteralScanState;
-        ref readonly var searchPlan = ref _plans.SearchPlan;
+        ref readonly var searchPlan = ref _searchPlan;
         var breach = Utf8BackendInstructionExecutor.TryFindNextLiteralFamilyMatch(searchPlan, _program,
             _input, ref pendingState, ref _sliceInvocation, out var match, out var discovered);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
