@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Search;
@@ -8,7 +9,7 @@ namespace Lokad.Utf8Regex.Tests;
 [Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8MultiLiteralAutomatonAdmissionTests
 {
-    public static IEnumerable<object[]> NonemptyFamilies() => Enumerable.Range(1, 9).Select(value => new object[] { value });
+    public static IEnumerable<object[]> NonemptyFamilies() => Enumerable.Range(1, 10).Select(value => new object[] { value });
     private static byte[][] Literals(int family) => family switch
     {
         0 => [], 1 => [[]], 2 => ["a"u8.ToArray()], 3 => ["ab"u8.ToArray(), "ac"u8.ToArray(), "bb"u8.ToArray()],
@@ -17,6 +18,7 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
         6 => Enumerable.Range(0, 256).Select(value => new[] { (byte)value }).ToArray(),
         7 => ["aa"u8.ToArray(), "a"u8.ToArray(), "aa"u8.ToArray()],
         8 => [new byte[] { 0, 128, 255 }, new byte[] { 0, 128 }, new byte[] { 255, 0 }, new byte[] { 128 }],
+        10 => Enumerable.Range(0, 255).Select(value => new[] { (byte)value }).ToArray(),
         _ => [Encoding.UTF8.GetBytes(new string('a', 257)), "ab"u8.ToArray(), "ac"u8.ToArray()],
     };
 
@@ -41,7 +43,8 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
         var search = PreparedMultiLiteralAutomatonSearch.Create(literals);
 
         Assert.Equal(Prefixes(literals).Count, search.StateCount);
-        Assert.NotEmpty(search.Transitions);
+        var columns = Math.Min(256, literals.SelectMany(literal => literal).Distinct().Count() + 1);
+        Assert.Equal(search.StateCount * (int)BitOperations.RoundUpToPowerOf2((uint)columns), search.Transitions.Length);
         var transitionBytes = (ulong)search.Transitions.Length * sizeof(int);
         Assert.InRange(owner.Budget.ReservedBytes, held + transitionBytes, owner.Budget.PeakBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
@@ -58,8 +61,9 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
         byte[][] literals = ["ab"u8.ToArray()]; ulong peak, work;
         using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
-            _ = PreparedMultiLiteralAutomatonSearch.Create(literals); peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps;
-            Assert.True(peak > funded.Budget.ReservedBytes + Utf8ConstructionBudget.ArrayBytes<int>(768));
+            var search = PreparedMultiLiteralAutomatonSearch.Create(literals);
+            peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps;
+            Assert.True(peak > funded.Budget.ReservedBytes + Utf8ConstructionBudget.ArrayBytes<int>(search.Transitions.Length));
         }
         using var owner = new Utf8ConstructionScope(0, byteLimit ? peak + 111 : ulong.MaxValue,
             byteLimit ? ulong.MaxValue : work + 1, ulong.MaxValue);
@@ -98,7 +102,7 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
     }
 
     [Theory]
-    [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
+    [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)] [InlineData(10)]
     public void EveryTransitionAndFailureOutputAgreesWithIndependentSuffixModel(int family)
     {
         var literals = Literals(family);
@@ -114,7 +118,7 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
                 candidate[^1] = (byte)key; var expected = 0;
                 for (var start = 0; start <= candidate.Length; start++)
                     if (ids.TryGetValue(Convert.ToHexString(candidate.AsSpan(start)), out expected)) break;
-                Assert.Equal(expected, search.Transitions[state * 256 + key]);
+                Assert.Equal(expected, search.Advance(state, (byte)key));
             }
             var outputs = literals.Select((value, id) => (Value: value, Id: id)).Where(value => prefix.AsSpan().EndsWith(value.Value)).ToArray();
             var best = outputs.OrderByDescending(value => value.Value.Length).ThenBy(value => value.Id).FirstOrDefault((Value: Array.Empty<byte>(), Id: -1));

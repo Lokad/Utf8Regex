@@ -1340,9 +1340,15 @@ internal readonly partial struct PreparedMultiLiteralEarliestExactSearch
 
 internal readonly partial struct PreparedMultiLiteralAutomatonSearch
 {
-    private PreparedMultiLiteralAutomatonSearch(int[] transitions, int[] bestOutputOrders, int[] bestOutputLengths, int[] shortestOutputLengths, int shortestLength, int longestLength)
+    private readonly byte[] _columns;
+    private readonly int _columnShift;
+
+    private PreparedMultiLiteralAutomatonSearch(int[] transitions, byte[] columns, int columnShift,
+        int[] bestOutputOrders, int[] bestOutputLengths, int[] shortestOutputLengths, int shortestLength, int longestLength)
     {
         Transitions = transitions;
+        _columns = columns;
+        _columnShift = columnShift;
         BestOutputOrders = bestOutputOrders;
         BestOutputLengths = bestOutputLengths;
         ShortestOutputLengths = shortestOutputLengths;
@@ -1364,6 +1370,8 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
 
     public int StateCount => BestOutputOrders.Length;
 
+    internal int Advance(int state, byte value) => Transitions[(state << _columnShift) + _columns[value]];
+
     public int RootFanout
     {
         get
@@ -1374,9 +1382,10 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
             }
 
             var count = 0;
-            for (var b = 0; b < 256; b++)
+            var width = 1 << _columnShift;
+            for (var column = 0; column < width; column++)
             {
-                if (Transitions[b] != 0)
+                if (Transitions[column] != 0)
                 {
                     count++;
                 }
@@ -1435,7 +1444,7 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
         var state = 0;
         for (var i = 0; i < input.Length; i++)
         {
-            state = Transitions[(state * 256) + input[i]];
+            state = Advance(state, input[i]);
             var bestLength = BestOutputLengths[state];
             if (bestLength > 0)
             {
@@ -1484,7 +1493,7 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
         var state = 0;
         for (var i = 0; i < input.Length; i++)
         {
-            state = Transitions[(state * 256) + input[i]];
+            state = Advance(state, input[i]);
             var shortest = ShortestOutputLengths[state];
             if (shortest != int.MaxValue)
             {
@@ -1556,7 +1565,7 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
         var canSeekRoot = rootSearch.Count is > 0 and <= 5;
         for (var i = scanIndex; i < input.Length; i++)
         {
-            automatonState = Transitions[(automatonState * 256) + input[i]];
+            automatonState = Advance(automatonState, input[i]);
             var bestLength = BestOutputLengths[automatonState];
             if (bestLength > 0)
             {
