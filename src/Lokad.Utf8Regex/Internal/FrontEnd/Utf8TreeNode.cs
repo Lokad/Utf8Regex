@@ -61,10 +61,12 @@ internal sealed class Utf8TreeNode
     private static Utf8TreeNode CreatePayload(Utf8TreeNodeKind kind, RegexOptions options, char ch,
         object? payload, int m, int n, object? children, Utf8TreeNode? parent, bool matchCaseInsensitive)
     {
-        using var scope = Utf8ConstructionScope.Enter();
-        var node = scope.Budget.AllocateObject(new ConstructionState(children, parent, kind, options,
+        // The parser already owns rollback for the tree. AllocateObject admits
+        // and refunds this individual node, so it can use that owner directly.
+        using var scope = Utf8ConstructionScope.IsActive ? null : Utf8ConstructionScope.Enter();
+        var node = Utf8ConstructionScope.CurrentBudget.AllocateObject(new ConstructionState(children, parent, kind, options,
             matchCaseInsensitive, payload, ch, m, n, n == int.MaxValue), static state => new Utf8TreeNode(state));
-        scope.Complete();
+        scope?.Complete();
         return node;
     }
 
