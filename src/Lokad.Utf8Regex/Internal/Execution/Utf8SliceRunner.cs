@@ -465,6 +465,15 @@ internal static partial class Utf8SliceRunner
         ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default,
         bool existenceOnly = false, int screenedLiteral = -1, int requiredLiteralContinuation = 0)
     {
+        // The complete lazy-dot range needs no attempt workspace.
+        if (program.TerminalRoot == Utf8SliceTerminalRootKind.LazyDotLiteral &&
+            !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty)
+        {
+            invocation.Budget.ThrowIfCancellationRequested();
+            return Utf8BytePosition.IsScalarBoundary(input, fromByte)
+                ? FindTerminalLazyDotLiteral(program, input, fromByte, ref invocation)
+                : new(false, -1, -1, Utf8ExecutionLimitKind.None);
+        }
         if (requiredLiteralContinuation > 0 && !existenceOnly && !collectHistory &&
             TryFindPreparedLiteralRange(program, input, ref fromByte, candidatePlan.RequiredPrefilterSearcher.LiteralSearch,
                 ref screenedLiteral, requiredLiteralContinuation, ref invocation, out var range))
