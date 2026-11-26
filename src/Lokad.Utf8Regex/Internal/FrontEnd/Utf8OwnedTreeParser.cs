@@ -68,7 +68,8 @@ internal static class Utf8OwnedTreeParser
             }
 
             var treeOptions = options | state.TreeSeen;
-            if (root.Kind is Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate)
+            if (root.Options != treeOptions &&
+                root.Kind is Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate)
             {
                 var top = Utf8TreeNode.Create(root.Kind, treeOptions);
                 top.Ch = root.Ch;
