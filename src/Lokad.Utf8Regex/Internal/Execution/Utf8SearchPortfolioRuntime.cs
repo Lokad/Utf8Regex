@@ -125,21 +125,18 @@ internal static class Utf8SearchPortfolioRuntime
 
         if (rightToLeft)
         {
-            budget.Step();
             return Utf8SearchExecutor.TryFindLastMatch(plan, input, input.Length, out _);
         }
 
         if (program.Confirmation.Kind == Utf8ConfirmationKind.None &&
             program.Kind is Utf8SearchOperationKind.DirectSearch or Utf8SearchOperationKind.HybridSearch)
         {
-            budget.Step();
             return plan.PreparedSearcher.TryFindFirstMatch(input, out _);
         }
 
         var state = new PreparedSearchScanState(0, default);
         while (true)
         {
-            budget.Step();
             if (!plan.PreparedSearcher.TryFindNextOverlappingMatch(input, ref state, out var match))
             {
                 return false;
@@ -182,8 +179,7 @@ internal static class Utf8SearchPortfolioRuntime
             return 0;
         }
 
-        if (budget.IsInfinite &&
-            program.Confirmation.Kind == Utf8ConfirmationKind.None &&
+        if (program.Confirmation.Kind == Utf8ConfirmationKind.None &&
             program.Kind == Utf8SearchOperationKind.HybridSearch &&
             plan.MultiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactAutomaton)
         {
@@ -198,7 +194,6 @@ internal static class Utf8SearchPortfolioRuntime
             var state = new PreparedMultiLiteralScanState(0, 0, 0);
             while (true)
             {
-                budget.Step();
                 if (!plan.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out _, out _))
                 {
                     return count;
@@ -213,78 +208,14 @@ internal static class Utf8SearchPortfolioRuntime
             !plan.HasAlternateLiteralProperStartOverlap)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.LiteralFamilyPreparedWithRequirementsLengthOnly);
-            return budget.IsInfinite
-                ? CountPreparedWithRequirementsLengthOnlyNoBudget(plan, program.Confirmation, input)
-                : CountPreparedWithRequirementsLengthOnly(input, plan, program.Confirmation, budget);
+            return CountPreparedWithRequirementsLengthOnly(plan, program.Confirmation, input);
         }
 
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.LiteralFamilyPreparedWithRequirementsMatch);
-        return budget.IsInfinite
-            ? CountPreparedWithRequirementsNoBudget(plan, program.Confirmation, input)
-            : CountPreparedWithRequirements(input, plan, program.Confirmation, budget);
+        return CountPreparedWithRequirements(plan, program.Confirmation, input);
     }
 
-    private static int CountPreparedWithRequirements(ReadOnlySpan<byte> input, Utf8SearchPlan plan, Utf8ConfirmationPlan confirmation, Utf8ExecutionDeadline budget)
-    {
-        var count = 0;
-        var state = new PreparedMultiLiteralScanState(0, 0, 0);
-        while (true)
-        {
-            budget.Step();
-            if (!plan.PreparedSearcher.TryFindNextNonOverlappingMatch(input, ref state, out var match))
-            {
-                return count;
-            }
-
-            if (Utf8ConfirmationExecutor.IsMatch(plan, confirmation, input, match.Index, match.Length))
-            {
-                count++;
-                continue;
-            }
-
-            if (plan.HasAlternateLiteralPrefixOverlap &&
-                Utf8ConfirmationExecutor.TryFindConfirmedAlternateAtSameStart(
-                    in plan,
-                    confirmation,
-                    input,
-                    in match,
-                    out var confirmedMatch))
-            {
-                state = new PreparedMultiLiteralScanState(
-                    confirmedMatch.Index + confirmedMatch.Length,
-                    confirmedMatch.Index + confirmedMatch.Length,
-                    0);
-                count++;
-                continue;
-            }
-
-            if (plan.HasAlternateLiteralProperStartOverlap)
-            {
-                ResetAfterRejectedCandidate(ref state, match.Index);
-            }
-        }
-    }
-
-    private static int CountPreparedWithRequirementsLengthOnly(ReadOnlySpan<byte> input, Utf8SearchPlan plan, Utf8ConfirmationPlan confirmation, Utf8ExecutionDeadline budget)
-    {
-        var count = 0;
-        var state = new PreparedMultiLiteralScanState(0, 0, 0);
-        while (true)
-        {
-            budget.Step();
-            if (!plan.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var index, out var matchedLength))
-            {
-                return count;
-            }
-
-            if (Utf8ConfirmationExecutor.IsMatch(plan, confirmation, input, index, matchedLength))
-            {
-                count++;
-            }
-        }
-    }
-
-    private static int CountPreparedWithRequirementsLengthOnlyNoBudget(Utf8SearchPlan plan, Utf8ConfirmationPlan confirmation, ReadOnlySpan<byte> input)
+    private static int CountPreparedWithRequirementsLengthOnly(Utf8SearchPlan plan, Utf8ConfirmationPlan confirmation, ReadOnlySpan<byte> input)
     {
         var count = 0;
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
@@ -302,7 +233,7 @@ internal static class Utf8SearchPortfolioRuntime
         }
     }
 
-    private static int CountPreparedWithRequirementsNoBudget(Utf8SearchPlan plan, Utf8ConfirmationPlan confirmation, ReadOnlySpan<byte> input)
+    private static int CountPreparedWithRequirements(Utf8SearchPlan plan, Utf8ConfirmationPlan confirmation, ReadOnlySpan<byte> input)
     {
         var count = 0;
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
