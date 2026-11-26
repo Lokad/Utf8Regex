@@ -2777,9 +2777,7 @@ internal static class Utf8OwnedTreeParser
                 ranges[3 + index * 2] = equivalents[index];
                 ranges[4 + index * 2] = equivalents[index] + 1;
             }
-            using var data = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
-            data.AddRange(ranges);
-            var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, options & ~RegexOptions.IgnoreCase, Utf8ScalarClass.Create(data));
+            var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, options & ~RegexOptions.IgnoreCase, Utf8ScalarClass.Create(ranges));
             node.MatchCaseInsensitive = true;
             return node;
         }

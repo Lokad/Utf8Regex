@@ -52,8 +52,38 @@ public sealed class Utf8ScalarClassPreparationTests
             Assert.Equal(query, token.CharClass);
         }
         var oracle = new Regex(@"\A" + pattern + @"\z", RegexOptions.CultureInvariant);
+        using var regex = new Utf8Regex(@"\A" + pattern + @"\z");
+        Span<byte> input = stackalloc byte[1];
         for (var value = 0; value < 128; value++)
-            Assert.Equal(oracle.IsMatch(((char)value).ToString()), query.Contains((byte)value));
+        {
+            input[0] = (byte)value;
+            var expected = oracle.IsMatch(((char)value).ToString());
+            Assert.Equal(expected, query.Contains(input[0]));
+            Assert.Equal(expected, regex.IsMatch(input));
+        }
+        Assert.Equal(oracle.IsMatch("\u0080"), regex.IsMatch("\u0080"u8));
+    }
+
+    [Fact]
+    public void FoldedClassPayloadIsAdmittedOnceAndRollsBackOnObjectDenial()
+    {
+        int[] definition = [0, 4, 0, 'A', 'B', 'a', 'b'];
+        var arrayBytes = Utf8ConstructionBudget.ArrayBytes<int>(definition.Length);
+        var total = arrayBytes + Math.Max(128ul, Utf8ScalarClass.ObjectBytes);
+        using (var denied = new Utf8ConstructionScope(0, total - 1))
+        {
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8ScalarClass.Create(definition));
+            Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
+            Assert.Equal(total, failure.Requested);
+            Assert.Equal(arrayBytes, denied.Budget.PeakBytes);
+            Assert.Equal(0ul, denied.Budget.ReservedBytes);
+        }
+        using var owner = new Utf8ConstructionScope(0, total);
+        var retained = Utf8ScalarClass.Create(definition);
+        Array.Clear(definition);
+        Assert.Equal([0, 4, 0, 'A', 'B', 'a', 'b'], retained.Data);
+        Assert.Equal(total, owner.Budget.ReservedBytes);
+        Assert.Equal(total, owner.Budget.PeakBytes);
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Text;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
@@ -247,6 +248,16 @@ internal static class Utf8OwnedTreeSliceLowerer
             var data = scalarClass.Data.AsSpan();
             if (data.SequenceEqual([0, 2, 0, 0, 0x110000])) return new Utf8SliceNode.DotNode(true);
             if (data.SequenceEqual([1, 2, 0, '\n', '\n' + 1])) return new Utf8SliceNode.DotNode(false);
+            // A complete ASCII definition needs only the published mask.
+            // The final endpoint cheaply screens the usual wider definitions.
+            if (data.Length > 3 && data[^1] <= 128 && Utf8ScalarAsciiProjector.TryProjectPositiveAsciiDefinition(scalarClass, out var ascii))
+            {
+                var asciiMask = arena.Allocate<byte>(16, true);
+                BinaryPrimitives.WriteUInt64LittleEndian(asciiMask, ascii.LowMask);
+                BinaryPrimitives.WriteUInt64LittleEndian(asciiMask.AsSpan(8), ascii.HighMask);
+                var foldedMask = foldCase && !Utf8ScalarAsciiProjector.CloseAsciiCaseFiber(asciiMask, caseBehavior);
+                return new Utf8SliceNode.SetNode(asciiMask, false, [], foldedMask);
+            }
             var position = 0;
             using var segments = new Utf8ConstructionBuffer<Utf8SliceNode>(arena.Budget);
             while (position < data.Length)

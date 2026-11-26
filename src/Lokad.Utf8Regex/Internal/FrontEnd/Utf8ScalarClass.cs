@@ -18,6 +18,18 @@ internal sealed class Utf8ScalarClass
 
     internal int[] Data { get; }
 
+    internal static Utf8ScalarClass Create(ReadOnlySpan<int> data)
+    {
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        var payload = budget.AllocateArray<int>(data.Length, false);
+        budget.ChargeWork((ulong)data.Length);
+        data.CopyTo(payload);
+        var result = budget.AllocateObject(new ConstructionState(payload), static state => new Utf8ScalarClass(state));
+        scope.Complete();
+        return result;
+    }
+
     internal static Utf8ScalarClass Create(Utf8ConstructionBuffer<int> data)
     {
         // Compaction transfers a borrowed buffer loan and may release its old
