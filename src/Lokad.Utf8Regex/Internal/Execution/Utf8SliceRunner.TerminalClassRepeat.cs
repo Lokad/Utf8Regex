@@ -307,31 +307,67 @@ internal static partial class Utf8SliceRunner
     internal static Utf8SliceSearchOutcome FindDelimitedClassRepeat(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int position, ref Utf8SliceInvocation invocation)
     {
+        var outcome = ScanDelimitedClassRepeat(program, input, position, firstOnly: true, ref invocation, out var range);
+        return outcome.Breach == Utf8ExecutionLimitKind.None && range.Success
+            ? new(true, range.StartOffsetInBytes, range.EndOffsetInBytes, outcome.Breach)
+            : new(false, -1, -1, outcome.Breach);
+    }
+
+    private static Utf8SliceCountOutcome ScanDelimitedClassRepeat(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, bool firstOnly, ref Utf8SliceInvocation invocation,
+        out Utf8CaptureRange range)
+    {
+        range = default;
         var breach = invocation.TryReserveWorking(0);
-        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+        if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+        var count = 0;
         var start = -1;
         var code = program.Instructions;
         var head = (byte)code[0].A;
         var delimiter = (byte)code[5].A;
         TryGetAsciiRepeatStops(program, code[2], out var first, out var second);
-        while (position < input.Length - 1)
+        while (position < input.Length)
         {
-            breach = TrySeekLeadingByte(input, ref position, head, head, false, ref invocation);
-            if (breach != Utf8ExecutionLimitKind.None || position < 0 || position == input.Length - 1) break;
-            var candidate = position;
-            var body = RunUnboundedByteStops(input, position + 1, false, false, first, second,
-                ref invocation, out _, checkExitDeadline: true);
-            if (body.Breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, body.Breach);
-            position = body.EndIndex;
-            if (position == input.Length) break;
-            if (input[position] != delimiter)
-                continue; // Any head inside the run would reach the same wrong stop.
-            start = candidate;
-            break;
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+            var end = position + Math.Min(2048, input.Length - position);
+            while (position < end)
+            {
+                if (start < 0)
+                {
+                    var relative = input[position..end].IndexOf(head);
+                    if (relative < 0) break;
+                    start = position + relative;
+                    position = start + 1;
+                }
+
+                // Only ASCII stops can end this run, even if a block
+                // clips a scalar. Keep the original head across blocks.
+                var stop = IndexOfRepeatStop(input[position..end], false, first, second);
+                if (stop < 0) break;
+                position += stop;
+                breach = invocation.TryChargeBoundedCheck();
+                if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+                if (input[position] == delimiter)
+                {
+                    position++;
+                    count++;
+                    if (firstOnly)
+                    {
+                        range = new(start, position);
+                        break;
+                    }
+                }
+                // A rejected stop may itself be a head. Any earlier head
+                // inside the run would have reached the same rejected stop.
+                start = -1;
+            }
+            if (firstOnly && range.Success) break;
+            position = end;
         }
         invocation.Budget.ThrowIfCancellationRequested();
         invocation.Budget.CheckDeadline();
-        return start >= 0 ? new(true, start, position + 1, breach) : new(false, -1, -1, breach);
+        return new(count, Utf8ExecutionLimitKind.None);
     }
 
     internal static bool PrepareRequiredLiteralWitness(Utf8SliceProgram program, ReadOnlySpan<byte> needle,
@@ -660,15 +696,20 @@ internal static partial class Utf8SliceRunner
     {
         outcome = default;
         var root = program.TerminalRoot;
-        if (root is Utf8SliceTerminalRootKind.DecimalWithOptionalFraction or Utf8SliceTerminalRootKind.MultilineSeparatedClasses &&
+        if (root == Utf8SliceTerminalRootKind.DelimitedClassRepeat ||
+            root is Utf8SliceTerminalRootKind.DecimalWithOptionalFraction or Utf8SliceTerminalRootKind.MultilineSeparatedClasses &&
             invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit)
         {
             invocation.Budget.ThrowIfCancellationRequested();
             if (!Utf8BytePosition.IsScalarBoundary(input, start)) return true;
             invocation.AnchorOriginByte = start;
-            outcome = root == Utf8SliceTerminalRootKind.DecimalWithOptionalFraction
-                ? CountDecimalsWithOptionalFractions(input, start, ref invocation)
-                : ScanMultilineSeparatedClasses(program, input, start, firstOnly: false, ref invocation, out _);
+            outcome = root switch
+            {
+                Utf8SliceTerminalRootKind.DecimalWithOptionalFraction => CountDecimalsWithOptionalFractions(input, start, ref invocation),
+                Utf8SliceTerminalRootKind.DelimitedClassRepeat => ScanDelimitedClassRepeat(program, input, start,
+                    firstOnly: false, ref invocation, out _),
+                _ => ScanMultilineSeparatedClasses(program, input, start, firstOnly: false, ref invocation, out _)
+            };
             return true;
         }
         var repeatIndex = -1;

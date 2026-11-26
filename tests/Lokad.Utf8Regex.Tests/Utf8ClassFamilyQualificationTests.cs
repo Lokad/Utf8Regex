@@ -67,6 +67,7 @@ public sealed class Utf8ClassFamilyQualificationTests
         Assert.Equal(Utf8SliceTerminalRootKind.DelimitedClassRepeat, program.TerminalRoot);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.IsMatch(input));
+        Assert.Equal(expected ? 1 : 0, regex.Count(input));
         var reference = Regex.Match(text, pattern);
         Assert.Equal(expected, reference.Success);
         var range = reference.Success
@@ -102,9 +103,11 @@ public sealed class Utf8ClassFamilyQualificationTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void DelimitedRepeatKeepsWorkAdmissionAndInterruptionThroughLongBody(bool expire)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void DelimitedRepeatKeepsWorkAdmissionAndInterruptionThroughLongBody(bool expire, bool count)
     {
         const string pattern = "\"[^\"\\n]*\"";
         var bytes = Encoding.UTF8.GetBytes("\"" + new string('a', 140_000) + "\"");
@@ -113,7 +116,7 @@ public sealed class Utf8ClassFamilyQualificationTests
             ResourcePolicy = new() { MaxWorkSteps = 8 }
         });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.IsMatch(bytes)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => Execute(limited, default)).ResourceKind);
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
@@ -128,12 +131,31 @@ public sealed class Utf8ClassFamilyQualificationTests
         {
             if (expire)
                 Assert.Equal(timeout, Assert.Throws<RegexMatchTimeoutException>(
-                    () => regex.IsMatch(bytes, source.Token)).MatchTimeout);
+                    () => Execute(regex, source.Token)).MatchTimeout);
             else
                 Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(
-                    () => regex.IsMatch(bytes, source.Token)).CancellationToken);
+                    () => Execute(regex, source.Token)).CancellationToken);
         }
         finally { session.Complete(); }
+
+        int Execute(Utf8Regex engine, CancellationToken token)
+            => count ? engine.Count(bytes, token) : engine.IsMatch(bytes, token) ? 1 : 0;
+    }
+
+    [Fact]
+    public void DelimitedRepeatCountsAcrossWindowSeams()
+    {
+        const string pattern = "\"[^\"\\n]*\"";
+        // Split the first pair and a later four-byte scalar across windows.
+        var text = new string('!', 2047) + "\"\"\"" + new string('x', 2045) + "😀\"\n\"odd\n\"\"";
+        var input = Encoding.UTF8.GetBytes(text);
+        using var regex = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 24, MaxDepth = 1, MaxWorkingBytes = 1 }
+        });
+        using var live = new CancellationTokenSource();
+        Assert.Equal(3, Regex.Count(text, pattern));
+        Assert.Equal(3, regex.Count(input, live.Token));
     }
 
     [Fact]
