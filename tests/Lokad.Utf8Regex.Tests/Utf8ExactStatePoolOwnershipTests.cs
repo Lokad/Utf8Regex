@@ -58,7 +58,7 @@ public sealed class Utf8ExactStatePoolOwnershipTests
     public void FirstFrameLeafReusesStorageOnlyAfterAdmission()
     {
         var leafBytes = Utf8SliceRunner.FrameReserveBytes;
-        var bytes = (ulong)leafBytes + Utf8ConstructionBudget.ArrayBytes<Utf8SliceFrame[]>(Utf8SliceRunner.ChunkTableCapacity);
+        var bytes = (ulong)leafBytes;
         var stacks = new Utf8SliceRunner.ChunkedStacks();
         Utf8ExactStatePool.Clear();
         try
@@ -68,6 +68,15 @@ public sealed class Utf8ExactStatePoolOwnershipTests
             {
                 Assert.True(stacks.PushFrame(default, ref ordinary));
                 Assert.Equal(bytes, ordinary.Ledger.ReservedBytes);
+                var frames = Utf8SliceRunner.FrameChunkCapacity * (Utf8SliceRunner.ChunkTableCapacity + 1) + 1;
+                for (var index = 1; index < frames; index++)
+                    Assert.True(stacks.PushFrame(new() { InputIndex = index }, ref ordinary));
+                for (var index = frames - 1; index >= 0; index--)
+                {
+                    Assert.True(stacks.PopFrame(out var frame));
+                    Assert.Equal(index, frame.InputIndex);
+                }
+                Assert.False(stacks.PopFrame(out _));
             }
             finally { stacks.ReleaseAll(ref ordinary); }
             Assert.Equal(0UL, ordinary.Ledger.ReservedBytes);
@@ -89,6 +98,13 @@ public sealed class Utf8ExactStatePoolOwnershipTests
                 Assert.True(stacks.PushFrame(default, ref finite));
                 Assert.Equal(bytes, finite.Ledger.ReservedBytes);
                 Assert.Equal(0, Utf8ExactStatePool<Utf8SliceFrame>.RetainedBytes);
+                for (var index = 1; index < Utf8SliceRunner.FrameChunkCapacity; index++)
+                    Assert.True(stacks.PushFrame(new() { InputIndex = index }, ref finite));
+                Assert.False(stacks.PushFrame(default, ref finite));
+                Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, stacks.Breach);
+                Assert.Equal(bytes, finite.Ledger.ReservedBytes);
+                Assert.True(stacks.PopFrame(out var last));
+                Assert.Equal(Utf8SliceRunner.FrameChunkCapacity - 1, last.InputIndex);
             }
             finally { stacks.ReleaseAll(ref finite); }
             Assert.Equal(0UL, finite.Ledger.ReservedBytes);

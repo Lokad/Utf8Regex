@@ -3314,7 +3314,8 @@ internal static partial class Utf8SliceRunner
 
     internal struct ChunkedStacks
     {
-        private Utf8SliceFrame[][] _frameTables;
+        private Utf8SliceFrame[]? _firstFrames;
+        private Utf8SliceFrame[][] _overflowFrames;
         private Utf8SliceTrailEntry[][] _trailTables;
         private Utf8SliceCountMutation[][] _journalTables;
         private Utf8SliceBalanceEntry[][] _balanceTables;
@@ -3386,7 +3387,37 @@ internal static partial class Utf8SliceRunner
             // grow. Assertion, fork and repeat callers share this one rule.
             Breach = invocation.Budget.TryNoteDepth((uint)_frameCount + 1);
             if (Breach != Utf8ExecutionLimitKind.None) return false;
-            return Push(ref _frameTables, ref _frameCount, FrameChunkCapacity, frame, ref invocation, ref _reservedBytes, out Breach);
+            if (_frameCount < FrameChunkCapacity)
+            {
+                if (_firstFrames is null && !TryRentFirstFrameChunk(ref invocation)) return false;
+                _firstFrames![_frameCount++] = frame;
+                return true;
+            }
+            if (_frameCount == int.MaxValue) { Breach = Utf8ExecutionLimitKind.WorkingBytes; return false; }
+            var overflowCount = _frameCount - FrameChunkCapacity;
+            if (!Push(ref _overflowFrames, ref overflowCount, FrameChunkCapacity, frame,
+                ref invocation, ref _reservedBytes, out Breach)) return false;
+            _frameCount = FrameChunkCapacity + overflowCount;
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private bool TryRentFirstFrameChunk(ref Utf8SliceInvocation invocation)
+        {
+            // A shallow attempt needs only its pooled leaf. Admit the larger
+            // table separately if the stack actually spans several chunks.
+            var bytes = (ulong)FrameReserveBytes;
+            Breach = invocation.TryReserveWorking(bytes);
+            if (Breach != Utf8ExecutionLimitKind.None) return false;
+            try
+            {
+                Breach = invocation.TryChargeInputStep();
+                if (Breach != Utf8ExecutionLimitKind.None) return false;
+                _firstFrames = Utf8ExactStatePool<Utf8SliceFrame>.Rent(FrameChunkCapacity, invocation.HasUnlimitedWorkingMemory);
+                _reservedBytes += bytes;
+                return true;
+            }
+            finally { if (_firstFrames is null) invocation.Ledger.Release(bytes); }
         }
 
         internal bool CompactScalarRepeatExit(int frameBase, int exit, int start, ReadOnlySpan<byte> input, int end,
@@ -3550,7 +3581,8 @@ internal static partial class Utf8SliceRunner
         }
 
         private ref Utf8SliceFrame FrameAt(int index) =>
-            ref _frameTables[index / FrameChunkCapacity][index % FrameChunkCapacity];
+            ref (index < FrameChunkCapacity ? ref _firstFrames![index]
+                : ref _overflowFrames[index / FrameChunkCapacity - 1][index % FrameChunkCapacity]);
 
         internal Utf8SliceTrailEntry TrailEntryAt(int index)
         {
@@ -3734,10 +3766,11 @@ internal static partial class Utf8SliceRunner
                 _reservedBytes = 0;
             }
 
-            var frames = _frameTables;
-            _frameTables = Array.Empty<Utf8SliceFrame[]>();
-            if (frames is { Length: > 0 } && frames[0] is { } first)
-                Utf8ExactStatePool<Utf8SliceFrame>.Return(first, invocation.HasUnlimitedWorkingMemory);
+            var frames = _firstFrames;
+            _firstFrames = null;
+            _overflowFrames = Array.Empty<Utf8SliceFrame[]>();
+            if (frames is not null)
+                Utf8ExactStatePool<Utf8SliceFrame>.Return(frames, invocation.HasUnlimitedWorkingMemory);
             _trailTables = Array.Empty<Utf8SliceTrailEntry[]>();
             _journalTables = Array.Empty<Utf8SliceCountMutation[]>();
             _balanceTables = Array.Empty<Utf8SliceBalanceEntry[]>();
@@ -3797,11 +3830,7 @@ internal static partial class Utf8SliceRunner
                 }
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return false;
-                // Keep the common first frame leaf within the shared retention
-                // bounds. The table and all other chunks stay invocation-owned.
-                var leaf = typeof(T) == typeof(Utf8SliceFrame) && chunk == 0
-                    ? Utf8ExactStatePool<T>.Rent(chunkCapacity, invocation.HasUnlimitedWorkingMemory)
-                    : new T[chunkCapacity];
+                var leaf = new T[chunkCapacity];
                 // Publish only after acquisition and copy complete. Failed growth
                 // leaves the original table, count and parent reservation intact.
                 var oldBytes = replaceTable ? Utf8ConstructionBudget.ArrayBytes<T[]>(oldCapacity) : 0;
