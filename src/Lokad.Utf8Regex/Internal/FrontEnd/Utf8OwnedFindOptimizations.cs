@@ -16,8 +16,21 @@ internal static class Utf8OwnedFindOptimizations
 
     public static ByteWidth ComputeByteWidth(Utf8TreeNode node)
     {
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
+        var leaf = node.ChildCount == 0;
+        // A leaf has no continuation or retained storage to roll back.
+        using var construction = leaf && Utf8ConstructionScope.IsActive ? null : Utf8ConstructionScope.Enter();
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        if (leaf)
+        {
+            budget.EnterDepth();
+            try
+            {
+                budget.ChargeWork(1);
+                return new WidthFrame(node).Complete();
+            }
+            finally { budget.LeaveDepth(); }
+        }
+
         using var frames = Utf8ConstructionFrames<WidthFrame>.Create(budget, new(node));
         return MeasureByteWidths(frames, budget);
     }

@@ -79,9 +79,10 @@ public sealed class Utf8ScalarIrAdmissionTests
 
     [Theory]
     [InlineData(0ul)] [InlineData(48ul)]
-    public void RejectedPreparationFrameAcquiresNoStorage(ulong maximumBytes)
+    public void RejectedCompositePreparationFrameAcquiresNoStorage(ulong maximumBytes)
     {
-        var root = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
+        var root = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.None);
+        root.Children = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
         using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, maximumBytes);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.ComputeByteWidth(root));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);

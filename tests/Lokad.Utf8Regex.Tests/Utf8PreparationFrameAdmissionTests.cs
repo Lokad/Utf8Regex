@@ -19,15 +19,14 @@ public sealed class Utf8PreparationFrameAdmissionTests
 
     private static object? Prepare(int route, Utf8TreeNode find) => route switch
     {
-        0 => Utf8OwnedFindOptimizations.ComputeByteWidth(find).Minimum,
-        1 => Utf8OwnedFindOptimizations.ComputeByteWidth(find).Maximum,
-        2 => Utf8OwnedFindOptimizations.TryExtractLongestLiteral(find),
+        0 => Utf8OwnedFindOptimizations.ComputeByteWidth(find),
+        1 => Utf8OwnedFindOptimizations.TryExtractLongestLiteral(find),
         _ => throw new ArgumentOutOfRangeException(nameof(route)),
     };
 
     public static IEnumerable<object[]> RootDenials()
     {
-        foreach (var route in new[] { 0, 1, 2 })
+        foreach (var route in new[] { 0, 1 })
         for (var denial = 0; denial < 3; denial++) yield return [route, denial];
     }
 
@@ -35,7 +34,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
     [MemberData(nameof(RootDenials))]
     public void RootDenialRestoresTheEnclosingOwner(int route, int denial)
     {
-        var find = FindTree();
+        var find = FindTree(route == 0 && denial == 0 ? 1 : 0);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, denial == 0 ? 128ul : ulong.MaxValue,
             denial == 2 ? 2ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
@@ -51,7 +50,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(1)]
     public void DeepChildDenialRestoresParentAndAllowsSameOwnerRecovery(int route)
     {
         var find = FindTree(32);
@@ -75,6 +74,19 @@ public sealed class Utf8PreparationFrameAdmissionTests
     }
 
     [Fact]
+    public void WidthOfBorrowedLeafAdmitsDepthWithoutScratch()
+    {
+        var leaf = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "é😀");
+        using var owner = new Utf8ConstructionScope(0, 0, ulong.MaxValue, 1);
+
+        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(6, 6),
+            Utf8OwnedFindOptimizations.ComputeByteWidth(leaf));
+        Assert.Equal(1ul, owner.Budget.PeakDepth);
+        Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.Equal(0ul, owner.Budget.PeakBytes);
+    }
+
+    [Fact]
     public void WidthReductionFitsShallowStorageForAWideTree()
     {
         var root = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.CultureInvariant);
@@ -90,7 +102,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(1)]
     public void EveryWorkCutoffRestoresBorrowedPreparation(int route)
     {
         var find = FindTree(3);
@@ -129,7 +141,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(1)]
     public void SuccessfulPreparationKeepsRetainedPayloadLoansUntilOwnerCloses(int route)
     {
         var find = FindTree(3);
@@ -141,7 +153,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
             var result = Prepare(route, find);
             Assert.NotNull(result);
             Assert.True(owner.Budget.PeakBytes > 128);
-            if (route == 2)
+            if (route == 1)
             {
                 Assert.Equal("a", Assert.IsType<string>(result));
                 Assert.True(owner.Budget.ReservedBytes > 128);
@@ -161,7 +173,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(1)]
     public void ChildArrayGrowthDenialRestoresParentBytes(int route)
     {
         var find = FindTree(128);
