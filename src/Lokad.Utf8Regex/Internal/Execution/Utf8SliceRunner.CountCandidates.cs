@@ -998,22 +998,40 @@ internal static partial class Utf8SliceRunner
     {
         acceptedEnd = -1;
         return !TryGetGuardedRepeatLookahead(program, out var lookahead) ||
-            MayMatchGuardedRepeat(program, input, position, lookahead, out acceptedEnd);
+            position < input.Length && program.Instructions[1].MatchesAsciiInterval(input[position]) &&
+            MayMatchGuardedRepeatTail(program, input, position + 1, lookahead, out acceptedEnd);
     }
 
-    private static bool MayMatchGuardedRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
+    private static bool MayMatchGuardedRepeatTail(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
         in Utf8SliceInstruction lookahead, out int acceptedEnd)
     {
         acceptedEnd = -1;
         var code = program.Instructions;
         ref readonly var repeat = ref code[2];
-        ref readonly var head = ref code[1];
         ref readonly var guard = ref code[repeat.A + 2];
-        if (position == input.Length || !head.MatchesAsciiInterval(input[position])) return false;
-
         var remaining = BranchedPrefixInstructionLimit - 5;
-        var end = TryMatchLongPrefixRepeat(program, input, position + 1, 3, repeat, ref remaining);
-        if (end < 0) return end != BranchedPrefixRejected;
+        int end;
+        if (GetUnfoldedAsciiRange(code[3], out var last) is >= 0 and var first &&
+            !code[repeat.A].RepeatExitSharesTerminalRun)
+        {
+            // The lookahead proof excludes shorter endings. Keep the same scan
+            // window and leave a run that fills it to scalar execution.
+            var available = (int)Math.Min(input.Length - position, repeat.RepeatMaximum);
+            var window = input.Slice(position, Math.Min(available, remaining));
+            var length = window.IndexOfAnyExceptInRange((byte)first, last);
+            if (length < 0)
+            {
+                if (window.Length < available) return true;
+                length = window.Length;
+            }
+            if (length < repeat.RepeatMinimum) return false;
+            end = position + length;
+        }
+        else
+        {
+            end = TryMatchLongPrefixRepeat(program, input, position, 3, repeat, ref remaining);
+            if (end < 0) return end != BranchedPrefixRejected;
+        }
         if (end < input.Length && input[end] >= 128) return true;
 
         var matched = end < input.Length && MatchesAsciiHybridClass(program.SetMasks[guard.A], guard.B != 0, input[end]);
@@ -1058,7 +1076,7 @@ internal static partial class Utf8SliceRunner
                 return true;
             }
             if (position > 0 && MatchesAsciiHybridClass(lookbehind, false, input[position - 1]) &&
-                MayMatchGuardedRepeat(program, input, position, lookahead, out var end))
+                MayMatchGuardedRepeatTail(program, input, position + 1, lookahead, out var end))
             {
                 if (end < 0) return false;
                 breach = invocation.TryChargeInputStep();

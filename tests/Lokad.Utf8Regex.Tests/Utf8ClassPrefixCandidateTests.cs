@@ -698,6 +698,8 @@ public sealed class Utf8ClassPrefixCandidateTests
 
     [Theory]
     [InlineData(" ", " ", 2)]
+    [InlineData(" ", " ", 86)]
+    [InlineData(" ", " ", 87)]
     [InlineData("\u2003", " ", 180)]
     [InlineData(" ", "\u00a0", 2)]
     public void GuardedRangeKeepsItsFirstUnresolvedCandidateAndRightContext(string left, string right, int count)
