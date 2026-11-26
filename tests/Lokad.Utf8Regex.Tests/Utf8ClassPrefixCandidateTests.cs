@@ -454,12 +454,12 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
-    [InlineData("Sherlock Holmes", true)]
-    [InlineData("𐐀\u0085Holmesian", true)]
-    [InlineData("Holmes! 😀Ω\u2003Holmesian", true)]
-    [InlineData("Holmes! 😀\u2003Holmesian", false)]
-    [InlineData("word! Holmes", false)]
-    public void TerminalRepeatBooleanKeepsRejectedHitsAndWideScalars(string text, bool expected)
+    [InlineData("Sherlock Holmes", "Sherlock Holmes")]
+    [InlineData("𐐀\u0085Holmesian", "𐐀\u0085Holmes")]
+    [InlineData("Holmes! 😀Ω\u2003Holmesian", "Ω\u2003Holmes")]
+    [InlineData("Holmes! 😀\u2003Holmesian", null)]
+    [InlineData("word! Holmes", null)]
+    public void TerminalRepeatKeepsRejectedHitsAndWideScalars(string text, string? value)
     {
         const string pattern = @"\w+\s+Holmes";
         using var regex = new Utf8Regex(pattern, policy: new()
@@ -468,7 +468,32 @@ public sealed class Utf8ClassPrefixCandidateTests
         });
         using var token = new CancellationTokenSource();
         Assert.True(regex.SearchPlan.HasTerminalRepeatPrefix);
-        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(text), token.Token));
+        var input = Encoding.UTF8.GetBytes(text);
+        var start = value is null ? 0 : Encoding.UTF8.GetByteCount(text.AsSpan(0, text.IndexOf(value, StringComparison.Ordinal)));
+        var expected = value is null ? default : new Utf8CaptureRange(start, start + Encoding.UTF8.GetByteCount(value));
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+        Assert.Equal(value is not null, regex.IsMatch(input, token.Token));
+        Assert.Equal(expected, regex.Match(input, 0, slots, token.Token));
+        Assert.Equal(expected, slots[0]);
+    }
+
+    [Fact]
+    public void TerminalRepeatKeepsAnUnresolvedFirstHitAtTheByteFloor()
+    {
+        const string beforeFloor = "Ω! Sherlock";
+        var first = "shire" + new string(' ', 180) + "\u2003Holmes";
+        var input = Encoding.UTF8.GetBytes(beforeFloor + first + "! Watson Holmes");
+        var floor = Encoding.UTF8.GetByteCount(beforeFloor);
+        var end = floor + Encoding.UTF8.GetByteCount(first);
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(@"\w+\s+Holmes", policy: new() { ResourcePolicy = Funded });
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+
+        Assert.True(regex.SearchPlan.HasTerminalRepeatPrefix);
+        Assert.Equal(new Utf8CaptureRange(floor, end), regex.Match(input, floor, slots, token.Token));
+        Assert.Equal(new Utf8CaptureRange(floor, end), slots[0]);
+        Assert.False(regex.Match(input, floor, slots, token.Token, endOffsetInBytes: end - 1).Success);
+        Assert.False(slots[0].Success);
     }
 
     [Fact]

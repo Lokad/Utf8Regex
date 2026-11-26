@@ -488,6 +488,11 @@ internal static partial class Utf8SliceRunner
             TryFindPreparedLiteralRange(program, input, ref fromByte, candidatePlan.RequiredPrefilterSearcher.LiteralSearch,
                 ref screenedLiteral, requiredLiteralContinuation, ref invocation, out var range, requiredLiteralTerminalSuffix))
             return range;
+        if (!existenceOnly && candidatePlan.HasTerminalRepeatPrefix && !collectHistory &&
+            captureStarts.IsEmpty && captureEnds.IsEmpty &&
+            TryFindTerminalRepeatPrefix(program, input, candidatePlan, fromByte, ref screenedLiteral,
+                ref invocation, out var terminalPrefix))
+            return terminalPrefix;
 
         // The prepared forward proof needs no attempt workspace at byte zero.
         if (fromByte == 0 && program.TerminalRoot == Utf8SliceTerminalRootKind.AsciiSetThenRepeat &&

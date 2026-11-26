@@ -1224,29 +1224,56 @@ internal static partial class Utf8SliceRunner
         return Utf8ExecutionLimitKind.None;
     }
 
-    internal static Utf8ExecutionLimitKind TryProveScreenedTerminalRepeatPrefix(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, in Utf8SearchPlan candidatePlan, int floor, int screenedLiteral,
-        ref Utf8SliceInvocation invocation, out bool found)
+    internal static bool TryFindTerminalRepeatPrefix(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, in Utf8SearchPlan candidatePlan, int floor, ref int screenedLiteral,
+        ref Utf8SliceInvocation invocation, out Utf8SliceSearchOutcome outcome)
     {
-        found = false;
-        if (screenedLiteral <= floor || invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit ||
-            candidatePlan.GetRepeatPrefixSearch(program, out var prefix) is not { } search ||
-            !ReferenceEquals(search.Needle, candidatePlan.RequiredPrefilterSearcher.LiteralSearch.Needle) ||
-            !Utf8BytePosition.IsScalarBoundary(input, floor) ||
-            input[screenedLiteral - 1] is < 128 and var previous && !prefix.Last.Contains(previous))
-            return Utf8ExecutionLimitKind.None;
+        outcome = default;
+        ref readonly var required = ref candidatePlan.RequiredPrefilterSearcher;
+        if (invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit ||
+            candidatePlan.GetRepeatPrefixSearch(program, out var prefix) is not { } search || !prefix.Terminal ||
+            required.Kind != PreparedSearcherKind.ExactLiteral ||
+            !ReferenceEquals(search.Needle, required.LiteralSearch.Needle) ||
+            !Utf8BytePosition.IsScalarBoundary(input, floor))
+            return false;
 
-        // The screened literal is the complete tail. Only the disjoint
-        // repeats to its left need verification for a Boolean result.
+        var lastStart = input.Length - search.Length;
+        if (screenedLiteral < floor)
+        {
+            var screening = floor <= lastStart
+                ? Utf8SearchExecutor.TryFindLiteralCandidate(search, input, floor, lastStart, false,
+                    ref invocation, out screenedLiteral)
+                : Utf8ExecutionLimitKind.None;
+            if (screening != Utf8ExecutionLimitKind.None || screenedLiteral < 0)
+            {
+                invocation.Budget.ThrowIfCancellationRequested();
+                invocation.Budget.CheckDeadline();
+                outcome = new(false, -1, -1, screening);
+                return true;
+            }
+        }
+        if (screenedLiteral <= floor || screenedLiteral > lastStart ||
+            input[screenedLiteral - 1] is < 128 and var previous && !prefix.Last.Contains(previous))
+            return false;
+
+        // A complete rewind at the first literal fixes the leftmost start
+        // and each greedy split. Otherwise the finder must revisit that hit.
         var breach = TryNarrowDisjointRepeatPrefix(program, input, floor, screenedLiteral, prefix.DisjointEnd,
             ref invocation, out var start, out _, out _);
-        if (breach != Utf8ExecutionLimitKind.None || start < 0) return breach;
-        breach = invocation.TryReserveWorking(0);
-        if (breach != Utf8ExecutionLimitKind.None) return breach;
-        invocation.Budget.ThrowIfCancellationRequested();
-        invocation.Budget.CheckDeadline();
-        found = true;
-        return Utf8ExecutionLimitKind.None;
+        if (breach == Utf8ExecutionLimitKind.None)
+        {
+            if (start < 0) return false;
+            breach = invocation.TryReserveWorking(0);
+            if (breach == Utf8ExecutionLimitKind.None)
+            {
+                invocation.Budget.ThrowIfCancellationRequested();
+                invocation.Budget.CheckDeadline();
+                outcome = new(true, start, screenedLiteral + search.Length, breach);
+                return true;
+            }
+        }
+        outcome = new(false, -1, -1, breach);
+        return true;
     }
 
     private static Utf8ExecutionLimitKind TryProveOrderedClassFamily(Utf8SliceProgram program,
