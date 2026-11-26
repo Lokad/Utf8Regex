@@ -281,6 +281,8 @@ Dispose an abandoned cursor.
 
 `MoveNext` returns immutable byte ranges and group metadata that survive cursor
 advance, failure and closure. The subject and its memory manager stay borrowed.
+When the cursor publishes participating single-capture slots for every group,
+the ranges already follow slot order and the cursor omits the history offsets.
 
 Ordinary publication ends working admission for the range result.
 `MoveNextRetained` requires shared working funding and returns a

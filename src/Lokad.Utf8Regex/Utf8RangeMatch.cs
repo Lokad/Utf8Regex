@@ -42,10 +42,20 @@ public readonly struct Utf8RangeMatch
             group = Value;
             return group.Success;
         }
-        var ordinal = _numbers is null ? -1 : Array.BinarySearch(_numbers, number);
-        group = ordinal >= 0 && _offsets![ordinal] < _offsets[ordinal + 1]
-            ? _captures![_offsets[ordinal + 1] - 1] : default;
-        return ordinal >= 0;
+        var ordinal = FindGroupOrdinal(number);
+        if (ordinal < 0)
+        {
+            group = default;
+            return false;
+        }
+
+        if (_offsets is not { } offsets) group = _captures![ordinal];
+        else
+        {
+            var end = offsets[ordinal + 1];
+            group = offsets[ordinal] < end ? _captures![end - 1] : default;
+        }
+        return true;
     }
 
     /// <summary>Gets capture history in closing order, including Core RTL order. NonBacktracking keeps only the last capture.</summary>
@@ -53,9 +63,19 @@ public readonly struct Utf8RangeMatch
     public ReadOnlySpan<Utf8CaptureRange> GetCaptures(int number)
     {
         if (number == 0 && Success) return _captures.AsSpan(0, 1);
-        var ordinal = _numbers is null ? -1 : Array.BinarySearch(_numbers, number);
+        var ordinal = FindGroupOrdinal(number);
         if (ordinal < 0) throw new ArgumentOutOfRangeException(nameof(number));
-        return _captures.AsSpan(_offsets![ordinal], _offsets[ordinal + 1] - _offsets[ordinal]);
+        var offsets = _offsets;
+        if (offsets is null) return _captures.AsSpan(ordinal, 1);
+        var start = offsets[ordinal];
+        return _captures.AsSpan(start, offsets[ordinal + 1] - start);
+    }
+
+    private int FindGroupOrdinal(int number)
+    {
+        if (_numbers is not { } numbers) return -1;
+        return (uint)number < (uint)numbers.Length && numbers[number] == number
+            ? number : Array.BinarySearch(numbers, number);
     }
 
     /// <summary>Gets borrowed whole-match memory, or empty memory after no match.</summary>

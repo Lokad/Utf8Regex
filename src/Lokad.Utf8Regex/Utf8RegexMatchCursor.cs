@@ -266,19 +266,19 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             if ((slot & 255) == 0) Checkpoint();
             if (ends[slot] >= 0) count++;
         }
-        var offsets = numbers.Length == 1 ? null
+        // One participating capture per ordinal already describes its history.
+        var offsets = count == numbers.Length ? null
             : results.AllocateArray<int>(checked(numbers.Length + 1), ref _invocation);
         var captures = results.AllocateArray<Utf8CaptureRange>(count, ref _invocation);
         captures[0] = new(outcome.StartByte, outcome.EndByte);
-        if (offsets is null) return new(_input, captures, null, numbers);
         var written = 1;
-        offsets[1] = written;
+        if (offsets is not null) offsets[1] = written;
         for (var slot = 1; slot < numbers.Length; slot++)
         {
             if ((slot & 255) == 0) Checkpoint();
             var end = ends[slot - 1];
             if (end >= 0) captures[written++] = new(starts[slot - 1], end);
-            offsets[slot + 1] = written;
+            if (offsets is not null) offsets[slot + 1] = written;
         }
         return new(_input, captures, offsets, numbers);
     }

@@ -487,16 +487,16 @@ public sealed class Utf8MemoryCursorTests
     }
 
     [Theory]
-    [InlineData(false, RegexOptions.None)]
-    [InlineData(true, RegexOptions.None)]
-    [InlineData(true, RegexOptions.NonBacktracking)]
-    public void ResultTrafficIsCumulativeEvenWhenEachPublishedLoanRefunds(bool withCapture, RegexOptions options)
+    [InlineData("x", RegexOptions.None, 1, 0)]
+    [InlineData("(x)", RegexOptions.None, 2, 0)]
+    [InlineData("(x)", RegexOptions.NonBacktracking, 2, 0)]
+    [InlineData("(x)(y)?", RegexOptions.None, 2, 4)]
+    public void ResultTrafficIsCumulativeEvenWhenEachPublishedLoanRefunds(
+        string pattern, RegexOptions options, int ranges, int offsets)
     {
         var root = new Root(); var working = new Account(root);
-        var resultBytes = withCapture
-            ? Utf8ConstructionBudget.ArrayBytes<int>(3) + Utf8ConstructionBudget.ArrayBytes<Utf8CaptureRange>(2)
-            : Utf8ConstructionBudget.ArrayBytes<Utf8CaptureRange>(1);
-        using var cursor = new Utf8Regex(withCapture ? "(x)" : "x", options: options, policy: new Utf8RegexPolicy
+        var resultBytes = Utf8ConstructionBudget.ArrayBytes<int>(offsets) + Utf8ConstructionBudget.ArrayBytes<Utf8CaptureRange>(ranges);
+        using var cursor = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
@@ -511,11 +511,42 @@ public sealed class Utf8MemoryCursorTests
         Assert.Equal(0UL, root.Used);
         Assert.Equal(0, first.GetCaptures(0)[0].StartOffsetInBytes);
         Assert.Equal(1, second.GetCaptures(0)[0].StartOffsetInBytes);
-        if (withCapture)
+        if (ranges > 1)
         {
             Assert.Equal(first.Value, Assert.Single(first.GetCaptures(1).ToArray()));
             Assert.Equal(second.Value, Assert.Single(second.GetCaptures(1).ToArray()));
         }
+        if (offsets > 0)
+        {
+            Assert.True(first.TryGetGroup(2, out var unmatched));
+            Assert.False(unmatched.Success);
+            Assert.Empty(first.GetCaptures(2).ToArray());
+        }
+    }
+
+    [Fact]
+    public void SparseGroupNumbersReadCompleteAndPartialSnapshotsAfterDisposal()
+    {
+        var root = new Root();
+        var working = new Account(root);
+        using var regex = new Utf8Regex("(?<2>a)(?<7>b)?");
+        using var cursor = regex.CreateMatchCursor("ab a"u8.ToArray(), workingMemoryAllowance: working);
+        Assert.True(cursor.MoveNextRetained(out var receipt));
+        var complete = receipt.Match;
+        Assert.True(cursor.MoveNext(out var partial));
+        cursor.Dispose();
+        receipt.Dispose();
+
+        Assert.Equal(0UL, root.Used);
+        Assert.Equal(new[] { 0, 2, 7 }, complete.GroupNumbers.ToArray());
+        Assert.Equal(new[] { 0, 2, 7 }, partial.GroupNumbers.ToArray());
+        Assert.Equal("b"u8.ToArray(), complete.GetGroupMemory(7).ToArray());
+        Assert.Equal(1, complete.GetCaptures(7)[0].StartOffsetInBytes);
+        Assert.Equal(3, partial.GetCaptures(2)[0].StartOffsetInBytes);
+        Assert.True(partial.TryGetGroup(7, out var missing));
+        Assert.False(missing.Success);
+        Assert.Empty(partial.GetCaptures(7).ToArray());
+        Assert.False(complete.TryGetGroup(1, out _));
     }
 
     [Theory]
