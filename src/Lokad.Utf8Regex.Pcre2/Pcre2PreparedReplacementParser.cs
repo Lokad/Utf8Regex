@@ -60,6 +60,31 @@ internal static class Pcre2PreparedReplacementParser
         internal Pcre2PreparedReplacementPlan Build()
         {
             code.Add(Op(Pcre2ReplacementOpcode.Return));
+            var roots = Extended ? CompileExtended() : CompileBasic();
+            // Admit the exact final instruction extent while scratch code is
+            // still live. The enclosing scope rolls both loans back on failure.
+            storage.Budget.Reserve((ulong)code.Count);
+            return new(storage.Copy(code), roots);
+        }
+
+        private Pcre2ReplacementFragment[] CompileBasic()
+        {
+            // Basic templates have one forward-only fragment. Each instruction
+            // advances to the one emitted next, or to the shared return.
+            var roots = storage.Allocate<Pcre2ReplacementFragment>(1);
+            roots[0] = new(text.IsEmpty ? 0 : code.Count, 0);
+            var position = 0;
+            while (position < text.Length)
+            {
+                Work();
+                var instruction = ParseNormal(position, text.Length, out position);
+                code.Add(instruction with { NextNormal = position < text.Length ? code.Count + 1 : 0 });
+            }
+            return roots;
+        }
+
+        private Pcre2ReplacementFragment[] CompileExtended()
+        {
             _ = Fragment(0, text.Length);
             for (var index = 0; index < tasks.Count; index++)
             {
@@ -83,15 +108,9 @@ internal static class Pcre2PreparedReplacementParser
             for (var index = 0; index < roots.Length; index++)
             {
                 Work(); var fragment = fragments[index];
-                roots[index] = new(fragment.Normal[0], fragment.Quoted.Length == 0 ? 0 : fragment.Quoted[0]);
+                roots[index] = new(fragment.Normal[0], fragment.Quoted[0]);
             }
-            // Admit the exact final instruction extent while scratch code is
-            // still live. The enclosing scope rolls both loans back on failure.
-            storage.Budget.Reserve((ulong)code.Count);
-            var instructions = storage.Allocate<Pcre2ReplacementInstruction>(code.Count);
-            storage.Budget.ChargeWork((ulong)code.Count);
-            code.Span.CopyTo(instructions);
-            return new(instructions, roots);
+            return roots;
         }
 
         private int Fragment(int start, int end)
@@ -99,14 +118,13 @@ internal static class Pcre2PreparedReplacementParser
             Work();
             var count = checked(end - start + 1);
             var normal = storage.Allocate<int>(count, false);
-            // Only extended escapes can enter quoted execution.
-            var quoted = Extended ? storage.Allocate<int>(count, false) : [];
-            storage.Budget.ChargeWork((ulong)count + (ulong)quoted.Length);
+            var quoted = storage.Allocate<int>(count, false);
+            storage.Budget.ChargeWork(2UL * (ulong)count);
             normal.AsSpan().Fill(-1); quoted.AsSpan().Fill(-1);
             var id = fragments.Count;
             fragments.Add(new(start, end, normal, quoted));
             _ = Node(id, start, false);
-            if (quoted.Length != 0) _ = Node(id, start, true);
+            _ = Node(id, start, true);
             return id;
         }
 

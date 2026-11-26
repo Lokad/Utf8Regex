@@ -14,11 +14,14 @@ public sealed class Pcre2ReplacementPreparationReuseTests
         // The immutable key and its lowered payload together exceed the cache bound.
         var template = "$1" + new string('x', 2 << 20);
         var utf8 = Encoding.UTF8.GetBytes(template);
-        ulong work;
+        ulong work, keyWork;
         using (var measured = Utf8ConstructionScope.Enter())
         {
             _ = Pcre2ReplacementPreparationControl.Prepare(utf8, Pcre2SubstitutionOptions.None, false);
             work = measured.Budget.WorkSteps;
+            using var storage = Utf8ConstructionSession.Create(measured.Budget);
+            _ = Pcre2ReplacementPreparationControl.FreezeTemplateKey(storage, utf8);
+            keyWork = measured.Budget.WorkSteps - work;
         }
         foreach (var finite in new[] { false, true })
         {
@@ -35,8 +38,9 @@ public sealed class Pcre2ReplacementPreparationReuseTests
             })
                 : new Utf8Pcre2Regex("(a)");
             var destination = new byte[(2 << 20) + 1];
-            // Leave room for cache admission work, but not a second compilation.
-            var allowance = work + work / 2;
+            // The immutable cache key is copied before preparation. Leave room
+            // for that copy and admission, while excluding a second compilation.
+            var allowance = keyWork + work + work / 2;
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, allowance, ulong.MaxValue);
             var output = destinationOutput ? ReplaceInto(regex, utf8, destination) : regex.Replace("a"u8, utf8);
             Assert.Equal(destination.Length, output.Length);

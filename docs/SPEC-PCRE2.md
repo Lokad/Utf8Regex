@@ -192,6 +192,8 @@ waits. Expiry throws `Pcre2MatchException` with `Timeout`. An omitted
 
 Cold replacement scans charge work in blocks of at most 2 KiB for literal
 runs. Each block checks the original cancellation token and deadline.
+Basic templates emit a forward instruction sequence directly. Extended
+templates use temporary position tables for conditional and quoted paths.
 
 Eligible capture-free `Count` operations with default match options can
 reuse a bounded compiled proof after enough interpreted candidate work.
