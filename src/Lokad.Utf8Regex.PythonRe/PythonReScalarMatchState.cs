@@ -184,27 +184,6 @@ internal struct PythonReScalarMatchState
             static state => new Utf8PythonRetainedSubnResult(state.Result, state.Allowance), ref _invocation);
     }
 
-    internal void AddResult<T>(ref Utf8InvocationResultBuffer<T> buffer, T value)
-    {
-        buffer.Add(value, ref _invocation);
-    }
-
-    internal T[] CompleteResults<T>(ref Utf8InvocationResultBuffer<T> buffer, T finalValue)
-    {
-        if (buffer.Count == 0)
-        {
-            var result = AllocateResultArray<T>(1);
-            result[0] = finalValue;
-            return result;
-        }
-
-        buffer.Add(finalValue, ref _invocation);
-        return buffer.ToArray(ref _results, ref _invocation);
-    }
-
-    internal void ReleaseResults<T>(ref Utf8InvocationResultBuffer<T> buffer)
-        => buffer.Release(ref _invocation);
-
     // Construction owns its failure boundary. After construction, logical operations
     // map neutral helper failures before releasing this invocation or cursor state.
     private readonly Utf8ResourceLimitExceededException ResourceFailure()

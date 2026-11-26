@@ -1,4 +1,5 @@
 using System.Text;
+using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
@@ -55,5 +56,37 @@ public sealed class PythonReSplitOwnershipTests
         Assert.Equal((0, 0), (ranges[0].StartOffsetInBytes, ranges[0].EndOffsetInBytes));
         Assert.Equal((0, 3), (ranges[1].StartOffsetInBytes, ranges[1].EndOffsetInBytes));
         Assert.Equal((4, 9), (ranges[5].StartOffsetInBytes, ranges[5].EndOffsetInBytes));
+    }
+
+    [Fact]
+    public void SmallCappedSplitAdmitsOnlyItsActualRangeArray()
+    {
+        var bytes = Utf8ConstructionBudget.ArrayBytes<Utf8PythonCaptureRange>(4);
+        var allowance = new PythonReSharedWorkingAllowanceTests.Allowance(4 << 20);
+        using var regex = Utf8PythonRegex.Compile("[,;]", options: default, policy: new()
+        {
+            ProgramMemoryAllowance = allowance,
+            ResourcePolicy = new() { MaxResultBytes = bytes, MaxWorkingBytes = bytes }
+        });
+        var program = allowance.Used;
+        var reservations = allowance.Reservations;
+        var input = "😀a,b;c,d;e"u8.ToArray();
+        allowance.Maximum = program + bytes;
+        var result = regex.SplitRanges(input, maxSplit: 3, startOffsetInBytes: 4);
+        Assert.Equal(new string?[] { "a", "b", "c", "d;e" }, PythonReSplitAssert.Decode(input, result));
+        Assert.Equal(reservations + 1, allowance.Reservations);
+        Assert.Equal(program, allowance.Used);
+
+        allowance.Maximum--;
+        Assert.Throws<Utf8MemoryAdmissionException>(() => regex.SplitRanges(input, 3, 4));
+        Assert.Equal(program, allowance.Used);
+        allowance.Maximum++;
+
+        using var source = new CancellationTokenSource();
+        allowance.AfterGrant = source.Cancel;
+        var failure = Assert.Throws<OperationCanceledException>(() => regex.SplitRanges(input, 3, 4, source.Token));
+        Assert.Equal(source.Token, failure.CancellationToken);
+        Assert.Equal(program, allowance.Used);
+        Assert.Equal(new string?[] { "a", "b", "c", "d;e" }, PythonReSplitAssert.Decode(input, result));
     }
 }

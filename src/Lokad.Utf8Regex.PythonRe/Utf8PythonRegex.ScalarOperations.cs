@@ -122,29 +122,52 @@ public sealed partial class Utf8PythonRegex
         finally { state.Dispose(); }
     }
 
+    private const int SmallSplitLimit = 8;
+
     private Utf8PythonCaptureRange[] SplitRangesScalar(ReadOnlySpan<byte> input, int maxSplit,
         int startOffsetInBytes, CancellationToken cancellationToken)
     {
         var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
+        ref var invocation = ref cursor.WorkingInvocation;
+        var groups = CaptureGroupCount;
         Utf8InvocationResultBuffer<Utf8PythonCaptureRange> parts = default;
+        Utf8InvocationResultLedger results = default;
         try
         {
             var last = startOffsetInBytes;
-            var splits = 0;
-            while ((maxSplit == 0 || splits < maxSplit) && cursor.MoveNext())
+            if (groups == 0 && maxSplit is > 0 and <= SmallSplitLimit)
             {
-                cursor.AddResult(ref parts, new Utf8PythonCaptureRange
-                { Success = true, StartOffsetInBytes = last, EndOffsetInBytes = cursor.StartOffsetInBytes });
-                // Staging each capture already charges work and checks interruption.
-                for (var number = 1; number <= CaptureGroupCount; number++)
-                    cursor.AddResult(ref parts, cursor.TryGetCaptureByteRange(number, out var start, out var end)
-                        ? new Utf8PythonCaptureRange { Number = number, Success = true, StartOffsetInBytes = start, EndOffsetInBytes = end }
-                        : new Utf8PythonCaptureRange { Number = number });
-                last = cursor.EndOffsetInBytes;
-                splits++;
+                if (cursor.MoveNext())
+                    return CompleteSmallSplit(ref cursor, maxSplit, last, input.Length, ref results);
             }
-            var completed = cursor.CompleteResults(ref parts, new Utf8PythonCaptureRange
-            { Success = true, StartOffsetInBytes = last, EndOffsetInBytes = input.Length });
+            else
+            {
+                var splits = 0;
+                while ((maxSplit == 0 || splits < maxSplit) && cursor.MoveNext())
+                {
+                    parts.Add(new Utf8PythonCaptureRange
+                    { Success = true, StartOffsetInBytes = last, EndOffsetInBytes = cursor.StartOffsetInBytes }, ref invocation);
+                    for (var number = 1; number <= groups; number++)
+                        parts.Add(cursor.TryGetCaptureByteRange(number, out var start, out var end)
+                            ? new Utf8PythonCaptureRange { Number = number, Success = true, StartOffsetInBytes = start, EndOffsetInBytes = end }
+                            : new Utf8PythonCaptureRange { Number = number }, ref invocation);
+                    last = cursor.EndOffsetInBytes;
+                    splits++;
+                }
+            }
+            var tail = new Utf8PythonCaptureRange
+            { Success = true, StartOffsetInBytes = last, EndOffsetInBytes = input.Length };
+            Utf8PythonCaptureRange[] completed;
+            if (parts.Count == 0)
+            {
+                completed = results.AllocateArray<Utf8PythonCaptureRange>(1, ref invocation);
+                completed[0] = tail;
+            }
+            else
+            {
+                parts.Add(tail, ref invocation);
+                completed = parts.ToArray(ref results, ref invocation);
+            }
             cursor.Checkpoint();
             return completed;
         }
@@ -153,7 +176,34 @@ public sealed partial class Utf8PythonRegex
         { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException)
         { throw cursor.TimeoutFailure(); }
-        finally { cursor.ReleaseResults(ref parts); cursor.Dispose(); }
+        finally
+        {
+            parts.Release(ref invocation);
+            results.Release(ref invocation);
+            cursor.Dispose();
+        }
+    }
+
+    // A capture-free split with a small cap can admit just its exact result.
+    // The ordinary cursor already found the first separator.
+    private static Utf8PythonCaptureRange[] CompleteSmallSplit(ref PythonReScalarMatchCursor cursor,
+        int maxSplit, int last, int end, ref Utf8InvocationResultLedger results)
+    {
+        Span<Utf8PythonCaptureRange> scratch = stackalloc Utf8PythonCaptureRange[SmallSplitLimit];
+        var count = 0;
+        do
+        {
+            cursor.Checkpoint();
+            scratch[count++] = new Utf8PythonCaptureRange
+            { Success = true, StartOffsetInBytes = last, EndOffsetInBytes = cursor.StartOffsetInBytes };
+            last = cursor.EndOffsetInBytes;
+        } while (count < maxSplit && cursor.MoveNext());
+
+        var completed = results.AllocateArray<Utf8PythonCaptureRange>(count + 1, ref cursor.WorkingInvocation);
+        scratch[..count].CopyTo(completed);
+        completed[count] = new Utf8PythonCaptureRange { Success = true, StartOffsetInBytes = last, EndOffsetInBytes = end };
+        cursor.Checkpoint();
+        return completed;
     }
 
     private void SubstituteScalar(ReadOnlySpan<byte> input, PythonReReplacementPlan plan,

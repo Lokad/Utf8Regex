@@ -89,7 +89,9 @@ a negative value performs none. A range numbered zero represents an ordinary
 segment. Positive numbers represent captured separators, including absent
 groups with `Success = false`. Output is admitted according to actual ranges.
 When no split occurs, the result contains one range for the selected suffix.
-Admission for that range covers its result array directly.
+Admission for that range covers its result array directly. A capture-free split
+capped at eight matches uses bounded stack scratch and admits one result array
+sized to the actual number of ranges.
 
 ## Grammar and parsing
 
