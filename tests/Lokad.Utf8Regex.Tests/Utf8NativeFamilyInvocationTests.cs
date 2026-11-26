@@ -134,6 +134,31 @@ public sealed class Utf8NativeFamilyInvocationTests
     }
 
     [Theory]
+    [InlineData(2040)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    public void FiveWordFamilyFindKeepsOverlapsAndBoundaryContextAcrossWindows(int padding)
+    {
+        using var regex = new Utf8Regex(@"\b(?:abc-cde|noise|cded|jjj|kkk)\b");
+        var plan = regex.Inspection.SearchPlan;
+        var input = Encoding.UTF8.GetBytes(new string('x', padding) + "abc-cded! " + new string('z', 192) + " abc-cdedx");
+        using var token = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(new(128, 1, 7), Regex.InfiniteMatchTimeout, token.Token);
+        Assert.True(invocation.Ledger.TryReserve(7));
+
+        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindNativeLiteralMatch(plan, input, 0,
+            input.Length, false, ref invocation, out var first, out var found));
+        Assert.True(found);
+        Assert.Equal((padding + 4, 4, 2), (first.Index, first.Length, first.LiteralId));
+
+        // A discovery ceiling cannot hide the adjacent word scalar from confirmation.
+        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindNativeLiteralMatch(plan, input,
+            first.Index + first.Length, input.Length - 1, false, ref invocation, out _, out found));
+        Assert.False(found);
+        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(false, true)]

@@ -70,20 +70,36 @@ internal sealed class Utf8PackedNibbleLiteralFamilyCountStrategy
 
     internal Utf8ExecutionLimitKind TryCountWithBoundaries(ReadOnlySpan<byte> input,
         ref Utf8SliceInvocation invocation, out int count)
+        => ScanWithBoundaries(input, 0, input.Length, firstOnly: false, ref invocation, out count, out _);
+
+    internal Utf8ExecutionLimitKind TryFindWithBoundaries(ReadOnlySpan<byte> input, int start, int end,
+        ref Utf8SliceInvocation invocation, out PreparedSearchMatch match, out bool found)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(start);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(end, input.Length);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
+        var breach = ScanWithBoundaries(input, start, end, firstOnly: true, ref invocation, out var count, out match);
+        found = count != 0;
+        return breach;
+    }
+
+    private Utf8ExecutionLimitKind ScanWithBoundaries(ReadOnlySpan<byte> input, int start, int end, bool firstOnly,
+        ref Utf8SliceInvocation invocation, out int count, out PreparedSearchMatch match)
     {
         count = 0;
+        match = default;
         var total = 0;
-        var nextStart = 0;
+        var nextStart = start;
         // The admitted block includes the longest possible overlap. Each
         // candidate start belongs to one block, even across a match.
         var lookahead = _prefilter.LongestLength - 1;
-        while (nextStart <= input.Length - _prefilter.ShortestLength)
+        while (nextStart <= end - _prefilter.ShortestLength)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var first = nextStart;
-            var block = input.Slice(first, Math.Min(2048, input.Length - first));
-            var starts = first + block.Length == input.Length ? block.Length : block.Length - lookahead;
+            var block = input.Slice(first, Math.Min(2048, end - first));
+            var starts = first + block.Length == end ? block.Length : block.Length - lookahead;
             var state = default(PreparedMultiLiteralScanState);
             while (_prefilter.TryFindNextCandidate(block, ref state, out var relative) && relative < starts)
             {
@@ -94,8 +110,10 @@ internal sealed class Utf8PackedNibbleLiteralFamilyCountStrategy
                 breach = invocation.TryChargeBoundedCheck();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var remaining = block[relative..];
-                foreach (var literal in _prefilter.Literals)
+                var literals = _prefilter.Literals;
+                for (var ordinal = 0; ordinal < literals.Length; ordinal++)
                 {
+                    var literal = literals[ordinal];
                     if (!remaining.StartsWith(literal))
                         continue;
                     if (!Utf8ScalarWordBoundary.IsBoundary(input, at))
@@ -103,6 +121,16 @@ internal sealed class Utf8PackedNibbleLiteralFamilyCountStrategy
                     if (!Utf8ScalarWordBoundary.IsBoundary(input, at + literal.Length))
                         continue;
                     total++;
+                    if (firstOnly)
+                    {
+                        breach = invocation.TryChargeInputStep();
+                        invocation.Budget.ThrowIfCancellationRequested();
+                        if (breach != Utf8ExecutionLimitKind.None) return breach;
+                        match = new(at, literal.Length, ordinal);
+                        count = 1;
+                        Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
+                        return Utf8ExecutionLimitKind.None;
+                    }
                     nextStart = at + literal.Length;
                     break;
                 }
@@ -114,7 +142,8 @@ internal sealed class Utf8PackedNibbleLiteralFamilyCountStrategy
         invocation.Budget.ThrowIfCancellationRequested();
         if (outcome == Utf8ExecutionLimitKind.None)
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.LiteralFamilyPackedNibbleSimdCount);
+            if (!firstOnly)
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.LiteralFamilyPackedNibbleSimdCount);
             count = total;
         }
         return outcome;

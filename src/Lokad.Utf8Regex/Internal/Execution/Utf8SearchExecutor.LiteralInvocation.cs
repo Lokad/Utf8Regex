@@ -12,7 +12,11 @@ internal static partial class Utf8SearchExecutor
         out bool found)
     {
         if (plan.AlternateLiteralsUtf8 is { Length: > 0 })
+        {
+            if (!reverse && end - start >= 128 && plan.BoundaryFamilyCounter is { } boundaryCounter)
+                return boundaryCounter.TryFindWithBoundaries(input, start, end, ref invocation, out match, out found);
             return TryFindLiteralFamily(plan, input, start, end, reverse, ref invocation, out match, out found);
+        }
 
         match = default;
         found = false;
