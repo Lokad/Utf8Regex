@@ -101,6 +101,34 @@ public sealed partial class Utf8Regex
             Utf8SliceRunner.TryGetFixedDecimalFollower(program, out var digits, out var first, out var last))
             return MatchEmittedCaptureSlots(subject, startOffsetInBytes, output, offsets, digits, first, last, proof);
 
+        var screenedLiteral = -1;
+        ref readonly var search = ref _preparedRegex.SearchPlan;
+        if (program.LeadingClassWindowProof is { Completion: Utf8SliceClassWindowCompletion.CapturedRepeat } window &&
+            RequiredLiteralContinuation is > 0 and var continuation &&
+            search.RequiredPrefilterSearcher.LiteralSearch is var delimiter && delimiter.Length == window.LiteralLength &&
+            Utf8SliceRunner.TryFindPreparedLiteralRange(program, subject, ref startOffsetInBytes, delimiter,
+                ref screenedLiteral, continuation, ref invocation, out var captured, capturedRepeat: true))
+        {
+            if (captured.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+            if (!captured.Found)
+            {
+                output.Clear();
+                FinishFundedInvocation(ref invocation);
+                return default;
+            }
+
+            // The complete opposed runs give both captures directly. Dense
+            // slot order can differ from the order of their opening markers.
+            var result = output[0] = new(captured.StartByte, captured.EndByte);
+            var prefixSlot = program.Instructions[0].A + 1;
+            var suffixSlot = program.Instructions[continuation].A + 1;
+            if (prefixSlot < output.Length) output[prefixSlot] = new(captured.StartByte, screenedLiteral);
+            if (suffixSlot < output.Length) output[suffixSlot] = new(screenedLiteral + delimiter.Length, captured.EndByte);
+            FinishFundedInvocation(ref invocation);
+            program.ObserveCaptureProofWork(ref invocation);
+            return result;
+        }
+
         var slots = Utf8SliceSlots.Empty;
         try
         {
@@ -125,7 +153,7 @@ public sealed partial class Utf8Regex
                 var slotCount = program.IsNonBacktracking || program.ReadsCaptures ? program.GroupCount : output.Length - 1;
                 slots = Utf8SliceRunner.RentSlots(slotCount, ref invocation);
                 var outcome = Utf8SliceRunner.TryFindFirst(program, subject, startOffsetInBytes,
-                    slots.Starts, slots.Ends, false, ref invocation, _preparedRegex.SearchPlan);
+                    slots.Starts, slots.Ends, false, ref invocation, search, screenedLiteral: screenedLiteral);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
                 result = outcome.Found ? new(outcome.StartByte, outcome.EndByte) : default;
             }

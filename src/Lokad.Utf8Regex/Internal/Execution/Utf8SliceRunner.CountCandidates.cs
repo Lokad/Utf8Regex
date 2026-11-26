@@ -1914,8 +1914,10 @@ internal static partial class Utf8SliceRunner
                 : terminalSuffix is not null
                 ? (end = MatchPreparedLiteralTail(program, input, screenedLiteral + search.Length, continuation,
                     in program.Instructions[continuation], terminalSuffix)) != BranchedPrefixRejected
-                : classWindow && proof.CanFinishTerminalRuns
+                : classWindow && (proof.CanFinishTerminalRuns ||
+                    !existenceOnly && proof.Completion == Utf8SliceClassWindowCompletion.CapturedRepeat)
                 ? MayFinishTerminalClassRuns(program, input, screenedLiteral + search.Length, continuation, out end,
+                    skipCaptureOpening: proof.Completion == Utf8SliceClassWindowCompletion.CapturedRepeat,
                     existenceOnly: existenceOnly)
                 : MayMatchBranchedAsciiPrefix(program, input, screenedLiteral + search.Length, continuation,
                     out end, proveMatch: true, BranchedPrefixInstructionLimit - continuation, existenceOnly)))
@@ -2086,14 +2088,15 @@ internal static partial class Utf8SliceRunner
 
     internal static bool TryFindPreparedLiteralRange(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         ref int position, in PreparedSubstringSearch search, ref int screenedLiteral, int continuation,
-        ref Utf8SliceInvocation invocation, out Utf8SliceSearchOutcome outcome, byte[]? terminalSuffix = null)
+        ref Utf8SliceInvocation invocation, out Utf8SliceSearchOutcome outcome, byte[]? terminalSuffix = null,
+        bool capturedRepeat = false)
     {
         outcome = default;
         var classWindow = continuation != search.Length;
         // Eligible class windows can recover their full start from one
         // excluded delimiter. The adjacent-class proof is existence-only.
-        if (program.GroupCount != 0 ||
-            classWindow && (search.Length != 1 || program.LeadingClassWindowProof.CanAcceptAfterPair) ||
+        if (!capturedRepeat && (program.GroupCount != 0 ||
+                classWindow && (search.Length != 1 || program.LeadingClassWindowProof.CanAcceptAfterPair)) ||
             !Utf8BytePosition.IsScalarBoundary(input, position) ||
             invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit)
             return false;
