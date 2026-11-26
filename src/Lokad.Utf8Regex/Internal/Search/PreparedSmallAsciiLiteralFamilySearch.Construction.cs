@@ -4,7 +4,8 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
 {
     private readonly record struct RankedOffset(int Offset, int Score);
 
-    public static bool TryCreate(byte[][] literals, out PreparedSmallAsciiLiteralFamilySearch search)
+    public static bool TryCreate(byte[][] literals, out PreparedSmallAsciiLiteralFamilySearch search,
+        in AsciiExactLiteralSearchData prepared = default)
     {
         search = default;
         if (literals is not { Length: >= 3 and <= 6 }) return false;
@@ -29,7 +30,9 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
             }
             // The original one-bucket rejection needs no prepared state.
             if (distinct < 2) return false;
-            var data = AsciiSearch.CreateExactLiteralSearchData(literals, fullMetadata: false);
+            // The regex plan already admits these tables for the same literal family.
+            var data = prepared.Buckets is { Length: > 0 }
+                ? prepared : AsciiSearch.CreateExactLiteralSearchData(literals, fullMetadata: false);
 
             Span<RankedOffset> best = stackalloc RankedOffset[4];
             var count = SelectOffsets(literals, data.ShortestLength, best, budget);

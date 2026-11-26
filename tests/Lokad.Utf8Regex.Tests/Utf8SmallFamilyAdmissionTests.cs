@@ -104,6 +104,22 @@ public sealed class Utf8SmallFamilyAdmissionTests
         Assert.Equal(0ul, owner.Budget.Reserved); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
     }
 
+    [Fact]
+    public void ReusesAdmittedExactSearchTables()
+    {
+        var literals = Bytes("alpha", "alpine", "bravo");
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        var prepared = AsciiSearch.CreateExactLiteralSearchData(literals);
+        var before = owner.Budget.ReservedBytes;
+
+        Assert.True(PreparedSmallAsciiLiteralFamilySearch.TryCreate(literals, out var search, in prepared));
+
+        var selected = (AsciiExactLiteralSearchData)Field(search, "_searchData")!;
+        Assert.Same(prepared.Buckets, selected.Buckets);
+        Assert.Same(prepared.BucketIndexMap, selected.BucketIndexMap);
+        Assert.Equal(before + ExtraLoan(literals), owner.Budget.ReservedBytes);
+    }
+
     [Theory]
     [MemberData(nameof(Cutoffs))]
     public void EveryStorageAndWorkCutoffPreservesFundedParentsAndKeepsAdmittedWork(int family, bool bytes)

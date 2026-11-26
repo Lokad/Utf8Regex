@@ -157,11 +157,14 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         out PreparedSmallAsciiLiteralFamilySearch primitive)
     {
         primitive = default;
-        return !usesRightToLeft && regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
-            !regexPlan.SearchPlan.HasBoundaryRequirements && !regexPlan.SearchPlan.HasTrailingLiteralRequirement &&
-            regexPlan.SearchPlan.AlternateLiteralsUtf8 is { Length: >= 3 and <= 6 } literals &&
-            PreparedMultiLiteralConstruction.GetShortestLength(literals, Utf8ConstructionScope.CurrentBudget) >= 5 &&
-            PreparedSmallAsciiLiteralFamilySearch.TryCreate(literals, out primitive);
+        ref readonly var plan = ref regexPlan.SearchPlan;
+        if (usesRightToLeft || regexPlan.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
+            plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement ||
+            plan.AlternateLiteralsUtf8 is not { Length: >= 3 and <= 6 } literals) return false;
+
+        ref readonly var exact = ref Nullable.GetValueRefOrDefaultRef(in plan.AlternateLiteralSearch);
+        return exact.SearchData.ShortestLength >= 5 &&
+            PreparedSmallAsciiLiteralFamilySearch.TryCreate(literals, out primitive, in exact.SearchData);
     }
 
     private static bool TryCreateShortAsciiLiteralFamilyCounter(Utf8PreparedRegex regexPlan, bool usesRightToLeft,
