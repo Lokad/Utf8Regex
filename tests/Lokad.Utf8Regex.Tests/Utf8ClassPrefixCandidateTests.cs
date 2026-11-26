@@ -763,6 +763,24 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Fact]
+    public void SeparatedTerminalBooleanKeepsScalarMembershipAndGreedyRanges()
+    {
+        const string pattern = @"[\w.+-]+@[\w-]+\.[\w.-]+";
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+        using var token = new CancellationTokenSource();
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+
+        var text = "a@b.\U00010400" + new string('z', 512);
+        var input = Encoding.UTF8.GetBytes(text + "!");
+        Assert.True(regex.IsMatch(input, token.Token));
+        Assert.Equal(new Utf8CaptureRange(0, input.Length - 1), regex.Match(input, 0, slots, token.Token));
+        Assert.Equal(new Utf8CaptureRange(0, input.Length - 1), slots[0]);
+        Assert.False(regex.IsMatch("a@b.😀rest"u8, token.Token));
+        Assert.False(regex.IsMatch("a@b."u8, token.Token));
+        Assert.True(regex.IsMatch("a@b.😀rest c@d.é"u8, token.Token));
+    }
+
+    [Fact]
     public void SharedTerminalClassCountKeepsBlockSeamsAndTheFirstUnresolvedRun()
     {
         const string pattern = @"[\w.+-]+@[\w.-]+\.[\w.-]+";

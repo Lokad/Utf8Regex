@@ -1855,7 +1855,8 @@ internal static partial class Utf8SliceRunner
                 ? (end = MatchPreparedLiteralTail(program, input, screenedLiteral + search.Length, continuation,
                     in program.Instructions[continuation], terminalSuffix)) != BranchedPrefixRejected
                 : classWindow && proof.CanFinishTerminalRuns
-                ? MayFinishTerminalClassRuns(program, input, screenedLiteral + search.Length, continuation, out end)
+                ? MayFinishTerminalClassRuns(program, input, screenedLiteral + search.Length, continuation, out end,
+                    existenceOnly: existenceOnly)
                 : MayMatchBranchedAsciiPrefix(program, input, screenedLiteral + search.Length, continuation,
                     out end, proveMatch: true, BranchedPrefixInstructionLimit - continuation, existenceOnly)))
         {
@@ -1901,7 +1902,7 @@ internal static partial class Utf8SliceRunner
     }
 
     private static bool MayFinishTerminalClassRuns(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int position, int index, out int acceptedEnd, bool capturedRepeat = false)
+        int position, int index, out int acceptedEnd, bool capturedRepeat = false, bool existenceOnly = false)
     {
         // A value-only call can skip the opening capture marker. The repeat
         // is followed only by its closing marker and Accept.
@@ -1913,12 +1914,31 @@ internal static partial class Utf8SliceRunner
         var end = TryMatchLongPrefixRepeat(program, input, position, index + 1, in code[index], ref remaining);
         if (end >= 0 && !capturedRepeat && !code[index + 3].RepeatExitSharesTerminalRun)
         {
-            end = end == input.Length || input[end] != code[index + 4].A
-                ? BranchedPrefixRejected
-                : TryMatchLongPrefixRepeat(program, input, end + 1, index + 6, in code[index + 5], ref remaining);
+            if (end == input.Length || input[end] != code[index + 4].A)
+                end = BranchedPrefixRejected;
+            else if (existenceOnly)
+                end = MatchFirstTerminalCategoryScalar(program, input, end + 1, in code[index + 6], remaining);
+            else
+                end = TryMatchLongPrefixRepeat(program, input, end + 1, index + 6, in code[index + 5], ref remaining);
         }
         acceptedEnd = end < 0 ? BranchedPrefixUndecided : end;
         return end != BranchedPrefixRejected;
+    }
+
+    private static int MatchFirstTerminalCategoryScalar(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, in Utf8SliceInstruction atom, int remaining)
+    {
+        // The terminal repeat can accept after its one required scalar.
+        if (position == input.Length) return BranchedPrefixRejected;
+        if (remaining < Math.Min(4, input.Length - position)) return BranchedPrefixUndecided;
+        var value = input[position];
+        if (value < 128)
+            return MatchesAsciiHybridClass(program.SetMasks[atom.A], false, value)
+                ? position + 1 : BranchedPrefixRejected;
+        if (!TryReadScalar(input, position, false, out var scalar, out var width)) return BranchedPrefixUndecided;
+        var categories = program.GetCompleteAsciiCategoryMask(atom);
+        return (categories & (1u << (int)Rune.GetUnicodeCategory(scalar))) != 0
+            ? position + width : BranchedPrefixRejected;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
