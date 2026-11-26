@@ -1723,6 +1723,9 @@ internal static partial class Utf8SliceRunner
         var proveClassSuffix = classContinuation != 0 &&
             invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
             CanProveRepeatPrefix(program, repeatIndex);
+        var separatedClassSuffix = proveClassSuffix &&
+            program.LeadingClassWindowProof is { CanFinishSeparatedRuns: true } fullWindow &&
+            verifiedClassLiteralLength == fullWindow.LiteralLength;
         // Keep the existing literal and delimiter searches. A required decimal
         // starter can also skip unrelated bytes on a long forward search.
         if (whitespaceLiteral >= 0 && leadingFirst >= 128) leadingFirst = -1;
@@ -2040,11 +2043,12 @@ internal static partial class Utf8SliceRunner
                     continue;
                 }
                 Utf8SliceMatchOutcome outcome;
-                var proveSuffix = proveClassSuffix && position < whitespaceWindowEnd && verifiedPrefix.Item1 == classContinuation ||
-                    proveStraightSuffix && verifiedPrefix.Item1 == straightPrefixStart;
-                if (proveSuffix && provedEnd < 0 &&
-                    !MayMatchBranchedAsciiPrefix(program, input, position + verifiedPrefix.Item2, verifiedPrefix.Item1,
-                        out provedEnd, proveMatch: true, BranchedPrefixInstructionLimit - verifiedPrefix.Item1))
+                var proveWindow = proveClassSuffix && position < whitespaceWindowEnd && verifiedPrefix.Item1 == classContinuation;
+                if ((proveWindow || proveStraightSuffix && verifiedPrefix.Item1 == straightPrefixStart) && provedEnd < 0 &&
+                    !(proveWindow && separatedClassSuffix
+                        ? MayFinishSeparatedRuns(program, input, position + verifiedPrefix.Item2, classContinuation, out provedEnd)
+                        : MayMatchBranchedAsciiPrefix(program, input, position + verifiedPrefix.Item2, verifiedPrefix.Item1,
+                            out provedEnd, proveMatch: true, BranchedPrefixInstructionLimit - verifiedPrefix.Item1)))
                 {
                     // A class window shares the rejected suffix across its starts.
                     outcome = new(false, -1, Utf8ExecutionLimitKind.None);
