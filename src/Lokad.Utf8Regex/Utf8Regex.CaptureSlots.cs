@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 
@@ -39,7 +40,6 @@ public sealed partial class Utf8Regex
         // search, capture replay and publication.
         Utf8SliceInvocation.InitializeExclusive(out var invocation, InvocationLimits, MatchTimeout,
             cancellationToken, workingMemoryAllowance);
-        var slots = Utf8SliceSlots.Empty;
         try
         {
             Utf8SliceBufferWork.Checkpoint(ref invocation);
@@ -51,11 +51,10 @@ public sealed partial class Utf8Regex
                 throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
             var program = _ownedSliceProgram;
             invocation.AnchorOriginByte = startOffsetInBytes;
-            if (output.Length > 1 && program.EmittedHistoryOffsets is { } offsets &&
-                (program.EmittedMatch ?? program.TieredProof) is { } proof &&
-                invocation.IsUnmetered && invocation.CheckpointHook is null &&
-                Utf8SliceRunner.TryGetFixedDecimalFollower(program, out var digits, out var first, out var last))
-                return MatchEmittedCaptureSlots(subject, startOffsetInBytes, output, offsets, digits, first, last, proof);
+            // Group zero is the value match. Storage for exposed capture
+            // groups belongs to the detailed matcher.
+            if (output.Length > 1)
+                return MatchDetailedCaptureSlots(program, subject, startOffsetInBytes, output, ref invocation);
 
             Utf8CaptureRange result;
             if (program.GroupCount == 0 &&
@@ -70,7 +69,49 @@ public sealed partial class Utf8Regex
                 if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
                 result = found ? new(selected.Index, selected.Index + selected.Length) : default;
             }
-            else if (program.IsNonBacktracking && output.Length > 1 && subject.Length - startOffsetInBytes >= 64 &&
+            else
+            {
+                var outcome = FindOwnedSliceValue(program, subject, startOffsetInBytes,
+                    ref invocation, _preparedRegex.SearchPlan);
+                if (outcome.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+                result = outcome.Found ? new(outcome.StartByte, outcome.EndByte) : default;
+            }
+            if (!output.IsEmpty)
+            {
+                Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
+                output[0] = result;
+            }
+            FinishFundedInvocation(ref invocation);
+            return result;
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { output.Clear(); throw invocation.Budget.CreateResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            output.Clear();
+            throw CreateMatchTimeoutException(workingMemoryAllowance is null ? input : default,
+                Pattern, MatchTimeout, invocation.Budget.Limits);
+        }
+        catch { output.Clear(); throw; }
+        finally { invocation.Ledger.Release(invocation.Ledger.ReservedBytes); }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private Utf8CaptureRange MatchDetailedCaptureSlots(Utf8SliceProgram program, ReadOnlySpan<byte> subject,
+        int startOffsetInBytes, Span<Utf8CaptureRange> output, ref Utf8SliceInvocation invocation)
+    {
+        if (program.EmittedHistoryOffsets is { } offsets &&
+            (program.EmittedMatch ?? program.TieredProof) is { } proof &&
+            invocation.IsUnmetered && invocation.CheckpointHook is null &&
+            Utf8SliceRunner.TryGetFixedDecimalFollower(program, out var digits, out var first, out var last))
+            return MatchEmittedCaptureSlots(subject, startOffsetInBytes, output, offsets, digits, first, last, proof);
+
+        var slots = Utf8SliceSlots.Empty;
+        try
+        {
+            Utf8CaptureRange result;
+            if (program.IsNonBacktracking && subject.Length - startOffsetInBytes >= 64 &&
                 program.NonBacktrackingOrderedClosures.Length != 0)
             {
                 var selected = Utf8SliceRunner.TryFindFirst(program, subject, startOffsetInBytes,
@@ -87,15 +128,10 @@ public sealed partial class Utf8Regex
             }
             else
             {
-                var slotCount = program.GroupCount;
-                if (output.Length <= 1)
-                    slotCount = GetValueOperationCaptureSlotCount(program);
-                else if (!program.IsNonBacktracking && !program.ReadsCaptures)
-                    slotCount = output.Length - 1;
+                var slotCount = program.IsNonBacktracking || program.ReadsCaptures ? program.GroupCount : output.Length - 1;
                 slots = Utf8SliceRunner.RentSlots(slotCount, ref invocation);
                 var outcome = Utf8SliceRunner.TryFindFirst(program, subject, startOffsetInBytes,
-                    slots.Starts, slots.Ends, false, ref invocation, _preparedRegex.SearchPlan,
-                    requiredLiteralContinuation: RequiredLiteralContinuation);
+                    slots.Starts, slots.Ends, false, ref invocation, _preparedRegex.SearchPlan);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
                 result = outcome.Found ? new(outcome.StartByte, outcome.EndByte) : default;
             }
@@ -115,24 +151,10 @@ public sealed partial class Utf8Regex
                     new(Math.Min(opening, closing), Math.Max(opening, closing));
             }
             FinishFundedInvocation(ref invocation);
-            if (result.Success && output.Length > 1) program.ObserveCaptureProofWork(ref invocation);
+            if (result.Success) program.ObserveCaptureProofWork(ref invocation);
             return result;
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { output.Clear(); throw invocation.Budget.CreateResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            output.Clear();
-            throw CreateMatchTimeoutException(workingMemoryAllowance is null ? input : default,
-                Pattern, MatchTimeout, invocation.Budget.Limits);
-        }
-        catch { output.Clear(); throw; }
-        finally
-        {
-            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-            invocation.Ledger.Release(invocation.Ledger.ReservedBytes);
-        }
+        finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
     }
 
     private static Utf8CaptureRange MatchEmittedCaptureSlots(ReadOnlySpan<byte> subject, int position,
