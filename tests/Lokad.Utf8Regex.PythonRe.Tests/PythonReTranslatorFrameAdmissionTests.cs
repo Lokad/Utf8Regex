@@ -17,9 +17,8 @@ public sealed class PythonReTranslatorFrameAdmissionTests
         var parsed = new PythonReParser("").Parse(PythonReCompileOptions.None) with { Root = root };
         Assert.False(PythonReTranslator.CanMatchEmpty(root, parsed));
         Assert.True(PythonReTranslator.GetWidth(root, parsed).Max > 0);
-        Assert.True(PythonReTranslator.CanUseUtf8IterationFastPath(root));
-        Assert.True(PythonReTranslator.IsExactLiteral(exact));
-        Assert.False(PythonReTranslator.IsExactLiteral(root));
+        Assert.Equal((false, true), PythonReTranslator.InspectNativeSelection(root));
+        Assert.Equal((true, true), PythonReTranslator.InspectNativeSelection(exact));
         var translation = PythonReTranslator.Translate(parsed, true);
         Assert.Equal("(?:a|bc)[😀]"u8.ToArray(), translation.NativePatternUtf8);
         Assert.Equal("[😀]"u8.ToArray(), PythonReTranslator.RenderNativeAtom(scalarClass));
@@ -33,19 +32,19 @@ public sealed class PythonReTranslatorFrameAdmissionTests
         ulong literalPeak;
         using (var measured = Utf8ConstructionScope.Enter())
         {
-            Assert.True(PythonReTranslator.CanUseUtf8IterationFastPath(new PythonReLiteralNode('a')));
+            Assert.Equal((true, true), PythonReTranslator.InspectNativeSelection(new PythonReLiteralNode('a')));
             literalPeak = measured.Budget.PeakBytes;
         }
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, depth ? ulong.MaxValue : literalPeak + 48,
             ulong.MaxValue, depth ? 1ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReTranslator.CanUseUtf8IterationFastPath(root));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReTranslator.InspectNativeSelection(root));
         Assert.Equal(depth ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
 
         var spent = owner.Budget.WorkSteps;
-        Assert.True(PythonReTranslator.CanUseUtf8IterationFastPath(new PythonReLiteralNode('a')));
+        Assert.Equal((true, true), PythonReTranslator.InspectNativeSelection(new PythonReLiteralNode('a')));
         Assert.True(owner.Budget.WorkSteps > spent);
         owner.Budget.ReleaseArray(parent, false);
     }

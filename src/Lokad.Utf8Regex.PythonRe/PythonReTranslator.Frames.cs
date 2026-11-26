@@ -5,24 +5,25 @@ namespace Lokad.Utf8Regex.PythonRe;
 
 internal static partial class PythonReTranslator
 {
-    private enum InspectionKind { References, Lookbehind, Iteration, Literal }
+    private enum InspectionKind { References, Lookbehind, NativeSelection, Literal }
     private struct InspectionFrame(PythonReNode node)
     {
         internal readonly PythonReNode Node = node;
         internal int Index = -1;
     }
 
-    // Index borrowed AST lists directly. An arbitrary IReadOnlyList enumerator
-    // would acquire or box a descriptor before its element could be admitted.
-    private static bool InspectSelection(PythonReNode node, InspectionKind kind)
+    // Exact literals also qualify for iteration. Other patterns can iterate
+    // when Core preserves Python's class and alternation semantics.
+    public static (bool ExactLiteral, bool IterationSafe) InspectNativeSelection(PythonReNode node)
     {
         using var construction = Utf8ConstructionScope.Enter();
-        var result = Inspect(node, kind, default, null, null);
-        if (result) construction.Complete();
-        return result;
+        var (iterationSafe, exactLiteral) = Inspect(node, InspectionKind.NativeSelection, default, null, null);
+        if (iterationSafe) construction.Complete();
+        return (exactLiteral, iterationSafe);
     }
 
-    private static bool Inspect(PythonReNode node, InspectionKind kind,
+    // Index borrowed AST lists directly to avoid acquiring an unadmitted enumerator.
+    private static (bool Accepted, bool ExactLiteral) Inspect(PythonReNode node, InspectionKind kind,
         PythonReParseResult parseResult,
         Utf8ConstructionMap<PythonReNode, PythonReWidth>? widths,
         ByteBuilder? builder)
@@ -30,6 +31,7 @@ internal static partial class PythonReTranslator
         // Translation owns the width map across this walk. Roll it back only
         // after its arrays are disposed by Translate, never in a nested scope.
         var budget = Utf8ConstructionScope.CurrentBudget;
+        var exactLiteral = true;
         using var frames = Utf8ConstructionFrames<InspectionFrame>.Create(budget, new(node));
         while (frames.Count != 0)
         {
@@ -55,36 +57,33 @@ internal static partial class PythonReTranslator
                 else if (kind == InspectionKind.Lookbehind && current is PythonReGroupNode
                     { Kind: PythonReGroupKind.PositiveLookbehind or PythonReGroupKind.NegativeLookbehind } behind)
                     behind.FixedLookbehindWidth = EnsureFixedWidth(behind.Inner, parseResult, widths ?? throw new InvalidOperationException("Width storage is missing."));
-                else if (kind == InspectionKind.Iteration)
+                else if (kind == InspectionKind.NativeSelection && !IsExactLiteralPart(current))
                 {
-                    if (current is PythonReConditionalNode) return false;
+                    exactLiteral = false;
+                    if (current is PythonReConditionalNode) return default;
                     // The core's host categories do not define this profile's
                     // pinned classes. Their direct scalar lowering is authoritative.
                     if (current is PythonReRawNode { Kind: PythonReRawKind.Escape } raw
-                        && PythonReParser.IsUnicodePredefinedFragment(raw.Text)) return false;
+                        && PythonReParser.IsUnicodePredefinedFragment(raw.Text)) return default;
                     if (current is PythonReCharacterClassNode characterClass)
                         for (var classIndex = 0; classIndex < characterClass.Items.Count; classIndex++)
                         {
                             budget.ChargeWork(1);
                             if (characterClass.Items[classIndex] is PythonReCharacterClassPredefinedItem predefined
-                                && PythonReParser.IsUnicodePredefinedFragment(predefined.RegexClassFragment)) return false;
+                                && PythonReParser.IsUnicodePredefinedFragment(predefined.RegexClassFragment)) return default;
                         }
                     if (current is PythonReAlternationNode alternation)
                     {
-                        if (!IsPrefixFreeExactLiteralAlternation(alternation)) return false;
+                        // Prefix-free literals make branch order unobservable here.
+                        if (!IsPrefixFreeExactLiteralAlternation(alternation)) return default;
                         frames.Pop();
                         continue;
                     }
                 }
                 else if (kind == InspectionKind.Literal)
                 {
-                    if (current is PythonReLiteralNode literal)
-                    {
-                        if (char.IsSurrogate(literal.Value)) return false;
-                        builder?.Append(literal.Value);
-                    }
-                    else if (current is not PythonReSequenceNode and not PythonReGroupNode { Kind: PythonReGroupKind.NonCapturing })
-                        return false;
+                    if (!IsExactLiteralPart(current)) return default;
+                    if (current is PythonReLiteralNode literal) builder?.Append(literal.Value);
                 }
                 frame.Index = 0;
             }
@@ -113,8 +112,12 @@ internal static partial class PythonReTranslator
             if (child is null) frames.Pop();
             else frames.Push(new(child));
         }
-        return true;
+        return (true, exactLiteral);
     }
+
+    private static bool IsExactLiteralPart(PythonReNode node) => node is PythonReLiteralNode literal
+        ? !char.IsSurrogate(literal.Value)
+        : node is PythonReSequenceNode or PythonReGroupNode { Kind: PythonReGroupKind.NonCapturing };
 
     private struct WidthFrame(PythonReNode node)
     {

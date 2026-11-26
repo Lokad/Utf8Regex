@@ -1331,7 +1331,7 @@ internal sealed class PythonReBenchmarkContext
                 new Dictionary<string, int>(StringComparer.Ordinal));
             var exactReplacementPattern =
                 (benchmarkCase.Options & PythonReCompileOptions.IgnoreCase) == 0 &&
-                PythonReTranslator.IsExactLiteral(parsed.Root);
+                PythonReTranslator.InspectNativeSelection(parsed.Root).ExactLiteral;
             var width = exactReplacementPattern ? PythonReTranslator.GetWidth(parsed.Root, parsed) : default;
             var hasNonemptyExactReplacementPattern = exactReplacementPattern && width.Max > 0;
             _supportsReplacementPhases = plan.Tokens.All(

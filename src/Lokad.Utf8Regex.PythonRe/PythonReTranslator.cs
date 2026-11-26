@@ -14,16 +14,6 @@ internal static partial class PythonReTranslator
         return GetWidth(node, parseResult).Min == 0;
     }
 
-    // Native FindAll over UTF-8 is admissible only when alternation order is
-    // unobservable: prefix-free exact literals guarantee at most one branch
-    // matches at any position, so a literal-family candidate scan cannot diverge
-    // from ordered-alternation semantics. Conditionals use the scalar program. The facade
-    // additionally requires no empty match. Pinned by
-    // FindAllCanUseUtf8RegexBackendForPrefixFreeLiteralAlternation.
-    public static bool CanUseUtf8IterationFastPath(PythonReNode node) => IsUtf8IterationSafe(node);
-
-    public static bool IsExactLiteral(PythonReNode node) => InspectSelection(node, InspectionKind.Literal);
-
     public static PythonReTranslation Translate(PythonReParseResult parseResult, bool renderNativePattern)
     {
         using var construction = Utf8ConstructionScope.Enter();
@@ -183,8 +173,6 @@ internal static partial class PythonReTranslator
         return translated;
     }
 
-    private static bool IsUtf8IterationSafe(PythonReNode node) => InspectSelection(node, InspectionKind.Iteration);
-
     private static bool IsPrefixFreeExactLiteralAlternation(PythonReAlternationNode alternation)
     {
         using var construction = Utf8ConstructionScope.Enter();
@@ -226,7 +214,7 @@ internal static partial class PythonReTranslator
     {
         using var construction = Utf8ConstructionScope.Enter();
         using var builder = ByteBuilder.Create(construction.Budget);
-        var complete = Inspect(node, InspectionKind.Literal, default, null, builder);
+        var complete = Inspect(node, InspectionKind.Literal, default, null, builder).Accepted;
         literal = complete ? builder.Take() : [];
         if (complete) construction.Complete();
         return complete;

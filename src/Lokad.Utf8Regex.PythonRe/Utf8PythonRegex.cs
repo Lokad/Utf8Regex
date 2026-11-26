@@ -85,8 +85,8 @@ public sealed partial class Utf8PythonRegex
             EffectiveOptions = (parseResult.Options & PythonReCompileOptions.Ascii) != 0
                 ? parseResult.Options
                 : parseResult.Options | PythonReCompileOptions.Unicode;
-            var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
-            _canUseUtf8IterationFastPath = isExactLiteral || PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
+            var (isExactLiteral, iterationSafe) = PythonReTranslator.InspectNativeSelection(parseResult.Root);
+            _canUseUtf8IterationFastPath = iterationSafe;
             // Nullable iteration always uses the Python scalar program. Only the
             // exact empty literal has a separate Core value-operation consumer,
             // so exact literals need no width walk before preparing Core.

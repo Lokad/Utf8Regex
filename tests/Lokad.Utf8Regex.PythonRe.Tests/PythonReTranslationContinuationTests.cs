@@ -80,15 +80,14 @@ public sealed class PythonReTranslationContinuationTests
     {
         var pattern = string.Concat(Enumerable.Repeat("(?:", depth)) + "éab" + new string(')', depth);
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
-        Assert.True(PythonReTranslator.IsExactLiteral(parse.Root));
-        Assert.True(PythonReTranslator.CanUseUtf8IterationFastPath(parse.Root));
+        Assert.Equal((true, true), PythonReTranslator.InspectNativeSelection(parse.Root));
         var regex = new Utf8PythonRegex(pattern);
         PythonReMatchAssert.Equal("éab", regex.Match("xéabz"u8,mode: Utf8PythonMatchMode.Search));
     }
 
     public static IEnumerable<object[]> Walkers()
     {
-        foreach (var operation in Enumerable.Range(0, 7)) yield return [operation];
+        foreach (var operation in new[] { 0, 1, 2, 3, 5, 6 }) yield return [operation];
     }
 
     [Theory]
@@ -169,9 +168,9 @@ public sealed class PythonReTranslationContinuationTests
         const int depth = 4097;
         var pattern = string.Concat(Enumerable.Repeat("(?:", depth)) + fragment + new string(')', depth);
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
-        Assert.Equal(iterationSafe, PythonReTranslator.CanUseUtf8IterationFastPath(parse.Root));
+        Assert.Equal((false, iterationSafe), PythonReTranslator.InspectNativeSelection(parse.Root));
         var simple = new PythonReParser(fragment).Parse(PythonReCompileOptions.None);
-        Assert.Equal(PythonReTranslator.CanUseUtf8IterationFastPath(simple.Root), PythonReTranslator.CanUseUtf8IterationFastPath(parse.Root));
+        Assert.Equal(PythonReTranslator.InspectNativeSelection(simple.Root), PythonReTranslator.InspectNativeSelection(parse.Root));
     }
 
     [Theory]
@@ -258,9 +257,8 @@ public sealed class PythonReTranslationContinuationTests
     {
         0 => PythonReTranslator.CanMatchEmpty(parse.Root, parse),
         1 => PythonReTranslator.GetWidth(parse.Root, parse).Max > 0,
-        2 => PythonReTranslator.CanUseUtf8IterationFastPath(parse.Root),
+        2 => PythonReTranslator.InspectNativeSelection(parse.Root),
         3 => PythonReTranslator.GetWidth(parse.Root, parse),
-        4 => PythonReTranslator.IsExactLiteral(parse.Root),
         5 => PythonReTranslator.Translate(parse, true),
         _ => PythonReTranslator.RenderNativeAtom(parse.Root),
     };
