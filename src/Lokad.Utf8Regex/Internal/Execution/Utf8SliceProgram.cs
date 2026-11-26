@@ -1790,6 +1790,16 @@ internal static class Utf8SliceLowerer
             NonBacktrackingScopes?.Add(NonBacktrackingScope);
         }
 
+        private void EmitLiteral(Utf8SliceNode.LiteralNode literal)
+        {
+            // An invalid scalar is an impossible atom. Repetition still
+            // controls whether that atom must execute.
+            Emit(Rune.TryCreate(literal.Value, out var scalar)
+                ? new Utf8SliceInstruction(Utf8SliceInstructionKind.Literal, literal.Value,
+                    literal.FoldCase && Utf8SliceCaseEquivalences.HasAlternateScalar(scalar, CaseBehavior) ? 1 : 0, 0, 0)
+                : new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
+        }
+
         internal bool Advance(ref EmissionFrame frame, out EmissionRequest request)
         {
             request = default;
@@ -1804,13 +1814,7 @@ internal static class Utf8SliceLowerer
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
                     break;
                 case Utf8SliceNode.LiteralNode literal:
-                    // An invalid scalar is an impossible atom, not a three-byte
-                    // literal or a code-unit special mode. Repetition still
-                    // controls whether the atom must execute.
-                    Emit(Rune.TryCreate(literal.Value, out var scalar)
-                        ? new Utf8SliceInstruction(Utf8SliceInstructionKind.Literal, literal.Value,
-                            literal.FoldCase && Utf8SliceCaseEquivalences.HasAlternateScalar(scalar, CaseBehavior) ? 1 : 0, 0, 0)
-                        : new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
+                    EmitLiteral(literal);
                     break;
                 case Utf8SliceNode.SetNode set:
                     if (set.Mask16.Length != 16)
@@ -1842,9 +1846,17 @@ internal static class Utf8SliceLowerer
 
                     break;
                 case Utf8SliceNode.ConcatNode concat:
-                    if (frame.Index < concat.Children.Length)
+                    while (frame.Index < concat.Children.Length)
                     {
-                        request = new(GetConcatChild(concat.Children, frame.Index++), false, MirrorExecute, 0);
+                        var child = GetConcatChild(concat.Children, frame.Index++);
+                        if (child is Utf8SliceNode.LiteralNode concatenatedLiteral)
+                        {
+                            // A literal emits one instruction without suspending this frame.
+                            Budget.ChargeWork(1);
+                            EmitLiteral(concatenatedLiteral);
+                            continue;
+                        }
+                        request = new(child, false, MirrorExecute, 0);
                         return true;
                     }
                     break;
