@@ -38,6 +38,13 @@ internal readonly struct Utf8SearchPlan
         LiteralSearch = literalUtf8 is not null
             ? new PreparedSubstringSearch(literalUtf8, kind == Utf8SearchKind.AsciiFoldedByteLiteral)
             : null;
+        if (scalarProgram is { RightToLeft: false, IsNonBacktracking: false, IgnoreCase: false,
+                HasContiguousAnchor: false, RepeatCount: > 0, LeadingByteCandidate.First: < 0 or >= 128 } &&
+            LiteralSearch is { IgnoreCase: false, Length: > 1 and <= 64 } prefixSearch)
+        {
+            _repeatPrefix = Utf8SliceRunner.PrepareRepeatPrefix(scalarProgram, prefixSearch.Needle, budget);
+            if (_repeatPrefix.Any.HasValue) _repeatPrefixProgram = scalarProgram;
+        }
         AlternateLiteralsUtf8 = alternateLiteralsUtf8;
         MultiLiteralSearch = CreateMultiLiteralSearch(kind, alternateLiteralsUtf8);
         // Direct portfolios already own the exact tables used by compatibility
@@ -108,6 +115,22 @@ internal readonly struct Utf8SearchPlan
     private Utf8AlternateLiteralOverlapKind AlternateLiteralOverlap { get; }
 
     public PreparedSubstringSearch? LiteralSearch { get; }
+
+    private readonly Utf8SliceProgram? _repeatPrefixProgram;
+    private readonly (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd, bool Terminal) _repeatPrefix;
+
+    internal PreparedSubstringSearch? GetRepeatPrefixSearch(Utf8SliceProgram program,
+        out (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd, bool Terminal) prefix)
+    {
+        // The alignment pairs this exact needle with these lowered instructions.
+        if (ReferenceEquals(_repeatPrefixProgram, program))
+        {
+            prefix = _repeatPrefix;
+            return LiteralSearch;
+        }
+        prefix = default;
+        return null;
+    }
 
     public byte[][]? AlternateLiteralsUtf8 { get; }
 

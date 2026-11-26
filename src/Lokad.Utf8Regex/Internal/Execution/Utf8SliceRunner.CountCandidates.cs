@@ -1117,12 +1117,11 @@ internal static partial class Utf8SliceRunner
         return invocation.TryChargeInputStep();
     }
 
-    private static PreparedSubstringSearch? GetRepeatPrefixSearch(Utf8SliceProgram program,
-        in Utf8SearchPlan candidatePlan, out (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd, bool Terminal) prefix)
+    internal static (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd, bool Terminal)
+        PrepareRepeatPrefix(Utf8SliceProgram program, ReadOnlySpan<byte> needle, Utf8ConstructionBudget budget)
     {
-        prefix = default;
-        if (candidatePlan.LiteralSearch is not { IgnoreCase: false, Length: > 1 } search) return null;
         var code = program.Instructions.AsSpan();
+        budget.ChargeWork((ulong)(Math.Min(code.Length, 64) + needle.Length));
         ulong low = 0, high = 0;
         var last = default(Utf8SearchAsciiSet);
         var previousCategories = 0u;
@@ -1149,7 +1148,7 @@ internal static partial class Utf8SliceRunner
                 ascii = Utf8SearchAsciiSet.FromMasks(atomLow, atomHigh);
             else
             {
-                if (!program.TryGetUnfoldedAsciiSet(atom, out ascii, out var asciiOnly)) return null;
+                if (!program.TryGetUnfoldedAsciiSet(atom, out ascii, out var asciiOnly)) return default;
                 disjoint &= asciiOnly;
             }
             var required = code[index].RepeatMinimum > 0;
@@ -1166,14 +1165,13 @@ internal static partial class Utf8SliceRunner
         }
 
         if ((low | high) == 0 || (low & high) == ulong.MaxValue || index >= 64 ||
-            !LiteralStartsAtInstruction(program, index, search.Needle)) return null;
+            !LiteralStartsAtInstruction(program, index, needle)) return default;
         var disjointEnd = disjoint && repeats >= 2 ? index : 0;
         // The completed rewind proves every minimum. An excluded literal
         // fixes the final greedy split, and Accept leaves no tail to replay.
-        terminal &= disjointEnd != 0 && !last.Contains(search.Needle[0]) &&
-            code.Length - index == search.Length + 1 && code[^1].Kind == Utf8SliceInstructionKind.Accept;
-        prefix = (Utf8SearchAsciiSet.FromMasks(low, high), last, disjointEnd, terminal);
-        return search;
+        terminal &= disjointEnd != 0 && !last.Contains(needle[0]) &&
+            code.Length - index == needle.Length + 1 && code[^1].Kind == Utf8SliceInstructionKind.Accept;
+        return (Utf8SearchAsciiSet.FromMasks(low, high), last, disjointEnd, terminal);
     }
 
     private static Utf8ExecutionLimitKind TryProveSingleWindowAttempt(Utf8SliceProgram program, int leadingClass,

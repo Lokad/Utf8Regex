@@ -1062,7 +1062,7 @@ internal static partial class Utf8SliceRunner
                     invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
                     classSearch is { Length: > 1 } windowSearch &&
                     literalIndex + windowSearch.Length == program.Instructions.Length - 1) &&
-                GetRepeatPrefixSearch(program, candidatePlan, out var repeated) is { } prefixSearch &&
+                candidatePlan.GetRepeatPrefixSearch(program, out var repeated) is { } prefixSearch &&
                 (classLiteral < 0 || repeated.Terminal))
             {
                 // A complete repeat proof can finish at the same delimiter.
@@ -1671,7 +1671,7 @@ internal static partial class Utf8SliceRunner
         }
         if (whitespaceLiteral < 0 && leadingFirst is < 0 or >= 128 && !seekLiteral && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor && input.Length - fromByte >= 256 &&
-            GetRepeatPrefixSearch(program, candidatePlan, out repeatPrefix) is { } prefixSearch)
+            candidatePlan.GetRepeatPrefixSearch(program, out repeatPrefix) is { } prefixSearch)
         {
             classSearch = prefixSearch;
             whitespaceLiteral = prefixSearch.Needle[0];
