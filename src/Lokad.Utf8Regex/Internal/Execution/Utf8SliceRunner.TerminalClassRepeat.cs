@@ -19,6 +19,7 @@ internal enum Utf8SliceTerminalRootKind : byte
     DelimitedClassRepeat,
     LazyDotLiteral,
     DecimalWithOptionalFraction,
+    MultilineSeparatedClasses,
     AsciiSuffixAlternatives
 }
 
@@ -31,6 +32,19 @@ internal static partial class Utf8SliceRunner
     {
         if (program.IsNonBacktracking || program.RightToLeft) return Utf8SliceTerminalRootKind.None;
         if (CanRunTerminalCaptureRoot(program)) return Utf8SliceTerminalRootKind.Capture;
+        if (program.GroupCount == 0 && program.Instructions is
+            [
+                { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning, B: 1 },
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 4, HasSingleAtomBody: true,
+                    RepeatMinimum: 0, RepeatMaximum: long.MaxValue },
+                var whitespace, _, { Kind: Utf8SliceInstructionKind.RepeatExit, RepeatExitRejectsShorterEndpoints: true },
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 8, HasSingleAtomBody: true,
+                    RepeatMinimum: 1, RepeatMaximum: long.MaxValue },
+                var label, _, { Kind: Utf8SliceInstructionKind.RepeatExit, RepeatExitRejectsShorterEndpoints: true },
+                { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 },
+                { Kind: Utf8SliceInstructionKind.Accept }
+            ] && IsUnicodeSpace(program, whitespace) && program.GetCompleteAsciiCategoryMask(label) != 0)
+            return Utf8SliceTerminalRootKind.MultilineSeparatedClasses;
         if (program.GroupCount == 0 && program.Assertions.Length == 0 &&
             program.Instructions is [{ Kind: Utf8SliceInstructionKind.Boundary }, { Kind: Utf8SliceInstructionKind.Accept }])
             return Utf8SliceTerminalRootKind.Boundary;
@@ -645,13 +659,16 @@ internal static partial class Utf8SliceRunner
         int start, ref Utf8SliceInvocation invocation, out Utf8SliceCountOutcome outcome)
     {
         outcome = default;
-        if (program.TerminalRoot == Utf8SliceTerminalRootKind.DecimalWithOptionalFraction &&
+        var root = program.TerminalRoot;
+        if (root is Utf8SliceTerminalRootKind.DecimalWithOptionalFraction or Utf8SliceTerminalRootKind.MultilineSeparatedClasses &&
             invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit)
         {
             invocation.Budget.ThrowIfCancellationRequested();
             if (!Utf8BytePosition.IsScalarBoundary(input, start)) return true;
             invocation.AnchorOriginByte = start;
-            outcome = CountDecimalsWithOptionalFractions(input, start, ref invocation);
+            outcome = root == Utf8SliceTerminalRootKind.DecimalWithOptionalFraction
+                ? CountDecimalsWithOptionalFractions(input, start, ref invocation)
+                : CountMultilineSeparatedClasses(program, input, start, ref invocation);
             return true;
         }
         var repeatIndex = -1;

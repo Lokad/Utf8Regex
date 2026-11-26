@@ -1,9 +1,61 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SliceRunner
 {
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Utf8SliceCountOutcome CountMultilineSeparatedClasses(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, ref Utf8SliceInvocation invocation)
+    {
+        var count = 0;
+        var literal = (byte)program.Instructions[9].A;
+        var firstDelimiter = position;
+        var breach = invocation.Ledger.ReservedBytes != 0 ? invocation.TryReserveWorking(0) : Utf8ExecutionLimitKind.None;
+        if (breach == Utf8ExecutionLimitKind.None)
+            breach = TrySeekAsciiCandidate(input, ref firstDelimiter, literal, literal, ref invocation);
+        while (breach == Utf8ExecutionLimitKind.None && firstDelimiter >= 0 && position >= 0 && position < input.Length)
+        {
+            breach = TrySeekBeginning(program, input, ref position, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None || position < 0) break;
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) break;
+
+            var remaining = BranchedPrefixInstructionLimit - 4;
+            var whitespace = MatchLineRepeat(program, input, position, 1, ref remaining, ref invocation);
+            breach = whitespace.Breach;
+            if (breach != Utf8ExecutionLimitKind.None || whitespace.EndIndex >= input.Length) break;
+            var label = MatchLineRepeat(program, input, whitespace.EndIndex, 5, ref remaining, ref invocation);
+            breach = label.Breach;
+            if (breach != Utf8ExecutionLimitKind.None) break;
+            if ((uint)label.EndIndex < (uint)input.Length && input[label.EndIndex] == literal)
+            {
+                count++;
+                position = label.EndIndex + 1;
+            }
+            else
+            {
+                // Every anchor in the consumed whitespace reaches the same
+                // suffix. A shorter whitespace run exposes an excluded scalar.
+                position = AdvancePastScalar(input, whitespace.EndIndex, reverse: false);
+            }
+        }
+        if (breach == Utf8ExecutionLimitKind.None) breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return new(count, breach);
+    }
+
+    private static (int EndIndex, Utf8ExecutionLimitKind Breach) MatchLineRepeat(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, int index, ref int remaining, ref Utf8SliceInvocation invocation)
+    {
+        var end = remaining == 0 ? BranchedPrefixUndecided :
+            TryMatchLongPrefixRepeat(program, input, position, index + 1, in program.Instructions[index], ref remaining);
+        return end >= 0 ? (end, Utf8ExecutionLimitKind.None)
+            : end == BranchedPrefixRejected ? (-1, Utf8ExecutionLimitKind.None)
+            : RunClassRepeat(program, index, input, position, ref invocation);
+    }
+
     private static bool TryCountAnchoredLine(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int fromByte, ref Utf8SliceInvocation invocation, out Utf8SliceCountOutcome outcome)
     {

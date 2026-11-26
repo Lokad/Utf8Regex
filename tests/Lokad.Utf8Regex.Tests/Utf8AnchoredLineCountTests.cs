@@ -1,11 +1,54 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8AnchoredLineCountTests
 {
+    [Fact]
+    public void DisjointMultilinePrefixDoesNotRetryBlankLineStartsAfterRejection()
+    {
+        const string pattern = @"(?m)^\s*\w+:";
+        var text = new string('\n', 8192) + "word without colon: nope\n" +
+            "\u2003é: yes\n\n  two: yes\n";
+        using var regex = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 4096 }
+        });
+        using var live = new CancellationTokenSource();
+        Assert.Equal(2, regex.Count(Encoding.UTF8.GetBytes(text), live.Token));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DisjointMultilineCountObservesInterruptionWhileScanningBlankLines(bool expire)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('\n', 8192) + "é: yes");
+        using var live = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var regex = new Utf8Regex(@"(?m)^\s*\w+:", policy: new()
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 4096 }
+        });
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (expire) ticks = 50;
+            else live.Cancel();
+        });
+        try
+        {
+            var failure = Record.Exception(() => regex.Count(input, live.Token));
+            if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
+            else Assert.Equal(live.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        }
+        finally { session.Complete(); }
+    }
+
     public static IEnumerable<object[]> Shapes()
     {
         foreach (var pattern in new[] {
