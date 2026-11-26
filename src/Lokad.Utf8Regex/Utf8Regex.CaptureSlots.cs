@@ -94,7 +94,8 @@ public sealed partial class Utf8Regex
                     slotCount = output.Length - 1;
                 slots = Utf8SliceRunner.RentSlots(slotCount, ref invocation);
                 var outcome = Utf8SliceRunner.TryFindFirst(program, subject, startOffsetInBytes,
-                    slots.Starts, slots.Ends, false, ref invocation, _preparedRegex.SearchPlan);
+                    slots.Starts, slots.Ends, false, ref invocation, _preparedRegex.SearchPlan,
+                    requiredLiteralContinuation: RequiredLiteralContinuation);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
                 result = outcome.Found ? new(outcome.StartByte, outcome.EndByte) : default;
             }

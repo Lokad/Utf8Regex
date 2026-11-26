@@ -247,6 +247,7 @@ public sealed partial class Utf8Regex : IDisposable
     internal Utf8RegexInspection Inspection => new(this);
 
     internal ref readonly Utf8SearchPlan SearchPlan => ref _preparedRegex.SearchPlan;
+    internal int RequiredLiteralContinuation => _preparedRegex.RequiredLiteralContinuation;
 
     private Utf8StructuralSearchPlan StructuralSearchPlan => _preparedRegex.SearchPlan.StructuralSearchPlan;
 
@@ -650,14 +651,15 @@ public sealed partial class Utf8Regex : IDisposable
     private static int GetValueOperationCaptureSlotCount(Utf8SliceProgram program)
         => program.IsNonBacktracking || !program.ReadsCaptures ? 0 : program.GroupCount;
 
-    private static Utf8SliceSearchOutcome FindOwnedSliceValue(Utf8SliceProgram program,
+    private Utf8SliceSearchOutcome FindOwnedSliceValue(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int startByte, ref Utf8SliceInvocation invocation,
         in Utf8SearchPlan search, bool existenceOnly = false, int screenedLiteral = -1)
     {
         var groupCount = GetValueOperationCaptureSlotCount(program);
         return groupCount == 0
             ? Utf8SliceRunner.TryFindFirst(program, input, startByte, [], [],
-                false, ref invocation, search, existenceOnly, screenedLiteral)
+                false, ref invocation, search, existenceOnly, screenedLiteral,
+                !existenceOnly && ReferenceEquals(program, _ownedSliceProgram) ? RequiredLiteralContinuation : 0)
             : FindOwnedSliceValueWithSlots(program, groupCount, input, startByte, ref invocation,
                 search, existenceOnly, screenedLiteral);
     }

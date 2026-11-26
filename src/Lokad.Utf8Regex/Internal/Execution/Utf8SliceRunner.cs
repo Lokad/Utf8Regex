@@ -463,7 +463,7 @@ internal static partial class Utf8SliceRunner
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
         scoped Span<int> captureStarts, scoped Span<int> captureEnds, bool collectHistory,
         ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default,
-        bool existenceOnly = false, int screenedLiteral = -1)
+        bool existenceOnly = false, int screenedLiteral = -1, int requiredLiteralContinuation = 0)
     {
         // The prepared forward proof needs no attempt workspace at byte zero.
         if (fromByte == 0 && program.TerminalRoot == Utf8SliceTerminalRootKind.AsciiSetThenRepeat &&
@@ -490,7 +490,7 @@ internal static partial class Utf8SliceRunner
             }
         }
         return FindFirstWithLocalWorkspace(program, input, fromByte, captureStarts, captureEnds,
-            collectHistory, ref invocation, candidatePlan, existenceOnly, screenedLiteral, singleOrigin);
+            collectHistory, ref invocation, candidatePlan, existenceOnly, screenedLiteral, singleOrigin, requiredLiteralContinuation);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -498,7 +498,7 @@ internal static partial class Utf8SliceRunner
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
         scoped Span<int> captureStarts, scoped Span<int> captureEnds, bool collectHistory,
         ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan,
-        bool existenceOnly, int screenedLiteral, bool singleOrigin)
+        bool existenceOnly, int screenedLiteral, bool singleOrigin, int requiredLiteralContinuation)
     {
         var workspace = new AttemptWorkspace();
         try
@@ -507,7 +507,8 @@ internal static partial class Utf8SliceRunner
                 ? MatchSingleOrigin(program, input, fromByte, captureStarts, captureEnds, collectHistory,
                     ref workspace, ref invocation, existenceOnly, seekVeryEnd: false)
                 : TryFindFirst(program, input, fromByte, captureStarts, captureEnds,
-                    collectHistory, ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral);
+                    collectHistory, ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral,
+                    requiredLiteralContinuation);
         }
         finally
         {
@@ -521,7 +522,7 @@ internal static partial class Utf8SliceRunner
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
         scoped Span<int> captureStarts, scoped Span<int> captureEnds, bool collectHistory,
         ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default,
-        bool existenceOnly = false, int screenedLiteral = -1)
+        bool existenceOnly = false, int screenedLiteral = -1, int requiredLiteralContinuation = 0)
     {
         invocation.Budget.ThrowIfCancellationRequested();
         if ((uint)fromByte > (uint)input.Length ||
@@ -530,6 +531,10 @@ internal static partial class Utf8SliceRunner
         if (program.TerminalRoot == Utf8SliceTerminalRootKind.LazyDotLiteral &&
             !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty)
             return FindTerminalLazyDotLiteral(program, input, fromByte, ref invocation);
+        if (requiredLiteralContinuation > 1 && !existenceOnly && !collectHistory && program.GroupCount == 0 &&
+            TryFindPreparedLiteralRange(program, input, ref fromByte, candidatePlan.RequiredPrefilterSearcher.LiteralSearch,
+                ref screenedLiteral, requiredLiteralContinuation, ref invocation, out var range))
+            return range;
         if (program.IsNonBacktracking)
         {
             if (captureStarts.Length == 0 && program.NonBacktrackingOrderedClosures.Length != 0)

@@ -1521,7 +1521,7 @@ internal static partial class Utf8SliceRunner
 
     internal static bool TryFindPreparedLiteralContinuation(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         ref int position, in PreparedSubstringSearch search, int screenedLiteral, int continuation, ref Utf8SliceInvocation invocation,
-        out Utf8SliceSearchOutcome outcome)
+        out Utf8SliceSearchOutcome outcome, bool existenceOnly = true)
     {
         outcome = default;
         var classWindow = continuation != search.Length;
@@ -1546,7 +1546,7 @@ internal static partial class Utf8SliceRunner
         if (breach == Utf8ExecutionLimitKind.None && invocation.Ledger.ReservedBytes != 0)
             breach = invocation.TryReserveWorking(0);
         var start = screenedLiteral;
-        if (breach == Utf8ExecutionLimitKind.None && classWindow)
+        if (breach == Utf8ExecutionLimitKind.None && classWindow && existenceOnly)
         {
             // An excluded delimiter fixes the end of the leading run.
             // Its last scalar suffices for this Boolean result.
@@ -1560,14 +1560,22 @@ internal static partial class Utf8SliceRunner
         }
         if (breach == Utf8ExecutionLimitKind.None && start >= 0 &&
             MayMatchBranchedAsciiPrefix(program, input, screenedLiteral + search.Length, continuation,
-                out var end, proveMatch: true, BranchedPrefixInstructionLimit - continuation, existenceOnly: true))
+                out var end, proveMatch: true, BranchedPrefixInstructionLimit - continuation, existenceOnly))
         {
             if (end < 0) return false;
-            breach = invocation.TryChargeInputStep();
+            if (!existenceOnly)
+                breach = TryRewindClassWhitespace(program, input, position, program.LeadingClassDelimiter.LeadingClass,
+                    0, true, ref start, ref invocation);
+            if (breach == Utf8ExecutionLimitKind.None && (!classWindow || start < screenedLiteral))
+                breach = invocation.TryChargeInputStep();
             if (breach == Utf8ExecutionLimitKind.None)
             {
-                outcome = new(true, start, end, breach);
-                return true;
+                invocation.Budget.ThrowIfCancellationRequested();
+                if (!classWindow || start < screenedLiteral)
+                {
+                    outcome = new(true, start, end, breach);
+                    return true;
+                }
             }
         }
         if (breach == Utf8ExecutionLimitKind.None)
@@ -1579,6 +1587,34 @@ internal static partial class Utf8SliceRunner
         }
         outcome = new(false, -1, -1, breach);
         return true;
+    }
+
+    private static bool TryFindPreparedLiteralRange(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        ref int position, in PreparedSubstringSearch search, ref int screenedLiteral, int continuation,
+        ref Utf8SliceInvocation invocation, out Utf8SliceSearchOutcome outcome)
+    {
+        outcome = default;
+        // Range publication needs the whole unbounded leading run and the
+        // greedy suffix. The separate adjacent-class proof only needs existence.
+        if (search.Length != 1 || continuation <= search.Length ||
+            program.LeadingClassWindowProof.CanAcceptAfterPair ||
+            invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit)
+            return false;
+
+        if (screenedLiteral < position)
+        {
+            screenedLiteral = position;
+            var literal = search.Needle[0];
+            var breach = TrySeekAsciiCandidate(input, ref screenedLiteral, literal, literal, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None || screenedLiteral < 0)
+            {
+                invocation.Budget.ThrowIfCancellationRequested();
+                outcome = new(false, -1, -1, breach);
+                return true;
+            }
+        }
+        return TryFindPreparedLiteralContinuation(program, input, ref position, search, screenedLiteral,
+            continuation, ref invocation, out outcome, existenceOnly: false);
     }
 
     private static Utf8SliceSearchOutcome FindAlignedClassPair(Utf8SliceProgram program, ReadOnlySpan<byte> input,

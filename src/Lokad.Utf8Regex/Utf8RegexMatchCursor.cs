@@ -133,7 +133,8 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             else outcome = program.IsNonBacktracking
                 ? FindNonBacktracking(program)
                 : Utf8SliceRunner.TryFindFirst(program, _input.Span, _position, _slots.Starts, _slots.Ends,
-                    collectHistory, ref _workspace, ref _invocation, in _regex!.SearchPlan);
+                    collectHistory, ref _workspace, ref _invocation, in _regex!.SearchPlan,
+                    requiredLiteralContinuation: _regex.RequiredLiteralContinuation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None) throw _invocation.Budget.CreateResourceFailure();
             if (!outcome.Found)
             {

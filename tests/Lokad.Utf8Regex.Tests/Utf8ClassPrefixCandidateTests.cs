@@ -236,6 +236,53 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.False(cursor.MoveNext(out _));
     }
 
+    [Theory]
+    [InlineData(2)]
+    [InlineData(100)]
+    public void PreparedLabelRangeKeepsItsByteFloorAndGreedyEnd(int labelLength)
+    {
+        const string pattern = @"[\w.+-]+@[\w-]+\.[\w.-]+";
+        const string before = "😀 pré";
+        var throughLabel = before + ".fix@b." + new string('c', labelLength);
+        var input = Encoding.UTF8.GetBytes(throughLabel + "é-δ ! gone@no; tail@d.e");
+        var floor = Encoding.UTF8.GetByteCount(before);
+        var end = Encoding.UTF8.GetByteCount(throughLabel);
+        var first = new Utf8CaptureRange(floor, end + "é-δ"u8.Length);
+        var captures = new[] { default(Utf8CaptureRange), new Utf8CaptureRange(0, 1) };
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+
+        Assert.Equal(new Utf8CaptureRange(floor, end),
+            regex.Match(input, floor, captures, token.Token, endOffsetInBytes: end));
+        Assert.Equal(new Utf8CaptureRange(floor, end), captures[0]);
+        Assert.Equal(new Utf8CaptureRange(0, 1), captures[1]);
+        Assert.Equal(first, regex.Match(input, floor, captures, token.Token));
+        using var cursor = regex.CreateMatchCursor(input, floor, token.Token);
+        Assert.True(cursor.MoveNext(out var range));
+        Assert.Equal(first, range.Value);
+        Assert.True(cursor.MoveNext(out range));
+        Assert.Equal(new Utf8CaptureRange(input.Length - "tail@d.e"u8.Length, input.Length), range.Value);
+        Assert.False(cursor.MoveNext(out _));
+    }
+
+    [Fact]
+    public void PreparedLabelRangeMetersTheRewindBeforePublishingSlots()
+    {
+        using var regex = new Utf8Regex(@"[\w.+-]+@[\w-]+\.[\w.-]+", policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 16 }
+        });
+        var input = Encoding.UTF8.GetBytes(new string('a', 4096) + "@b.cd");
+        var sentinel = new Utf8CaptureRange(0, 1);
+        Utf8CaptureRange[] slots = [sentinel, sentinel];
+
+        Assert.True(regex.IsMatch(input));
+        var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input, captures: slots));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, denied.ResourceKind);
+        Assert.False(slots[0].Success);
+        Assert.Equal(sentinel, slots[1]);
+    }
+
     [Fact]
     public void VerifiedPrefixKeepsWorkBoundAndWideRepeatEndpoints()
     {
