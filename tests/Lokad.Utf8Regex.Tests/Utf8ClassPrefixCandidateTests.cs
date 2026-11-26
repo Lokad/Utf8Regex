@@ -434,6 +434,30 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData("abc", "cd.e", 0)]
+    [InlineData("β-記", "δ.東", 0)]
+    [InlineData("long", "end", 160)]
+    public void SeparatedClassRunsKeepGreedyByteRanges(string middle, string tail, int extra)
+    {
+        const string pattern = @"[\w.+-]+@[\w-]+\.[\w.-]+";
+        const string prefix = "😀bad@.miss bad@empty. !";
+        var value = "pé@" + middle + new string('r', extra) + "." + tail;
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var end = start + Encoding.UTF8.GetByteCount(value);
+        var input = Encoding.UTF8.GetBytes(prefix + value + "!");
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+
+        Assert.True(regex.Inspection.AvailableOwnedSliceProgram.LeadingClassWindowProof.CanFinishSeparatedRuns);
+        Assert.Equal(new Utf8CaptureRange(start, end), regex.Match(input, 0, slots, token.Token));
+        Assert.Equal(new Utf8CaptureRange(start, end), slots[0]);
+        Assert.Equal(new Utf8CaptureRange(start + 1, end), regex.Match(input, start + 1, slots, token.Token));
+        Assert.False(regex.Match(input, start, slots, token.Token,
+            endOffsetInBytes: end - Encoding.UTF8.GetByteCount(tail)).Success);
+    }
+
+    [Theory]
     [InlineData(@"\s[a-z]{0,12}ing[\s.,;]", "\u2003inging;")]
     [InlineData(@"\s[a-z]{0,12}ing\s", " inging\u2028")]
     [InlineData(@"\s[a-z]{0,12}ing[\sx]", " ingxing ")]

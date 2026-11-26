@@ -393,11 +393,20 @@ internal sealed class Utf8SliceAssertion
     internal bool CanRunInline => InlineLiteralPrefixLength != -1;
 }
 
+internal enum Utf8SliceClassWindowCompletion : byte
+{
+    None,
+    Whitespace,
+    SeparatedRuns,
+}
+
 internal readonly record struct Utf8SliceClassWindowProof(
     byte LiteralLength, byte FirstSuffixClass, byte SecondSuffixClass,
     bool CanReusePrefix, bool CanAcceptAfterPair, bool? ExcludesDelimiter)
 {
-    internal bool CanFinishWhitespace { get; init; }
+    internal Utf8SliceClassWindowCompletion Completion { get; init; }
+    internal bool CanFinishWhitespace => Completion == Utf8SliceClassWindowCompletion.Whitespace;
+    internal bool CanFinishSeparatedRuns => Completion == Utf8SliceClassWindowCompletion.SeparatedRuns;
 
     internal (int First, int Second) SuffixAfter(int length)
         => length == LiteralLength ? (FirstSuffixClass, SecondSuffixClass) : default;

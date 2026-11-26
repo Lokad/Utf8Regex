@@ -710,7 +710,7 @@ internal static partial class Utf8SliceRunner
             // A follower outside this alphabet also excludes every byte of
             // the literal. No later greedy endpoint can reach across it.
             return new((byte)(code.Length - literalIndex - 2), 0, 0, false, false, false)
-                { CanFinishWhitespace = true };
+                { Completion = Utf8SliceClassWindowCompletion.Whitespace };
         }
         if (program.Assertions.Length != 0 ||
             code[leadingClass - 1].RepeatMaximum != long.MaxValue)
@@ -778,10 +778,24 @@ internal static partial class Utf8SliceRunner
                 canAccept = CanAcceptEmptyTail(code, second + 3);
             }
         }
+        var completion = Utf8SliceClassWindowCompletion.None;
+        if (canReuse && !capturesLeadingRun && excludes == true && code.Length - index == 10)
+        {
+            budget.ChargeWork(10);
+            if (code.AsSpan(index) is
+            [
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1, RepeatMaximum: long.MaxValue, HasSingleAtomBody: true },
+                var firstAtom, _, { RepeatExitRejectsShorterEndpoints: true },
+                { Kind: Utf8SliceInstructionKind.Literal, A: >= 0 and < 128, B: 0 },
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1, RepeatMaximum: long.MaxValue, HasSingleAtomBody: true },
+                var secondAtom, _, _, { Kind: Utf8SliceInstructionKind.Accept }
+            ] && program.GetCompleteAsciiCategoryMask(firstAtom) != 0 && program.GetCompleteAsciiCategoryMask(secondAtom) != 0)
+                completion = Utf8SliceClassWindowCompletion.SeparatedRuns;
+        }
         // The delimiter starts within 64 instructions. The exact needle and
         // these two single-class nodes keep both offsets within a byte.
         return new((byte)(index - literalIndex), checked((byte)first), checked((byte)second),
-            canReuse, canAccept, excludes);
+            canReuse, canAccept, excludes) { Completion = completion };
     }
 
     internal static int PrepareRequiredLiteralContinuation(Utf8SliceProgram program, ReadOnlySpan<byte> needle,
@@ -1664,7 +1678,8 @@ internal static partial class Utf8SliceRunner
     {
         outcome = default;
         var classWindow = continuation != search.Length;
-        var pair = classWindow && program.LeadingClassWindowProof.CanAcceptAfterPair;
+        var proof = program.LeadingClassWindowProof;
+        var pair = classWindow && proof.CanAcceptAfterPair;
         if (!pair && invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit)
             return false;
         invocation.Budget.ThrowIfCancellationRequested();
@@ -1679,7 +1694,7 @@ internal static partial class Utf8SliceRunner
         {
             var (literal, leadingClass, _, _, _) = program.LeadingClassDelimiter;
             outcome = FindAlignedClassPair(program, input, position, leadingClass, (byte)literal, search,
-                program.LeadingClassWindowProof.SuffixAfter(search.Length), screenedLiteral, ref invocation);
+                proof.SuffixAfter(search.Length), screenedLiteral, ref invocation);
             return true;
         }
         if (breach == Utf8ExecutionLimitKind.None && invocation.Ledger.ReservedBytes != 0)
@@ -1698,8 +1713,10 @@ internal static partial class Utf8SliceRunner
             }
         }
         if (breach == Utf8ExecutionLimitKind.None && start >= 0 &&
-            MayMatchBranchedAsciiPrefix(program, input, screenedLiteral + search.Length, continuation,
-                out var end, proveMatch: true, BranchedPrefixInstructionLimit - continuation, existenceOnly))
+            (classWindow && proof.CanFinishSeparatedRuns
+                ? MayFinishSeparatedRuns(program, input, screenedLiteral + search.Length, continuation, out var end)
+                : MayMatchBranchedAsciiPrefix(program, input, screenedLiteral + search.Length, continuation,
+                    out end, proveMatch: true, BranchedPrefixInstructionLimit - continuation, existenceOnly)))
         {
             if (end < 0)
             {
@@ -1732,6 +1749,24 @@ internal static partial class Utf8SliceRunner
         }
         outcome = new(false, -1, -1, breach);
         return true;
+    }
+
+    private static bool MayFinishSeparatedRuns(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, int index, out int acceptedEnd)
+    {
+        // Use the same visit allowance as the instruction walk. The first
+        // repeat cannot match its separator, and the second ends at Accept.
+        var remaining = BranchedPrefixInstructionLimit - index - 4;
+        var code = program.Instructions;
+        var end = TryMatchLongPrefixRepeat(program, input, position, index + 1, in code[index], ref remaining);
+        if (end >= 0)
+        {
+            end = end == input.Length || input[end] != code[index + 4].A
+                ? BranchedPrefixRejected
+                : TryMatchLongPrefixRepeat(program, input, end + 1, index + 6, in code[index + 5], ref remaining);
+        }
+        acceptedEnd = end < 0 ? BranchedPrefixUndecided : end;
+        return end != BranchedPrefixRejected;
     }
 
     private static bool TryFindPreparedLiteralRange(Utf8SliceProgram program, ReadOnlySpan<byte> input,
