@@ -428,12 +428,13 @@ internal static class Utf8NativeExecutionAnalyzer
         var owner = construction.Budget;
         if (semanticRegex.RuntimeTree?.Root is not { } root ||
             root.Kind != Utf8TreeNodeKind.Capture || root.ChildCount != 1) return false;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(root, 0, false));
+        owner.EnterDepth();
         owner.ChargeWork(1);
         if (!TryExtractLiteralPrefixWithPositiveLiteralLookahead(root.Child(0), semanticRegex.ExecutionOptions, out literal, out var trailingLiteral) ||
             literal.Length == 0 || !IsNativeLiteralExecutionPattern(semanticRegex.ExecutionPattern, semanticRegex.ExecutionOptions)) return false;
         trailingLiteralUtf8 = trailingLiteral;
         if (trailingLiteralUtf8.Length == 0) return false;
+        owner.LeaveDepth();
         construction.Complete(); return true;
     }
 
@@ -443,15 +444,16 @@ internal static class Utf8NativeExecutionAnalyzer
         literal = []; trailingLiteral = [];
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(body, 0, false));
+        owner.EnterDepth();
         owner.ChargeWork(1);
         if (body.Kind != Utf8TreeNodeKind.Concatenate || body.ChildCount < 2) return false;
         var lookahead = body.Child(body.ChildCount - 1);
-        frames.Push(new(lookahead, 0, false)); owner.ChargeWork(1);
+        owner.EnterDepth();
+        owner.ChargeWork(1);
         if (lookahead.Kind != Utf8TreeNodeKind.PositiveLookaround ||
             (lookahead.Options & RegexOptions.RightToLeft) != 0 || lookahead.ChildCount != 1 ||
             !TryGetNativeLookaheadLiteralUtf8(lookahead.Child(0), executionOptions, out trailingLiteral)) return false;
-        frames.Pop();
+        owner.LeaveDepth();
         using var bytes = Utf8ConstructionBuffer<byte>.Create(owner);
         for (var index = 0; index < body.ChildCount - 1; index++)
         {
@@ -462,6 +464,7 @@ internal static class Utf8NativeExecutionAnalyzer
         }
         literal = bytes.Take();
         if (literal.Length == 0) return false;
+        owner.LeaveDepth();
         construction.Complete(); return true;
     }
 
@@ -473,7 +476,7 @@ internal static class Utf8NativeExecutionAnalyzer
         var owner = construction.Budget;
         if (semanticRegex.RuntimeTree?.Root is not { } root ||
             root.Kind != Utf8TreeNodeKind.Capture || root.ChildCount != 1) return false;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(root, 0, false));
+        owner.EnterDepth();
         owner.ChargeWork(1);
         if (!TryExtractPositiveLiteralLookahead(root.Child(0), executionOptions, out var substantiveNode, out var trailingLiteral) ||
             !TryGetNativeLookaheadAlternationUtf8(substantiveNode, executionOptions, out var literalTexts) ||
@@ -494,7 +497,9 @@ internal static class Utf8NativeExecutionAnalyzer
         executionKind = ignoreCase ? NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals : NativeExecutionKind.ExactUtf8Literals;
         searchKind = ignoreCase ? Utf8SearchKind.AsciiFoldedByteLiterals :
             hasNonAscii ? Utf8SearchKind.ExactUtf8Literals : Utf8SearchKind.ExactAsciiLiterals;
-        alternateLiteralsUtf8 = literalTexts; construction.Complete(); return true;
+        alternateLiteralsUtf8 = literalTexts;
+        owner.LeaveDepth();
+        construction.Complete(); return true;
     }
 
     private static bool TryExtractPositiveLiteralLookahead(
@@ -502,23 +507,26 @@ internal static class Utf8NativeExecutionAnalyzer
     {
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(body, 0, false));
+        owner.EnterDepth();
         owner.ChargeWork(1);
         substantiveNode = body;
         trailingLiteral = [];
 
-        if (body.Kind != Utf8TreeNodeKind.Concatenate ||
-            body.ChildCount != 2 ||
-            body.Child(1).Kind != Utf8TreeNodeKind.PositiveLookaround ||
-            (body.Child(1).Options & RegexOptions.RightToLeft) != 0 ||
-            body.Child(1).ChildCount != 1)
+        if (body.Kind != Utf8TreeNodeKind.Concatenate || body.ChildCount != 2) return false;
+        var lookahead = body.Child(1);
+        if (lookahead.Kind != Utf8TreeNodeKind.PositiveLookaround ||
+            (lookahead.Options & RegexOptions.RightToLeft) != 0 ||
+            lookahead.ChildCount != 1)
         {
             return false;
         }
 
-        frames.Push(new(body.Child(1), 0, false)); owner.ChargeWork(1);
-        if (!TryGetNativeLookaheadLiteralUtf8(body.Child(1).Child(0), executionOptions, out trailingLiteral)) return false;
+        owner.EnterDepth();
+        owner.ChargeWork(1);
+        if (!TryGetNativeLookaheadLiteralUtf8(lookahead.Child(0), executionOptions, out trailingLiteral)) return false;
         substantiveNode = body.Child(0);
+        owner.LeaveDepth();
+        owner.LeaveDepth();
         construction.Complete();
         return true;
     }

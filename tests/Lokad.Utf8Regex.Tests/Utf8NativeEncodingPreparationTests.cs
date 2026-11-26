@@ -166,6 +166,25 @@ public sealed class Utf8NativeEncodingPreparationTests
         Assert.Equal(resultBytes, owner.Budget.ReservedBytes);
     }
 
+    [Fact]
+    public void LookaheadProbeBorrowsLiteralBytesWithoutAcquiringScratch()
+    {
+        const RegexOptions options = RegexOptions.CultureInvariant;
+        var expected = "é😀"u8.ToArray();
+        var prefix = One('a');
+        var lookahead = Node(Utf8TreeNodeKind.PositiveLookaround, Utf8TreeNode.CreateUtf8Literal(options, expected));
+        var body = Node(Utf8TreeNodeKind.Concatenate, prefix, lookahead);
+        using var owner = new Utf8ConstructionScope(0, 0, ulong.MaxValue, 2);
+        object?[] args = [body, options, null, null];
+
+        Assert.True(Assert.IsType<bool>(Call("TryExtractPositiveLiteralLookahead", args)));
+        Assert.Same(prefix, args[2]);
+        Assert.Same(expected, args[3]);
+        Assert.Equal(2ul, owner.Budget.PeakDepth);
+        Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.Equal(0ul, owner.Budget.PeakBytes);
+    }
+
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
     public void LateDeclineRestoresSuccessfulChildTextAndArrayLoans(int route)
