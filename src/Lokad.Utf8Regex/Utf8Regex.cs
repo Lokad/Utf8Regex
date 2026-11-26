@@ -387,6 +387,12 @@ public sealed partial class Utf8Regex : IDisposable
             if (range.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
             return range.Found;
         }
+        if (Utf8SliceRunner.TryScanTerminalAsciiSuffixAlternatives(program, input, startByte, firstOnly: true,
+                ref invocation, out var suffixes, out _))
+        {
+            if (suffixes.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+            return suffixes.Count != 0;
+        }
         // Boolean results need no capture storage. The bounded finder confirms
         // boundary requirements on the original subject under this invocation.
         if ((HasFiniteExecutionLimits || invocation.Ledger.HasMemoryAllowance) &&

@@ -542,6 +542,11 @@ internal static partial class Utf8SliceRunner
         if (program.TerminalRoot == Utf8SliceTerminalRootKind.LazyDotLiteral &&
             !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty)
             return FindTerminalLazyDotLiteral(program, input, fromByte, ref invocation);
+        if (!collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty &&
+            TryScanTerminalAsciiSuffixAlternatives(program, input, fromByte, firstOnly: true,
+                ref invocation, out var suffixes, out var suffixRange))
+            return suffixRange.Success ? new(true, suffixRange.StartOffsetInBytes, suffixRange.EndOffsetInBytes, suffixes.Breach)
+                : new(false, -1, -1, suffixes.Breach);
         if (program.TerminalRoot == Utf8SliceTerminalRootKind.DecimalWithOptionalFraction &&
             !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty &&
             invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit)
@@ -1505,6 +1510,9 @@ internal static partial class Utf8SliceRunner
         var position = fromByte;
         invocation.AnchorOriginByte = fromByte;
         // Nullable roots retain the caller's empty-match progression below.
+        if (TryScanTerminalAsciiSuffixAlternatives(program, input, fromByte, firstOnly: false,
+                ref invocation, out var suffixes, out _))
+            return suffixes;
         if (TryCountTerminalScalar(program, input, fromByte, ref invocation, out var terminal))
             return terminal;
         if (program.RepeatCount == 1 && captureStarts.IsEmpty && captureEnds.IsEmpty &&

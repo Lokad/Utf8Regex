@@ -419,6 +419,41 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData(@"[a-z]+ing|[a-z]+ed|[a-z]+ly", 0)]
+    [InlineData(@"[a-z]+ed|[a-z]+ing|[a-z]+ly", 0)]
+    [InlineData(@"[a-z]+ing|[a-z]+ed|[a-z]+ly", 2038)]
+    public void SharedAsciiSuffixAlternativesKeepPriorityAcrossRunsAndClippedRanges(string pattern, int padding)
+    {
+        var text = "é " + new string('a', 192) + "ing" + new string('x', padding) + "zzedzzly! walkinged";
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern);
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+        Assert.Equal(Utf8SliceTerminalRootKind.AsciiSuffixAlternatives, regex.Inspection.AvailableOwnedSliceProgram.TerminalRoot);
+        Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, source.Token));
+        Assert.Equal(oracle.Count(text), regex.Count(input, source.Token));
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: source.Token);
+        foreach (Match expected in oracle.Matches(text))
+        {
+            Assert.True(cursor.MoveNext(out var selected));
+            Utf8MatchSequence.AssertRange(selected.Value, text, expected.Index, expected.Length);
+        }
+        Assert.False(cursor.MoveNext(out _));
+
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+        var end = text.IndexOf('!');
+        foreach (var start in new[] { 2, 194, 195 })
+        {
+            var expected = oracle.Match(text[..end], start);
+            var range = regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), slots, source.Token,
+                endOffsetInBytes: Encoding.UTF8.GetByteCount(text.AsSpan(0, end)));
+            Assert.True(expected.Success);
+            Utf8MatchSequence.AssertRange(range, text, expected.Index, expected.Length);
+            Assert.Equal(range, slots[0]);
+        }
+    }
+
+    [Theory]
     [InlineData("None !Word? Valid next", true)]
     [InlineData("None !Word? Valid!", false)]
     [InlineData("😀\u2003Valid next", true)]

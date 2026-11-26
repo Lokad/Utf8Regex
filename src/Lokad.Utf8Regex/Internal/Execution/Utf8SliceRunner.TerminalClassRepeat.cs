@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Text;
+using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -17,11 +18,15 @@ internal enum Utf8SliceTerminalRootKind : byte
     AsciiSetThenRepeat,
     DelimitedClassRepeat,
     LazyDotLiteral,
-    DecimalWithOptionalFraction
+    DecimalWithOptionalFraction,
+    AsciiSuffixAlternatives
 }
 
 internal static partial class Utf8SliceRunner
 {
+    private const int TerminalSuffixArmLimit = 4;
+    private const int TerminalSuffixLengthLimit = 8;
+
     internal static Utf8SliceTerminalRootKind ClassifyTerminalRoot(Utf8SliceProgram program)
     {
         if (program.IsNonBacktracking || program.RightToLeft) return Utf8SliceTerminalRootKind.None;
@@ -76,7 +81,128 @@ internal static partial class Utf8SliceRunner
                 { Kind: Utf8SliceInstructionKind.Accept }
             ])
             return Utf8SliceTerminalRootKind.DecimalWithOptionalFraction;
+        if (program.GroupCount == 0 && program.Instructions[0].Kind == Utf8SliceInstructionKind.Fork &&
+            HasTerminalAsciiSuffixAlternatives(program.Instructions))
+            return Utf8SliceTerminalRootKind.AsciiSuffixAlternatives;
         return CanRunTerminalClassRepeat(program) ? Utf8SliceTerminalRootKind.ClassRepeat : Utf8SliceTerminalRootKind.None;
+    }
+
+    private static bool HasTerminalAsciiSuffixAlternatives(ReadOnlySpan<Utf8SliceInstruction> code)
+    {
+        if (code.Length is < 13 or > 55 || code[^1].Kind != Utf8SliceInstructionKind.Accept ||
+            code[2] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0, AsciiIntervalWidth: > 0 } shared)
+            return false;
+        Utf8ConstructionScope.ChargeWork((ulong)code.Length);
+        var low = shared.AsciiIntervalStart;
+        var width = shared.AsciiIntervalWidth;
+        var accept = code.Length - 1;
+        var index = 0;
+        for (var arm = 0; arm < TerminalSuffixArmLimit; arm++)
+        {
+            if (code[index].Kind == Utf8SliceInstructionKind.Fork &&
+                (code[index] is not { B: 0, C: 0, D: 0 } fork || fork.A >= accept)) return false;
+            var (repeat, tailEnd, next) = GetTerminalSuffixArm(code, index);
+            if (tailEnd - repeat is < 5 or > 4 + TerminalSuffixLengthLimit ||
+                code[repeat] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1,
+                    RepeatMaximum: long.MaxValue, HasSingleAtomBody: true } ||
+                code[repeat + 1] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } atom ||
+                atom.AsciiIntervalStart != low || atom.AsciiIntervalWidth != width ||
+                next != accept && (code[tailEnd].Kind != Utf8SliceInstructionKind.Jump || code[tailEnd].A != accept))
+                return false;
+            foreach (var literal in code[(repeat + 4)..tailEnd])
+                if (literal is not { Kind: Utf8SliceInstructionKind.Literal, B: 0 } ||
+                    (uint)(literal.A - low) >= (uint)width) return false;
+            if (next == accept) return arm != 0;
+            index = next;
+        }
+        return false;
+    }
+
+    private static (int Repeat, int TailEnd, int Next) GetTerminalSuffixArm(ReadOnlySpan<Utf8SliceInstruction> code, int index)
+        => code[index].Kind == Utf8SliceInstructionKind.Fork
+            ? (index + 1, code[index].A - 1, code[index].A)
+            : (index, code.Length - 1, code.Length - 1);
+
+    internal static bool TryScanTerminalAsciiSuffixAlternatives(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, bool firstOnly, ref Utf8SliceInvocation invocation, out Utf8SliceCountOutcome outcome,
+        out Utf8CaptureRange range)
+    {
+        outcome = default;
+        range = default;
+        if (program.TerminalRoot != Utf8SliceTerminalRootKind.AsciiSuffixAlternatives ||
+            invocation.Budget.Limits.MaxDepth is > 0 and < BranchedPrefixInstructionLimit ||
+            !Utf8BytePosition.IsScalarBoundary(input, position)) return false;
+
+        invocation.Budget.ThrowIfCancellationRequested();
+        var breach = invocation.Ledger.ReservedBytes != 0 ? invocation.TryReserveWorking(0) : Utf8ExecutionLimitKind.None;
+        if (breach != Utf8ExecutionLimitKind.None)
+        {
+            outcome = new(0, breach);
+            return true;
+        }
+        var code = program.Instructions.AsSpan();
+        var first = (byte)GetUnfoldedAsciiRange(code[2], out var last);
+        Span<byte> tails = stackalloc byte[TerminalSuffixArmLimit * TerminalSuffixLengthLimit];
+        Span<byte> lengths = stackalloc byte[TerminalSuffixArmLimit];
+        var arms = 0;
+        for (var index = 0; index != code.Length - 1; arms++)
+        {
+            var (repeat, tailEnd, next) = GetTerminalSuffixArm(code, index);
+            var literal = code[(repeat + 4)..tailEnd];
+            lengths[arms] = (byte)literal.Length;
+            for (var i = 0; i < literal.Length; i++) tails[arms * TerminalSuffixLengthLimit + i] = (byte)literal[i].A;
+            index = next;
+        }
+
+        var count = 0;
+        while (breach == Utf8ExecutionLimitKind.None && position < input.Length)
+        {
+            breach = TrySeekAsciiCandidate(input, ref position, first, last, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None || position < 0) break;
+            var run = RunUnboundedAsciiRange(input, position, first, last, ref invocation, checkExitDeadline: false);
+            breach = run.Breach;
+            if (breach != Utf8ExecutionLimitKind.None) break;
+            var origin = position;
+            for (var arm = 0; arm < arms; arm++)
+            {
+                var literal = tails.Slice(arm * TerminalSuffixLengthLimit, lengths[arm]);
+                var end = FindLastSuffixInAsciiRun(input, origin, run.EndIndex, literal, ref invocation, out breach);
+                if (breach != Utf8ExecutionLimitKind.None) break;
+                if (end < 0) continue;
+                count++;
+                if (firstOnly)
+                {
+                    range = new(origin, end);
+                    break;
+                }
+                // Earlier arms have no hit after the selected endpoint.
+                // This arm's latest hit is also now behind the next origin.
+                origin = end;
+            }
+            if (range.Success) break;
+            position = run.EndIndex;
+        }
+        if (breach == Utf8ExecutionLimitKind.None) breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        if (breach != Utf8ExecutionLimitKind.None) range = default;
+        outcome = new(count, breach);
+        return true;
+    }
+
+    private static int FindLastSuffixInAsciiRun(ReadOnlySpan<byte> input, int origin, int end,
+        ReadOnlySpan<byte> literal, ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
+    {
+        breach = Utf8ExecutionLimitKind.None;
+        while (end - origin > literal.Length)
+        {
+            var first = Math.Max(origin + 1, end - 2048);
+            breach = first == origin + 1 ? invocation.TryChargeBoundedCheck() : invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) break;
+            var hit = input[first..end].LastIndexOf(literal);
+            if (hit >= 0) return first + hit + literal.Length;
+            end = first + literal.Length - 1;
+        }
+        return -1;
     }
 
     private static Utf8SliceSearchOutcome FindTerminalDecimalWithOptionalFraction(ReadOnlySpan<byte> input,

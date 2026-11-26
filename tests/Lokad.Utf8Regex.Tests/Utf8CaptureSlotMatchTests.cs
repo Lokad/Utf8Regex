@@ -241,7 +241,7 @@ public sealed class Utf8CaptureSlotMatchTests
     [InlineData(16_384)]
     public void OrderedFrontierObservesDeadlineDuringTraversalAndBeforePublication(int length)
     {
-        using var regex = new Utf8Regex(@"[a-z]+ing|[a-z]+ed|[a-z]+ly", policy: new Utf8RegexPolicy
+        using var regex = new Utf8Regex(@"[A-Za-z]+ing|[A-Za-z]+ed|[A-Za-z]+ly", policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(50),
             ResourcePolicy = new() { MaxWorkSteps = 100_000, MaxWorkingBytes = 4096 }
@@ -265,6 +265,29 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.False(output[0].Success);
         Assert.Equal(0UL, account.Held);
         Assert.InRange(lastCheckpoint, 1UL, 4096UL);
+    }
+
+    [Fact]
+    public void SuffixAlternativesObserveDeadlineBetweenLongRunBlocks()
+    {
+        using var regex = new Utf8Regex(@"[a-z]+ing|[a-z]+ed|[a-z]+ly", policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = new() { MaxWorkSteps = 100_000, MaxWorkingBytes = 4096 }
+        });
+        var input = Encoding.UTF8.GetBytes(new string('a', 1 << 18) + "ing");
+        var output = new[] { new Utf8CaptureRange(0, 1) };
+        var account = new Account();
+        using var clock = Utf8DeadlineTestClock.Start();
+        var session = Utf8SearchDiagnosticsSession.Start(_ => clock.Advance(50));
+        try
+        {
+            Assert.Throws<RegexMatchTimeoutException>(() =>
+                regex.Match(input, 0, output, workingMemoryAllowance: account));
+        }
+        finally { session.Complete(); }
+        Assert.False(output[0].Success);
+        Assert.Equal(0UL, account.Held);
     }
 
     [Fact]
