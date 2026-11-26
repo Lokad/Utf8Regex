@@ -23,14 +23,16 @@ public sealed class Utf8AnchoredLineCountTests
         Assert.True(regex.IsMatch(bytes, live.Token));
     }
 
-    [Fact]
-    public void DisjointMultilineFinderRetainsTheOriginalLineStart()
+    [Theory]
+    [InlineData(@"(?m)^\s*\w+:")]
+    [InlineData(@"(?m)^\s*\p{Lu}+:")]
+    public void DisjointMultilineFinderRetainsTheOriginalLineStart(string pattern)
     {
-        const string pattern = @"(?m)^\s*\w+:";
-        const string text = "😀 no\n\n\r\n\u2003é: yes\n\tfinal:";
+        const string text = "😀 no\n\n\r\n\u2003é: yes\nΩÉ: yes\n\tFINAL:";
         var bytes = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern);
         using var regex = new Utf8Regex(pattern);
+        Assert.Equal(oracle.Count(text), regex.Count(bytes));
         Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
         for (var start = 0; start <= text.Length; start++)
         {

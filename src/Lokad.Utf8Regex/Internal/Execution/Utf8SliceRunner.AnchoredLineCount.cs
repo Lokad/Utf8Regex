@@ -21,7 +21,12 @@ internal static partial class Utf8SliceRunner
     {
         range = default;
         var count = 0;
-        var literal = (byte)program.Instructions[9].A;
+        var code = program.Instructions;
+        var literal = (byte)code[9].A;
+        ReadOnlySpan<byte> whitespaceMask = code[2].Kind == Utf8SliceInstructionKind.Hybrid
+            ? program.SetMasks[code[2].A] : [];
+        var labelMask = program.SetMasks[code[6].A];
+        var labelCategories = program.GetCompleteAsciiCategoryMask(code[6]);
         var firstDelimiter = position;
         var breach = invocation.Ledger.ReservedBytes != 0 ? invocation.TryReserveWorking(0) : Utf8ExecutionLimitKind.None;
         if (breach == Utf8ExecutionLimitKind.None)
@@ -34,10 +39,11 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None) break;
 
             var remaining = BranchedPrefixInstructionLimit - 4;
-            var whitespace = MatchLineRepeat(program, input, position, 1, ref remaining, ref invocation);
+            var whitespace = MatchLineRepeat(program, input, position, 1, whitespaceMask, 0, ref remaining, ref invocation);
             breach = whitespace.Breach;
             if (breach != Utf8ExecutionLimitKind.None || whitespace.EndIndex >= input.Length) break;
-            var label = MatchLineRepeat(program, input, whitespace.EndIndex, 5, ref remaining, ref invocation);
+            var label = MatchLineRepeat(program, input, whitespace.EndIndex, 5, labelMask, labelCategories,
+                ref remaining, ref invocation);
             breach = label.Breach;
             if (breach != Utf8ExecutionLimitKind.None) break;
             if ((uint)label.EndIndex < (uint)input.Length && input[label.EndIndex] == literal)
@@ -63,13 +69,28 @@ internal static partial class Utf8SliceRunner
     }
 
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) MatchLineRepeat(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int position, int index, ref int remaining, ref Utf8SliceInvocation invocation)
+        ReadOnlySpan<byte> input, int position, int index, ReadOnlySpan<byte> mask, uint categories,
+        ref int remaining, ref Utf8SliceInvocation invocation)
     {
-        var end = remaining == 0 ? BranchedPrefixUndecided :
-            TryMatchLongPrefixRepeat(program, input, position, index + 1, in program.Instructions[index], ref remaining);
-        return end >= 0 ? (end, Utf8ExecutionLimitKind.None)
-            : end == BranchedPrefixRejected ? (-1, Utf8ExecutionLimitKind.None)
-            : RunClassRepeat(program, index, input, position, ref invocation);
+        if (remaining > 0 && !mask.IsEmpty)
+        {
+            // The multiline root proves the unbounded whitespace and
+            // category runs are disjoint. Reuse their exact masks.
+            var suffix = input[position..];
+            var window = suffix[..Math.Min(remaining, suffix.Length)];
+            var consumed = window.IsEmpty || window[0] >= 128 ? 0 : ScanAsciiMask(window, mask, category: false);
+            if (consumed < window.Length && window[consumed] >= 128)
+                consumed = ContinueUnfoldedClassPrefix(window, consumed, mask, categories);
+
+            if (consumed == window.Length && consumed < suffix.Length)
+                remaining = 0;
+            else if (consumed >= 0)
+            {
+                remaining -= Math.Min(window.Length, consumed + 1);
+                return (categories != 0 && consumed == 0 ? -1 : position + consumed, Utf8ExecutionLimitKind.None);
+            }
+        }
+        return RunClassRepeat(program, index, input, position, ref invocation);
     }
 
     private static bool TryCountAnchoredLine(Utf8SliceProgram program, ReadOnlySpan<byte> input,
