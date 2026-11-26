@@ -434,6 +434,48 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData(@"\s[a-z]{0,12}ing[\s.,;]", "\u2003inging;")]
+    [InlineData(@"\s[a-z]{0,12}ing\s", " inging\u2028")]
+    [InlineData(@"\s[a-z]{0,12}ing[\sx]", " ingxing ")]
+    [InlineData(@"\s[ab]{0,12}ing[\s.;]", " abing;")]
+    public void WhitespaceWindowPreservesGreedySuffixesAndScalarFollowers(string pattern, string value)
+    {
+        var prefix = new string('!', 320) + "cing!";
+        var text = prefix + value + "!";
+        var input = Encoding.UTF8.GetBytes(text);
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var end = start + Encoding.UTF8.GetByteCount(value);
+        var selected = new Utf8CaptureRange(start, end);
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+
+        Assert.True(regex.IsMatch(input, token.Token));
+        Assert.Equal(selected, regex.Match(input, 0, slots, token.Token));
+        Assert.Equal(selected, slots[0]);
+        Assert.Equal(1, regex.Count(input, token.Token));
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(selected, match.Value);
+        Assert.False(cursor.MoveNext(out _));
+    }
+
+    [Fact]
+    public void CompleteWhitespaceWindowPublishesWithNoBacktrackingStorage()
+    {
+        var prefix = new string('!', 320);
+        var input = Encoding.UTF8.GetBytes(prefix + " walking,");
+        using var regex = new Utf8Regex(@"\s[a-z]{0,12}ing[\s.,;]", policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkingBytes = 1 }
+        });
+
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(new Utf8CaptureRange(prefix.Length, input.Length), regex.Match(input, 0));
+        Assert.False(regex.Match(input, 0, endOffsetInBytes: input.Length - 1).Success);
+    }
+
+    [Theory]
     [InlineData(@"(?:ab[0-9]|a[a-z][0-4]|a[a-z]?[0-9][0-9])\.OK", "éab2.X ab8.OK a22.OK")]
     [InlineData(@"(?:ab[0-9]|a[a-z][0-4]|a[a-z]??[0-9][0-9])\.OK", "😀ab2.X ab8.OK a22.OK")]
     [InlineData(@"(?:ab[0-9]|ab[0-9]\.[a-z])\.OK", "éab2.x.OK")]

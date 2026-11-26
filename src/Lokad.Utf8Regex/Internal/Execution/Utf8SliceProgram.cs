@@ -397,6 +397,8 @@ internal readonly record struct Utf8SliceClassWindowProof(
     byte LiteralLength, byte FirstSuffixClass, byte SecondSuffixClass,
     bool CanReusePrefix, bool CanAcceptAfterPair, bool? ExcludesDelimiter)
 {
+    internal bool CanFinishWhitespace { get; init; }
+
     internal (int First, int Second) SuffixAfter(int length)
         => length == LiteralLength ? (FirstSuffixClass, SecondSuffixClass) : default;
 }

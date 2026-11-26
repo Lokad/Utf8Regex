@@ -694,6 +694,24 @@ internal static partial class Utf8SliceRunner
         int literalIndex, byte literal, Utf8ConstructionBudget budget)
     {
         var code = program.Instructions;
+        if (leadingClass == 2 && literalIndex == 5 && program.GroupCount == 0 &&
+            IsUnicodeSpace(program, code[0]) && code.Length is >= 8 and <= 71 &&
+            code[^1].Kind == Utf8SliceInstructionKind.Accept &&
+            code[^2] is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } or
+                { Kind: Utf8SliceInstructionKind.Set, C: 0 } or { Kind: Utf8SliceInstructionKind.Shorthand } &&
+            program.TryGetUnfoldedAsciiSet(code[leadingClass], out var repeated, out var asciiOnly) && asciiOnly)
+        {
+            budget.ChargeWork((ulong)(code.Length - literalIndex));
+            foreach (var literalInstruction in code.AsSpan(literalIndex, code.Length - literalIndex - 2))
+                if (literalInstruction is not { Kind: Utf8SliceInstructionKind.Literal, A: >= 0 and < 128, B: 0 } ||
+                    !repeated.Contains((byte)literalInstruction.A))
+                    return default;
+
+            // A follower outside this alphabet also excludes every byte of
+            // the literal. No later greedy endpoint can reach across it.
+            return new((byte)(code.Length - literalIndex - 2), 0, 0, false, false, false)
+                { CanFinishWhitespace = true };
+        }
         if (program.Assertions.Length != 0 ||
             code[leadingClass - 1].RepeatMaximum != long.MaxValue)
             return default;
@@ -1816,7 +1834,8 @@ internal static partial class Utf8SliceRunner
             while (preceding >= 0 && code[preceding].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
                 preceding--;
             if (preceding >= 0 && IsUnicodeSpace(program, code[preceding]))
-                return TrySeekWhitespaceClassStart(program, input, leadingClass, literal, search, ref position, ref invocation, out windowEnd);
+                return TrySeekWhitespaceClassStart(program, input, leadingClass, literal, search, ref position,
+                    ref invocation, out windowEnd, out provedMatchEnd, screenedDelimiter);
         }
         var floor = position;
         var earliest = -1;
@@ -2026,18 +2045,31 @@ internal static partial class Utf8SliceRunner
 
     private static Utf8ExecutionLimitKind TrySeekWhitespaceClassStart(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int leadingClass, byte literal, in PreparedSubstringSearch? search,
-        ref int position, ref Utf8SliceInvocation invocation, out int windowEnd)
+        ref int position, ref Utf8SliceInvocation invocation, out int windowEnd, out int provedMatchEnd,
+        int screenedDelimiter)
     {
         var repeat = program.Instructions[leadingClass - 1];
         program.TryGetUnfoldedAsciiSet(program.Instructions[leadingClass], out var ascii, out _);
         var floor = position;
         var last = input.Length - (search?.Length ?? 1);
         windowEnd = -1;
+        provedMatchEnd = -1;
+        var proof = program.LeadingClassWindowProof;
+        var canFinish = proof.CanFinishWhitespace && search?.Length == proof.LiteralLength &&
+            invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit;
         while (position <= last)
         {
-            var breach = search is { } prepared
-                ? Utf8SearchExecutor.TryFindLiteralCandidate(prepared, input, position, last, false, ref invocation, out position)
-                : TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
+            Utf8ExecutionLimitKind breach;
+            if (search.HasValue && screenedDelimiter >= position && screenedDelimiter <= last)
+            {
+                position = screenedDelimiter;
+                screenedDelimiter = -1;
+                breach = Utf8ExecutionLimitKind.None;
+            }
+            else
+                breach = search is { } prepared
+                    ? Utf8SearchExecutor.TryFindLiteralCandidate(prepared, input, position, last, false, ref invocation, out position)
+                    : TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
             if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
             if (search.HasValue || MatchesStraightAsciiPrefix(program, input, position, leadingClass + 3))
             {
@@ -2050,6 +2082,20 @@ internal static partial class Utf8SliceRunner
                     TryReadScalar(input, head, true, out var scalar, out var width) &&
                     head - width >= floor && Rune.IsWhiteSpace(scalar))
                 {
+                    if (canFinish)
+                    {
+                        var after = position + proof.LiteralLength;
+                        breach = invocation.TryChargeInputStep();
+                        if (breach != Utf8ExecutionLimitKind.None) return breach;
+                        if (!TryReadScalar(input, after, false, out var follower, out var followerWidth))
+                            break;
+                        breach = TryMatchScalarClass(program, program.Instructions[^2], follower, ref invocation, out var accepted);
+                        if (breach != Utf8ExecutionLimitKind.None) return breach;
+                        if (!accepted) { position++; continue; }
+                        // An admitted follower within the repeat still
+                        // leaves the greedy endpoint to the full verifier.
+                        if (!ascii.Contains(input[after])) provedMatchEnd = after + followerWidth;
+                    }
                     windowEnd = position = head - width;
                     return Utf8ExecutionLimitKind.None;
                 }
