@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -64,6 +65,32 @@ public sealed class Utf8OwnedFindContinuationTests
     private static string[]? Sets(Utf8OwnedFindOptimizations.OwnedSet[]? sets)
         => sets?.Select(static set => string.Join("|", set.Distance, set.CharClass.ActualLowMask,
             set.CharClass.ActualHighMask)).ToArray();
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SinglePathFindScansRestoreEnclosingDepth(bool trailingAnchor)
+    {
+        var tree = Wrapped(trailingAnchor ? @"\z" : "abc", RegexOptions.CultureInvariant, Utf8TreeNodeKind.Group, 2);
+        using (var denied = new Utf8ConstructionScope(0, 4096, 1024, 4))
+        {
+            denied.Budget.EnterDepth();
+            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Scan());
+            Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, error.ResourceKind);
+            Assert.Equal(5UL, error.Requested);
+            Assert.Equal(1UL, denied.Budget.Depth);
+            Assert.Equal(0UL, denied.Budget.ReservedBytes);
+        }
+
+        using var admitted = new Utf8ConstructionScope(0, 4096, 1024, 5);
+        admitted.Budget.EnterDepth();
+        Assert.Equal(trailingAnchor ? "End" : "abc", Scan());
+        Assert.Equal(1UL, admitted.Budget.Depth);
+        Assert.Equal(5UL, admitted.Budget.PeakDepth);
+
+        string? Scan() => trailingAnchor ? Utf8OwnedFindOptimizations.FindTrailingAnchor(tree.Root).ToString()
+            : Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(tree.Root);
+    }
 
     [Theory]
     [InlineData(65)]

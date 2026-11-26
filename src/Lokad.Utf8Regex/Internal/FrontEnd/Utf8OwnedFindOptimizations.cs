@@ -188,13 +188,13 @@ internal static class Utf8OwnedFindOptimizations
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<Utf8TreeNode>.Create(budget, node);
+        budget.EnterDepth();
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic or Utf8TreeNodeKind.Concatenate)
         {
             budget.ChargeWork(1);
             if (node.ChildCount == 0) return Utf8TreeNodeKind.Unknown;
             node = node.Child(node.ChildCount - 1);
-            frames.Push(node);
+            budget.EnterDepth();
         }
         budget.ChargeWork(1);
         switch (node.Kind)
@@ -265,13 +265,14 @@ internal static class Utf8OwnedFindOptimizations
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<Utf8TreeNode>.Create(budget, node);
+        var depth = budget.Depth;
+        budget.EnterDepth();
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group)
         {
             budget.ChargeWork(1);
             if (node.ChildCount != 1) return null;
             node = node.Child(0);
-            frames.Push(node);
+            budget.EnterDepth();
         }
         budget.ChargeWork(1);
         var result = node.Kind switch
@@ -281,7 +282,12 @@ internal static class Utf8OwnedFindOptimizations
             Utf8TreeNodeKind.Concatenate => LeadingRun(node),
             _ => null,
         };
-        if (result is not null) construction.Complete();
+        if (result is not null)
+        {
+            // Keep the returned literal and release the depth of the linear walk.
+            budget.Rollback(budget.Reserved, budget.ReservedBytes, depth);
+            construction.Complete();
+        }
         return result;
 
         static string? LeadingRun(Utf8TreeNode parent)
