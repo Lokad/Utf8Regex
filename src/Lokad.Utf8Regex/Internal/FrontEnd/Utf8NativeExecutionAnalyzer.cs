@@ -637,7 +637,7 @@ internal static class Utf8NativeExecutionAnalyzer
         var owner = construction.Budget;
         if (semanticRegex.RuntimeTree?.Root is not { } root ||
             root.Kind != Utf8TreeNodeKind.Capture || root.ChildCount != 1) return false;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(root, 0, false));
+        owner.EnterDepth();
         owner.ChargeWork(1);
         if (!TryUnwrapLiteralAlternationWithBoundaries(root.Child(0), out var literals, out leadingBoundary, out trailingBoundary) || literals.Length <= 1) return false;
         for (var index = 0; index < literals.Length; index++)
@@ -646,7 +646,10 @@ internal static class Utf8NativeExecutionAnalyzer
             if (literals[index].Length == 0)
             { leadingBoundary = Utf8BoundaryRequirement.None; trailingBoundary = Utf8BoundaryRequirement.None; return false; }
         }
-        alternateLiteralsUtf8 = literals; construction.Complete(); return true;
+        alternateLiteralsUtf8 = literals;
+        owner.LeaveDepth();
+        construction.Complete();
+        return true;
     }
 
     private static bool TryExtractPlainAsciiLiteralAlternationPattern(string pattern, out byte[][] alternateLiteralsUtf8)
@@ -686,52 +689,39 @@ internal static class Utf8NativeExecutionAnalyzer
     {
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(node, 0, false));
+        owner.EnterDepth();
         owner.ChargeWork(1);
         literals = [];
         leadingBoundary = Utf8BoundaryRequirement.None;
         trailingBoundary = Utf8BoundaryRequirement.None;
 
-        if (TryUnwrapLiteralAlternation(node, out literals))
+        if (!TryUnwrapLiteralAlternation(node, out literals))
         {
-            construction.Complete();
-            return true;
-        }
+            if (node.Kind != Utf8TreeNodeKind.Concatenate) return false;
 
-        if (node.Kind != Utf8TreeNodeKind.Concatenate)
-        {
-            return false;
-        }
-
-        if (node.ChildCount == 2)
-        {
-            if (TryGetBoundaryRequirement(node.Child(0).Kind, out leadingBoundary) &&
-                TryUnwrapLiteralAlternation(node.Child(1), out literals))
+            var wrapped = node.ChildCount switch
             {
-                construction.Complete();
-                return true;
-            }
-
-            if (TryUnwrapLiteralAlternation(node.Child(0), out literals) &&
-                TryGetBoundaryRequirement(node.Child(1).Kind, out trailingBoundary))
+                2 => (TryGetBoundaryRequirement(node.Child(0).Kind, out leadingBoundary) &&
+                    TryUnwrapLiteralAlternation(node.Child(1), out literals)) ||
+                    (TryUnwrapLiteralAlternation(node.Child(0), out literals) &&
+                    TryGetBoundaryRequirement(node.Child(1).Kind, out trailingBoundary)),
+                3 => TryGetBoundaryRequirement(node.Child(0).Kind, out leadingBoundary) &&
+                    TryUnwrapLiteralAlternation(node.Child(1), out literals) &&
+                    TryGetBoundaryRequirement(node.Child(2).Kind, out trailingBoundary),
+                _ => false,
+            };
+            if (!wrapped)
             {
-                construction.Complete();
-                return true;
+                literals = [];
+                leadingBoundary = Utf8BoundaryRequirement.None;
+                trailingBoundary = Utf8BoundaryRequirement.None;
+                return false;
             }
         }
-        else if (node.ChildCount == 3 &&
-            TryGetBoundaryRequirement(node.Child(0).Kind, out leadingBoundary) &&
-            TryUnwrapLiteralAlternation(node.Child(1), out literals) &&
-            TryGetBoundaryRequirement(node.Child(2).Kind, out trailingBoundary))
-        {
-            construction.Complete();
-            return true;
-        }
 
-        literals = [];
-        leadingBoundary = Utf8BoundaryRequirement.None;
-        trailingBoundary = Utf8BoundaryRequirement.None;
-        return false;
+        owner.LeaveDepth();
+        construction.Complete();
+        return true;
     }
 
     private static bool TryUnwrapLiteralAlternation(Utf8TreeNode node, out byte[][] literals)
@@ -739,29 +729,34 @@ internal static class Utf8NativeExecutionAnalyzer
         literals = [];
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(node, 0, false));
+        var depth = owner.Depth;
+        owner.EnterDepth();
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group && node.ChildCount == 1)
         {
-            owner.ChargeWork(1); node = node.Child(0); frames.Push(new(node, 0, false));
+            owner.ChargeWork(1);
+            node = node.Child(0);
+            owner.EnterDepth();
         }
         owner.ChargeWork(1);
         // Two unfolded scalar members are a complete UTF-8 literal pair.
         // Keep ASCII classes on their existing lowering and borrow the pair
         // search for mixed/wide classes without adding a matching primitive.
-        if (node.Kind == Utf8TreeNodeKind.Set && !node.MatchCaseInsensitive &&
-            TryGetScalarClassLiteralPair(node.ScalarClass, owner, out literals))
+        if (!(node.Kind == Utf8TreeNodeKind.Set && !node.MatchCaseInsensitive &&
+            TryGetScalarClassLiteralPair(node.ScalarClass, owner, out literals)))
         {
-            construction.Complete();
-            return true;
+            if (node.Kind != Utf8TreeNodeKind.Alternate) return false;
+            var result = owner.AllocateArray<byte[]>(node.ChildCount, false);
+            for (var index = 0; index < result.Length; index++)
+            {
+                owner.ChargeWork(1);
+                if (!TryGetLiteralBranchUtf8(node.Child(index), out result[index])) return false;
+            }
+            literals = result;
         }
-        if (node.Kind != Utf8TreeNodeKind.Alternate) return false;
-        var result = owner.AllocateArray<byte[]>(node.ChildCount, false);
-        for (var index = 0; index < result.Length; index++)
-        {
-            owner.ChargeWork(1);
-            if (!TryGetLiteralBranchUtf8(node.Child(index), out result[index])) return false;
-        }
-        literals = result; construction.Complete(); return true;
+        // Keep the result loans while releasing depth from the single-path walk.
+        owner.Rollback(owner.Reserved, owner.ReservedBytes, depth);
+        construction.Complete();
+        return true;
     }
 
     private static bool TryGetScalarClassLiteralPair(Utf8ScalarClass? scalarClass, Utf8ConstructionBudget owner, out byte[][] literals)
@@ -801,15 +796,20 @@ internal static class Utf8NativeExecutionAnalyzer
         literal = [];
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(node, 0, false));
+        var depth = owner.Depth;
+        owner.EnterDepth();
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group && node.ChildCount == 1)
         {
-            owner.ChargeWork(1); node = node.Child(0); frames.Push(new(node, 0, false));
+            owner.ChargeWork(1);
+            node = node.Child(0);
+            owner.EnterDepth();
         }
         owner.ChargeWork(1);
         if (node.Kind is not Utf8TreeNodeKind.One and not Utf8TreeNodeKind.Multi ||
             !TryGetNativeLookaheadLiteralUtf8(node, node.Options, out literal)) return false;
-        construction.Complete(); return true;
+        owner.Rollback(owner.Reserved, owner.ReservedBytes, depth);
+        construction.Complete();
+        return true;
     }
 
     private static bool TryExtractBoundaryWrappedLiteralTree(
@@ -828,10 +828,10 @@ internal static class Utf8NativeExecutionAnalyzer
             return false;
         }
 
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(root, 0, false));
+        owner.EnterDepth();
         owner.ChargeWork(1);
         var body = root.Child(0);
-        frames.Push(new(body, 0, false));
+        owner.EnterDepth();
         if (body.Kind != Utf8TreeNodeKind.Concatenate)
         {
             return false;
@@ -846,7 +846,12 @@ internal static class Utf8NativeExecutionAnalyzer
         }
 
         var accepted = literal.Length > 0 && IsNativeLiteralExecutionPattern(semanticRegex.ExecutionPattern, semanticRegex.ExecutionOptions);
-        if (accepted) construction.Complete();
+        if (accepted)
+        {
+            owner.LeaveDepth();
+            owner.LeaveDepth();
+            construction.Complete();
+        }
         return accepted;
     }
 
@@ -855,7 +860,7 @@ internal static class Utf8NativeExecutionAnalyzer
     {
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(body, 0, false));
+        owner.EnterDepth();
         owner.ChargeWork(1);
         literal = string.Empty;
         leadingBoundary = Utf8BoundaryRequirement.None;
@@ -866,7 +871,11 @@ internal static class Utf8NativeExecutionAnalyzer
             var accepted = TryGetBoundaryRequirement(body.Child(0).Kind, out leadingBoundary) &&
                 TryGetLiteralText(body.Child(1), out literal) &&
                 TryGetBoundaryRequirement(body.Child(2).Kind, out trailingBoundary);
-            if (accepted) construction.Complete();
+            if (accepted)
+            {
+                owner.LeaveDepth();
+                construction.Complete();
+            }
             return accepted;
         }
 
@@ -878,6 +887,7 @@ internal static class Utf8NativeExecutionAnalyzer
         if (TryGetBoundaryRequirement(body.Child(0).Kind, out leadingBoundary) &&
             TryGetLiteralText(body.Child(1), out literal))
         {
+            owner.LeaveDepth();
             construction.Complete();
             return true;
         }
@@ -885,6 +895,7 @@ internal static class Utf8NativeExecutionAnalyzer
         if (TryGetLiteralText(body.Child(0), out literal) &&
             TryGetBoundaryRequirement(body.Child(1).Kind, out trailingBoundary))
         {
+            owner.LeaveDepth();
             construction.Complete();
             return true;
         }

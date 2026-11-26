@@ -152,6 +152,20 @@ public sealed class Utf8NativeEncodingPreparationTests
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Run(route, recovered); Assert.Equal(17, parent.Value);
     }
+
+    [Fact]
+    public void BoundaryProbeUsesDepthWithoutAcquiringScratch()
+    {
+        var root = Input(7, 0);
+        var resultBytes = Utf8ConstructionBudget.StringBytes(1);
+        using var owner = new Utf8ConstructionScope(0, resultBytes, ulong.MaxValue, 2);
+        Run(7, root);
+        Assert.Equal(2ul, owner.Budget.PeakDepth);
+        Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.Equal(resultBytes, owner.Budget.PeakBytes);
+        Assert.Equal(resultBytes, owner.Budget.ReservedBytes);
+    }
+
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
     public void LateDeclineRestoresSuccessfulChildTextAndArrayLoans(int route)
