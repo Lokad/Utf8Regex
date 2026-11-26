@@ -1401,6 +1401,20 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    [InlineData(2050)]
+    public void SeparatedClassCountKeepsTheLeadAtAWindowSeamAndResumesWideFallback(int delimiterOffset)
+    {
+        const string first = "a@b.cd!";
+        var text = first + new string('!', delimiterOffset - first.Length - "é"u8.Length) +
+            "é@β.c! @q.r!a@q.!a@" + new string('β', 128) + ".γ!z@c.d";
+        using var regex = new Utf8Regex(@"[\w.+-]+@[\w-]+\.[\w.-]+", policy: new() { ResourcePolicy = Funded });
+        using var token = new CancellationTokenSource();
+        Assert.Equal(4, regex.Count(Encoding.UTF8.GetBytes(text), token.Token));
+    }
+
+    [Theory]
     [InlineData(0, false)]
     [InlineData(0, true)]
     [InlineData(1, false)]
@@ -1411,6 +1425,8 @@ public sealed class Utf8ClassPrefixCandidateTests
     [InlineData(3, true)]
     [InlineData(4, false)]
     [InlineData(4, true)]
+    [InlineData(5, false)]
+    [InlineData(5, true)]
     public void OriginalInterruptionCoversSearchBothRewindsAndFailedCandidates(int phase, bool expire)
     {
         var text = phase switch
@@ -1420,13 +1436,20 @@ public sealed class Utf8ClassPrefixCandidateTests
             1 => new string('x', 200000) + " Holmes",
             2 => "word" + new string(' ', 200000) + "Holmes",
             3 => string.Concat(Enumerable.Repeat("word Holmesx ", 16000)),
-            _ => string.Concat(Enumerable.Repeat("élém", 2048)) + "://host/a",
+            4 => string.Concat(Enumerable.Repeat("élém", 2048)) + "://host/a",
+            _ => string.Concat(Enumerable.Repeat("a@b.cd! t@b.!é@β.c!", 2048)),
         };
         var input = Encoding.UTF8.GetBytes(text);
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var pattern = phase == 4 ? @"[\w]+://[^/\s?#]+[^\s?#]+" : @"\w+\s+Holmes" + (phase == 3 ? "(?=!)" : "");
+        var pattern = phase switch
+        {
+            3 => @"\w+\s+Holmes(?=!)",
+            4 => @"[\w]+://[^/\s?#]+[^\s?#]+",
+            5 => @"[\w.+-]+@[\w-]+\.[\w.-]+",
+            _ => @"\w+\s+Holmes",
+        };
         using var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
         {
             MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,

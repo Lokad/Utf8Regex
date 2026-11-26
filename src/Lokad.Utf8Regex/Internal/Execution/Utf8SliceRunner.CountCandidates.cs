@@ -1861,6 +1861,59 @@ internal static partial class Utf8SliceRunner
         return end != BranchedPrefixRejected;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static Utf8SliceCountOutcome CountSeparatedClassWindows(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        ref int position, int firstDelimiter, ref Utf8SliceInvocation invocation)
+    {
+        var (literal, leadingClass, literalIndex, _, _) = program.LeadingClassDelimiter;
+        var delimiter = (byte)literal;
+        ref readonly var atom = ref program.Instructions[leadingClass];
+        var count = 0;
+        var scan = Math.Max(position, firstDelimiter);
+        while (scan < input.Length)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+            var limit = scan + Math.Min(2048, input.Length - scan);
+            while (scan < limit)
+            {
+                var relative = input[scan..limit].IndexOf(delimiter);
+                if (relative < 0) break;
+                var at = scan + relative;
+                scan = at + 1;
+
+                // An excluded delimiter fixes the end of the leading run.
+                // One preceding member suffices for Count, including at a block seam.
+                breach = invocation.TryChargeBoundedCheck();
+                if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+                if (at > position && TryReadScalar(input, at, true, out var scalar, out _))
+                {
+                    breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var member);
+                    if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+                    if (member && MayFinishSeparatedRuns(program, input, scan, literalIndex + 1, out var end))
+                    {
+                        // Replay from the previous proved floor if a run exceeds
+                        // the bounded suffix proof's allowance.
+                        if (end < 0) return new(count, Utf8ExecutionLimitKind.None);
+                        if (invocation.Ledger.ReservedBytes != 0)
+                        {
+                            breach = invocation.TryReserveWorking(0);
+                            if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+                        }
+                        count++;
+                        scan = end;
+                    }
+                }
+                position = scan;
+            }
+            scan = Math.Max(scan, limit);
+        }
+        position = input.Length;
+        var outcome = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return new(outcome == Utf8ExecutionLimitKind.None ? count : 0, outcome);
+    }
+
     internal static bool TryFindPreparedLiteralRange(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         ref int position, in PreparedSubstringSearch search, ref int screenedLiteral, int continuation,
         ref Utf8SliceInvocation invocation, out Utf8SliceSearchOutcome outcome)

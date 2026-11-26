@@ -616,6 +616,18 @@ public sealed partial class Utf8Regex : IDisposable
         }
         if (RejectMissingRequiredInput(input, program, ref invocation, out var screenedLiteral)) return countedPrefix;
         if (_preparedRegex.SearchPlan.RequiredPrefilterSearcher.Kind != PreparedSearcherKind.ExactLiteral) screenedLiteral = -1;
+        if (screenedLiteral >= 0 && input.Length - startByte >= 256 &&
+            program.LeadingClassWindowProof is { CanFinishSeparatedRuns: true, LiteralLength: 1 } &&
+            RequiredLiteralContinuation == program.LeadingClassDelimiter.LiteralIndex + 1 &&
+            invocation.Budget.Limits.MaxDepth is 0 or >= Utf8SliceRunner.BranchedPrefixInstructionLimit &&
+            Utf8BytePosition.IsScalarBoundary(input, startByte))
+        {
+            var proved = Utf8SliceRunner.CountSeparatedClassWindows(program, input, ref startByte, screenedLiteral, ref invocation);
+            if (proved.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+            countedPrefix += proved.Count;
+            if (startByte == input.Length) return countedPrefix;
+            screenedLiteral = -1;
+        }
         if (ReferenceEquals(program, _ownedSliceProgram) && RequiredLiteralContinuation is > 0 and var continuation &&
             _preparedRegex.SearchPlan.RequiredPrefilterSearcher.LiteralSearch is var prefix && prefix.Length == continuation &&
             program.Instructions[continuation] is { Kind: Utf8SliceInstructionKind.RepeatGreedy,
