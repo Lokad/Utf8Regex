@@ -527,6 +527,9 @@ internal static partial class Utf8SliceRunner
         if ((uint)fromByte > (uint)input.Length ||
             fromByte < input.Length && (input[fromByte] & 0xC0) == 0x80)
             return new(false, -1, -1, Utf8ExecutionLimitKind.None);
+        if (program.TerminalRoot == Utf8SliceTerminalRootKind.LazyDotLiteral &&
+            !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty)
+            return FindTerminalLazyDotLiteral(program, input, fromByte, ref invocation);
         if (program.IsNonBacktracking)
         {
             if (captureStarts.Length == 0 && program.NonBacktrackingOrderedClosures.Length != 0)

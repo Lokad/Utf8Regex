@@ -15,7 +15,8 @@ internal enum Utf8SliceTerminalRootKind : byte
     Boundary,
     ClassRepeat,
     AsciiSetThenRepeat,
-    DelimitedClassRepeat
+    DelimitedClassRepeat,
+    LazyDotLiteral
 }
 
 internal static partial class Utf8SliceRunner
@@ -49,7 +50,39 @@ internal static partial class Utf8SliceRunner
             ] && TryGetAsciiRepeatStops(program, atom, out var first, out var second) &&
             (delimiter == first || delimiter == second))
             return Utf8SliceTerminalRootKind.DelimitedClassRepeat;
+        if (program.GroupCount == 0 && program.Instructions is
+            [
+                { Kind: Utf8SliceInstructionKind.RepeatLazy, A: 3, RepeatMinimum: 0, RepeatMaximum: long.MaxValue },
+                { Kind: Utf8SliceInstructionKind.Dot },
+                { Kind: Utf8SliceInstructionKind.RepeatEnd, A: 0 },
+                { Kind: Utf8SliceInstructionKind.RepeatExit },
+                { Kind: Utf8SliceInstructionKind.Literal, A: >= 0 and < 128, B: 0 },
+                { Kind: Utf8SliceInstructionKind.Accept }
+            ])
+            return Utf8SliceTerminalRootKind.LazyDotLiteral;
         return CanRunTerminalClassRepeat(program) ? Utf8SliceTerminalRootKind.ClassRepeat : Utf8SliceTerminalRootKind.None;
+    }
+
+    private static Utf8SliceSearchOutcome FindTerminalLazyDotLiteral(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int floor, ref Utf8SliceInvocation invocation)
+    {
+        var delimiter = floor;
+        var literal = (byte)program.Instructions[4].A;
+        var breach = TrySeekAsciiCandidate(input, ref delimiter, literal, literal, ref invocation);
+        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+
+        // Zero iterations admits every literal hit. Starting at the floor or
+        // after the last blocking LF reaches that first hit in lazy order.
+        var start = delimiter;
+        if (delimiter >= 0)
+        {
+            breach = TryRewindClassWhitespace(program, input, floor, 1, 0, true, ref start, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+        }
+        breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return delimiter >= 0 && breach == Utf8ExecutionLimitKind.None
+            ? new(true, start, delimiter + 1, breach) : new(false, -1, -1, breach);
     }
 
     internal static Utf8ExecutionLimitKind IsMatchDelimitedClassRepeat(Utf8SliceProgram program,

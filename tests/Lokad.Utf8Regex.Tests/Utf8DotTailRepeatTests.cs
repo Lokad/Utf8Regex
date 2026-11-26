@@ -179,6 +179,51 @@ public sealed class Utf8DotTailRepeatTests
     }
 
     [Theory]
+    [InlineData(".*?,", RegexOptions.None, 13, 20)]
+    [InlineData(".*?,", RegexOptions.Singleline, 7, 20)]
+    [InlineData(@".*?\n", RegexOptions.None, 7, 13)]
+    public void CaptureFreeLazyDotPublishesTheFirstDelimiterRange(
+        string pattern, RegexOptions options, int expectedStart, int expectedEnd)
+    {
+        using var regex = new Utf8Regex(pattern, options, new()
+        {
+            ResourcePolicy = Policy(depth: 1, working: 1) with { MaxWorkSteps = 10 }
+        });
+        using var token = new CancellationTokenSource();
+        var input = "pre😀left\r\né😀,tail,\n"u8;
+        Span<Utf8CaptureRange> slot = stackalloc Utf8CaptureRange[1];
+        var match = regex.Match(input, 7, slot, token.Token, endOffsetInBytes: expectedEnd);
+        Assert.Equal(new Utf8CaptureRange(expectedStart, expectedEnd), match);
+        Assert.Equal(match, slot[0]);
+        Assert.False(regex.Match(input, 7, slot, token.Token, endOffsetInBytes: expectedEnd - 1).Success);
+        Assert.False(slot[0].Success);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CaptureFreeLazyDotObservesInterruptionInTheDelimiterSearch(bool deadline)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('x', 140_000) + ",");
+        using var regex = new Utf8Regex(".*?,", policy: new() { MatchTimeout = TimeSpan.FromMilliseconds(20) });
+        using var token = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var sentinel = new Utf8CaptureRange(1, 2);
+        Utf8CaptureRange[] slots = [sentinel, sentinel];
+        var session = Utf8SearchDiagnosticsSession.Start(_ => { if (deadline) ticks = 25; else token.Cancel(); });
+        try
+        {
+            var failure = Record.Exception(() => regex.Match(input, 0, slots, token.Token));
+            if (deadline) Assert.IsType<RegexMatchTimeoutException>(failure);
+            else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+            Assert.False(slots[0].Success);
+            Assert.Equal(sentinel, slots[1]);
+        }
+        finally { session.Complete(); }
+    }
+
+    [Theory]
     [InlineData(RegexOptions.None)] [InlineData(RegexOptions.Compiled)]
     public void CompleteGreedySinglelineEndNeedsNoRewindDepth(RegexOptions mode)
     {
