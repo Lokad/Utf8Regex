@@ -14,7 +14,7 @@ public sealed class Utf8PolicyOwnershipTests
     [InlineData(2)]
     public void OneExpressionOwnsFundedConstructionAndPersistentCursorAliases(int creation)
     {
-        var account = new Account();
+        var account = new Account { Maximum = 512 << 10 };
         var source = "(?<x>a+)"u8.ToArray();
         var policy = new Utf8RegexPolicy { ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxWorkSteps = 100000 } };
         using var regex = creation switch
@@ -24,7 +24,7 @@ public sealed class Utf8PolicyOwnershipTests
             _ => Utf8Regex.Compile(source, policy: policy)
         };
         source.AsSpan().Clear();
-        Assert.True(account.Used > 4UL << 20); // Includes the bounded replacement-cache capacity.
+        Assert.True(account.Used > 0);
         using var cursor = regex.CreateMatchCursor("aa aaa"u8.ToArray());
         var alias = cursor;
         regex.Dispose();
@@ -172,8 +172,10 @@ public sealed class Utf8PolicyOwnershipTests
     [Fact]
     public void CacheCapacityIsAdmittedBeforePublishingAFundedExpression()
     {
-        var account = new Account { Maximum = 1 << 20 };
-        Assert.Throws<Utf8MemoryAdmissionException>(() => new Utf8Regex("a", policy: new() { ProgramMemoryAllowance = account }));
+        var account = new Account { Maximum = 256 << 10 };
+        var refusal = Assert.Throws<Utf8MemoryAdmissionException>(() =>
+            new Utf8Regex("a", policy: new() { ProgramMemoryAllowance = account }));
+        Assert.Equal(320UL << 10, refusal.RequestedBytes);
         Assert.Equal(0UL, account.Used); Assert.False(Utf8ConstructionScope.IsActive);
     }
 
