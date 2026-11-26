@@ -1068,8 +1068,14 @@ internal static partial class Utf8SliceRunner
 
             // Retain the original subject and this exact candidate for the
             // general verifier when the preceding scalar is wider than ASCII.
-            if (position > 0 && input[position - 1] >= 128) return false;
-            var breach = invocation.TryChargeInputStep();
+            if (position > 0 && input[position - 1] >= 128)
+            {
+                invocation.Budget.ThrowIfCancellationRequested();
+                invocation.Budget.CheckDeadline();
+                return false;
+            }
+            // The tail proof can examine only its fixed bounded window.
+            var breach = invocation.TryChargeBoundedCheck();
             if (breach != Utf8ExecutionLimitKind.None)
             {
                 outcome = new(false, -1, -1, breach);
@@ -1078,7 +1084,12 @@ internal static partial class Utf8SliceRunner
             if (position > 0 && MatchesAsciiHybridClass(lookbehind, false, input[position - 1]) &&
                 MayMatchGuardedRepeatTail(program, input, position + 1, lookahead, out var end))
             {
-                if (end < 0) return false;
+                if (end < 0)
+                {
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    invocation.Budget.CheckDeadline();
+                    return false;
+                }
                 breach = invocation.TryChargeInputStep();
                 invocation.Budget.ThrowIfCancellationRequested();
                 outcome = breach == Utf8ExecutionLimitKind.None

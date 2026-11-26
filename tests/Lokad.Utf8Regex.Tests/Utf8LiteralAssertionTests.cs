@@ -198,6 +198,25 @@ public sealed class Utf8LiteralAssertionTests
     }
 
     [Theory]
+    [InlineData(" Word ")]
+    [InlineData(" Word\u2003")]
+    [InlineData(" W")]
+    public void GuardProofChecksTheDeadlineAtItsExit(string subject)
+    {
+        using var regex = new Utf8Regex(@"(?<=\s)[A-Z][a-z]+(?=\s)");
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        var bytes = Encoding.UTF8.GetBytes(subject);
+        using var clock = Utf8DeadlineTestClock.Start();
+        var invocation = new Utf8SliceInvocation(default, TimeSpan.FromMilliseconds(20), default);
+        for (var charge = 0; charge < 63; charge++) invocation.TryChargeStep();
+        invocation.CheckpointHook = step => { if (step == 64) clock.Advance(50); };
+
+        var position = 1;
+        Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
+            Utf8SliceRunner.TryFindGuardedRepeat(program, bytes, ref position, ref invocation, out _));
+    }
+
+    [Theory]
     [InlineData("(?=b)b", "b", true, false)]
     [InlineData("(?=b)b", "c", false, false)]
     [InlineData("(?=b)(?=(?<next>b))b", "b", true, false)]
