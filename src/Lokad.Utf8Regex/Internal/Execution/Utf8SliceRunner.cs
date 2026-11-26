@@ -468,17 +468,21 @@ internal static partial class Utf8SliceRunner
     {
         // Complete terminal ranges can finish without an attempt workspace.
         var root = program.TerminalRoot;
-        if (root is Utf8SliceTerminalRootKind.LazyDotLiteral or Utf8SliceTerminalRootKind.MultilineSeparatedClasses &&
+        if (root is Utf8SliceTerminalRootKind.DelimitedClassRepeat or Utf8SliceTerminalRootKind.LazyDotLiteral or
+                Utf8SliceTerminalRootKind.MultilineSeparatedClasses &&
             !collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty &&
-            (root == Utf8SliceTerminalRootKind.LazyDotLiteral ||
+            (root != Utf8SliceTerminalRootKind.MultilineSeparatedClasses ||
                 invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit))
         {
             invocation.Budget.ThrowIfCancellationRequested();
             if (!Utf8BytePosition.IsScalarBoundary(input, fromByte))
                 return new(false, -1, -1, Utf8ExecutionLimitKind.None);
-            return root == Utf8SliceTerminalRootKind.LazyDotLiteral
-                ? FindTerminalLazyDotLiteral(program, input, fromByte, ref invocation)
-                : FindMultilineSeparatedClasses(program, input, fromByte, ref invocation);
+            return root switch
+            {
+                Utf8SliceTerminalRootKind.DelimitedClassRepeat => FindDelimitedClassRepeat(program, input, fromByte, ref invocation),
+                Utf8SliceTerminalRootKind.LazyDotLiteral => FindTerminalLazyDotLiteral(program, input, fromByte, ref invocation),
+                _ => FindMultilineSeparatedClasses(program, input, fromByte, ref invocation)
+            };
         }
         if (requiredLiteralContinuation > 0 && !existenceOnly && !collectHistory &&
             TryFindPreparedLiteralRange(program, input, ref fromByte, candidatePlan.RequiredPrefilterSearcher.LiteralSearch,
