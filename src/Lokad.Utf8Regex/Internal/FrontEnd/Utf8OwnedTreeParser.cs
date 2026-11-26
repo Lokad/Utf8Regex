@@ -148,26 +148,30 @@ internal static class Utf8OwnedTreeParser
         {
             child = default;
             var state = context.State;
-            if (frame.Nodes is null)
+            if (frame.Stage == 0)
             {
-                frame.Nodes = state.Storage.Buffer<Utf8TreeNode>();
                 frame.EntryOptions = state.Options;
             }
-            var branches = frame.Nodes;
-            if (frame.Stage == 1)
+            else
             {
                 var branch = context.Node;
                 if (branch is null) { context.Fail(state); return false; }
-                branches.Add(branch);
                 if (state.AtEnd || state.Pattern[state.Position] != '|')
                 {
-                    context.Complete(state, branches.Count == 1 ? branches[0] : Alternate(frame.EntryOptions, branches));
+                    if (frame.Nodes is { } branches)
+                    {
+                        branches.Add(branch);
+                        branch = Alternate(frame.EntryOptions, branches);
+                    }
+                    context.Complete(state, branch);
                     return false;
                 }
+                // A separator proves that this frame needs a branch vector.
+                (frame.Nodes ??= state.Storage.Buffer<Utf8TreeNode>()).Add(branch);
                 state.Position++;
             }
             Utf8ConstructionScope.ChargeWork(1);
-            if (frame.Depth == 0) state.Depth0Branch = branches.Count;
+            if (frame.Depth == 0) state.Depth0Branch = frame.Nodes?.Count ?? 0;
             context.State = state;
             frame.Stage = 1;
             child = new(OwnedParseProduction.Concatenation, frame.Depth);
