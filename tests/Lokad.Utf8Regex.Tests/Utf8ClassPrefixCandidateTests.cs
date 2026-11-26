@@ -460,10 +460,12 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.False(cursor.MoveNext(out _));
     }
 
-    [Fact]
-    public void CompleteWhitespaceWindowPublishesWithNoBacktrackingStorage()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(320)]
+    public void CompleteWhitespaceWindowPublishesWithNoBacktrackingStorage(int padding)
     {
-        var prefix = new string('!', 320);
+        var prefix = new string('!', padding);
         var input = Encoding.UTF8.GetBytes(prefix + " walking,");
         using var regex = new Utf8Regex(@"\s[a-z]{0,12}ing[\s.,;]", policy: new()
         {
@@ -472,6 +474,7 @@ public sealed class Utf8ClassPrefixCandidateTests
 
         Assert.True(regex.IsMatch(input));
         Assert.Equal(new Utf8CaptureRange(prefix.Length, input.Length), regex.Match(input, 0));
+        Assert.Equal(1, regex.Count(input));
         Assert.False(regex.Match(input, 0, endOffsetInBytes: input.Length - 1).Success);
     }
 

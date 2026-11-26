@@ -1002,6 +1002,7 @@ internal static partial class Utf8SliceRunner
             else if (leadingClass >= 0 && literal >= 0)
             {
                 classSearch = GetAlignedDelimiterSearch(program, literalIndex, literal, candidatePlan);
+                var proof = program.LeadingClassWindowProof;
                 if (directClassLiteral && classSearch is { } aligned)
                 {
                     var proofBreach = TryProveSingleWindowAttempt(program, leadingClass, (byte)literal,
@@ -1010,7 +1011,6 @@ internal static partial class Utf8SliceRunner
                         return new(false, -1, -1, proofBreach);
                     if (singleWindowAttempt)
                     {
-                        var proof = program.LeadingClassWindowProof;
                         requiredClassSuffix = proof.SuffixAfter(aligned.Length);
                         if (!collectHistory && proof.CanReusePrefix &&
                             (program.GroupCount == 0 || captureStarts.IsEmpty && captureEnds.IsEmpty))
@@ -1026,10 +1026,12 @@ internal static partial class Utf8SliceRunner
                         }
                     }
                 }
-                // One attempt per disjoint delimiter can replace a broad
-                // leading-byte proof, including on the final cursor advances.
+                // A complete terminal window also pays off on short subjects
+                // and the final cursor advances.
                 if (singleWindowAttempt || needsClassWindow &&
-                    (directClassLiteral && classSearch is { Length: 1 } ||
+                    (directClassLiteral && (classSearch is { Length: 1 } ||
+                        proof.CanFinishWhitespace && classSearch?.Length == proof.LiteralLength &&
+                        invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit) ||
                      wideInput && (directClassLiteral || classSearch is not null)))
                 {
                     classLiteral = literal;
@@ -1617,7 +1619,9 @@ internal static partial class Utf8SliceRunner
         var checkRepeatChain = leadingFirst is >= 0 and < 128 && leadingScalarIndex == 1 && CanSkipShortRepeatChain(program);
         var (whitespaceLiteral, leadingClass, whitespaceLiteralIndex, whitespaceGapMaximum, directClassLiteral) =
             !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
-            !program.HasContiguousAnchor && input.Length - fromByte >= 256
+            !program.HasContiguousAnchor && (input.Length - fromByte >= 256 ||
+                program.LeadingClassWindowProof.CanFinishWhitespace &&
+                invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit)
             ? program.LeadingClassDelimiter : (-1, -1, -1, 0L, false);
         // Count keeps its prepared literal search when capture markers or
         // consuming instructions separate the repeat from its delimiter.
