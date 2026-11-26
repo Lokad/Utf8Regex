@@ -101,7 +101,8 @@ public sealed class Utf8DeterministicPrefixScalarTests
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 127, ulong.MaxValue);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Call("ScoreDeterministicPrimarySet", far));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-        Assert.Equal(127ul, owner.Budget.WorkSteps);
+        Assert.Equal(128ul, failure.Requested);
+        Assert.Equal(0ul, owner.Budget.WorkSteps);
     }
 
     [Fact]

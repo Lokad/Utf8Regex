@@ -580,16 +580,18 @@ internal static class Utf8FrontEndSearchAnalyzer
     {
         var cardinality = set.ByteSet.Count;
         if (cardinality == 0) return long.MinValue;
+        // Admit one bounded ASCII domain before visiting its present bytes.
+        Utf8ConstructionScope.ChargeWork(128);
+        Span<byte> members = stackalloc byte[128];
+        var count = set.ByteSet.CopyMatchBytes(members);
         var rarity = int.MinValue;
         var hasWord = false;
         var onlyWhitespace = true;
-        for (var value = 0; value < 128; value++)
+        foreach (var value in members[..count])
         {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (!set.Contains((byte)value)) continue;
-            rarity = Math.Max(rarity, Utf8AsciiSearchHeuristics.GetAnchorRarityScore((byte)value));
-            hasWord |= Utf8AsciiBytePredicates.IsWord((byte)value);
-            onlyWhitespace &= Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value);
+            rarity = Math.Max(rarity, Utf8AsciiSearchHeuristics.GetAnchorRarityScore(value));
+            hasWord |= Utf8AsciiBytePredicates.IsWord(value);
+            onlyWhitespace &= Utf8AsciiBytePredicates.IsSixByteWhitespace(value);
         }
         return (long)rarity * 100 + (long)set.Distance * 10 - cardinality * 10 +
             (hasWord ? 500 : 0) - (onlyWhitespace ? 2000 : 0);
