@@ -807,6 +807,8 @@ public sealed class Utf8ClassPrefixCandidateTests
     [InlineData(@"\s[a-z]{0,12}ing\s", " inging\u2028")]
     [InlineData(@"\s[a-z]{0,12}ing[\sx]", " ingxing ")]
     [InlineData(@"\s[ab]{0,12}ing[\s.;]", " abing;")]
+    [InlineData(@"\s([a-zA-Z]{0,12}ing)\s", "\u2003inging\u2028")]
+    [InlineData(@"\s([a-z]{0,12}ing)[\sx]", " ingxing ")]
     public void WhitespaceWindowPreservesGreedySuffixesAndScalarFollowers(string pattern, string value)
     {
         var prefix = new string('!', 320) + "cing!";
@@ -817,7 +819,8 @@ public sealed class Utf8ClassPrefixCandidateTests
         var selected = new Utf8CaptureRange(start, end);
         using var token = new CancellationTokenSource();
         using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
-        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[program.GroupCount + 1];
 
         Assert.True(regex.IsMatch(input, token.Token));
         Assert.Equal(selected, regex.Match(input, 0, slots, token.Token));
@@ -826,25 +829,38 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token);
         Assert.True(cursor.MoveNext(out var match));
         Assert.Equal(selected, match.Value);
+        if (program.GroupCount != 0)
+        {
+            Assert.True(program.LeadingClassWindowProof.CanFinishWhitespace);
+            var captured = Encoding.UTF8.GetBytes(value[1..^1]);
+            Assert.Equal(new Utf8CaptureRange(start + Encoding.UTF8.GetByteCount(value.AsSpan(0, 1)),
+                end - Encoding.UTF8.GetByteCount(value.AsSpan(value.Length - 1))), slots[1]);
+            Assert.True(match.GetGroupMemory(1).Span.SequenceEqual(captured));
+        }
         Assert.False(cursor.MoveNext(out _));
     }
 
     [Theory]
-    [InlineData(0)]
-    [InlineData(320)]
-    public void CompleteWhitespaceWindowPublishesWithNoBacktrackingStorage(int padding)
+    [InlineData(@"\s[a-z]{0,12}ing[\s.,;]", 0)]
+    [InlineData(@"\s[a-z]{0,12}ing[\s.,;]", 320)]
+    [InlineData(@"\s([a-zA-Z]{0,12}ing)[\s.,;]", 0)]
+    [InlineData(@"\s([a-zA-Z]{0,12}ing)[\s.,;]", 320)]
+    public void CompleteWhitespaceWindowPublishesWithNoBacktrackingStorage(string pattern, int padding)
     {
         var prefix = new string('!', padding);
         var input = Encoding.UTF8.GetBytes(prefix + " walking,");
-        using var regex = new Utf8Regex(@"\s[a-z]{0,12}ing[\s.,;]", policy: new()
+        using var regex = new Utf8Regex(pattern, policy: new()
         {
             ResourcePolicy = Funded with { MaxWorkingBytes = 1 }
         });
 
-        Assert.True(regex.IsMatch(input));
-        Assert.Equal(new Utf8CaptureRange(prefix.Length, input.Length), regex.Match(input, 0));
         Assert.Equal(1, regex.Count(input));
-        Assert.False(regex.Match(input, 0, endOffsetInBytes: input.Length - 1).Success);
+        if (regex.Inspection.AvailableOwnedSliceProgram.GroupCount == 0)
+        {
+            Assert.True(regex.IsMatch(input));
+            Assert.Equal(new Utf8CaptureRange(prefix.Length, input.Length), regex.Match(input, 0));
+            Assert.False(regex.Match(input, 0, endOffsetInBytes: input.Length - 1).Success);
+        }
     }
 
     [Theory]

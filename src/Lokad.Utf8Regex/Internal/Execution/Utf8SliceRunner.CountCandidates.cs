@@ -672,7 +672,9 @@ internal static partial class Utf8SliceRunner
 
         ref readonly var required = ref candidatePlan.RequiredPrefilterSearcher;
         return index > 0 && required.Kind == PreparedSearcherKind.ExactLiteral &&
-            program.Instructions[index - 1] is { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: > 1, D: 1 } &&
+            (program.LeadingClassWindowProof is { CanFinishWhitespace: true } window &&
+                window.LiteralLength == required.LiteralSearch.Length ||
+             program.Instructions[index - 1] is { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: > 1, D: 1 }) &&
             LiteralStartsAtInstruction(program, index, required.LiteralSearch.Needle)
             ? required.LiteralSearch : null;
     }
@@ -694,22 +696,28 @@ internal static partial class Utf8SliceRunner
         int literalIndex, byte literal, Utf8ConstructionBudget budget)
     {
         var code = program.Instructions;
-        if (leadingClass == 2 && literalIndex == 5 && program.GroupCount == 0 &&
-            IsUnicodeSpace(program, code[0]) && code.Length is >= 8 and <= 71 &&
+        var capturedWhitespaceRun = leadingClass == 3 && literalIndex == 6 && program.GroupCount == 1 &&
+            code.Length >= 10 && code[1] is { Kind: Utf8SliceInstructionKind.CaptureStart, A: 0, B: 0 } &&
+            code[^3] is { Kind: Utf8SliceInstructionKind.CaptureEnd, A: 0, B: 0 };
+        var captures = capturedWhitespaceRun ? 1 : 0;
+        var literalLength = code.Length - literalIndex - 2 - captures;
+        if (leadingClass == 2 + captures && literalIndex == 5 + captures && program.GroupCount == captures &&
+            literalLength is >= 1 and <= 64 && IsUnicodeSpace(program, code[0]) &&
             code[^1].Kind == Utf8SliceInstructionKind.Accept &&
             code[^2] is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } or
                 { Kind: Utf8SliceInstructionKind.Set, C: 0 } or { Kind: Utf8SliceInstructionKind.Shorthand } &&
             program.TryGetUnfoldedAsciiSet(code[leadingClass], out var repeated, out var asciiOnly) && asciiOnly)
         {
             budget.ChargeWork((ulong)(code.Length - literalIndex));
-            foreach (var literalInstruction in code.AsSpan(literalIndex, code.Length - literalIndex - 2))
+            foreach (var literalInstruction in code.AsSpan(literalIndex, literalLength))
                 if (literalInstruction is not { Kind: Utf8SliceInstructionKind.Literal, A: >= 0 and < 128, B: 0 } ||
                     !repeated.Contains((byte)literalInstruction.A))
                     return default;
 
             // A follower outside this alphabet also excludes every byte of
             // the literal. No later greedy endpoint can reach across it.
-            return new((byte)(code.Length - literalIndex - 2), 0, 0, false, false, false)
+            // Callers that observe the capture still verify the found start.
+            return new((byte)literalLength, 0, 0, false, false, false)
                 { Completion = Utf8SliceClassWindowCompletion.Whitespace };
         }
         if (program.Assertions.Length != 0 ||
