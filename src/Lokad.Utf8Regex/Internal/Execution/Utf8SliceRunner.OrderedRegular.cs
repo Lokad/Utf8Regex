@@ -384,6 +384,33 @@ internal static partial class Utf8SliceRunner
     private const int OrderedCountFail = -1;
     private const int OrderedCountEmpty = -2;
 
+    private static Utf8SliceCountOutcome CountProvedOrderedClassFamily(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int fromByte, in Utf8SearchPlan candidatePlan, ref Utf8SliceInvocation invocation)
+    {
+        var count = 0;
+        if (invocation.Ledger.ReservedBytes != 0)
+        {
+            var admission = invocation.TryReserveWorking(0);
+            if (admission != Utf8ExecutionLimitKind.None) return new(count, admission);
+        }
+        while (true)
+        {
+            var position = fromByte;
+            var breach = TrySeedOrderedClassFamily(program, input, candidatePlan, ref position, ref invocation,
+                out var end, out _);
+            if (breach != Utf8ExecutionLimitKind.None || position < 0) return new(count, breach);
+            if (end < 0)
+            {
+                // The first unproved candidate can overlap later hits. Finish
+                // the unresolved suffix once, starting at its original floor.
+                var tail = CountOrderedRegular(program, input, fromByte, ref invocation);
+                return new(count + tail.Count, tail.Breach);
+            }
+            count++;
+            fromByte = end;
+        }
+    }
+
     private static Utf8SliceCountOutcome CountOrderedRegular(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int fromByte, ref Utf8SliceInvocation invocation)
     {

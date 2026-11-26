@@ -1814,7 +1814,10 @@ internal static partial class Utf8SliceRunner
             captureStarts.Length == 0 && !seekLiteral && !seekBeginning && !seekVeryEnd &&
             whitespaceLiteral < 0 && branchWindow.Min == 0 && leadingPrefix.IsEmpty &&
             CanAdmitOrderedRows(program, ref invocation))
-            return CountOrderedRegular(program, input, fromByte, ref invocation);
+            return HasOrderedClassFamilyPrefix(program, candidatePlan) &&
+                invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit
+                ? CountProvedOrderedClassFamily(program, input, fromByte, candidatePlan, ref invocation)
+                : CountOrderedRegular(program, input, fromByte, ref invocation);
 
         // When Count has no stronger start search, reject an impossible ASCII
         // boundary before resetting the VM. Profile predicates and wider

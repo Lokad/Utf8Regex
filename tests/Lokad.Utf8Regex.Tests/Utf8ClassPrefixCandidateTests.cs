@@ -208,6 +208,21 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.Equal(new Utf8CaptureRange(521, 527), slots[2]);
     }
 
+    [Fact]
+    public void CountKeepsProvedFamilyMatchesWhenALaterCandidateNeedsTraversal()
+    {
+        const string pattern = @"(\w+)\s+(Holmes|Watson)";
+        var block = new string('!', 96) + "é\u2003Holmes! Ω\u2028Watson!";
+        var prefix = string.Concat(Enumerable.Repeat(block, 32));
+        using var regex = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 1024 }
+        });
+        using var source = new CancellationTokenSource();
+        Assert.Equal(64, regex.Count(Encoding.UTF8.GetBytes(prefix), source.Token));
+        Assert.Equal(65, regex.Count(Encoding.UTF8.GetBytes(prefix + " Holmes!é Watson!"), source.Token));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
