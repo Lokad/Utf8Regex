@@ -1526,7 +1526,7 @@ internal static class Utf8SliceLowerer
 
         // Hoist nested language features and variable byte-length lookbehind
         // facts for consumers with narrower native admission.
-        var assertions = lowerer.Assertions.Take();
+        var assertions = lowerer.Assertions?.Take() ?? [];
         var hasNonFixedLookbehind = false;
         foreach (var assertion in assertions)
         {
@@ -1604,8 +1604,8 @@ internal static class Utf8SliceLowerer
                 : [];
         return Utf8SliceProgram.Create(
             instructions,
-            lowerer.SetMasks.Take(),
-            lowerer.CategorySetMembers.Take(),
+            lowerer.SetMasks?.Take() ?? [],
+            lowerer.CategorySetMembers?.Take() ?? [],
             lowerer.RepeatCount,
             lowerer.GroupCount,
             requiresUnicodeWordBoundary,
@@ -1616,7 +1616,7 @@ internal static class Utf8SliceLowerer
             isRoot && usesInterpretedLazyLoopSemantics, isRoot && usesLiteralClassBracketSyntax, lowerer.CaseBehavior,
             lowerer.NonBacktracking, lowerer.CaptureOpeningCount,
             epsilonOrder, epsilonAncestors,
-            lowerer.BackreferenceLowerings.Take(), isRoot, ordered, proofCompilation);
+            lowerer.BackreferenceLowerings?.Take() ?? [], isRoot, ordered, proofCompilation);
     }
 
     private static void MarkBoundedEndTails(Span<Utf8SliceInstruction> code, bool hasAlternation, Utf8ConstructionBudget budget)
@@ -1699,9 +1699,9 @@ internal static class Utf8SliceLowerer
     {
         internal readonly Utf8ConstructionBuffer<Utf8SliceInstruction> Instructions;
         internal readonly Utf8ConstructionBudget Budget;
-        internal readonly Utf8ConstructionBuffer<Func<int, int>> BackreferenceLowerings;
-        internal readonly Utf8ConstructionBuffer<byte[]> SetMasks;
-        internal readonly Utf8ConstructionBuffer<Utf8SliceNode.CategorySetMember[]> CategorySetMembers;
+        internal Utf8ConstructionBuffer<Func<int, int>>? BackreferenceLowerings;
+        internal Utf8ConstructionBuffer<byte[]>? SetMasks;
+        internal Utf8ConstructionBuffer<Utf8SliceNode.CategorySetMember[]>? CategorySetMembers;
         internal int RepeatCount;
         internal int CaptureOpeningCount;
         internal readonly Utf8ConstructionMap<Utf8SliceNode.CaptureNode, int>? CaptureOpenings;
@@ -1714,7 +1714,7 @@ internal static class Utf8SliceLowerer
         internal bool SawContiguousAnchor;
         internal bool HasConditionalTest;
         internal bool SawLookaround;
-        internal readonly Utf8ConstructionBuffer<Utf8SliceAssertion> Assertions;
+        internal Utf8ConstructionBuffer<Utf8SliceAssertion>? Assertions;
         internal readonly string[]? GroupNames;
         internal Utf8CaptureCatalog? CaptureCatalog;
         internal readonly bool MaintainBalance;
@@ -1730,10 +1730,6 @@ internal static class Utf8SliceLowerer
         {
             Budget = budget;
             Instructions = new(budget, true);
-            BackreferenceLowerings = new(budget);
-            SetMasks = new(budget);
-            CategorySetMembers = new(budget);
-            Assertions = new(budget);
             GroupNames = groupNames;
             MaintainBalance = maintainBalance;
             MatchCaseInsensitive = matchCaseInsensitive;
@@ -1751,10 +1747,10 @@ internal static class Utf8SliceLowerer
         internal void Dispose()
         {
             Instructions.Dispose();
-            BackreferenceLowerings.Dispose();
-            SetMasks.Dispose();
-            CategorySetMembers.Dispose();
-            Assertions.Dispose();
+            BackreferenceLowerings?.Dispose();
+            SetMasks?.Dispose();
+            CategorySetMembers?.Dispose();
+            Assertions?.Dispose();
             CaptureOpenings?.Dispose();
             NonBacktrackingScopes?.Dispose();
         }
@@ -1814,8 +1810,9 @@ internal static class Utf8SliceLowerer
                         throw new ArgumentException("Slice set masks cover 16 bytes (128 ASCII bits).", nameof(node));
                     }
 
-                    var maskIndex = SetMasks.Count;
-                    SetMasks.Add(set.Mask16);
+                    var masks = SetMasks ??= new(Budget);
+                    var maskIndex = masks.Count;
+                    masks.Add(set.Mask16);
                     if (set.Members.Length == 0)
                     {
                         var range = !set.Negated && !set.FoldCase ? GetAsciiRange(set.Mask16) : 0;
@@ -1859,8 +1856,9 @@ internal static class Utf8SliceLowerer
                     var choiceMask = Budget.AllocateArray<byte>(16, false);
                     choiceMask[firstByte.Value >> 3] |= (byte)(1 << (firstByte.Value & 7));
                     choiceMask[secondByte.Value >> 3] |= (byte)(1 << (secondByte.Value & 7));
-                    SetMasks.Add(choiceMask);
-                    Emit(new(Utf8SliceInstructionKind.Set, SetMasks.Count - 1, 0, 0, GetAsciiRange(choiceMask), isLiteralChoice: true));
+                    var choiceMasks = SetMasks ??= new(Budget);
+                    choiceMasks.Add(choiceMask);
+                    Emit(new(Utf8SliceInstructionKind.Set, choiceMasks.Count - 1, 0, 0, GetAsciiRange(choiceMask), isLiteralChoice: true));
                     break;
                 case Utf8SliceNode.AlternationNode alternate:
                     if (alternate.Branches.Length == 0)
@@ -2124,8 +2122,9 @@ internal static class Utf8SliceLowerer
                         var members = Budget.AllocateArray<Utf8SliceNode.CategorySetMember>(1, false);
                         members[0] = new Utf8SliceNode.CategorySetMember(
                             Utf8SliceCategoryTable.ForScalarPredicate(wordPredicate), false);
-                        wordTable = CategorySetMembers.Count + 1;
-                        CategorySetMembers.Add(members);
+                        var wordMembers = CategorySetMembers ??= new(Budget);
+                        wordTable = wordMembers.Count + 1;
+                        wordMembers.Add(members);
                     }
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Boundary, boundary.IsWordBoundary ? 1 : 0,
                         (int)boundary.WordKind, wordTable, 0));
@@ -2134,7 +2133,8 @@ internal static class Utf8SliceLowerer
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Shorthand, (int)shorthand.Shorthand, 0, 0, 0));
                     break;
                 case Utf8SliceNode.CategorySetNode categorySet:
-                    var categorySetMaskIndex = SetMasks.Count;
+                    var categoryMasks = SetMasks ??= new(Budget);
+                    var categorySetMaskIndex = categoryMasks.Count;
                     var categoryMask = categorySet.Mask16;
                     var foldCategorySet = categorySet.FoldCase;
                     var isDecimalDigitSet = false;
@@ -2176,15 +2176,16 @@ internal static class Utf8SliceLowerer
                             completed.CopyTo(categoryMask);
                         }
                     }
-                    SetMasks.Add(categoryMask);
+                    categoryMasks.Add(categoryMask);
                     var categorySetMemberBits = 0;
                     foreach (var shorthandMember in categorySet.Members)
                     {
                         categorySetMemberBits |= 1 << (int)shorthandMember;
                     }
 
-                    var categorySetMemberIndex = CategorySetMembers.Count;
-                    CategorySetMembers.Add(categorySet.Categories);
+                    var categoryMembers = CategorySetMembers ??= new(Budget);
+                    var categorySetMemberIndex = categoryMembers.Count;
+                    categoryMembers.Add(categorySet.Categories);
                     Emit(new Utf8SliceInstruction(
                         Utf8SliceInstructionKind.CategorySet,
                         categorySetMaskIndex,
@@ -2202,8 +2203,9 @@ internal static class Utf8SliceLowerer
                     var loweringIndex = 0;
                     if (backref.LowerScalar is { } lowerScalar)
                     {
-                        var index = BackreferenceLowerings.IndexOf(lowerScalar);
-                        if (index < 0) { index = BackreferenceLowerings.Count; BackreferenceLowerings.Add(lowerScalar); }
+                        var lowerings = BackreferenceLowerings ??= new(Budget);
+                        var index = lowerings.IndexOf(lowerScalar);
+                        if (index < 0) { index = lowerings.Count; lowerings.Add(lowerScalar); }
                         loweringIndex = index + 1;
                     }
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Backref, backref.Slot, backref.FoldCase ? 1 : 0, backref.AllowUnmatched ? 1 : 0, loweringIndex));
@@ -2299,8 +2301,9 @@ internal static class Utf8SliceLowerer
                     if (body is null) { Failed = true; return false; }
                     GroupCount = Math.Max(GroupCount, body.GroupCount);
                     var width = GetFacts(behind.Body);
-                    var assertionIndex = Assertions.Count;
-                    Assertions.Add(Utf8SliceAssertion.Create(body, width.Minimum, width.Maximum, true, behind.ForwardScalarCount));
+                    var lookbehinds = Assertions ??= new(Budget);
+                    var assertionIndex = lookbehinds.Count;
+                    lookbehinds.Add(Utf8SliceAssertion.Create(body, width.Minimum, width.Maximum, true, behind.ForwardScalarCount));
                     Emit(new(Utf8SliceInstructionKind.Lookbehind, assertionIndex, behind.Positive ? 1 : 0, 0, 0));
                     break;
                 case Utf8SliceNode.CaptureNode capture:
@@ -2425,8 +2428,9 @@ internal static class Utf8SliceLowerer
                 if (program is null) { Failed = true; return false; }
                 GroupCount = Math.Max(GroupCount, program.GroupCount);
                 var width = GetFacts(body);
-                var index = Assertions.Count;
-                Assertions.Add(Utf8SliceAssertion.Create(program, width.Minimum, width.Maximum, false));
+                var assertions = Assertions ??= new(Budget);
+                var index = assertions.Count;
+                assertions.Add(Utf8SliceAssertion.Create(program, width.Minimum, width.Maximum, false));
                 Emit(new(Utf8SliceInstructionKind.Lookahead, index, positive ? 1 : 0, 0, 0));
                 return false;
             }
