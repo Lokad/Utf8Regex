@@ -2884,6 +2884,12 @@ internal struct Pcre2ResourceBudget : IUtf8InvocationBufferControl
         return Utf8ExecutionLimitKind.None;
     }
 
+    Utf8ExecutionLimitKind IUtf8InvocationBufferControl.TryChargeWorkspaceStepAfterReservation()
+    {
+        ChargeWorkspaceStep();
+        return Utf8ExecutionLimitKind.None;
+    }
+
     Utf8ExecutionLimitKind IUtf8InvocationBufferControl.TryChargeResultBytes(ulong bytes)
     {
         Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeResultBytes(bytes));

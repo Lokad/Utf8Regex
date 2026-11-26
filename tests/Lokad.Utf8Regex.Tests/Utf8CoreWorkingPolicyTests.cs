@@ -189,6 +189,32 @@ public sealed class Utf8CoreWorkingPolicyTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void StateGrowthChecksDeadlineAfterCallbacksAndRefunds(bool allowanceExpires)
+    {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var allowance = allowanceExpires ? new GrowthAllowance(() => ticks = 25) : null;
+        var invocation = new Utf8SliceInvocation(new(100, 0, 4096),
+            TimeSpan.FromMilliseconds(20), default, allowance);
+        if (!allowanceExpires)
+        {
+            for (var step = 0; step < 63; step++)
+                Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeStep());
+            invocation.CheckpointHook = _ => ticks = 25;
+        }
+
+        var buffer = new Utf8InvocationStateBuffer<int>();
+        var pending = buffer.PendingGrowthBytes;
+        Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => buffer.TryPush(1, ref invocation));
+        Assert.Equal(pending, buffer.PendingGrowthBytes);
+        Assert.Equal(0, buffer.Count);
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(0UL, allowance?.Used ?? 0);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void CopiedCursorWorkingFailurePreservesTheFirstRangeAndSharedDenial(bool compiled)
     {
         // A late assertion keeps the ambiguous branch on the scratch-using verifier.
@@ -223,5 +249,19 @@ public sealed class Utf8CoreWorkingPolicyTests
         var regex = Create("ab", 1_048_576, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀ab"u8, 1, []));
         Assert.Equal(4, regex.Match("😀ab"u8, 4, []).StartOffsetInBytes);
+    }
+
+    private sealed class GrowthAllowance(Action onReserve) : IUtf8MemoryAllowance
+    {
+        internal ulong Used { get; private set; }
+
+        public bool TryReserve(ulong bytes)
+        {
+            Used = checked(Used + bytes);
+            onReserve();
+            return true;
+        }
+
+        public void Release(ulong bytes) => Used = checked(Used - bytes);
     }
 }

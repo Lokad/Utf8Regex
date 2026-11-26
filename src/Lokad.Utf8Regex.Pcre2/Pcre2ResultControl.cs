@@ -70,4 +70,6 @@ internal readonly ref struct Pcre2ResultControl : IUtf8InvocationBufferControl
         ChargeWorkspaceStep();
         return Utf8ExecutionLimitKind.None;
     }
+
+    public Utf8ExecutionLimitKind TryChargeWorkspaceStepAfterReservation() => TryChargeWorkspaceStep();
 }
