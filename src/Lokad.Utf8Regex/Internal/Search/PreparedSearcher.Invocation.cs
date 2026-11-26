@@ -22,19 +22,37 @@ internal readonly partial struct PreparedSearcher
         {
             length = LiteralSearch.Length;
             if (length == 0) candidate = reverse ? end : start;
-            else if (length == 1 && !LiteralSearch.IgnoreCase && end - start <= 2048)
+            else if (length == 1 && !LiteralSearch.IgnoreCase)
             {
-                // One exact byte needs no literal-window setup. Keep the
-                // same admission between the entry and publication checks.
-                if (start != end && (!invocation.IsUnmetered || invocation.CheckpointHook is not null))
+                var metered = !invocation.IsUnmetered || invocation.CheckpointHook is not null;
+                if (metered && start != end)
                 {
+                    // The first window is bounded. Check the deadline directly
+                    // before the next window or before publishing the result.
+                    breach = invocation.TryChargeBoundedCheck();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                }
+                var value = LiteralSearch.Needle[0];
+                var windowLimit = metered ? 2048 : int.MaxValue;
+                var low = start;
+                var high = end;
+                while (low < high)
+                {
+                    var count = Math.Min(windowLimit, high - low);
+                    var blockStart = reverse ? high - count : low;
+                    var block = input.Slice(blockStart, count);
+                    var relative = reverse ? block.LastIndexOf(value) : block.IndexOf(value);
+                    if (relative >= 0)
+                    {
+                        candidate = blockStart + relative;
+                        break;
+                    }
+                    if (reverse) high -= count;
+                    else low += count;
+                    if (low == high) break;
                     breach = invocation.TryChargeInputStep();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                 }
-                var window = input[start..end];
-                var value = LiteralSearch.Needle[0];
-                var relative = reverse ? window.LastIndexOf(value) : window.IndexOf(value);
-                if (relative >= 0) candidate = start + relative;
             }
             else
             {

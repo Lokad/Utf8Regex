@@ -959,25 +959,31 @@ public sealed class PreparedSearchPrimitivesTests
     }
 
     [Theory]
-    [InlineData(0)]
-    [InlineData(2048)]
-    [InlineData(2049)]
-    public void SingleByteInvocationPreservesSliceAndWindowAdmission(int width)
+    [InlineData(0, false)]
+    [InlineData(2048, false)]
+    [InlineData(2049, false)]
+    [InlineData(2049, true)]
+    public void SingleByteInvocationPreservesSliceAndWindowAdmission(int width, bool secondWindow)
     {
         var search = new PreparedSearcher(new PreparedSubstringSearch([(byte)'.'], false), false);
         const int start = 2;
         var end = start + width;
         var input = new byte[end + 2];
         input[start - 1] = input[end] = (byte)'.';
-        if (width != 0) input[start] = input[end - 1] = (byte)'.';
         foreach (var reverse in new[] { false, true })
         {
-            var steps = width == 0 ? 2ul : 3ul;
+            if (width != 0)
+            {
+                input[start] = secondWindow && !reverse ? (byte)0 : (byte)'.';
+                input[end - 1] = secondWindow && reverse ? (byte)0 : (byte)'.';
+            }
+            var steps = secondWindow ? 4ul : width != 0 ? 3ul : 2ul;
             var invocation = Utf8SliceInvocation.CreateExclusive(new(steps, 0, 0), Timeout.InfiniteTimeSpan, default);
             Assert.Equal(Utf8ExecutionLimitKind.None,
                 search.TryFindMatch(input, start, end, reverse, ref invocation, out var match, out var found));
             Assert.Equal(width != 0, found);
-            if (found) Assert.Equal(new PreparedSearchMatch(reverse ? end - 1 : start, 1, 0), match);
+            var expected = reverse == secondWindow ? start : end - 1;
+            if (found) Assert.Equal(new PreparedSearchMatch(expected, 1, 0), match);
             Assert.Equal(steps, invocation.Budget.Steps);
 
             invocation = Utf8SliceInvocation.CreateExclusive(new(steps - 1, 0, 0), Timeout.InfiniteTimeSpan, default);
