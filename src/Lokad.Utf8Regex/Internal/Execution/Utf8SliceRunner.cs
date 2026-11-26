@@ -1259,7 +1259,9 @@ internal static partial class Utf8SliceRunner
                     return new(false, -1, -1, seekBreach);
                 if (position < 0) break;
             }
-            var breach = invocation.TryChargeInputStep();
+            // The ordinal neighbor check reads at most two scalars. Use the
+            // instruction cadence for rejected starts and poll before verifying a hit.
+            var breach = requiresEqualScalars ? invocation.TryChargeBoundedCheck() : invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, -1, breach);
             invocation.Budget.ThrowIfCancellationRequested();
@@ -1282,8 +1284,11 @@ internal static partial class Utf8SliceRunner
             if (leadingPrefix.IsEmpty && leading >= 0 && second >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                 (uint)(input[position + 1] - second) > (uint)(secondLast - second)))
                 continue;
-            if (requiresEqualScalars && !HasEqualLeadingScalars(input[position..]))
-                continue;
+            if (requiresEqualScalars)
+            {
+                if (!HasEqualLeadingScalars(input[position..])) continue;
+                invocation.Budget.CheckDeadline();
+            }
             var reuseRewoundDigits = reuseDecimalWindow && position < classWindowEnd;
             var provedAsciiBoundary = false;
             if (screenDecimalWindow)
@@ -1417,6 +1422,7 @@ internal static partial class Utf8SliceRunner
             }
             if (singleWindowAttempt) position = classWindowEnd;
         }
+        if (requiresEqualScalars) invocation.Budget.CheckDeadline();
         return new(false, -1, -1, Utf8ExecutionLimitKind.None);
     }
 
@@ -1969,7 +1975,7 @@ internal static partial class Utf8SliceRunner
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0) break;
                 }
-                var breach = invocation.TryChargeInputStep();
+                var breach = requiresEqualScalars ? invocation.TryChargeBoundedCheck() : invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None)
                     return new Utf8SliceCountOutcome(count, breach);
                 invocation.Budget.ThrowIfCancellationRequested();
@@ -1984,11 +1990,15 @@ internal static partial class Utf8SliceRunner
                     if (lineEnd >= 0 && captureStarts.IsEmpty && captureEnds.IsEmpty)
                         provedEnd = lineEnd;
                 }
-                if (requiresEqualScalars && !HasEqualLeadingScalars(input[position..]))
+                if (requiresEqualScalars)
                 {
-                    position = AdvancePastScalar(input, position, false);
-                    if (position < 0) break;
-                    continue;
+                    if (!HasEqualLeadingScalars(input[position..]))
+                    {
+                        position = AdvancePastScalar(input, position, false);
+                        if (position < 0) break;
+                        continue;
+                    }
+                    invocation.Budget.CheckDeadline();
                 }
                 if (checkAsciiBoundary)
                 {
@@ -2134,6 +2144,7 @@ internal static partial class Utf8SliceRunner
                 position = AdvancePastScalar(input, position, program.RightToLeft);
                 if (position < 0) break;
             }
+            if (requiresEqualScalars) invocation.Budget.CheckDeadline();
             return CompleteCandidateCount(program, count, interpretedVisits, Utf8ExecutionLimitKind.None);
         }
 

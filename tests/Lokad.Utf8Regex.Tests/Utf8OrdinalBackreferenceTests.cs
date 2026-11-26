@@ -193,6 +193,38 @@ public sealed class Utf8OrdinalBackreferenceTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
+    public void NeighborRejectionChecksDeadlineBeforeVerificationOrExhaustion(bool count, bool hasHit)
+    {
+        using var regex = new Utf8Regex(@"(\w)\1");
+        var program = regex.Inspection.PreparedRegex.ScalarProgram!;
+        var text = string.Concat(Enumerable.Repeat("abç中", 24));
+        var input = Encoding.UTF8.GetBytes(hasHit ? text + "éé" : text);
+        var starts = new int[program.GroupCount];
+        var ends = new int[program.GroupCount];
+        Array.Fill(starts, -1);
+        Array.Fill(ends, -1);
+        using var clock = Utf8DeadlineTestClock.Start();
+        var invocation = new Utf8SliceInvocation(default, TimeSpan.FromMilliseconds(200), default);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        invocation.CheckpointHook = step => { if (step == 64) clock.Advance(250); };
+
+        Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
+        {
+            if (count)
+                _ = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation);
+            else
+                _ = Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends, false, ref invocation);
+        });
+        Assert.Equal(-1, starts[0]);
+        Assert.Equal(-1, ends[0]);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void CompletedCaptureComparisonObservesOriginalAuthority(bool rtl, bool expire)
     {
         const int length = 600000;
