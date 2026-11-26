@@ -104,9 +104,27 @@ internal struct Utf8SliceInvocation
     // never changes outstanding bytes or acquires the requested payload.
     internal Utf8ExecutionLimitKind TryReserveWorking(ulong bytes)
     {
-        Budget.ThrowIfCancellationRequested();
-        Budget.CheckDeadline();
         ref var budget = ref Budget;
+        budget.ThrowIfCancellationRequested();
+        budget.CheckDeadline();
+        return TryReserveWorkingCapacity(bytes, ref budget);
+    }
+
+    internal Utf8ExecutionLimitKind TryReserveResult(ulong bytes)
+    {
+        ref var budget = ref Budget;
+        var breach = budget.TryChargeResultBytes(bytes);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+
+        // A finite result charge has already checked the deadline. No host
+        // callback runs between that numeric charge and working admission.
+        budget.ThrowIfCancellationRequested();
+        if (budget.Limits.MaxResultBytes == 0) budget.CheckDeadline();
+        return TryReserveWorkingCapacity(bytes, ref budget);
+    }
+
+    private Utf8ExecutionLimitKind TryReserveWorkingCapacity(ulong bytes, ref Utf8ExecutionBudget budget)
+    {
         if (budget.LimitBreach != Utf8ExecutionLimitKind.None) return budget.LimitBreach;
         ref var ledger = ref Ledger;
         var held = ledger.ReservedBytes;

@@ -101,8 +101,7 @@ internal struct Utf8InvocationResultLedger
 
     private static void Reserve(ulong bytes, ref Utf8SliceInvocation invocation)
     {
-        Utf8SliceBufferWork.ChargeResultBytes(bytes, ref invocation);
-        var breach = new Utf8InvocationBufferControl(ref invocation).TryReserveWorking(bytes);
+        var breach = invocation.TryReserveResult(bytes);
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException($"Owned result exceeded {breach}.");
     }
