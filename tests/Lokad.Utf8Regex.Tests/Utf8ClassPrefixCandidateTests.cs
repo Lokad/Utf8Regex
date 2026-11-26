@@ -392,6 +392,33 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData(@"https?://[^\s/?#]+[^\s?#]*(?:\?[^\s#]*)?", true)]
+    [InlineData(@"https?://[^\s/?#]+[^\s?#!]*(?:\?[^\s#]*)?", false)]
+    [InlineData(@"https?://[^\s/?#]+[^\s?#]*(?:\?[^\s#!]*)?", false)]
+    [InlineData(@"https?://[^\s/?#]+[^\s?#]*(?:\?[^\s#]+)?", false)]
+    public void TerminalOptionalClassTailRequiresTheProvedAlphabets(string pattern, bool covered)
+    {
+        const string text = "☀ http:///missing http://a/path!more?q?!tail#stop";
+        var input = Encoding.UTF8.GetBytes(text);
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+        var code = regex.Inspection.AvailableOwnedSliceProgram.Instructions;
+        Assert.Equal(covered, code.Any(instruction => instruction.Kind == Utf8SliceInstructionKind.RepeatExit &&
+            instruction.RepeatExitCoversOptionalTail));
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+
+        var query = text.IndexOf('?');
+        foreach (var end in new[] { query, query + 1, text.Length })
+        {
+            var expected = Regex.Match(text[..end], pattern);
+            Assert.True(expected.Success);
+            var actual = regex.Match(input, 0, slots, source.Token, endOffsetInBytes: Encoding.UTF8.GetByteCount(text[..end]));
+            Utf8MatchSequence.AssertRange(actual, text, expected.Index, expected.Length);
+            Assert.Equal(actual, slots[0]);
+        }
+    }
+
+    [Theory]
     [InlineData("None !Word? Valid next", true)]
     [InlineData("None !Word? Valid!", false)]
     [InlineData("😀\u2003Valid next", true)]

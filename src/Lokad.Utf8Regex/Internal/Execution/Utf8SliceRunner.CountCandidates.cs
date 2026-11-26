@@ -2851,6 +2851,8 @@ internal static partial class Utf8SliceRunner
                         return MatchesAsciiHybridClass(program.SetMasks[required.A], required.B != 0, input[position])
                             ? position + 1 : BranchedPrefixRejected;
                     }
+                    if (proveMatch && code[entry.A].RepeatExitCoversOptionalTail)
+                        return MatchCoveredOptionalClassTail(program, input, position, index, ref remaining);
                     if (!singleAtom && proveMatch && entry.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
                         code[entry.A].RepeatExitUnobservedDecimal)
                     {
@@ -3202,6 +3204,27 @@ internal static partial class Utf8SliceRunner
                 return BranchedPrefixRejected;
         }
         return position + length;
+    }
+
+    private static int MatchCoveredOptionalClassTail(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, int firstAtom, ref int remaining)
+    {
+        if (position == input.Length) return BranchedPrefixRejected;
+        if (remaining < 2 || input[position] >= 128) return BranchedPrefixUndecided;
+        remaining--;
+        var code = program.Instructions;
+        if (!MatchesAsciiHybridClass(program.SetMasks[code[firstAtom].A], true, input[position]))
+            return BranchedPrefixRejected;
+
+        var suffix = input[(position + 1)..];
+        var window = suffix[..Math.Min(suffix.Length, remaining)];
+        // The prepared final atom is followed by the repeat loop, exit and Accept.
+        var consumed = ScanAsciiMask(window, program.SetMasks[code[^4].A], category: false, negated: true);
+        remaining -= Math.Min(window.Length, consumed + 1);
+        // A wide scalar or the end of the proof's allowance is unresolved.
+        if (consumed == window.Length ? window.Length < suffix.Length : window[consumed] >= 128)
+            return BranchedPrefixUndecided;
+        return position + 1 + consumed;
     }
 
     private static int ContinueUnfoldedClassPrefix(ReadOnlySpan<byte> input, int offset,

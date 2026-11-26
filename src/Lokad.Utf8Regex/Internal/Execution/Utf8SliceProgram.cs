@@ -200,6 +200,7 @@ internal readonly struct Utf8SliceInstruction
     internal const int RepeatExitAcceptsEmptyTailFlag = 2;
     internal const int RepeatExitBeforeTerminalDotFlag = 4;
     internal const int RepeatExitUnobservedDecimalFlag = 8;
+    internal const int RepeatExitCoversOptionalTailFlag = 1 << 29;
     internal const int RepeatExitSharesTerminalRunFlag = 1 << 30;
     internal const int LeadingCaptureMarkerLimit = 31;
     internal const int AsciiIntervalPairFlag = 1 << 16;
@@ -269,9 +270,10 @@ internal readonly struct Utf8SliceInstruction
     internal bool RepeatExitAcceptsEmptyTail => (C & RepeatExitAcceptsEmptyTailFlag) != 0;
     internal bool RepeatExitBeforeTerminalDot => (C & RepeatExitBeforeTerminalDotFlag) != 0;
     internal bool RepeatExitUnobservedDecimal => (C & RepeatExitUnobservedDecimalFlag) != 0;
+    internal bool RepeatExitCoversOptionalTail => (C & RepeatExitCoversOptionalTailFlag) != 0;
     internal bool RepeatExitSharesTerminalRun => (C & RepeatExitSharesTerminalRunFlag) != 0;
     // The remaining bits can pack an optional's required ASCII delimiter and its offset.
-    internal int RepeatExitOptionalAsciiDelimiter => (C & ~RepeatExitSharesTerminalRunFlag) >> 4;
+    internal int RepeatExitOptionalAsciiDelimiter => (C & ~(RepeatExitCoversOptionalTailFlag | RepeatExitSharesTerminalRunFlag)) >> 4;
 
     // A RepeatExit can pack up to three required ASCII starters for rewind.
     internal int RepeatExitRewindStarts => D;

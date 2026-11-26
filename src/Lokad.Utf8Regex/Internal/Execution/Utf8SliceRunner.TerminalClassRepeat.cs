@@ -1363,7 +1363,13 @@ internal static partial class Utf8SliceRunner
                 code[repeat.A] = exit;
             }
         }
-        if (prepareEmptyTailOnly) return;
+        if (prepareEmptyTailOnly)
+        {
+            if (repeat.RepeatMinimum == 1 && atom is { Kind: Utf8SliceInstructionKind.Hybrid, B: 1, D: 0 } &&
+                CoversTerminalOptionalClassTail(code, continuation, atom, setMasks, budget))
+                code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitCoversOptionalTailFlag, exit.D);
+            return;
+        }
         for (var remaining = 32; continuation < code.Length && remaining > 0 &&
             code[continuation].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd; remaining--)
         {
@@ -1539,6 +1545,37 @@ internal static partial class Utf8SliceRunner
             }
         }
         return 0;
+    }
+
+    private static bool CoversTerminalOptionalClassTail(ReadOnlySpan<Utf8SliceInstruction> code, int index,
+        in Utf8SliceInstruction first, byte[][] setMasks, Utf8ConstructionBudget budget)
+    {
+        if (code.Length - index != 11) return false;
+        budget.ChargeWork(11);
+        if (code[index..] is not
+            [
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: long.MaxValue } middle,
+                { Kind: Utf8SliceInstructionKind.Hybrid, B: 1, D: 0 } middleAtom, _, _,
+                { Kind: Utf8SliceInstructionKind.Fork, B: 0, C: 0, D: 0 } fork,
+                { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } separator,
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: long.MaxValue } last,
+                { Kind: Utf8SliceInstructionKind.Hybrid, B: 1, D: 0 } lastAtom, _, _,
+                { Kind: Utf8SliceInstructionKind.Accept }
+            ] || fork.A != code.Length - 1 || !IsSingleAtomRepeat(code, index, middle) ||
+            !IsSingleAtomRepeat(code, index + 6, last) || first.C != middleAtom.C || first.C != lastAtom.C ||
+            setMasks[first.A].Length != 16 || setMasks[middleAtom.A].Length != 16 || setMasks[lastAtom.A].Length != 16)
+            return false;
+
+        var firstExcluded = ReadAsciiSet(setMasks[first.A]);
+        var middleExcluded = ReadAsciiSet(setMasks[middleAtom.A]);
+        var lastExcluded = ReadAsciiSet(setMasks[lastAtom.A]);
+        var withSeparator = lastExcluded.With((byte)separator.A);
+        // The first alphabet is a subset of the middle one. The separator is
+        // the only scalar the final alphabet adds, so the optional branch
+        // consumes the rest of the same run if the middle reaches it.
+        return !lastExcluded.Contains((byte)separator.A) &&
+            withSeparator.Low == middleExcluded.Low && withSeparator.High == middleExcluded.High &&
+            (middleExcluded.Low & ~firstExcluded.Low) == 0 && (middleExcluded.High & ~firstExcluded.High) == 0;
     }
 
     private static Utf8SearchAsciiSet ReadAsciiSet(ReadOnlySpan<byte> mask)
