@@ -2190,7 +2190,18 @@ internal static partial class Utf8SliceRunner
         int start, int continuation, in Utf8SliceInstruction repeat, ReadOnlySpan<byte> suffix)
     {
         var remaining = BranchedPrefixInstructionLimit - continuation - 1;
-        var end = TryMatchLongPrefixRepeat(program, input, start, continuation + 1, in repeat, ref remaining);
+        int end;
+        if (repeat.RepeatMinimum == 1 && remaining >= 2 && input.Length - start >= 2 &&
+            (input[start] | input[start + 1]) < 128 &&
+            program.Instructions[continuation + 1] is { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } atom &&
+            program.SetMasks[atom.A] is var mask && MatchesAsciiHybridClass(mask, false, input[start]) &&
+            !MatchesAsciiHybridClass(mask, false, input[start + 1]))
+        {
+            // One member and its stopping byte establish the greedy endpoint.
+            end = start + 1;
+            remaining -= 2;
+        }
+        else end = TryMatchLongPrefixRepeat(program, input, start, continuation + 1, in repeat, ref remaining);
         if (end < 0) return end;
         if (remaining <= suffix.Length) return BranchedPrefixUndecided;
         return input[end..].StartsWith(suffix) ? end + suffix.Length : BranchedPrefixRejected;

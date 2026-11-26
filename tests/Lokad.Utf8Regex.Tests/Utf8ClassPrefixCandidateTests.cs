@@ -784,6 +784,8 @@ public sealed class Utf8ClassPrefixCandidateTests
 
     [Theory]
     [InlineData("aaaaa ab")]
+    [InlineData("aaaaa\tab")]
+    [InlineData("aaaaa\vab")]
     [InlineData("aaaa\u2003ab")]
     [InlineData(null)]
     public void PreparedPrefixCountKeepsOverlappingAndUnresolvedStarts(string? middle)
