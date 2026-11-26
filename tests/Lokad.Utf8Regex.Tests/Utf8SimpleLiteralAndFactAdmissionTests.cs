@@ -71,8 +71,8 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
                 Assert.Equal(new[] { "A!", "b!" }, literals.Select(Encoding.ASCII.GetString)); break;
             default:
                 var options = RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
-                var semantic = new Utf8SemanticRegex("[Aa]x", options, "[Aa]x", options, Assert.IsType<Utf8OwnedRegexTree>(input));
-                Assert.True(Utf8NativeExecutionAnalyzer.TryAnalyze(semantic, default, "[Aa]x", options, out var analysis));
+                var semantic = new Utf8SemanticRegex("[Aa]x", options, 0, options, Assert.IsType<Utf8OwnedRegexTree>(input));
+                Assert.True(Utf8NativeExecutionAnalyzer.TryAnalyze(semantic, default, out var analysis));
                 Assert.Equal("ax"u8.ToArray(), analysis.LiteralUtf8);
                 Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCase, analysis.ExecutionKind);
                 Assert.Same(analysis.LiteralUtf8, analysis.SearchFacts.LiteralUtf8); break;

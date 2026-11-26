@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -103,11 +104,12 @@ public sealed class Utf8OwnedOptionPreludeTests
 
     [Theory]
     [MemberData(nameof(NormalizeCases))]
-    public void NormalizeLeadingGlobalOptionsMatchesPinnedFacts(string pattern, int options, string expectedPattern, int expectedOptions)
+    public void ConsumeLeadingGlobalOptionsMatchesPinnedFacts(string pattern, int options, string expectedPattern, int expectedOptions)
     {
+        using var owner = Utf8ConstructionScope.Enter();
         var actualOptions = (RegexOptions)options;
-        var actualPattern = Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions(pattern, ref actualOptions);
-        Assert.Equal(expectedPattern, actualPattern);
+        var consumed = Utf8OwnedOptionPrelude.ConsumeLeadingGlobalOptions(new(pattern), ref actualOptions);
+        Assert.True(pattern.AsSpan(consumed).SequenceEqual(expectedPattern));
         Assert.Equal((RegexOptions)expectedOptions, actualOptions);
     }
 
@@ -126,9 +128,9 @@ public sealed class Utf8OwnedOptionPreludeTests
     [MemberData(nameof(FailedGroupLeavesOptionsCases))]
     public void FailedGroupsLeaveOptionsUntouched(string pattern, int options)
     {
+        using var owner = Utf8ConstructionScope.Enter();
         var ownedOptions = (RegexOptions)options;
-        var ownedPattern = Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions(pattern, ref ownedOptions);
-        Assert.Equal(pattern, ownedPattern);
+        Assert.Equal(0, Utf8OwnedOptionPrelude.ConsumeLeadingGlobalOptions(new(pattern), ref ownedOptions));
         Assert.Equal((RegexOptions)options, ownedOptions);
     }
 

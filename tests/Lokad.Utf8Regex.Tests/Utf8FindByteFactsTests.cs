@@ -282,7 +282,7 @@ public sealed class Utf8FindByteFactsTests
         {
             var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
             Assert.NotNull(tree);
-            var semantic = new Utf8SemanticRegex(pattern, tree.Options, pattern, tree.Options, tree);
+            var semantic = new Utf8SemanticRegex(pattern, tree.Options, 0, tree.Options, tree);
             object? Produce(bool facts) => facts
                 ? Utf8FrontEndSearchAnalyzer.Analyze(semantic)
                 : Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, tree.Options);

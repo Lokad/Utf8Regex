@@ -39,8 +39,9 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             var threeByteFamily = !prefilter.HasValue && HasThreeByteLiteralFamily(regexPlan, usesRightToLeft, budget);
             var primitive = TryCreateSmallAsciiLiteralFamilyPrimitive(regexPlan, usesRightToLeft, out var prepared)
                 ? (PreparedSmallAsciiLiteralFamilySearch?)prepared : null;
-            var allowsSmallAsciiFamilyOutput = primitive.HasValue &&
-                HasUngroupedPattern(regexPlan.SemanticRegex.ExecutionPattern, budget);
+            var semantic = regexPlan.SemanticRegex;
+            var allowsSmallAsciiFamilyOutput = primitive.HasValue && semantic.Pattern is not null &&
+                HasUngroupedPattern(semantic.ExecutionPattern, budget);
             _ = TryCreateShortAsciiLiteralFamilyCounter(regexPlan, usesRightToLeft, out var shortCounter);
             var composite = CreateCompositeTrailingLiteralSearch(regexPlan, usesRightToLeft);
             var result = budget.AllocateObject(new ConstructionState(regexPlan, usesRightToLeft,
@@ -177,15 +178,14 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             PreparedShortAsciiLiteralFamilyCounter.TryCreate(literals, out counter);
     }
 
-    private static bool HasUngroupedPattern(string? pattern, Utf8ConstructionBudget budget)
+    private static bool HasUngroupedPattern(ReadOnlySpan<char> pattern, Utf8ConstructionBudget budget)
     {
         // Split and replacement use the existing conservative source-text guard.
-        if (pattern is null) return false;
         for (var offset = 0; offset < pattern.Length;)
         {
             var length = Math.Min(2048, pattern.Length - offset);
             budget.ChargeWork((ulong)length);
-            if (pattern.AsSpan(offset, length).Contains('(')) return false;
+            if (pattern.Slice(offset, length).Contains('(')) return false;
             offset += length;
         }
         return true;

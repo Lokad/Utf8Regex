@@ -19,7 +19,7 @@ internal static class Utf8RegexPreparer
             var searchPlan = Utf8SearchPlan.Prepare(analyzedRegex.SearchFacts, scalarProgram);
             var result = Utf8PreparedRegex.Create(
                 new Utf8PreparedSemanticRegex(analyzedRegex.SemanticRegex.Pattern, analyzedRegex.SemanticRegex.Options,
-                    analyzedRegex.SemanticRegex.ExecutionPattern, analyzedRegex.SemanticRegex.ExecutionOptions,
+                    analyzedRegex.SemanticRegex.ExecutionPatternOffset, analyzedRegex.SemanticRegex.ExecutionOptions,
                     analyzedRegex.SemanticRegex.RuntimeTree?.CaptureCatalog),
                 analyzedRegex.Features,
                 analyzedRegex.ExecutionKind,

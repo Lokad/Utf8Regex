@@ -255,17 +255,16 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
     }
 
     [Fact]
-    public void LeadingOptionTextSharesCapacityAndDenialDoesNotPublishStagedOptions()
+    public void LeadingOptionsReturnASourceOffsetWithNoByteHeadroom()
     {
-        using var owner = Utf8ConstructionScope.Enter();
+        const string pattern = "(?im)(?-m)😀z";
+        using var owner = new Utf8ConstructionScope(0, 0, ulong.MaxValue, ulong.MaxValue);
         var options = Options;
-        var text = Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions("(?im)(?-m)😀z", ref options);
-        Assert.Equal("😀z", text);
+        var offset = Utf8OwnedOptionPrelude.ConsumeLeadingGlobalOptions(new(pattern), ref options);
+        Assert.True(pattern.AsSpan(offset).SequenceEqual("😀z"));
         Assert.Equal(Options | RegexOptions.IgnoreCase, options);
-        Assert.Equal(Utf8ConstructionBudget.StringBytes(text.Length), owner.Budget.ReservedBytes);
-        var unchanged = "abc";
-        Assert.Same(unchanged, Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions(unchanged, ref options));
-        Assert.Equal(Utf8ConstructionBudget.StringBytes(text.Length), owner.Budget.ReservedBytes);
+        Assert.Equal(0, Utf8OwnedOptionPrelude.ConsumeLeadingGlobalOptions(new("abc"), ref options));
+        Assert.Equal(0ul, owner.Budget.PeakBytes);
     }
 
     [Theory]
@@ -280,7 +279,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         {
             measured.Budget.CheckpointHook = _ => checkpoints++;
             var options = Options;
-            _ = Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions(pattern, ref options);
+            _ = Utf8OwnedOptionPrelude.ConsumeLeadingGlobalOptions(new(pattern), ref options);
             work = measured.Budget.WorkSteps;
         }
         for (var cap = 0ul; cap < work; cap++)
@@ -290,7 +289,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
             var checkpoint = owner.Budget.ReservedBytes;
             var options = Options;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions(pattern, ref options));
+                Utf8OwnedOptionPrelude.ConsumeLeadingGlobalOptions(new(pattern), ref options));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
             Assert.Equal(Options, options);
             AssertParent(owner.Budget, checkpoint, parent);
@@ -312,7 +311,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
                 if (timeout) ticks = 30000; else cancellation.Cancel();
             };
             var options = Options;
-            var failure = Record.Exception(() => Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions(pattern, ref options));
+            var failure = Record.Exception(() => Utf8OwnedOptionPrelude.ConsumeLeadingGlobalOptions(new(pattern), ref options));
             if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
             else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.Equal(Options, options);
@@ -323,7 +322,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void FrontEndEntriesKeepNormalizedTextAndRespectSharedWorkCapsForFreshGraphs(bool compile)
+    public void FrontEndEntriesBorrowSourceTextAndRespectSharedWorkCapsForFreshGraphs(bool compile)
     {
         const string pattern = "(?i)ab😀";
         // These entries create fresh nodes and reference-keyed admitted maps.
@@ -333,8 +332,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         using (var measured = Utf8ConstructionScope.Enter())
         {
             var executionPattern = compile ? Utf8FrontEnd.Compile(pattern, Options).SemanticRegex.ExecutionPattern : Utf8FrontEnd.Analyze(pattern, Options).SemanticRegex.ExecutionPattern;
-            Assert.Equal("ab😀", executionPattern);
-            Assert.True(measured.Budget.ReservedBytes >= Utf8ConstructionBudget.StringBytes(executionPattern.Length));
+            Assert.True(executionPattern == pattern.AsSpan(4));
             work = measured.Budget.WorkSteps;
         }
         foreach (var cap in new[] { 0ul, work / 3, work - 1 })
@@ -350,13 +348,13 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
                     if (compile)
                     {
                         var prepared = Utf8FrontEnd.Compile(pattern, Options);
-                        Assert.Equal("ab😀", prepared.SemanticRegex.ExecutionPattern);
+                        Assert.True(prepared.SemanticRegex.ExecutionPattern == pattern.AsSpan(4));
                         Assert.NotNull(prepared.SemanticRegex.CaptureCatalog);
                     }
                     else
                     {
                         var semantic = Utf8FrontEnd.Analyze(pattern, Options).SemanticRegex;
-                        Assert.Equal("ab😀", semantic.ExecutionPattern);
+                        Assert.True(semantic.ExecutionPattern == pattern.AsSpan(4));
                         Assert.NotNull(semantic.RuntimeTree);
                     }
                 });
@@ -366,33 +364,6 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
             }
             AssertParent(owner.Budget, checkpoint, parent);
             Assert.InRange(owner.Budget.WorkSteps, 2ul, cap + 2);
-        }
-    }
-
-    [Fact]
-    public void LeadingOptionByteBoundaryPublishesOptionsOnlyAfterTheRetainedTextIsAdmitted()
-    {
-        var loan = Utf8ConstructionBudget.StringBytes("😀z".Length);
-        foreach (var cap in new[] { 0ul, 1ul, loan - 1, loan })
-        {
-            using var owner = new Utf8ConstructionScope(0, 128 + cap, ulong.MaxValue, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            var options = Options;
-            using (var discarded = Utf8ConstructionScope.Enter())
-            {
-                var failure = Record.Exception(() => Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions("(?im)(?-m)😀z", ref options));
-                if (cap < loan)
-                {
-                    var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
-                    Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, breach.ResourceKind);
-                    Assert.Equal(128 + loan, breach.Requested);
-                    Assert.Equal(Options, options);
-                }
-                else { Assert.Null(failure); Assert.Equal(Options | RegexOptions.IgnoreCase, options); }
-            }
-            AssertParent(owner.Budget, checkpoint, parent);
-            Assert.True(owner.Budget.PeakBytes <= 128 + cap);
         }
     }
 

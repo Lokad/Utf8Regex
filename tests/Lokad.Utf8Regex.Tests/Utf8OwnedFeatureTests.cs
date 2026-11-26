@@ -135,7 +135,7 @@ public sealed class Utf8OwnedFeatureTests
             }
         }
         Assert.Equal(expectedKinds, string.Join(',', kinds));
-        var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(new(pattern, (RegexOptions)options, pattern, (RegexOptions)options, tree));
+        var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(new(pattern, (RegexOptions)options, 0, (RegexOptions)options, tree));
         var actual = new[] { features.HasBackreferences, features.HasLookarounds, features.HasAtomicGroups,
             features.HasConditionals, features.HasLoops, features.HasAlternation, features.HasAbsoluteStartAnchor,
             features.HasWordBoundary, features.HasLookbehind };
@@ -156,7 +156,7 @@ public sealed class Utf8OwnedFeatureTests
     {
         var root = Utf8TreeNode.Create((Utf8TreeNodeKind)kind, RegexOptions.None);
         var tree = Utf8OwnedRegexTree.Create(root, 1, null, null, null, RegexOptions.None, null, null, false, false);
-        var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(new("", RegexOptions.None, "", RegexOptions.None, tree));
+        var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(new("", RegexOptions.None, 0, RegexOptions.None, tree));
         Assert.True(features.HasLoops);
     }
 }

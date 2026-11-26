@@ -40,7 +40,8 @@ public sealed class Utf8ParseTreeRetentionTests
         var metadata = prepared.SemanticRegex;
         Assert.Same(original.Pattern, metadata.Pattern);
         Assert.Equal(original.Options, metadata.Options);
-        Assert.Same(original.ExecutionPattern, metadata.ExecutionPattern);
+        Assert.True(original.ExecutionPattern == metadata.ExecutionPattern);
+        Assert.True(metadata.ExecutionPattern == pattern.AsSpan(original.ExecutionPatternOffset));
         Assert.Equal(original.ExecutionOptions, metadata.ExecutionOptions);
         Assert.Same(original.RuntimeTree.CaptureCatalog, metadata.CaptureCatalog);
         Assert.NotNull(prepared.ScalarProgram);

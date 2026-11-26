@@ -35,9 +35,7 @@ internal static class Utf8FrontEnd
     {
         using var owner = Utf8ConstructionScope.Enter();
         var effectiveOptions = options;
-        string? executionPattern = null;
-        if (pattern.IsUtf8) _ = Utf8OwnedOptionPrelude.ConsumeLeadingGlobalOptions(pattern, ref effectiveOptions);
-        else executionPattern = Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions(pattern.Text, ref effectiveOptions);
+        var consumedOptions = Utf8OwnedOptionPrelude.ConsumeLeadingGlobalOptions(pattern, ref effectiveOptions);
         Utf8PatternDiagnostic diagnostic;
         var runtimeTree = pattern.IsUtf8 ? Utf8OwnedTreeParser.TryParse(pattern.Utf8, options, out diagnostic)
             : Utf8OwnedTreeParser.TryParse(pattern.Text, options, out diagnostic);
@@ -48,10 +46,10 @@ internal static class Utf8FrontEnd
         var semanticRegex = new Utf8SemanticRegex(
             pattern.IsUtf8 ? null : pattern.Text,
             options,
-            executionPattern,
+            pattern.IsUtf8 ? 0 : consumedOptions,
             effectiveOptions,
             runtimeTree);
-        var analysis = Utf8FrontEndAnalyzer.Analyze(semanticRegex, executionPattern, effectiveOptions);
+        var analysis = Utf8FrontEndAnalyzer.Analyze(semanticRegex);
         owner.Complete();
         return analysis;
     }

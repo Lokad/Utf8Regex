@@ -8,18 +8,19 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 internal readonly struct Utf8PreparedSemanticRegex
 {
     internal Utf8PreparedSemanticRegex(string? pattern, RegexOptions options,
-        string? executionPattern, RegexOptions executionOptions, Utf8CaptureCatalog? captureCatalog)
+        int executionPatternOffset, RegexOptions executionOptions, Utf8CaptureCatalog? captureCatalog)
     {
         Pattern = pattern;
         Options = options;
-        ExecutionPattern = executionPattern;
+        ExecutionPatternOffset = executionPatternOffset;
         ExecutionOptions = executionOptions;
         CaptureCatalog = captureCatalog;
     }
 
     public string? Pattern { get; }
     public RegexOptions Options { get; }
-    public string? ExecutionPattern { get; }
+    private int ExecutionPatternOffset { get; }
+    public ReadOnlySpan<char> ExecutionPattern => Pattern.AsSpan(ExecutionPatternOffset);
     public RegexOptions ExecutionOptions { get; }
     public Utf8CaptureCatalog? CaptureCatalog { get; }
 }

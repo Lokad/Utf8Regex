@@ -5,13 +5,13 @@ internal readonly struct Utf8SemanticRegex
     public Utf8SemanticRegex(
         string? pattern,
         RegexOptions options,
-        string? executionPattern,
+        int executionPatternOffset,
         RegexOptions executionOptions,
         Utf8OwnedRegexTree? runtimeTree)
     {
         Pattern = pattern;
         Options = options;
-        ExecutionPattern = executionPattern;
+        ExecutionPatternOffset = executionPatternOffset;
         ExecutionOptions = executionOptions;
         RuntimeTree = runtimeTree;
     }
@@ -20,7 +20,8 @@ internal readonly struct Utf8SemanticRegex
 
     public RegexOptions Options { get; }
 
-    public string? ExecutionPattern { get; }
+    public int ExecutionPatternOffset { get; }
+    public ReadOnlySpan<char> ExecutionPattern => Pattern.AsSpan(ExecutionPatternOffset);
 
     public RegexOptions ExecutionOptions { get; }
 

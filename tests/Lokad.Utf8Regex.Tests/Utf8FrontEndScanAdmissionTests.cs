@@ -33,7 +33,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
     }
 
     private static Utf8SemanticRegex Semantic(Utf8TreeNode root)
-        => new("a", RegexOptions.None, "a", RegexOptions.None,
+        => new("a", RegexOptions.None, 0, RegexOptions.None,
             Utf8OwnedRegexTree.Create(root, 1, null, null, null, RegexOptions.None, CultureInfo.InvariantCulture, null, false, false));
 
     private static Input Make(int depth)

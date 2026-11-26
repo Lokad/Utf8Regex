@@ -16,20 +16,8 @@ internal static class Utf8OwnedOptionPrelude
             : CultureInfo.CurrentCulture;
     }
 
-    public static string NormalizeLeadingGlobalOptions(string pattern, ref RegexOptions options)
-    {
-        using var owner = Utf8ConstructionScope.Enter();
-        var stagedOptions = options;
-        var consumed = ConsumeLeadingGlobalOptions(new Utf8ConstructionPattern(pattern), ref stagedOptions);
-        var result = consumed == 0 ? pattern : owner.Budget.CopyText(pattern.AsSpan(consumed));
-        options = stagedOptions;
-        owner.Complete();
-        return result;
-    }
-
     // The caller's construction scope owns interruption/work. ASCII option
-    // spelling has identical source extents in text and UTF-8; native callers
-    // keep the suffix borrowed instead of materializing a normalized string.
+    // spelling has identical source extents in text and UTF-8.
     internal static int ConsumeLeadingGlobalOptions(Utf8ConstructionPattern pattern, ref RegexOptions options)
     {
         var budget = Utf8ConstructionScope.CurrentBudget;
