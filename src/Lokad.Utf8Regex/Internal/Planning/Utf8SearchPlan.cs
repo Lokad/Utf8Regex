@@ -46,6 +46,13 @@ internal readonly struct Utf8SearchPlan
             if (_repeatPrefix.Any.HasValue) _repeatPrefixProgram = scalarProgram;
         }
         AlternateLiteralsUtf8 = alternateLiteralsUtf8;
+        if (kind is Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals &&
+            leadingBoundary == Utf8BoundaryRequirement.Boundary &&
+            trailingBoundary == Utf8BoundaryRequirement.Boundary && trailingLiteralUtf8 is null &&
+            alternateLiteralsUtf8 is { } boundaryLiterals)
+        {
+            BoundaryFamilyCounter = Utf8PackedNibbleLiteralFamilyCountStrategy.CreateBoundaryCounter(boundaryLiterals);
+        }
         MultiLiteralSearch = CreateMultiLiteralSearch(kind, alternateLiteralsUtf8);
         // Direct portfolios already own the exact tables used by compatibility
         // consumers. Borrow them instead of acquiring the same payload twice.
@@ -133,6 +140,8 @@ internal readonly struct Utf8SearchPlan
     }
 
     public byte[][]? AlternateLiteralsUtf8 { get; }
+
+    internal Utf8PackedNibbleLiteralFamilyCountStrategy? BoundaryFamilyCounter { get; }
 
     public readonly PreparedLiteralSetSearch? AlternateLiteralSearch;
 

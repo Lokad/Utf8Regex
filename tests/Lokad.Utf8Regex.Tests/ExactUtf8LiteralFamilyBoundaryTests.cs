@@ -66,6 +66,21 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
     };
 
     [Theory]
+    [InlineData(2040)]
+    [InlineData(2041)]
+    [InlineData(2042)]
+    public void ShortWordFamiliesKeepBranchOrderAcrossCountWindows(int start)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('z', start - 1) +
+            " ant-boat ants! ant𝟢 ants\u200d 😀ants😀");
+        var policy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkSteps = 64, MaxWorkingBytes = 1 } };
+        using var shortFirst = new Utf8Regex(@"\b(?:ant|ant-boat|ants|boat|else)\b", policy: policy);
+        using var longFirst = new Utf8Regex(@"\b(?:ant-boat|ant|ants|boat|else)\b", policy: policy);
+        Assert.Equal(4, shortFirst.Count(input));
+        Assert.Equal(3, longFirst.Count(input));
+    }
+
+    [Theory]
     [InlineData(@"\b(?:foo|foobar|baz)\b", true)]
     [InlineData(@"\b(?:foobar|foo|baz)\b", true)]
     [InlineData(@"\b(?:foo|bar|baz)\b", false)]

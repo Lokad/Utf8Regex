@@ -32,15 +32,8 @@ internal sealed class Utf8PackedNibbleLiteralFamilyCountStrategy
             return false;
         }
 
-        var prefilter = PreparedMultiLiteralCandidatePrefilter.CreatePackedNibbleSimd(literals);
-        if (!prefilter.HasValue)
-        {
-            return false;
-        }
-
-        strategy = Utf8ConstructionScope.CurrentBudget.AllocateObject(prefilter,
-            static state => new Utf8PackedNibbleLiteralFamilyCountStrategy(state));
-        return true;
+        strategy = Create(literals);
+        return strategy is not null;
     }
 
     public int Count(ReadOnlySpan<byte> input)
@@ -62,6 +55,79 @@ internal sealed class Utf8PackedNibbleLiteralFamilyCountStrategy
         return count;
     }
 
+    internal static Utf8PackedNibbleLiteralFamilyCountStrategy? CreateBoundaryCounter(byte[][] literals)
+    {
+        if (literals.Length is < 5 or > 8)
+            return null;
+        foreach (var literal in literals)
+        {
+            if (literal.Length is < 3 or > 8)
+                return null;
+        }
+
+        return Create(literals);
+    }
+
+    internal Utf8ExecutionLimitKind TryCountWithBoundaries(ReadOnlySpan<byte> input,
+        ref Utf8SliceInvocation invocation, out int count)
+    {
+        count = 0;
+        var total = 0;
+        var nextStart = 0;
+        // The admitted block includes the longest possible overlap. Each
+        // candidate start belongs to one block, even across a match.
+        var lookahead = _prefilter.LongestLength - 1;
+        while (nextStart <= input.Length - _prefilter.ShortestLength)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var first = nextStart;
+            var block = input.Slice(first, Math.Min(2048, input.Length - first));
+            var starts = first + block.Length == input.Length ? block.Length : block.Length - lookahead;
+            var state = default(PreparedMultiLiteralScanState);
+            while (_prefilter.TryFindNextCandidate(block, ref state, out var relative) && relative < starts)
+            {
+                var at = first + relative;
+                if (at < nextStart) continue;
+                // At most eight short comparisons and their boundary predicates.
+                // Only an exact hit proves a scalar boundary at the candidate.
+                breach = invocation.TryChargeBoundedCheck();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                var remaining = block[relative..];
+                foreach (var literal in _prefilter.Literals)
+                {
+                    if (!remaining.StartsWith(literal))
+                        continue;
+                    if (!Utf8ScalarWordBoundary.IsBoundary(input, at))
+                        break;
+                    if (!Utf8ScalarWordBoundary.IsBoundary(input, at + literal.Length))
+                        continue;
+                    total++;
+                    nextStart = at + literal.Length;
+                    break;
+                }
+            }
+            nextStart = Math.Max(nextStart, first + starts);
+        }
+
+        var outcome = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        if (outcome == Utf8ExecutionLimitKind.None)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.LiteralFamilyPackedNibbleSimdCount);
+            count = total;
+        }
+        return outcome;
+    }
+
+    private static Utf8PackedNibbleLiteralFamilyCountStrategy? Create(byte[][] literals)
+    {
+        var prefilter = PreparedMultiLiteralCandidatePrefilter.CreatePackedNibbleSimd(literals);
+        return prefilter.HasValue
+            ? Utf8ConstructionScope.CurrentBudget.AllocateObject(prefilter,
+                static state => new Utf8PackedNibbleLiteralFamilyCountStrategy(state))
+            : null;
+    }
 
     private static bool HasThreeByteLiteralPrefix(ReadOnlySpan<byte[]> literals)
     {

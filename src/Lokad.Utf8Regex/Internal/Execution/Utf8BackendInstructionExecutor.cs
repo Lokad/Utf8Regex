@@ -79,6 +79,8 @@ internal static class Utf8BackendInstructionExecutor
 
     internal static Utf8ExecutionLimitKind TryCountNativeLiteralMatches(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, bool reverse, ref Utf8SliceInvocation invocation, out int count)
     {
+        if (!reverse && input.Length >= 128 && plan.BoundaryFamilyCounter is { } boundaryCounter)
+            return boundaryCounter.TryCountWithBoundaries(input, ref invocation, out count);
         if (!reverse && !invocation.IsUnmetered &&
             plan.AlternateLiteralsUtf8 is not { Length: > 0 } &&
             plan.LiteralSearch is { Length: > 0 } search &&

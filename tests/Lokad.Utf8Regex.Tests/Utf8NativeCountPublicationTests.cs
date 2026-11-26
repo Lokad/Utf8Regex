@@ -8,18 +8,23 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8NativeCountPublicationTests
 {
     [Theory]
-    [InlineData("", 0, false, RegexOptions.None)]
-    [InlineData("", 0, true, RegexOptions.None)]
-    [InlineData("miss", 0, false, RegexOptions.None)]
-    [InlineData("miss", 0, true, RegexOptions.None)]
-    [InlineData("needle needle", 2, false, RegexOptions.None)]
-    [InlineData("needle needle", 2, true, RegexOptions.None)]
-    [InlineData("NEEDLE néedle needle", 2, false, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    [InlineData("NEEDLE néedle needle", 2, true, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    public void FinalCounterCheckpointCannotPublishAfterInterruption(string text, int expected, bool expire, RegexOptions options)
+    [InlineData("needle", "", 0, false, RegexOptions.None)]
+    [InlineData("needle", "", 0, true, RegexOptions.None)]
+    [InlineData("needle", "miss", 0, false, RegexOptions.None)]
+    [InlineData("needle", "miss", 0, true, RegexOptions.None)]
+    [InlineData("needle", "needle needle", 2, false, RegexOptions.None)]
+    [InlineData("needle", "needle needle", 2, true, RegexOptions.None)]
+    [InlineData("needle", "NEEDLE néedle needle", 2, false, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("needle", "NEEDLE néedle needle", 2, true, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData(@"\b(?:the|and|that|have|for)\b", "and", 1, false, RegexOptions.None)]
+    [InlineData(@"\b(?:the|and|that|have|for)\b", "and", 1, true, RegexOptions.None)]
+    public void FinalCounterCheckpointCannotPublishAfterInterruption(
+        string pattern, string text, int expected, bool expire, RegexOptions options)
     {
-        var plan = new Utf8Regex("needle", options).Inspection.SearchPlan;
-        var input = Encoding.UTF8.GetBytes(text);
+        using var regex = new Utf8Regex(pattern, options);
+        var plan = regex.Inspection.SearchPlan;
+        // Cross a search window while retaining the same final counter output.
+        var input = Encoding.UTF8.GetBytes(plan.HasBoundaryRequirements ? text.PadLeft(3004) : text);
         var limits = new Utf8ExecutionLimits(10000, 0, 1000);
         var measured = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None,
