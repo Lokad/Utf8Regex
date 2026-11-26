@@ -800,6 +800,8 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData("ab", "b", "cd", 0, 4096)]
+    [InlineData("ab", "abβ", "cδ", 0, 4096)]
     [InlineData("pé", "abc", "cd.e", 0, 4096)]
     [InlineData("pé", "β-記", "δ.東", 0, 4096)]
     [InlineData("p\U00010400é", "β-記", "δ.東", 0, 4096)]

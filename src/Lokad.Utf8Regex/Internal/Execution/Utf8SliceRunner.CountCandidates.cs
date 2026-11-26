@@ -2030,7 +2030,16 @@ internal static partial class Utf8SliceRunner
         var available = input.Length - position;
         var window = input.Slice(position, Math.Min(remaining, available));
         var mask = program.SetMasks[atom.A];
-        var consumed = ScanAsciiMask(window, mask, category: false);
+        // Short runs often encounter their separator before a vector load pays off.
+        var consumed = 0;
+        var probeLength = Math.Min(3, window.Length);
+        for (; consumed < probeLength; consumed++)
+        {
+            var value = window[consumed];
+            if (value >= 128 || !MatchesAsciiHybridClass(mask, false, value)) break;
+        }
+        if (consumed == 3 && consumed < window.Length)
+            consumed += ScanAsciiMask(window[consumed..], mask, category: false);
         if (consumed < window.Length && window[consumed] >= 128)
             consumed = ContinueUnfoldedClassPrefix(window, consumed, mask, program.GetCompleteAsciiCategoryMask(atom));
         if (consumed < 0 || consumed == window.Length && window.Length < available)
