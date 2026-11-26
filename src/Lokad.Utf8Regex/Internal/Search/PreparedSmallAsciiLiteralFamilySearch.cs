@@ -218,10 +218,9 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
 
         if (bucket.PrefixDiscriminator.HasValue)
         {
-            var map = bucket.PrefixDiscriminator.LiteralsByByte;
             var discriminatorIndex = index + bucket.PrefixDiscriminator.Offset;
             if ((uint)discriminatorIndex < (uint)input.Length &&
-                map[input[discriminatorIndex]] is { } literal &&
+                bucket.PrefixDiscriminator.FindLiteral(input[discriminatorIndex], bucket.Literals) is { } literal &&
                 // A discriminator selects a literal; it does not prove the
                 // common prefix. Anchor/filter checks may cover only part of it.
                 LiteralMatchesAt(input, index, literal))

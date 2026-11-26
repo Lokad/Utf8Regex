@@ -86,7 +86,8 @@ internal static partial class Utf8SearchExecutor
             // after each first-byte hit. Keep a bounded complete-prefix window;
             // long prefixes and selected tails retain chunked verification.
             var prefixLength = Math.Min(discriminator.Offset, 1024);
-            var prefix = buckets[0].Literals[0].AsSpan(0, prefixLength);
+            var bucketLiterals = buckets[0].Literals;
+            var prefix = bucketLiterals[0].AsSpan(0, prefixLength);
             var verified = prefixLength == discriminator.Offset ? prefixLength + 1 : prefixLength;
             for (var low = start; low < end;)
             {
@@ -100,7 +101,7 @@ internal static partial class Utf8SearchExecutor
                 // The prepared column is unique across all branches. A selected
                 // byte plus the searched prefix proves no remaining tail.
                 if ((uint)discriminator.Offset < (uint)(end - at) &&
-                    discriminator.LiteralsByByte[input[at + discriminator.Offset]] is { } literal &&
+                    discriminator.FindLiteral(input[at + discriminator.Offset], bucketLiterals) is { } literal &&
                     literal.Length <= end - at)
                 {
                     breach = TryCompareLiteral(input.Slice(at + verified, literal.Length - verified),

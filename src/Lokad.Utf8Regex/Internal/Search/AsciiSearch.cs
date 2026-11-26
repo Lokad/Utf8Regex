@@ -550,17 +550,21 @@ internal readonly struct AsciiExactLiteralBucket
 
 internal readonly struct AsciiExactLiteralPrefixDiscriminator
 {
-    private readonly byte[][]? _literalsByByte;
+    private readonly ushort[]? _ordinalsByByte;
 
-    public AsciiExactLiteralPrefixDiscriminator(int offset, byte[][] literalsByByte)
+    public AsciiExactLiteralPrefixDiscriminator(int offset, ushort[] ordinalsByByte)
     {
         Offset = offset;
-        _literalsByByte = literalsByByte;
+        _ordinalsByByte = ordinalsByByte;
     }
 
     public int Offset { get; }
 
-    public ReadOnlySpan<byte[]> LiteralsByByte => _literalsByByte;
+    public byte[]? FindLiteral(byte value, byte[][] literals)
+    {
+        var ordinal = _ordinalsByByte![value];
+        return ordinal == 0 ? null : literals[ordinal - 1];
+    }
 
-    public bool HasValue => _literalsByByte is not null;
+    public bool HasValue => _ordinalsByByte is not null;
 }

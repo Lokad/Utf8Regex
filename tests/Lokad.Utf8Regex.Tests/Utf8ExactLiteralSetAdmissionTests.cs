@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8ExactLiteralSetAdmissionTests
 {
-    public static IEnumerable<object[]> Families() => Enumerable.Range(0, 17).Select(i => new object[] { i });
+    public static IEnumerable<object[]> Families() => Enumerable.Range(0, 19).Select(i => new object[] { i });
     public static IEnumerable<object[]> Cutoffs() => from kind in Enumerable.Range(0, 3) from bytes in new[] { false, true } select new object[] { kind, bytes };
     public static IEnumerable<object[]> Depths() => from kind in Enumerable.Range(0, 3) from depth in Enumerable.Range(0, 5) select new object[] { kind, depth };
     private static byte[][] Bytes(params string[] values) => values.Select(Encoding.UTF8.GetBytes).ToArray();
@@ -22,6 +22,8 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
         13 => Enumerable.Range(0, 256).Select(i => new[] { (byte)i, (byte)127 }).ToArray(),
         14 => Enumerable.Range(0, 257).Select(i => new[] { (byte)97, (byte)i, (byte)127 }).ToArray(),
         15 => Bytes("aX0", "aX1", "bX0", "bX1", "cX0", "cX1", "dX0", "dX1", "a"),
+        17 => Enumerable.Range(0, 256).Select(i => new[] { (byte)'a', (byte)'b', (byte)i }).ToArray(),
+        18 => Enumerable.Range(0, 256).Select(i => new[] { (byte)('a' + i % 2), (byte)i, (byte)'z' }).ToArray(),
         _ => Bytes("中abc", "文xy", "中tail", "字tail"),
     };
     private static byte[][][] Groups(byte[][] literals) => literals.Length == 0 ? [] : literals.Any(v => v.Length == 0) ? new[] { new byte[][] { [] } }
@@ -57,12 +59,12 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
         + Utf8ConstructionBudget.ArrayBytes<int>(data.BucketIndexMap.Length) + Utf8ConstructionBudget.ArrayBytes<AsciiExactLiteralBucket>(data.Buckets.Length)
         + data.Buckets.Aggregate(0ul, (sum, b) => sum + Utf8ConstructionBudget.ArrayBytes<byte[]>(b.Literals.Length)
             + Utf8ConstructionBudget.ArrayBytes<byte>(b.CommonPrefix.Length) + Utf8ConstructionBudget.ArrayBytes<byte>(b.SecondByteCandidates?.Length ?? 0)
-            + (b.PrefixDiscriminator.HasValue ? Utf8ConstructionBudget.ArrayBytes<byte[]>(256) : 0));
+            + (b.PrefixDiscriminator.HasValue ? Utf8ConstructionBudget.ArrayBytes<ushort>(256) : 0));
     private static object? Property(PreparedLiteralSetSearch search, string name) => typeof(PreparedLiteralSetSearch).GetProperty(name, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(search);
     private static ulong ExtraLoan(PreparedLiteralSetSearch search)
     {
         if (search.Strategy == PreparedLiteralSetStrategy.UniqueAnchorByte)
-        { var anchor = Assert.IsType<PreparedLiteralSetUniqueAnchor>(Property(search, "UniqueAnchor")); return SearchLoan(anchor.AnchorSearch) + Utf8ConstructionBudget.ArrayBytes<byte[]>(256); }
+        { var anchor = Assert.IsType<PreparedLiteralSetUniqueAnchor>(Property(search, "UniqueAnchor")); return SearchLoan(anchor.AnchorSearch) + Utf8ConstructionBudget.ArrayBytes<ushort>(256); }
         if (search.Strategy != PreparedLiteralSetStrategy.MultiLiteralTrie) return 0;
         var trie = Assert.IsType<PreparedMultiLiteralTrieSearch>(Property(search, "MultiLiteral"));
         var nodes = Assert.IsType<PreparedMultiLiteralTrieNode[]>(typeof(PreparedMultiLiteralTrieSearch).GetField("_nodes", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(trie));
@@ -93,7 +95,7 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
                 && expected.Select(v => v[prefix.Length]).Distinct().Count() == expected.Length;
             Assert.Equal(discriminator, bucket.PrefixDiscriminator.HasValue);
             if (discriminator)
-                foreach (var literal in expected) Assert.Same(literal, bucket.PrefixDiscriminator.LiteralsByByte[literal[prefix.Length]]);
+                foreach (var literal in expected) Assert.Same(literal, bucket.PrefixDiscriminator.FindLiteral(literal[prefix.Length], bucket.Literals));
         }
         for (var value = 0; value < data.BucketIndexMap.Length; value++)
             Assert.Equal(Array.FindIndex(data.Buckets, b => b.FirstByte == value), data.BucketIndexMap[value]);
@@ -241,6 +243,23 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
         var search = new PreparedLiteralSetSearch(Bytes("😀tail", "😁tail", "😀toe"));
         Assert.Equal(20, search.LastIndexOf("xx😀tail|😁tail|😀toe"u8));
         Assert.Equal(0, search.LastIndexOf("😀tail"u8));
+    }
+
+    [Theory]
+    [InlineData(17)]
+    [InlineData(18)]
+    public void FullByteTablesSelectEveryLiteralInBothDirections(int family)
+    {
+        var literals = Family(family);
+        var search = new PreparedLiteralSetSearch(literals);
+        Span<byte> input = stackalloc byte[5];
+        input.Clear();
+        foreach (var literal in literals)
+        {
+            literal.CopyTo(input[1..]);
+            Assert.Equal(1, search.IndexOf(input));
+            Assert.Equal(1, search.LastIndexOf(input));
+        }
     }
 
     [Theory]

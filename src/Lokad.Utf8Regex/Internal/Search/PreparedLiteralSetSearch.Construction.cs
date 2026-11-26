@@ -75,12 +75,16 @@ internal readonly partial struct PreparedLiteralSetSearch
                 if (duplicate) break;
             }
             if (duplicate) continue;
-            var map = budget.AllocateArray<byte[]>(256, false);
-            foreach (var bucket in data.Buckets)
+            var map = budget.AllocateArray<ushort>(256, false);
+            for (var bucketIndex = 0; bucketIndex < data.Buckets.Length; bucketIndex++)
             {
                 budget.ChargeWork(1);
-                foreach (var literal in bucket.Literals)
-                { budget.ChargeWork(1); map[literal[offset]] = literal; }
+                var literals = data.Buckets[bucketIndex].Literals;
+                for (var index = 0; index < literals.Length; index++)
+                {
+                    budget.ChargeWork(1);
+                    map[literals[index][offset]] = (ushort)((bucketIndex << 8) | index);
+                }
             }
             return new PreparedLiteralSetUniqueAnchor(offset, PreparedByteSearch.Create(anchors[..used]), map, data.ShortestLength);
         }

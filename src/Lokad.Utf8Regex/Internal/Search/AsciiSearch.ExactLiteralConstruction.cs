@@ -159,11 +159,11 @@ internal static partial class AsciiSearch
             if (seen[value]) return default;
             seen[value] = true;
         }
-        var map = budget.AllocateArray<byte[]>(256, false);
-        foreach (var literal in literals)
+        var map = budget.AllocateArray<ushort>(256, false);
+        for (var index = 0; index < literals.Length; index++)
         {
             budget.ChargeWork(1);
-            map[literal[prefixLength]] = literal;
+            map[literals[index][prefixLength]] = (ushort)(index + 1);
         }
         return new(prefixLength, map);
     }

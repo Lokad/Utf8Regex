@@ -43,7 +43,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
         {
             loan += Utf8ConstructionBudget.ArrayBytes<byte[]>(bucket.Literals.Length) + Utf8ConstructionBudget.ArrayBytes<byte>(bucket.CommonPrefix.Length);
             if (bucket.SecondByteCandidates is not null) loan += Utf8ConstructionBudget.ArrayBytes<byte>(bucket.SecondByteCandidates.Length);
-            if (bucket.PrefixDiscriminator.HasValue) loan += Utf8ConstructionBudget.ArrayBytes<byte[]>(256);
+            if (bucket.PrefixDiscriminator.HasValue) loan += Utf8ConstructionBudget.ArrayBytes<ushort>(256);
         }
         return loan;
     }
