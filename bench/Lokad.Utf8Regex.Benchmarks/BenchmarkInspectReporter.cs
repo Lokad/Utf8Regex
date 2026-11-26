@@ -368,8 +368,8 @@ internal static partial class BenchmarkInspectReporter
         if (regex.Inspection.ExecutionKind == NativeExecutionKind.ExactUtf8Literal && regex.Inspection.SearchPlan.LiteralUtf8 is { Length: > 0 } literal)
         {
             Measure("SearchOnlyCount", iterations, () => ExecuteExactUtf8LiteralSearchCount(regex.Inspection.SearchPlan, literal, context.InputBytes));
-            Measure("DirectEnumeratorMoveNext", iterations, () => ExecuteDirectExactUtf8LiteralEnumeratorMoveNext(regex.Inspection.PreparedRegex, literal, context.InputBytes));
-            Measure("DirectEnumeratorIndexSum", iterations, () => ExecuteDirectExactUtf8LiteralEnumeratorIndexSum(regex.Inspection.PreparedRegex, literal, context.InputBytes));
+            Measure("DirectEnumeratorMoveNext", iterations, () => ExecuteDirectExactUtf8LiteralEnumeratorMoveNext(regex.Inspection.PreparedRegex, context.InputBytes));
+            Measure("DirectEnumeratorIndexSum", iterations, () => ExecuteDirectExactUtf8LiteralEnumeratorIndexSum(regex.Inspection.PreparedRegex, context.InputBytes));
             if (regex.Inspection.SearchPlan.LiteralSearch is { } literalSearch)
             {
                 Measure("DirectSearchCount", iterations, () => ExecutePreparedSubstringCount(literalSearch, context.InputBytes));
@@ -4956,15 +4956,15 @@ internal static partial class BenchmarkInspectReporter
         return sum;
     }
 
-    private static int ExecuteDirectExactUtf8LiteralEnumeratorMoveNext(Utf8PreparedRegex regexPlan, byte[] literal, byte[] input)
+    private static int ExecuteDirectExactUtf8LiteralEnumeratorMoveNext(Utf8PreparedRegex regexPlan, byte[] input)
     {
         var count = 0;
         var enumerator = new Utf8ValueMatchEnumerator(
             new Utf8OperationMatchCursor(
                 input,
                 regexPlan,
-                literal,
-                budget: Utf8ExecutionDeadline.Infinite));
+                Utf8ExecutionDeadline.Infinite,
+                rightToLeft: false));
         while (enumerator.MoveNext())
         {
             count++;
@@ -4973,15 +4973,15 @@ internal static partial class BenchmarkInspectReporter
         return count;
     }
 
-    private static int ExecuteDirectExactUtf8LiteralEnumeratorIndexSum(Utf8PreparedRegex regexPlan, byte[] literal, byte[] input)
+    private static int ExecuteDirectExactUtf8LiteralEnumeratorIndexSum(Utf8PreparedRegex regexPlan, byte[] input)
     {
         var sum = 0;
         var enumerator = new Utf8ValueMatchEnumerator(
             new Utf8OperationMatchCursor(
                 input,
                 regexPlan,
-                literal,
-                budget: Utf8ExecutionDeadline.Infinite));
+                Utf8ExecutionDeadline.Infinite,
+                rightToLeft: false));
         while (enumerator.MoveNext())
         {
             sum += enumerator.Current.StartOffsetInBytes;

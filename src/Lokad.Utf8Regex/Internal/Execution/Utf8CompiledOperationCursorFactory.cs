@@ -21,11 +21,9 @@ internal static partial class Utf8CompiledOperationCursorFactory
             NativeExecutionKind.AsciiLiteralIgnoreCase when literal is { Length: 0 }
                 => new Utf8OperationMatchCursor(input, budget),
             NativeExecutionKind.ExactAsciiLiteral or
+            NativeExecutionKind.ExactUtf8Literal or
             NativeExecutionKind.AsciiLiteralIgnoreCase when literal is { Length: > 0 }
-                => new Utf8OperationMatchCursor(input, regexPlan, literal, regexPlan.ExecutionKind, budget),
-            NativeExecutionKind.ExactUtf8Literal when literal is { Length: > 0 }
-                => new Utf8OperationMatchCursor(
-                    input, regexPlan, literal, budget),
+                => new Utf8OperationMatchCursor(input, regexPlan, budget, rightToLeft: false),
             NativeExecutionKind.ExactUtf8Literals
                 => new Utf8OperationMatchCursor(input, regexPlan, budget),
             NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
@@ -49,7 +47,7 @@ internal static partial class Utf8CompiledOperationCursorFactory
             NativeExecutionKind.AsciiLiteralIgnoreCase when literal is { Length: > 0 }
                 => new Utf8ValueSplitEnumerator(
                     input,
-                    CreateLiteralMatchCursor(input, regexPlan, literal, budget),
+                    new Utf8OperationMatchCursor(input, regexPlan, budget, rightToLeft: false),
                     count),
             NativeExecutionKind.ExactUtf8Literals
                 => new Utf8ValueSplitEnumerator(
@@ -77,16 +75,6 @@ internal static partial class Utf8CompiledOperationCursorFactory
         var program = prepared.ScalarProgram ?? throw new InvalidOperationException("Owned cursor preparation requires its admitted scalar program.");
         invocation.ShareStorageForCursor();
         return new Utf8OperationMatchCursor(program, input, invocation);
-    }
-
-    private static Utf8OperationMatchCursor CreateLiteralMatchCursor(
-        ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, Utf8ExecutionDeadline budget)
-    {
-        return regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal
-            ? new Utf8OperationMatchCursor(
-                input, regexPlan, literal, budget)
-            : new Utf8OperationMatchCursor(
-                input, regexPlan, literal, regexPlan.ExecutionKind, budget);
     }
 
     private static Utf8ValueSplitEnumerator CreateOwnedSplitEnumerator(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input, int count, Utf8ExecutionDeadline deadline)

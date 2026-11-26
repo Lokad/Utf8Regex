@@ -844,12 +844,11 @@ public sealed partial class Utf8Regex : IDisposable
             // The reverse literal cursor starts at the subject end.
             if (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or
                     NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase &&
-                _preparedRegex.LiteralUtf8 is { Length: > 0 } literal &&
+                _preparedRegex.LiteralUtf8 is { Length: > 0 } &&
                 !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
                 !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
             {
-                var cursor = new Utf8OperationMatchCursor(input, _preparedRegex, literal,
-                    _preparedRegex.ExecutionKind, CreateExecutionBudget(), rightToLeft: true);
+                var cursor = new Utf8OperationMatchCursor(input, _preparedRegex, CreateExecutionBudget(), rightToLeft: true);
                 return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
             }
 
@@ -969,14 +968,14 @@ public sealed partial class Utf8Regex : IDisposable
         if ((count == 0 || count > 1) &&
             UsesRightToLeft() &&
             _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase &&
-            _preparedRegex.LiteralUtf8 is { Length: > 0 } rtlSplitLiteral &&
+            _preparedRegex.LiteralUtf8 is { Length: > 0 } &&
             !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
             !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
         {
             var rtlBudget = CreateExecutionBudget();
             return new Utf8ValueSplitEnumerator(
                 input,
-                new Utf8OperationMatchCursor(input, _preparedRegex, rtlSplitLiteral, _preparedRegex.ExecutionKind, rtlBudget, rightToLeft: true),
+                new Utf8OperationMatchCursor(input, _preparedRegex, rtlBudget, rightToLeft: true),
                 count == 0 ? int.MaxValue : count,
                 rightToLeft: true)
                 .WithTimeoutMapping(this);

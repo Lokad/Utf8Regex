@@ -59,70 +59,35 @@ internal ref partial struct Utf8OperationMatchCursor
     private int _slicePositionByte;
     private int _sliceOriginByte;
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
+    internal Utf8OperationMatchCursor(
+        ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, Utf8ExecutionDeadline deadline, bool rightToLeft)
+        : this(input, regexPlan, rightToLeft, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, deadline, CancellationToken.None)) { }
+
+    // Keep the original invocation when the entry point already admitted it.
+    internal Utf8OperationMatchCursor(
+        ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, bool rightToLeft, Utf8SliceInvocation invocation)
+        : this(input, regexPlan.LiteralUtf8 ?? throw new InvalidOperationException("A literal cursor requires a literal."),
+            in regexPlan.SearchPlan, (regexPlan.ExecutionKind, rightToLeft) switch
+            {
+                (NativeExecutionKind.ExactAsciiLiteral, false) => EnumeratorMode.ExactAsciiLiteral,
+                (NativeExecutionKind.ExactUtf8Literal, false) => EnumeratorMode.ExactUtf8Literal,
+                (NativeExecutionKind.AsciiLiteralIgnoreCase, false) => EnumeratorMode.AsciiLiteralIgnoreCase,
+                (NativeExecutionKind.ExactAsciiLiteral, true) => EnumeratorMode.RtlExactAsciiLiteral,
+                (NativeExecutionKind.ExactUtf8Literal, true) => EnumeratorMode.RtlExactUtf8Literal,
+                (NativeExecutionKind.AsciiLiteralIgnoreCase, true) => EnumeratorMode.RtlAsciiLiteralIgnoreCase,
+                _ => throw new InvalidOperationException("The plan is not a single literal.")
+            }, invocation) { }
+
+    private Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal, in Utf8SearchPlan searchPlan,
+        EnumeratorMode mode, Utf8SliceInvocation invocation)
     {
-        _searchPlan = ref regexPlan.SearchPlan;
-        _smallAsciiLiteralFamilySearch = default;
+        _searchPlan = ref searchPlan;
         _literal = literal;
         _input = input;
-        _budget = budget;
-        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _program = default;
-        _remaining = input;
-        _consumed = 0;
-        _multiLiteralScanState = default;
-        _current = default(Utf8CaptureRange);
-        _mode = executionKind switch
-        {
-            NativeExecutionKind.ExactAsciiLiteral => EnumeratorMode.ExactAsciiLiteral,
-            NativeExecutionKind.AsciiLiteralIgnoreCase => EnumeratorMode.AsciiLiteralIgnoreCase,
-            _ => EnumeratorMode.Exhausted
-        };
-    }
-
-    // Transfer invocation ownership exactly once when constructing a literal
-    // cursor. Entry admission and subsequent search share the same charged work.
-    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, bool rightToLeft, Utf8SliceInvocation invocation)
-        : this(input, regexPlan, regexPlan.LiteralUtf8 ?? throw new InvalidOperationException("A literal cursor requires a literal."), regexPlan.ExecutionKind, invocation.Budget.Deadline)
-    {
+        _budget = invocation.Budget.Deadline;
         _sliceInvocation = invocation;
-        _mode = (regexPlan.ExecutionKind, rightToLeft) switch
-        {
-            (NativeExecutionKind.ExactAsciiLiteral, false) => EnumeratorMode.ExactAsciiLiteral,
-            (NativeExecutionKind.ExactUtf8Literal, false) => EnumeratorMode.ExactUtf8Literal,
-            (NativeExecutionKind.AsciiLiteralIgnoreCase, false) => EnumeratorMode.AsciiLiteralIgnoreCase,
-            (NativeExecutionKind.ExactAsciiLiteral, true) => EnumeratorMode.RtlExactAsciiLiteral,
-            (NativeExecutionKind.ExactUtf8Literal, true) => EnumeratorMode.RtlExactUtf8Literal,
-            (NativeExecutionKind.AsciiLiteralIgnoreCase, true) => EnumeratorMode.RtlAsciiLiteralIgnoreCase,
-            _ => throw new InvalidOperationException("The plan is not a single literal.")
-        };
-    }
-
-    // Right-to-left twin of the literal cursor above: the same literal, search
-    // plan, and budget iterate matches from right to left instead. Only exact
-    // ASCII literals (plain or folded) qualify; the divert guarantees a nonempty
-    // literal, no boundary or trailing requirements, and no culture or Kelvin
-    // fences, so the arms below stay branch-free.
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget, bool rightToLeft)
-    {
-        _searchPlan = ref regexPlan.SearchPlan;
-        _smallAsciiLiteralFamilySearch = default;
-        _literal = literal;
-        _input = input;
-        _budget = budget;
-        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _program = default;
         _remaining = input;
-        _consumed = 0;
-        _multiLiteralScanState = default;
-        _current = default(Utf8CaptureRange);
-        _mode = (executionKind, rightToLeft) switch
-        {
-            (NativeExecutionKind.ExactAsciiLiteral, true) => EnumeratorMode.RtlExactAsciiLiteral,
-            (NativeExecutionKind.ExactUtf8Literal, true) => EnumeratorMode.RtlExactUtf8Literal,
-            (NativeExecutionKind.AsciiLiteralIgnoreCase, true) => EnumeratorMode.RtlAsciiLiteralIgnoreCase,
-            _ => EnumeratorMode.Exhausted
-        };
+        _mode = mode;
     }
 
     public Utf8CaptureRange CurrentValueMatch => _current;
@@ -221,37 +186,6 @@ internal ref partial struct Utf8OperationMatchCursor
         {
             Utf8SliceRunner.ReleaseSlots(slots, ref _sliceInvocation);
         }
-    }
-
-    // An anchored literal can yield one range at the selected edge.
-    public Utf8OperationMatchCursor(
-        ReadOnlySpan<byte> input, byte[] literal, Utf8ExecutionDeadline budget, Utf8AnchoredLiteralKind familyKind)
-    {
-        _searchPlan = ref s_emptySearchPlan;
-        _smallAsciiLiteralFamilySearch = default;
-        _literal = literal;
-        _input = input;
-        _budget = budget;
-        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _program = default;
-        _remaining = input;
-        _consumed = 0;
-        _multiLiteralScanState = default;
-        _current = default(Utf8CaptureRange);
-        _sliceProgram = null;
-        _slicePositionByte = 0;
-        _sliceOriginByte = 0;
-        // The mode carries strictness so verification needs no extra fields.
-        _mode = familyKind switch
-        {
-            Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix => EnumeratorMode.AnchoredAsciiLiteralPrefix,
-            Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffixStrictEnd => EnumeratorMode.AnchoredAsciiLiteralSuffixStrictEnd,
-            Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix => EnumeratorMode.AnchoredAsciiLiteralSuffix,
-            Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix => EnumeratorMode.AnchoredFoldedAsciiLiteralPrefix,
-            Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix => EnumeratorMode.AnchoredFoldedAsciiLiteralSuffix,
-            Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd => EnumeratorMode.AnchoredFoldedAsciiLiteralSuffixStrictEnd,
-            _ => EnumeratorMode.Exhausted
-        };
     }
 
     public bool MoveNext()
@@ -401,22 +335,6 @@ internal ref partial struct Utf8OperationMatchCursor
             EnumeratorMode.OwnedSlice => MoveNextOwnedSlice(),
             _ => false
         };
-    }
-
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, Utf8ExecutionDeadline budget)
-    {
-        _searchPlan = ref regexPlan.SearchPlan;
-        _smallAsciiLiteralFamilySearch = default;
-        _literal = literal;
-        _input = input;
-        _budget = budget;
-        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _program = _searchPlan.SearchOperation;
-        _remaining = input;
-        _consumed = 0;
-        _multiLiteralScanState = default;
-        _current = default(Utf8CaptureRange);
-        _mode = EnumeratorMode.ExactUtf8Literal;
     }
 
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, Utf8ExecutionDeadline budget)

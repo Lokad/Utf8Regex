@@ -27,15 +27,27 @@ internal ref partial struct Utf8OperationMatchCursor
     private static byte ToUpperAscii(byte value) =>
         value is >= (byte)'a' and <= (byte)'z' ? (byte)(value - 32) : value;
 
+    // An anchored literal can yield one range at the selected edge.
+    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal, Utf8ExecutionDeadline deadline, Utf8AnchoredLiteralKind kind)
+        : this(input, literal, in s_emptySearchPlan, AnchoredMode(kind),
+            new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, deadline, default)) { }
+
     internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal, Utf8AnchoredLiteralKind kind, Utf8SliceInvocation invocation)
-        : this(input, literal, Utf8ExecutionDeadline.Infinite, kind)
+        : this(input, literal, in s_emptySearchPlan, AnchoredMode(kind), invocation)
     {
-        // The borrowed invocation already owns the deadline and shared state.
-        // Do not allocate a second finite invocation in the base constructor.
-        _budget = invocation.Budget.Deadline;
-        _sliceInvocation = invocation;
         _hasAnchoredLiteralInvocation = true;
     }
+
+    private static EnumeratorMode AnchoredMode(Utf8AnchoredLiteralKind kind) => kind switch
+    {
+        Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix => EnumeratorMode.AnchoredAsciiLiteralPrefix,
+        Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffixStrictEnd => EnumeratorMode.AnchoredAsciiLiteralSuffixStrictEnd,
+        Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix => EnumeratorMode.AnchoredAsciiLiteralSuffix,
+        Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix => EnumeratorMode.AnchoredFoldedAsciiLiteralPrefix,
+        Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix => EnumeratorMode.AnchoredFoldedAsciiLiteralSuffix,
+        Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd => EnumeratorMode.AnchoredFoldedAsciiLiteralSuffixStrictEnd,
+        _ => EnumeratorMode.Exhausted
+    };
 
     // Full-subject anchors retain their original context at a nonzero floor.
     // Candidate verification and publication commit with the range only
