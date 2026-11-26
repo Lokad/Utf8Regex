@@ -1421,7 +1421,7 @@ internal static partial class Pcre2Runner
                 input,
                 start,
                 matchOptions,
-                ref budget, out _).Success;
+                ref budget).Success;
             return true;
         }
 
@@ -1476,7 +1476,7 @@ internal static partial class Pcre2Runner
                 input,
                 start,
                 matchOptions,
-                ref budget, out _).Success;
+                ref budget).Success;
             return true;
         }
 
@@ -1491,7 +1491,7 @@ internal static partial class Pcre2Runner
                     input,
                     start,
                     matchOptions,
-                    ref budget, out _).Success;
+                    ref budget).Success;
                 return true;
             }
 
@@ -1541,13 +1541,15 @@ internal static partial class Pcre2Runner
             if (matchOptions != Pcre2MatchOptions.None)
             {
                 invocation.CheckpointHook = null;
-                directMatch = Pcre2BacktrackingRunner.Match(
+                var backtrackingMatch = Pcre2BacktrackingRunner.Match(
                     sliceProgram.Fallback,
                     compiledProgram.CandidateSearch,
                     input,
                     start,
                     matchOptions,
-                    ref budget, out mark);
+                    ref budget);
+                mark = backtrackingMatch.Mark;
+                directMatch = backtrackingMatch.ToCharacterMatch();
             }
             else
             {
@@ -1589,13 +1591,15 @@ internal static partial class Pcre2Runner
         else if (program is Pcre2BacktrackingDirectProgram backtrackingProgram)
         {
             invocation.CheckpointHook = null;
-            directMatch = Pcre2BacktrackingRunner.Match(
+            var backtrackingMatch = Pcre2BacktrackingRunner.Match(
                 backtrackingProgram.Program,
                 compiledProgram.CandidateSearch,
                 input,
                 start,
                 matchOptions,
-                ref budget, out mark);
+                ref budget);
+            mark = backtrackingMatch.Mark;
+            directMatch = backtrackingMatch.ToCharacterMatch();
         }
         else
         {
@@ -2086,14 +2090,6 @@ internal ref struct Pcre2GlobalMatchCursor
     }
 }
 
-internal readonly record struct Pcre2DirectGlobalMatch(
-    bool Success,
-    int StartOffsetInBytes,
-    int EndOffsetInBytes,
-    int ConsumedStartOffsetInBytes,
-    int ConsumedEndOffsetInBytes,
-    bool MatchBoundaryWasReset);
-
 internal ref struct Pcre2DirectGlobalMatchCursor
 {
     [UnscopedRef]
@@ -2229,7 +2225,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                 ? _matchOptions | Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart
                 : _matchOptions;
 
-            Pcre2DirectGlobalMatch match;
+            Pcre2CharacterMatch match;
             try
             {
                 switch (_kind)
@@ -2243,7 +2239,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                             _restartPosition,
                             options,
                             ref _budget);
-                        match = new Pcre2DirectGlobalMatch(
+                        match = new Pcre2CharacterMatch(
                             literalMatch.Success,
                             literalMatch.StartOffsetInBytes,
                             literalMatch.EndOffsetInBytes,
@@ -2266,7 +2262,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                             throw new InvalidOperationException("The PCRE2 backtracking cursor has no execution program.");
                         var candidateSearch = _candidateSearch ??
                             throw new InvalidOperationException("The PCRE2 backtracking cursor has no candidate-search plan.");
-                        var backtrackingMatch = Pcre2BacktrackingRunner.Match(
+                        match = Pcre2BacktrackingRunner.Match(
                             backtrackingProgram,
                             candidateSearch.Program,
                             _input,
@@ -2274,13 +2270,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                             _firstMatchingPosition,
                             options,
                             ref _budget, ref frames, ref repeatMutations, ref workspace);
-                        match = new Pcre2DirectGlobalMatch(
-                            backtrackingMatch.Success,
-                            backtrackingMatch.StartOffsetInBytes,
-                            backtrackingMatch.EndOffsetInBytes,
-                            backtrackingMatch.ConsumedStartOffsetInBytes,
-                            backtrackingMatch.ConsumedEndOffsetInBytes,
-                            backtrackingMatch.MatchBoundaryWasReset);
                         break;
                     default:
                         Current = default;

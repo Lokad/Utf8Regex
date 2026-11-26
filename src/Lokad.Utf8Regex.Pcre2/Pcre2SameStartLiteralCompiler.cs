@@ -105,7 +105,7 @@ internal static class Pcre2SameStartLiteralAnalyzer
 
 internal static class Pcre2SameStartLiteralRunner
 {
-    internal static Pcre2DirectGlobalMatch Match(
+    internal static Pcre2CharacterMatch Match(
         Pcre2SameStartLiteralDirectProgram program,
         ReadOnlySpan<byte> input,
         Utf8BytePosition start,
@@ -154,26 +154,14 @@ internal static class Pcre2SameStartLiteralRunner
              ((options & Pcre2MatchOptions.Anchored) != 0 || candidate == firstMatchingPosition.Value));
         if (!emptyDisallowed)
         {
-            return new Pcre2DirectGlobalMatch(
-                Success: true,
-                StartOffsetInBytes: candidate,
-                EndOffsetInBytes: candidate,
-                ConsumedStartOffsetInBytes: candidate,
-                ConsumedEndOffsetInBytes: candidate,
-                MatchBoundaryWasReset: false);
+            return Pcre2CharacterMatch.Create(candidate, candidate);
         }
 
         foreach (var alternative in program.NonEmptyAlternatives)
         {
             if (input[candidate..].StartsWith(alternative))
             {
-                return new Pcre2DirectGlobalMatch(
-                    Success: true,
-                    StartOffsetInBytes: candidate,
-                    EndOffsetInBytes: candidate + alternative.Length,
-                    ConsumedStartOffsetInBytes: candidate,
-                    ConsumedEndOffsetInBytes: candidate + alternative.Length,
-                    MatchBoundaryWasReset: false);
+                return Pcre2CharacterMatch.Create(candidate, candidate + alternative.Length);
             }
         }
 

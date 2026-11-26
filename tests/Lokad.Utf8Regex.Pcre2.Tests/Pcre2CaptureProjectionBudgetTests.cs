@@ -109,7 +109,7 @@ public sealed class Pcre2ResultControlTests
         budget.ReserveWorking(7);
         ReadOnlySpan<byte> input = Encoding.UTF8.GetBytes(subject);
         var match = Pcre2BacktrackingRunner.Match(direct.Program, regex.DebugCompiledProgram.CandidateSearch,
-            input, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget, out _);
+            input, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget);
         Assert.Equal(expected, match.Success);
         Assert.Equal(7UL, budget.ReservedWorkingBytes);
         budget.ReleaseWorking(7);
@@ -134,7 +134,7 @@ public sealed class Pcre2ResultControlTests
                 try
                 {
                     var match = Pcre2BacktrackingRunner.Match(direct.Program, regex.DebugCompiledProgram.CandidateSearch,
-                        input, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget, out _);
+                        input, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget);
                     Assert.True(match.Success);
                     completed = true;
                 }

@@ -140,15 +140,14 @@ internal readonly record struct Pcre2BacktrackingMatch(
 
 internal static class Pcre2BacktrackingRunner
 {
-    internal static Pcre2CharacterMatch Match(
+    internal static Pcre2BacktrackingMatch Match(
         Pcre2BacktrackingProgram program,
         in Pcre2CandidateSearchProgram candidateSearch,
         ReadOnlySpan<byte> input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        ref Pcre2ResourceBudget budget, out string? mark)
-    {
-        var match = MatchCore(
+        ref Pcre2ResourceBudget budget)
+        => MatchCore(
             program,
             candidateSearch,
             input,
@@ -157,9 +156,6 @@ internal static class Pcre2BacktrackingRunner
             matchOptions,
             Pcre2CaptureMaterialization.None,
             ref budget);
-        mark = match.Mark;
-        return match.ToCharacterMatch();
-    }
 
     internal static Pcre2InvocationStateStack<Pcre2BacktrackingFrame> CreateFrames(
         scoped ref Pcre2ResourceBudget budget, int depthBase)
