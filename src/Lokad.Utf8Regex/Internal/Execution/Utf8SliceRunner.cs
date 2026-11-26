@@ -1731,8 +1731,8 @@ internal static partial class Utf8SliceRunner
         var proveClassSuffix = classContinuation != 0 &&
             invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
             CanProveRepeatPrefix(program, repeatIndex);
-        var separatedClassSuffix = proveClassSuffix &&
-            program.LeadingClassWindowProof is { CanFinishSeparatedRuns: true } fullWindow &&
+        var terminalClassSuffix = proveClassSuffix &&
+            program.LeadingClassWindowProof is { CanFinishTerminalRuns: true } fullWindow &&
             verifiedClassLiteralLength == fullWindow.LiteralLength;
         // Keep the existing literal and delimiter searches. A required decimal
         // starter can also skip unrelated bytes on a long forward search.
@@ -2056,8 +2056,8 @@ internal static partial class Utf8SliceRunner
                 Utf8SliceMatchOutcome outcome;
                 var proveWindow = proveClassSuffix && position < whitespaceWindowEnd && verifiedPrefix.Item1 == classContinuation;
                 if ((proveWindow || proveStraightSuffix && verifiedPrefix.Item1 == straightPrefixStart) && provedEnd < 0 &&
-                    !(proveWindow && separatedClassSuffix
-                        ? MayFinishSeparatedRuns(program, input, position + verifiedPrefix.Item2, classContinuation, out provedEnd)
+                    !(proveWindow && terminalClassSuffix
+                        ? MayFinishTerminalClassRuns(program, input, position + verifiedPrefix.Item2, classContinuation, out provedEnd)
                         : MayMatchBranchedAsciiPrefix(program, input, position + verifiedPrefix.Item2, verifiedPrefix.Item1,
                             out provedEnd, proveMatch: true, BranchedPrefixInstructionLimit - verifiedPrefix.Item1)))
                 {

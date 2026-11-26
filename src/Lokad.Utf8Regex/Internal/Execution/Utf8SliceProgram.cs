@@ -399,7 +399,7 @@ internal enum Utf8SliceClassWindowCompletion : byte
 {
     None,
     Whitespace,
-    SeparatedRuns,
+    TerminalRuns,
     CapturedRepeat,
     CapturedSharedRun,
 }
@@ -410,7 +410,7 @@ internal readonly record struct Utf8SliceClassWindowProof(
 {
     internal Utf8SliceClassWindowCompletion Completion { get; init; }
     internal bool CanFinishWhitespace => Completion == Utf8SliceClassWindowCompletion.Whitespace;
-    internal bool CanFinishSeparatedRuns => Completion == Utf8SliceClassWindowCompletion.SeparatedRuns;
+    internal bool CanFinishTerminalRuns => Completion == Utf8SliceClassWindowCompletion.TerminalRuns;
 
     internal (int First, int Second) SuffixAfter(int length)
         => length == LiteralLength ? (FirstSuffixClass, SecondSuffixClass) : default;

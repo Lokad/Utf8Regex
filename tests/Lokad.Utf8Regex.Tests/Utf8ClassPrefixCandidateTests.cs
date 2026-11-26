@@ -719,12 +719,39 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
         Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
 
-        Assert.True(regex.Inspection.AvailableOwnedSliceProgram.LeadingClassWindowProof.CanFinishSeparatedRuns);
+        Assert.True(regex.Inspection.AvailableOwnedSliceProgram.LeadingClassWindowProof.CanFinishTerminalRuns);
         Assert.Equal(new Utf8CaptureRange(start, end), regex.Match(input, 0, slots, token.Token));
         Assert.Equal(new Utf8CaptureRange(start, end), slots[0]);
         Assert.Equal(new Utf8CaptureRange(start + 1, end), regex.Match(input, start + 1, slots, token.Token));
         Assert.False(regex.Match(input, start, slots, token.Token,
             endOffsetInBytes: end - Encoding.UTF8.GetByteCount(tail)).Success);
+    }
+
+    [Fact]
+    public void SharedTerminalClassCountKeepsBlockSeamsAndTheFirstUnresolvedRun()
+    {
+        const string pattern = @"[\w.+-]+@[\w.-]+\.[\w.-]+";
+        const string first = "λ@β.γ.δ";
+        var unresolved = "long@" + new string('β', 128) + ".γ";
+        const string last = "pé@hy-phen.end";
+        // The first successful delimiter is the last byte of the first search block.
+        const string prefix = "@untouched.test bad@.edge bad@end.";
+        var padding = new string('!', 2047 - Encoding.UTF8.GetByteCount(prefix + "λ"));
+        var text = prefix + padding + first + " ! " + unresolved + " ! " + last;
+        var input = Encoding.UTF8.GetBytes(text);
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
+
+        Assert.True(regex.Inspection.AvailableOwnedSliceProgram.LeadingClassWindowProof.CanFinishTerminalRuns);
+        Assert.Equal(3, Regex.Count(text, pattern));
+        Assert.Equal(3, regex.Count(input, token.Token));
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token);
+        foreach (var value in new[] { first, unresolved, last })
+        {
+            Assert.True(cursor.MoveNext(out var match));
+            Assert.Equal(value, Encoding.UTF8.GetString(match.GetValueMemory().Span));
+        }
+        Assert.False(cursor.MoveNext(out _));
     }
 
     [Theory]

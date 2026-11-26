@@ -815,12 +815,12 @@ internal static partial class Utf8SliceRunner
             if (code.AsSpan(index) is
             [
                 { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1, RepeatMaximum: long.MaxValue, HasSingleAtomBody: true },
-                var firstAtom, _, { RepeatExitRejectsShorterEndpoints: true },
+                var firstAtom, _, { RepeatExitRejectsShorterEndpoints: true } or { RepeatExitSharesTerminalRun: true },
                 { Kind: Utf8SliceInstructionKind.Literal, A: >= 0 and < 128, B: 0 },
                 { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1, RepeatMaximum: long.MaxValue, HasSingleAtomBody: true },
                 var secondAtom, _, _, { Kind: Utf8SliceInstructionKind.Accept }
             ] && program.GetCompleteAsciiCategoryMask(firstAtom) != 0 && program.GetCompleteAsciiCategoryMask(secondAtom) != 0)
-                completion = Utf8SliceClassWindowCompletion.SeparatedRuns;
+                completion = Utf8SliceClassWindowCompletion.TerminalRuns;
         }
         // The delimiter starts within 64 instructions. The exact needle and
         // these two single-class nodes keep both offsets within a byte.
@@ -1817,8 +1817,8 @@ internal static partial class Utf8SliceRunner
             }
         }
         if (breach == Utf8ExecutionLimitKind.None && start >= 0 &&
-            (classWindow && proof.CanFinishSeparatedRuns
-                ? MayFinishSeparatedRuns(program, input, screenedLiteral + search.Length, continuation, out var end)
+            (classWindow && proof.CanFinishTerminalRuns
+                ? MayFinishTerminalClassRuns(program, input, screenedLiteral + search.Length, continuation, out var end)
                 : MayMatchBranchedAsciiPrefix(program, input, screenedLiteral + search.Length, continuation,
                     out end, proveMatch: true, BranchedPrefixInstructionLimit - continuation, existenceOnly)))
         {
@@ -1863,15 +1863,15 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static bool MayFinishSeparatedRuns(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+    private static bool MayFinishTerminalClassRuns(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int position, int index, out int acceptedEnd)
     {
-        // Use the same visit allowance as the instruction walk. The first
-        // repeat cannot match its separator, and the second ends at Accept.
+        // A shared run already verifies the interior separator and both
+        // operands. Otherwise the separator must follow the first run.
         var remaining = BranchedPrefixInstructionLimit - index - 4;
         var code = program.Instructions;
         var end = TryMatchLongPrefixRepeat(program, input, position, index + 1, in code[index], ref remaining);
-        if (end >= 0)
+        if (end >= 0 && !code[index + 3].RepeatExitSharesTerminalRun)
         {
             end = end == input.Length || input[end] != code[index + 4].A
                 ? BranchedPrefixRejected
@@ -1882,7 +1882,7 @@ internal static partial class Utf8SliceRunner
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    internal static Utf8SliceCountOutcome CountSeparatedClassWindows(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+    internal static Utf8SliceCountOutcome CountTerminalClassWindows(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         ref int position, int firstDelimiter, ref Utf8SliceInvocation invocation)
     {
         var (literal, leadingClass, literalIndex, _, _) = program.LeadingClassDelimiter;
@@ -1910,7 +1910,7 @@ internal static partial class Utf8SliceRunner
                 {
                     breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var member);
                     if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
-                    if (member && MayFinishSeparatedRuns(program, input, scan, literalIndex + 1, out var end))
+                    if (member && MayFinishTerminalClassRuns(program, input, scan, literalIndex + 1, out var end))
                     {
                         // Replay from the previous proved floor if a run exceeds
                         // the bounded suffix proof's allowance.
