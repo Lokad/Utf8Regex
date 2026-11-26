@@ -516,16 +516,18 @@ internal static partial class Utf8SliceRunner
                 if (next < 0) { position = end; break; }
                 position += next;
                 if (input[position] < 128) return Utf8ExecutionLimitKind.None;
-                if (metered)
-                {
-                    var breach = invocation.TryChargeStep();
-                    if (breach != Utf8ExecutionLimitKind.None) return breach;
-                }
                 // A lead inside this block admits one scalar. Its last bytes
                 // may lie in the following block of the same subject.
                 if (TryReadScalar(input, position, false, out var scalar, out var width) && Rune.IsDigit(scalar))
                     return Utf8ExecutionLimitKind.None;
                 position += Math.Max(1, width);
+                if (metered && position < end)
+                {
+                    // The current search step already covers checking its
+                    // candidate. Charge again only before continuing.
+                    var breach = invocation.TryChargeStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                }
             }
         }
         position = -1;
