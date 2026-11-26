@@ -2836,7 +2836,8 @@ internal struct Pcre2ResourceBudget : IUtf8InvocationBufferControl
             BacktrackingSteps++;
             diagnostics.RecordBacktrackingInstruction(instruction.Kind, instruction.Token.Kind);
         }
-        Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeStep());
+        var breach = _invocation.Budget.TryChargeStep();
+        if (breach != Utf8ExecutionLimitKind.None) Pcre2SliceDriver.ThrowIfSliceBreached(breach);
     }
 
     internal void RecordPossessiveTokenScanCharacters(ulong characters)
