@@ -175,14 +175,24 @@ internal static partial class Utf8SliceRunner
         {
             breach = TrySeekAsciiCandidate(input, ref position, first, last, ref invocation);
             if (breach != Utf8ExecutionLimitKind.None || position < 0) break;
-            var run = RunUnboundedAsciiRange(input, position, first, last, ref invocation, checkExitDeadline: false);
-            breach = run.Breach;
+
+            // The seek just checked the deadline before its bounded candidate scan.
+            // Keep a work and token check for this block, then poll directly
+            // before any continuation and before publishing the outcome.
+            breach = invocation.TryChargeBoundedCheck();
+            if (breach != Utf8ExecutionLimitKind.None) break;
+            var block = input.Slice(position, Math.Min(2048, input.Length - position));
+            var stop = block.IndexOfAnyExceptInRange(first, last);
+            int runEnd;
+            (runEnd, breach) = stop < 0
+                ? RunUnboundedAsciiRange(input, position + block.Length, first, last, ref invocation, checkExitDeadline: false)
+                : (position + stop, ChargeRepeatBoundary(ref invocation, checkDeadline: false));
             if (breach != Utf8ExecutionLimitKind.None) break;
             var origin = position;
             for (var arm = 0; arm < arms; arm++)
             {
                 var literal = tails.Slice(arm * TerminalSuffixLengthLimit, lengths[arm]);
-                var end = FindLastSuffixInAsciiRun(input, origin, run.EndIndex, literal, ref invocation, out breach);
+                var end = FindLastSuffixInAsciiRun(input, origin, runEnd, literal, ref invocation, out breach);
                 if (breach != Utf8ExecutionLimitKind.None) break;
                 if (end < 0) continue;
                 count++;
@@ -196,7 +206,7 @@ internal static partial class Utf8SliceRunner
                 origin = end;
             }
             if (range.Success) break;
-            position = run.EndIndex;
+            position = runEnd;
         }
         if (breach == Utf8ExecutionLimitKind.None) breach = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();

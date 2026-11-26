@@ -679,6 +679,7 @@ public sealed class Utf8ClassPrefixCandidateTests
     [Theory]
     [InlineData(@"[a-z]+ing|[a-z]+ed|[a-z]+ly", 0)]
     [InlineData(@"[a-z]+ed|[a-z]+ing|[a-z]+ly", 0)]
+    [InlineData(@"[a-z]+ing|[a-z]+ed|[a-z]+ly", 1845)] // The first run fills one block exactly.
     [InlineData(@"[a-z]+ing|[a-z]+ed|[a-z]+ly", 2038)]
     public void SharedAsciiSuffixAlternativesKeepPriorityAcrossRunsAndClippedRanges(string pattern, int padding)
     {
