@@ -20,7 +20,8 @@ internal sealed class Utf8PreparedRegex
         Utf8AnchoredLiteralPlan anchoredLiteral, Utf8OperationMatchCursorPlans operationMatchCursorPlans,
         Utf8PreparedSemanticRegex semanticRegex, Utf8RegexFeatures features, string? executionPattern,
         NativeExecutionKind executionKind, Utf8SliceProgram? scalarProgram, byte[]? literalUtf8, string? fallbackReason,
-        bool requiredLiteralProvesMatch, int requiredLiteralContinuation, byte[]? requiredLiteralTerminalSuffix)
+        bool requiredLiteralProvesMatch, int requiredLiteralContinuation, byte[]? requiredLiteralTerminalSuffix,
+        int requiredLiteralOptionalRun)
     {
         _anchoredLiteral = anchoredLiteral;
         _operationMatchCursorPlans = operationMatchCursorPlans;
@@ -34,6 +35,7 @@ internal sealed class Utf8PreparedRegex
         RequiredLiteralProvesMatch = requiredLiteralProvesMatch;
         RequiredLiteralContinuation = requiredLiteralContinuation;
         RequiredLiteralTerminalSuffix = requiredLiteralTerminalSuffix;
+        RequiredLiteralOptionalRun = requiredLiteralOptionalRun;
     }
 
     internal static Utf8PreparedRegex Create(
@@ -49,6 +51,7 @@ internal sealed class Utf8PreparedRegex
         var requiredLiteralProvesMatch = false;
         var requiredLiteralContinuation = 0;
         byte[]? requiredLiteralTerminalSuffix = null;
+        var requiredLiteralOptionalRun = 0;
         if (scalarProgram is { RightToLeft: false, HasContiguousAnchor: false } &&
             !features.HasAbsoluteStartAnchor && !search.CanGuideFallbackStarts &&
             prefilter.Kind == PreparedSearcherKind.ExactLiteral)
@@ -57,7 +60,8 @@ internal sealed class Utf8PreparedRegex
             requiredLiteralProvesMatch = Utf8SliceRunner.PrepareRequiredLiteralWitness(scalarProgram, needle, scope.Budget);
             if (!requiredLiteralProvesMatch)
             {
-                requiredLiteralContinuation = Utf8SliceRunner.PrepareRequiredLiteralContinuation(scalarProgram, needle, scope.Budget);
+                (requiredLiteralContinuation, requiredLiteralOptionalRun) =
+                    Utf8SliceRunner.PrepareRequiredLiteralContinuation(scalarProgram, needle, scope.Budget);
                 if (requiredLiteralContinuation == needle.Length && needle.Length is >= 3 and <= 16)
                     requiredLiteralTerminalSuffix = Utf8SliceRunner.PrepareRequiredLiteralTerminalSuffix(
                         scalarProgram, requiredLiteralContinuation, scope.Budget);
@@ -67,7 +71,7 @@ internal sealed class Utf8PreparedRegex
         var result = new Utf8PreparedRegex(
             anchoredLiteral, operationMatchCursorPlans, semanticRegex, features, executionPattern,
             executionKind, scalarProgram, literalUtf8, fallbackReason, requiredLiteralProvesMatch,
-            requiredLiteralContinuation, requiredLiteralTerminalSuffix);
+            requiredLiteralContinuation, requiredLiteralTerminalSuffix, requiredLiteralOptionalRun);
         scope.Complete();
         return result;
     }
@@ -85,6 +89,7 @@ internal sealed class Utf8PreparedRegex
     internal bool RequiredLiteralProvesMatch { get; }
     internal int RequiredLiteralContinuation { get; }
     internal byte[]? RequiredLiteralTerminalSuffix { get; }
+    internal int RequiredLiteralOptionalRun { get; }
 
     public Utf8SliceProgram? ScalarProgram { get; }
 

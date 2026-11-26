@@ -877,16 +877,17 @@ internal static partial class Utf8SliceRunner
         return new(true, repeated.EndIndex, Utf8ExecutionLimitKind.None);
     }
 
-    internal static int PrepareRequiredLiteralContinuation(Utf8SliceProgram program, ReadOnlySpan<byte> needle,
+    internal static (int Continuation, int OptionalLiteralRun) PrepareRequiredLiteralContinuation(Utf8SliceProgram program, ReadOnlySpan<byte> needle,
         Utf8ConstructionBudget budget)
     {
-        if (program.IsNonBacktracking || program.IgnoreCase || needle.Length is < 1 or > 64) return 0;
+        if (program.IsNonBacktracking || program.IgnoreCase || needle.Length is < 1 or > 64) return default;
         budget.ChargeWork(1);
         var proof = program.LeadingClassWindowProof;
         var alignedWindow = proof is { CanReusePrefix: true, ExcludesDelimiter: true } &&
             needle.Length == proof.LiteralLength;
         var literal = alignedWindow ? program.LeadingClassDelimiter.LiteralIndex : 0;
         var continuation = literal + needle.Length;
+        var optionalRun = 0;
         if (alignedWindow && !proof.CanAcceptAfterPair)
         {
             // The prepared window cannot read captures. Look through its
@@ -894,13 +895,24 @@ internal static partial class Utf8SliceRunner
             var code = program.Instructions;
             var visits = Math.Clamp(code.Length - continuation, 0, Utf8SliceInstruction.LeadingCaptureMarkerLimit);
             budget.ChargeWork((ulong)visits);
-            if (!CanProveRepeatPrefix(program, Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, continuation))) return 0;
+            if (!CanProveRepeatPrefix(program, Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, continuation))) return default;
         }
-        else if (!alignedWindow &&
-            (program.GroupCount != 0 || !CanProveRepeatPrefix(program, continuation) &&
-                !CanProveOptionalLiteralThenHybrid(program.Instructions, continuation, budget))) return 0;
+        else if (!alignedWindow)
+        {
+            if (program.GroupCount != 0) return default;
+            if (!CanProveRepeatPrefix(program, continuation))
+            {
+                var code = program.Instructions;
+                var requiredRun = FindOptionalLiteralThenHybrid(code, continuation, budget);
+                if (requiredRun == 0) return default;
+                var firstLiteral = code[continuation].A + 1;
+                // A different first required byte makes the optional choice unique.
+                if (firstLiteral < requiredRun && code[firstLiteral].A != code[continuation + 1].A)
+                    optionalRun = requiredRun;
+            }
+        }
         budget.ChargeWork((ulong)needle.Length);
-        return LiteralStartsAtInstruction(program, literal, needle) ? continuation : 0;
+        return LiteralStartsAtInstruction(program, literal, needle) ? (continuation, optionalRun) : default;
     }
 
     internal static byte[]? PrepareRequiredLiteralTerminalSuffix(Utf8SliceProgram program, int index,
@@ -926,13 +938,13 @@ internal static partial class Utf8SliceRunner
         return suffix;
     }
 
-    private static bool CanProveOptionalLiteralThenHybrid(ReadOnlySpan<Utf8SliceInstruction> code, int index,
+    private static int FindOptionalLiteralThenHybrid(ReadOnlySpan<Utf8SliceInstruction> code, int index,
         Utf8ConstructionBudget? budget = null)
     {
         if ((uint)index >= (uint)code.Length ||
             code[index] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: 1 } optional ||
             !IsSingleAtomRepeat(code, index, optional) ||
-            code[index + 1] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }) return false;
+            code[index + 1] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }) return 0;
 
         for (var next = optional.A + 1; next < code.Length && next - optional.A <= 8; next++)
         {
@@ -941,9 +953,9 @@ internal static partial class Utf8SliceRunner
             if (entry is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }) continue;
             return entry is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 } &&
                 IsSingleAtomRepeat(code, next, entry) && code[entry.A].RepeatExitAcceptsEmptyTail &&
-                code[next + 1] is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 };
+                code[next + 1] is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } ? next : 0;
         }
-        return false;
+        return 0;
     }
 
     private static bool CanProveRepeatPrefix(Utf8SliceProgram program, int index)
@@ -1811,7 +1823,7 @@ internal static partial class Utf8SliceRunner
 
     internal static bool TryFindPreparedLiteralContinuation(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         ref int position, in PreparedSubstringSearch search, int screenedLiteral, int continuation, ref Utf8SliceInvocation invocation,
-        out Utf8SliceSearchOutcome outcome, bool existenceOnly = true, byte[]? terminalSuffix = null)
+        out Utf8SliceSearchOutcome outcome, bool existenceOnly = true, byte[]? terminalSuffix = null, int optionalLiteralRun = 0)
     {
         outcome = default;
         var classWindow = continuation != search.Length;
@@ -1851,7 +1863,10 @@ internal static partial class Utf8SliceRunner
         }
         int end;
         if (breach == Utf8ExecutionLimitKind.None && start >= 0 &&
-            (terminalSuffix is not null
+            (optionalLiteralRun != 0
+                ? (end = MatchOptionalLiteralRunMember(program, input, screenedLiteral + search.Length, continuation,
+                    optionalLiteralRun)) != BranchedPrefixRejected
+                : terminalSuffix is not null
                 ? (end = MatchPreparedLiteralTail(program, input, screenedLiteral + search.Length, continuation,
                     in program.Instructions[continuation], terminalSuffix)) != BranchedPrefixRejected
                 : classWindow && proof.CanFinishTerminalRuns
@@ -1899,6 +1914,29 @@ internal static partial class Utf8SliceRunner
         }
         outcome = new(false, -1, -1, breach);
         return true;
+    }
+
+    private static int MatchOptionalLiteralRunMember(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, int optional, int requiredRun)
+    {
+        var code = program.Instructions;
+        if (position < input.Length && input[position] == code[optional + 1].A) position++;
+        var literals = code.AsSpan(code[optional].A + 1, requiredRun - code[optional].A - 1);
+        var suffix = input[position..];
+        if (suffix.Length <= literals.Length) return BranchedPrefixRejected;
+        for (var i = 0; i < literals.Length; i++)
+            if (suffix[i] != literals[i].A) return BranchedPrefixRejected;
+
+        // One member of the run can reach its proved empty tail.
+        position += literals.Length;
+        ref readonly var atom = ref code[requiredRun + 1];
+        var value = input[position];
+        if (value < 128)
+            return MatchesAsciiHybridClass(program.SetMasks[atom.A], atom.B != 0, value)
+                ? position + 1 : BranchedPrefixRejected;
+        if (!TryReadScalar(input, position, false, out var scalar, out var width)) return BranchedPrefixUndecided;
+        return Utf8SliceScalarClasses.MatchesMembers(scalar, atom.C) != (atom.B != 0)
+            ? position + width : BranchedPrefixRejected;
     }
 
     private static bool MayFinishTerminalClassRuns(Utf8SliceProgram program, ReadOnlySpan<byte> input,

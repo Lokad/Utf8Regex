@@ -540,7 +540,11 @@ public sealed class Utf8ClassPrefixCandidateTests
 
     [Theory]
     [InlineData("http://?query", false)]
+    [InlineData("http:", false)]
+    [InlineData("https://", false)]
+    [InlineData("http://a", true)]
     [InlineData("https://host/path?query", true)]
+    [InlineData("http://😀/path", true)]
     [InlineData("http://?query https://Ω/δρομή", true)]
     [InlineData("http://\u2003?", false)]
     public void PreparedOptionalLiteralRequiresTheFirstMemberOfTheNonemptyRun(string text, bool found)
@@ -555,6 +559,17 @@ public sealed class Utf8ClassPrefixCandidateTests
         var actual = regex.Match(input, cancellationToken: source.Token);
         Assert.Equal(found, actual.Success);
         if (found) Utf8MatchSequence.AssertRange(actual, text, expected.Index, expected.Length);
+    }
+
+    [Theory]
+    [InlineData("httpxyΩ", true)]
+    [InlineData("httpxxyΩ", true)]
+    [InlineData("httpxΩ", false)]
+    public void PreparedOptionalLiteralKeepsAnOverlappingRequiredByte(string text, bool found)
+    {
+        using var regex = new Utf8Regex(@"httpx?xy[^\s?]+", policy: new() { ResourcePolicy = Funded });
+        Assert.Equal(4, regex.RequiredLiteralContinuation);
+        Assert.Equal(found, regex.IsMatch(Encoding.UTF8.GetBytes(text)));
     }
 
     [Fact]

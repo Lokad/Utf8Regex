@@ -1153,7 +1153,7 @@ internal static partial class Utf8SliceRunner
             invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
             (CanProveRepeatPrefix(program, proofRepeatIndex) ||
                 !existenceOnly && verifiedLeadingPrefix.Item1 == proofRepeatIndex &&
-                CanProveOptionalLiteralThenHybrid(program.Instructions, proofRepeatIndex));
+                FindOptionalLiteralThenHybrid(program.Instructions, proofRepeatIndex) != 0);
         var lineProofStart = GetAnchoredLineProofStart(seekBeginning, first, ref invocation);
         if ((leading >= 0 || seekLiteral || hasClassWindow || lineProofStart != 0) && invocation.Ledger.ReservedBytes != 0)
         {
@@ -1780,7 +1780,7 @@ internal static partial class Utf8SliceRunner
         var straightPrefixBytes = straightPrefixStart != 0 ? leadingPrefix.Length : 0;
         var proveStraightSuffix = straightPrefixStart != 0 && captureStarts.IsEmpty && captureEnds.IsEmpty &&
             !program.ReadsCaptures && invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit &&
-            CanProveOptionalLiteralThenHybrid(program.Instructions, straightPrefixStart);
+            FindOptionalLiteralThenHybrid(program.Instructions, straightPrefixStart) != 0;
         var terminalGuard = default(Utf8SliceInstruction);
         var terminalAssertion = prefixContinuation != 0 && !program.RightToLeft &&
             captureStarts.IsEmpty && captureEnds.IsEmpty &&
