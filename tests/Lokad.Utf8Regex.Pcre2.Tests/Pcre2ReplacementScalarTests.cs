@@ -24,6 +24,24 @@ public sealed class Pcre2ReplacementScalarTests
     }
 
     [Theory]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    public void TemplateDelimitersPreserveUnicodeLiteralsAtBlockEdges(int byteLength)
+    {
+        var regex = new Utf8Pcre2Regex("(a)");
+        var literal = new string('x', byteLength - 2) + "é";
+
+        foreach (var reference in new[] { "$0", "${1}" })
+            Assert.Equal(Encoding.UTF8.GetBytes(literal + "a$"),
+                regex.Replace("a"u8, Encoding.UTF8.GetBytes(literal + reference + "$")));
+
+        var quoted = @"\Q" + literal + @"\E$1";
+        Assert.Equal(Encoding.UTF8.GetBytes(literal + "a"),
+            regex.Replace("a"u8, Encoding.UTF8.GetBytes(quoted), substitutionOptions: Pcre2SubstitutionOptions.Extended));
+    }
+
+    [Theory]
     [InlineData(@"\u𐐨𐐨", "𐐀𐐨")]
     [InlineData(@"\l𐐀𐐀", "𐐨𐐀")]
     [InlineData(@"\U𐐨a\E𐐨", "𐐀A𐐨")]

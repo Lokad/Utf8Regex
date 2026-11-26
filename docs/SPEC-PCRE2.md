@@ -190,6 +190,9 @@ discovery, projection, publication, cold replacement preparation and cursor
 waits. Expiry throws `Pcre2MatchException` with `Timeout`. An omitted
 `MatchTimeout` inherits `Utf8Pcre2Regex.DefaultMatchTimeout`, initially infinite.
 
+Cold replacement scans charge work in blocks of at most 2 KiB for literal
+runs. Each block checks the original cancellation token and deadline.
+
 Eligible capture-free `Count` operations with default match options can
 reuse a bounded compiled proof after enough interpreted candidate work.
 Calls with resource controls, a deadline, a token or shared working

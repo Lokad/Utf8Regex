@@ -9,6 +9,8 @@ namespace Lokad.Utf8Regex.Pcre2;
 // Nested operations restore their caller's control.
 internal readonly ref struct Pcre2ReplacementPreparationControl
 {
+    private const int BlockLength = 2048;
+
     [ThreadStatic] private static Pcre2ReplacementPreparationControlState s_current;
     private readonly Pcre2ReplacementPreparationControlState _previous;
     private readonly bool _restore;
@@ -83,13 +85,29 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
         for (var offset = 0; offset < source.Length;)
         {
             Check();
-            var count = Math.Min(2048, source.Length - offset);
+            var count = Math.Min(BlockLength, source.Length - offset);
             storage.Budget.ChargeWork((ulong)count);
             source.Slice(offset, count).CopyTo(result.AsSpan(offset, count));
             offset += count;
         }
         Check();
         return result;
+    }
+
+    internal static int FindNextDelimiter(ReadOnlySpan<byte> source, Utf8ConstructionBudget budget, byte first, byte second)
+    {
+        for (var offset = 0; offset < source.Length;)
+        {
+            Check();
+            // A work unit admits one bounded span search, including a miss.
+            budget.ChargeWork(1);
+            var count = Math.Min(BlockLength, source.Length - offset);
+            var block = source.Slice(offset, count);
+            var hit = first == second ? block.IndexOf(first) : block.IndexOfAny(first, second);
+            if (hit >= 0) return offset + hit;
+            offset += count;
+        }
+        return source.Length;
     }
 
     internal static byte[] FreezeTemplateKey(Utf8ConstructionSession storage, ReadOnlySpan<byte> source)
@@ -132,7 +150,7 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
         for (var offset = 0; offset < length;)
         {
             Check();
-            offset += Math.Min(2048, length - offset);
+            offset += Math.Min(BlockLength, length - offset);
         }
     }
 

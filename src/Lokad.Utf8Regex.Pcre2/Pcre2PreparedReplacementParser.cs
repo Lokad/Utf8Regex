@@ -148,8 +148,8 @@ internal static class Pcre2PreparedReplacementParser
             { next = position + 2; return Op(Pcre2ReplacementOpcode.EndQuote); }
             while (next < end)
             {
-                Work();
-                if ((char)text[next] == '\\' && next + 1 < end && (char)text[next + 1] == 'E') break;
+                next += Pcre2ReplacementPreparationControl.FindNextDelimiter(text[next..end], storage.Budget, (byte)'\\', (byte)'\\');
+                if (next == end || next + 1 < end && text[next + 1] == 'E') break;
                 next++;
             }
             return Literal(position, next - position);
@@ -161,7 +161,8 @@ internal static class Pcre2PreparedReplacementParser
             if (position == end) return Op(Pcre2ReplacementOpcode.Return);
             if ((char)text[position] == '$') return Dollar(position, end, out next);
             if (Extended && (char)text[position] == '\\') return Escape(position, end, out next);
-            while (next < end && (char)text[next] != '$' && (!Extended || (char)text[next] != '\\')) { Work(); next++; }
+            next += Pcre2ReplacementPreparationControl.FindNextDelimiter(text[next..end], storage.Budget,
+                (byte)'$', Extended ? (byte)'\\' : (byte)'$');
             return Literal(position, next - position);
         }
 

@@ -26,11 +26,10 @@ internal static class Pcre2SimpleReplacementParser
         using var storage = Utf8ConstructionSession.Create(scope.Budget);
         var segments = storage.Buffer<Pcre2SimpleReplacementSegment>();
         var literalStart = 0;
-        for (var index = 0; index < replacement.Length; index++)
+        for (var index = 0; index < replacement.Length;)
         {
-            Pcre2ReplacementPreparationControl.Check();
-            storage.Budget.ChargeWork(1);
-            if (replacement[index] != '$' || index + 1 == replacement.Length) continue;
+            index += Pcre2ReplacementPreparationControl.FindNextDelimiter(replacement[index..], storage.Budget, (byte)'$', (byte)'$');
+            if (index >= replacement.Length - 1) break;
             storage.Budget.ChargeWork(1);
             var next = (char)replacement[index + 1];
             if (next == '0' && index + 2 < replacement.Length)
@@ -53,8 +52,8 @@ internal static class Pcre2SimpleReplacementParser
 
             if (index > literalStart) segments.Add(FromLiteral(storage, replacement, literalStart, index - literalStart));
             segments.Add(wholeMatch ? new([], true) : new(Pcre2ReplacementPreparationControl.CopySource(storage, "$"u8), false));
-            index = end;
-            literalStart = index + 1;
+            index = end + 1;
+            literalStart = index;
         }
         if (segments.Count == 0 || literalStart < replacement.Length)
             segments.Add(FromLiteral(storage, replacement, literalStart, replacement.Length - literalStart));
