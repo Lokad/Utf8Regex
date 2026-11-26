@@ -74,6 +74,21 @@ public sealed class Utf8PreparationFrameAdmissionTests
         Assert.Equal(17, parent.Value);
     }
 
+    [Fact]
+    public void WidthReductionFitsShallowStorageForAWideTree()
+    {
+        var root = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.CultureInvariant);
+        root.Children = Enumerable.Range(0, 512).Select(_ =>
+            Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'é')).ToArray();
+
+        using var owner = new Utf8ConstructionScope(0, 1024, 4096, 2);
+        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(1024, 1024),
+            Utf8OwnedFindOptimizations.ComputeByteWidth(root));
+        Assert.Equal(2ul, owner.Budget.PeakDepth);
+        Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.Equal(0ul, owner.Budget.ReservedBytes);
+    }
+
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void EveryWorkCutoffRestoresBorrowedPreparation(int route)

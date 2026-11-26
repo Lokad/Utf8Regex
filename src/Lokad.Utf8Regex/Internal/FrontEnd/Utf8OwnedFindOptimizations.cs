@@ -14,13 +14,97 @@ internal static class Utf8OwnedFindOptimizations
         internal bool IsFixed => Maximum is int maximum && maximum == Minimum;
     }
 
-    public static ByteWidth ComputeByteWidth(Utf8TreeNode node) => MeasurePostOrder<ByteWidth>(node, MeasureByteWidth, false);
+    public static ByteWidth ComputeByteWidth(Utf8TreeNode node)
+    {
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<WidthFrame>.Create(budget, new(node));
+        return MeasureByteWidths(frames, budget);
+    }
+
+    // Each child contributes its bounds to the parent before its frame is
+    // discarded. Only the fixed-distance walk needs the per-node results.
+    private static ByteWidth MeasureByteWidths(Utf8ConstructionFrames<WidthFrame> frames,
+        Utf8ConstructionBudget budget, Utf8ConstructionMap<Utf8TreeNode, ByteWidth>? widths = null)
+    {
+        while (true)
+        {
+            budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
+            if (frame.NextChild < frame.Node.ChildCount)
+            {
+                var child = frame.Node.Child(frame.NextChild++);
+                frames[index] = frame;
+                frames.Push(new(child));
+                continue;
+            }
+
+            var width = frame.Complete();
+            if (widths is not null) widths[frame.Node] = width;
+            frames.Pop();
+            if (index == 0) return width;
+
+            var parent = frames[index - 1];
+            parent.AddChild(width, budget);
+            frames[index - 1] = parent;
+        }
+    }
+
+    private struct WidthFrame(Utf8TreeNode node)
+    {
+        internal readonly Utf8TreeNode Node = node;
+        internal int NextChild;
+        private ByteWidth _width = node.Kind is Utf8TreeNodeKind.Alternate or Utf8TreeNodeKind.BackreferenceConditional or
+            Utf8TreeNodeKind.ExpressionConditional ? new(int.MaxValue, 0) : new(0, 0);
+
+        internal void AddChild(ByteWidth child, Utf8ConstructionBudget budget)
+        {
+            switch (Node.Kind)
+            {
+                case Utf8TreeNodeKind.Loop:
+                case Utf8TreeNodeKind.Lazyloop:
+                    _width = child;
+                    break;
+                case Utf8TreeNodeKind.Capture:
+                case Utf8TreeNodeKind.Group:
+                case Utf8TreeNodeKind.Atomic:
+                case Utf8TreeNodeKind.Concatenate:
+                    budget.ChargeWork(1);
+                    _width = new(CapMinimum((long)_width.Minimum + child.Minimum),
+                        _width.Maximum is int head && child.Maximum is int tail ? CapMaximum((long)head + tail) : null);
+                    break;
+                case Utf8TreeNodeKind.ExpressionConditional when NextChild == 1:
+                    // The condition selects a branch without consuming input.
+                    break;
+                case Utf8TreeNodeKind.Alternate:
+                case Utf8TreeNodeKind.BackreferenceConditional:
+                case Utf8TreeNodeKind.ExpressionConditional:
+                    budget.ChargeWork(1);
+                    _width = new(Math.Min(_width.Minimum, child.Minimum),
+                        _width.Maximum is int current && child.Maximum is int bound ? Math.Max(current, bound) : null);
+                    break;
+            }
+        }
+
+        internal readonly ByteWidth Complete() => Node.Kind switch
+        {
+            Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop => Node.ChildCount == 1
+                ? Repeat(_width, Node.M, Node.N) : new(0, null),
+            Utf8TreeNodeKind.Alternate when Node.ChildCount == 0 => new(0, 0),
+            Utf8TreeNodeKind.BackreferenceConditional when Node.ChildCount < 2 => new(0, _width.Maximum),
+            Utf8TreeNodeKind.ExpressionConditional when Node.ChildCount < 3 => new(0, _width.Maximum),
+            Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic or Utf8TreeNodeKind.Concatenate or
+                Utf8TreeNodeKind.Alternate or Utf8TreeNodeKind.BackreferenceConditional or Utf8TreeNodeKind.ExpressionConditional => _width,
+            _ => MeasureAtomWidth(Node),
+        };
+    }
 
     // Bounds concern consumed UTF-8 bytes. Assertions are zero-width; conditions
     // select their result branches, and references have no independent maximum.
     // Complex classes/case fibers may have conservative bounds. Equality is a
     // fixed-byte certificate only when the upper bound is known and unsaturated.
-    private static ByteWidth MeasureByteWidth(Utf8TreeNode node, Utf8ConstructionMap<Utf8TreeNode, ByteWidth> values)
+    private static ByteWidth MeasureAtomWidth(Utf8TreeNode node)
     {
         var budget = Utf8ConstructionScope.CurrentBudget;
         switch (node.Kind)
@@ -60,35 +144,6 @@ internal static class Utf8OwnedFindOptimizations
             case Utf8TreeNodeKind.Setloop:
             case Utf8TreeNodeKind.Setlazy:
                 return Repeat(Class(node), node.M, node.N);
-            case Utf8TreeNodeKind.Loop:
-            case Utf8TreeNodeKind.Lazyloop:
-                return node.ChildCount == 1 ? Repeat(values[node.Child(0)], node.M, node.N) : new(0, null);
-            case Utf8TreeNodeKind.Capture:
-            case Utf8TreeNodeKind.Group:
-            case Utf8TreeNodeKind.Atomic:
-            case Utf8TreeNodeKind.Concatenate:
-                long minimum = 0, maximum = 0; var unbounded = false;
-                for (var i = 0; i < node.ChildCount; i++)
-                {
-                    budget.ChargeWork(1); var child = values[node.Child(i)];
-                    minimum += child.Minimum;
-                    if (child.Maximum is int bound) maximum += bound; else unbounded = true;
-                }
-                return new(CapMinimum(minimum), unbounded ? null : CapMaximum(maximum));
-            case Utf8TreeNodeKind.Alternate:
-            case Utf8TreeNodeKind.BackreferenceConditional:
-            case Utf8TreeNodeKind.ExpressionConditional:
-                var first = node.Kind == Utf8TreeNodeKind.ExpressionConditional ? 1 : 0;
-                var conditional = node.Kind != Utf8TreeNodeKind.Alternate;
-                var branchMin = int.MaxValue; int? branchMax = 0;
-                for (var i = first; i < node.ChildCount; i++)
-                {
-                    budget.ChargeWork(1); var child = values[node.Child(i)];
-                    branchMin = Math.Min(branchMin, child.Minimum);
-                    branchMax = branchMax is int current && child.Maximum is int bound ? Math.Max(current, bound) : null;
-                }
-                if (node.ChildCount == first || conditional && node.ChildCount - first < 2) branchMin = 0;
-                return new(branchMin, branchMax);
             case Utf8TreeNodeKind.Backreference:
             case Utf8TreeNodeKind.Unknown:
                 return new(0, null);
@@ -111,15 +166,7 @@ internal static class Utf8OwnedFindOptimizations
                 return new(0, null);
         }
 
-        static int CapMinimum(long value) => value > int.MaxValue ? int.MaxValue : (int)value;
-        static int? CapMaximum(long value) => value > int.MaxValue ? null : (int)value;
         static ByteWidth Bounds(long low, long high) => new(CapMinimum(low), CapMaximum(high));
-        static ByteWidth Repeat(ByteWidth body, int minimum, int maximum)
-        {
-            if (minimum < 0 || maximum < minimum) return new(0, null);
-            return new(CapMinimum((long)body.Minimum * minimum), maximum == 0 || body.Maximum == 0 ? 0 :
-                maximum == int.MaxValue || body.Maximum is null ? null : CapMaximum((long)body.Maximum.Value * maximum));
-        }
         static ByteWidth Range(int low, int high)
         {
             var minimum = 4; var maximum = 0;
@@ -158,6 +205,16 @@ internal static class Utf8OwnedFindOptimizations
             }
             return maximum == 0 ? new(0, null) : new(minimum, maximum);
         }
+    }
+
+    private static int CapMinimum(long value) => value > int.MaxValue ? int.MaxValue : (int)value;
+    private static int? CapMaximum(long value) => value > int.MaxValue ? null : (int)value;
+
+    private static ByteWidth Repeat(ByteWidth body, int minimum, int maximum)
+    {
+        if (minimum < 0 || maximum < minimum) return new(0, null);
+        return new(CapMinimum((long)body.Minimum * minimum), maximum == 0 || body.Maximum == 0 ? 0 :
+            maximum == int.MaxValue || body.Maximum is null ? null : CapMaximum((long)body.Maximum.Value * maximum));
     }
 
     internal static ByteWidth ComputeScalarByteWidth(int scalar, bool folded, RegexOptions options)
@@ -327,7 +384,30 @@ internal static class Utf8OwnedFindOptimizations
 
     public static string? TryExtractLongestLiteral(Utf8TreeNode node)
     {
-        return MeasurePostOrder<string?>(node, Measure, true);
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<FactFrame>.Create(budget, new(node));
+        using var values = Utf8ConstructionMap<Utf8TreeNode, string?>.Create(budget, ReferenceEqualityComparer.Instance);
+        while (frames.Count != 0)
+        {
+            budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
+            if (frame.NextChild < frame.Node.ChildCount)
+            {
+                var child = frame.Node.Child(frame.NextChild++);
+                frames[index] = frame;
+                frames.Push(new(child));
+            }
+            else
+            {
+                values[frame.Node] = Measure(frame.Node, values);
+                frames.Pop();
+            }
+        }
+        var result = values[node];
+        if (result is not null) construction.Complete();
+        return result;
 
         static string? Measure(Utf8TreeNode node, Utf8ConstructionMap<Utf8TreeNode, string?> values)
         {
@@ -428,9 +508,9 @@ internal static class Utf8OwnedFindOptimizations
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<FactFrame>.Create(budget, new(node));
+        using var frames = Utf8ConstructionFrames<WidthFrame>.Create(budget, new(node));
         using var widths = Utf8ConstructionMap<Utf8TreeNode, ByteWidth>.Create(budget, ReferenceEqualityComparer.Instance);
-        PopulateFacts(frames, widths, MeasureByteWidth);
+        MeasureByteWidths(frames, budget, widths);
         string? best = null; var bestDistance = 0; var distance = 0;
         frames.Push(new(node));
         while (frames.Count != 0)
@@ -527,43 +607,4 @@ internal static class Utf8OwnedFindOptimizations
         internal int NextChild;
     }
 
-    // Static measure delegates borrow their inputs. Root frame admission
-    // precedes map acquisition; frames, map arrays and depth unwind together.
-    // Only materialized text results transfer their acquired loans/descriptors.
-    private static T MeasurePostOrder<T>(Utf8TreeNode node,
-        Func<Utf8TreeNode, Utf8ConstructionMap<Utf8TreeNode, T>, T> measure, bool transferResult)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<FactFrame>.Create(budget, new(node));
-        using var values = Utf8ConstructionMap<Utf8TreeNode, T>.Create(budget, ReferenceEqualityComparer.Instance);
-        PopulateFacts(frames, values, measure);
-        var result = values[node];
-        if (transferResult && result is not null) construction.Complete();
-        return result;
-    }
-
-    private static void PopulateFacts<T>(Utf8ConstructionFrames<FactFrame> frames,
-        Utf8ConstructionMap<Utf8TreeNode, T> values,
-        Func<Utf8TreeNode, Utf8ConstructionMap<Utf8TreeNode, T>, T> measure)
-    {
-        var budget = Utf8ConstructionScope.CurrentBudget;
-        while (frames.Count != 0)
-        {
-            budget.ChargeWork(1);
-            var index = frames.Count - 1;
-            var frame = frames[index];
-            if (frame.NextChild < frame.Node.ChildCount)
-            {
-                var child = frame.Node.Child(frame.NextChild++);
-                frames[index] = frame;
-                frames.Push(new(child));
-            }
-            else
-            {
-                values[frame.Node] = measure(frame.Node, values);
-                frames.Pop();
-            }
-        }
-    }
 }
