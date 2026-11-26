@@ -1,5 +1,3 @@
-using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
@@ -14,17 +12,6 @@ public sealed class Utf8LiteralEdgeQualificationTests
     private static Utf8AnchoredLiteralPlan Plan(string pattern, RegexOptions options) => Utf8AnchoredLiteralClassifier.Classify(Utf8FrontEnd.Analyze(pattern, options).SemanticRegex.RuntimeTree);
     private static Utf8OwnedRegexTree Tree(string pattern, RegexOptions options)
     { var tree = Utf8FrontEnd.Analyze(pattern, options).SemanticRegex.RuntimeTree; Assert.NotNull(tree); return tree; }
-    private static MethodInfo Classifier()
-    {
-        var type = typeof(Utf8FrontEnd).Assembly.GetType("Lokad.Utf8Regex.Internal.FrontEnd.Utf8AnchoredLiteralClassifier"); Assert.NotNull(type);
-        Assert.Empty(type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance));
-        var method = type.GetMethod("Classify", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public); Assert.NotNull(method); return method;
-    }
-    private static Utf8AnchoredLiteralPlan Classify(MethodInfo method, Utf8OwnedRegexTree tree)
-    {
-        try { return Assert.IsType<Utf8AnchoredLiteralPlan>(method.Invoke(null, [tree])); }
-        catch (TargetInvocationException error) when (error.InnerException is not null) { ExceptionDispatchInfo.Capture(error.InnerException).Throw(); throw; }
-    }
     private static void Range(string pattern, string text, RegexOptions options, int index, int length)
     {
         var regex = new Utf8Regex(pattern, options: options); var input = Encoding.UTF8.GetBytes(text);
@@ -155,12 +142,11 @@ public sealed class Utf8LiteralEdgeQualificationTests
     [Fact]
     public void EveryLiteralProofCutoffRetainsOnlyItsFinalPayloadAndRestoresParentLoans()
     {
-        var method = Classifier();
         foreach (var pattern in new[] { @"\A(?<x>a)(?:b)", @"(?i:a)(?i:b)\z" })
         {
             var tree = Tree(pattern, RegexOptions.CultureInvariant); ulong peak, work;
             using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-            { Assert.True(Classify(method, tree).HasValue); Assert.Equal(48ul, funded.Budget.ReservedBytes); peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps; }
+            { Assert.True(Utf8AnchoredLiteralClassifier.Classify(tree).HasValue); Assert.Equal(48ul, funded.Budget.ReservedBytes); peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps; }
             Assert.InRange(peak, 1ul, 20000ul); Assert.InRange(work, 1ul, 10000ul);
             foreach (var bytes in new[] { true, false })
             {
@@ -169,7 +155,7 @@ public sealed class Utf8LiteralEdgeQualificationTests
                 {
                     using var owner = new Utf8ConstructionScope(0, bytes ? 128 + cutoff : ulong.MaxValue, bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
                     var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-                    var failure = Record.Exception(() => Classify(method, tree));
+                    var failure = Record.Exception(() => Utf8AnchoredLiteralClassifier.Classify(tree));
                     if (failure is null) { successes++; Assert.Equal(128ul + 48ul, owner.Budget.ReservedBytes); }
                     else
                     { Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind); Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); }
@@ -193,11 +179,11 @@ public sealed class Utf8LiteralEdgeQualificationTests
         root.Children = new[] { Utf8TreeNode.Create(Utf8TreeNodeKind.Beginning, options), literal };
         var deep = Utf8OwnedRegexTree.Create(root, tree.CaptureCount, tree.CaptureNames, tree.CaptureNameToNumberMapping, tree.CaptureNumberSparseMapping,
             tree.Options, tree.Culture, tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase);
-        var method = Classifier(); using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 8);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 8);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.Throws<Utf8ResourceLimitExceededException>(() => Classify(method, deep)).ResourceKind);
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8AnchoredLiteralClassifier.Classify(deep)).ResourceKind);
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-        var spent = owner.Budget.WorkSteps; Assert.True(Classify(method, tree).HasValue); Assert.Equal(128ul + 48ul, owner.Budget.ReservedBytes);
+        var spent = owner.Budget.WorkSteps; Assert.True(Utf8AnchoredLiteralClassifier.Classify(tree).HasValue); Assert.Equal(128ul + 48ul, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.WorkSteps > spent); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
     }
 }

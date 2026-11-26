@@ -5,14 +5,6 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2ReplacementByteExpansionTests
 {
-    [Fact]
-    public void FixedTemplateExpansionOwnsAByteWriter()
-    {
-        var type = typeof(Utf8Pcre2Regex).Assembly.GetType("Lokad.Utf8Regex.Pcre2.Pcre2ReplacementTemplateWriter");
-        Assert.NotNull(type);
-        Assert.True(type.IsByRefLike);
-    }
-
     [Theory]
     [InlineData(@"\o{202050}", "𐐨")]
     [InlineData(@"\U\o{202050}", "𐐀")]

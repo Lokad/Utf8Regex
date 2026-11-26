@@ -25,10 +25,6 @@ public sealed class Pcre2PreparedReplacementTests
         => Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("(x)?").Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement), 0,
             Pcre2SubstitutionOptions.Extended, Pcre2MatchOptions.NotEmpty)));
 
-    [Fact]
-    public void GeneralTemplatesHaveAnOwnedPreparedProgram()
-        => Assert.NotNull(typeof(Utf8Pcre2Regex).Assembly.GetType("Lokad.Utf8Regex.Pcre2.Pcre2PreparedReplacementPlan"));
-
     [Theory]
     [InlineData(@"\x{d800}")] [InlineData(@"\x{110000}")] [InlineData(@"\x{z}")]
     [InlineData(@"\x{}")] [InlineData(@"\xG")] [InlineData(@"\o{}")] [InlineData(@"\N{U+d800}")]

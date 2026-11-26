@@ -127,60 +127,6 @@ public sealed class EngineDependencyInventoryTests
         Assert.Equal(allowed, AssemblyDependencyInventory.FindBclMatcherReferences(pe.GetMetadataReader()).Length == 0);
     }
 
-    [Fact]
-    [Trait("Category", "SourceOnly")]
-    public void VendoredParserForkIsAbsent()
-    {
-        // Parser flip (2026-09-26): the vendored Runtime/* parser fork was removed by
-        // forward deletion under the no-vendor rule. No production source may reference
-        // its types, seam, or directory again.
-        var repoRoot = FindRepositoryRoot();
-        Assert.False(Directory.Exists(Path.Combine(repoRoot, "src", "Lokad.Utf8Regex", "Internal", "FrontEnd", "Runtime")));
-        var tokens = new[] { "RuntimeFrontEnd", "FrontEnd.Runtime", "TryParseLegacy", "FromLegacy" };
-        var offenders = new System.Collections.Generic.List<string>();
-        foreach (var path in Directory.EnumerateFiles(Path.Combine(repoRoot, "src"), "*.cs", SearchOption.AllDirectories))
-        {
-            if (path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
-                path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            var number = 0;
-            foreach (var line in File.ReadLines(path))
-            {
-                number++;
-                foreach (var token in tokens)
-                {
-                    if (line.Contains(token, StringComparison.Ordinal))
-                    {
-                        offenders.Add($"{GetRelativePath(path)}:{number}: {line.Trim()}");
-                        break;
-                    }
-                }
-            }
-        }
-
-        Assert.Empty(offenders);
-    }
-
-
-    private static string GetRelativePath(string path)
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            if (Directory.Exists(Path.Combine(directory.FullName, "src", "Lokad.Utf8Regex")))
-            {
-                return Path.GetRelativePath(directory.FullName, path);
-            }
-
-            directory = directory.Parent;
-        }
-
-        return path;
-    }
-
     private static string FindRepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

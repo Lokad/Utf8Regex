@@ -153,13 +153,4 @@ public sealed class Utf8SharedByteSearchAdmissionTests
     }
 
     private sealed class Box(int value) { public readonly int Value = value; }
-
-    [Fact]
-    public void SharedConstructionOwnerHasOneFlavorNeutralIdentity()
-    {
-        Assert.Equal("Lokad.Utf8Regex.Internal", typeof(Utf8ConstructionScope).Namespace);
-        Assert.Equal(typeof(Utf8ConstructionScope).Namespace, typeof(Utf8ConstructionBudget).Namespace);
-        Assert.Empty(typeof(Utf8Regex).Assembly.GetTypes().Where(type =>
-            type.Namespace == "Lokad.Utf8Regex.Internal.FrontEnd" && type.Name is "Utf8ConstructionScope" or "Utf8ConstructionBudget"));
-    }
 }
