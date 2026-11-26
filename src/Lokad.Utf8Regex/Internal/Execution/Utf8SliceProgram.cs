@@ -1294,10 +1294,53 @@ internal static class Utf8SliceLowerer
 
     private readonly record struct NodeFacts(bool CanMatchEmpty, bool IsZeroWidth, int Minimum, int Maximum);
 
+    private static bool TryGetLeafFacts(Utf8SliceNode node, bool nonBacktracking, out NodeFacts facts)
+    {
+        switch (node)
+        {
+            case Utf8SliceNode.LiteralNode literal:
+                if (!Rune.IsValid(literal.Value))
+                {
+                    facts = new(false, nonBacktracking, 0, 0);
+                    return true;
+                }
+                var width = literal.Value < 0x80 ? 1 : literal.Value < 0x800 ? 2 : literal.Value < 0x10000 ? 3 : 4;
+                facts = literal.FoldCase ? new(false, false, 1, 4) : new(false, false, width, width);
+                return true;
+            case Utf8SliceNode.EmptyNode or Utf8SliceNode.AnchorNode or Utf8SliceNode.BoundaryNode:
+                facts = new(true, nonBacktracking, 0, 0);
+                return true;
+            case Utf8SliceNode.FailNode:
+                facts = new(false, nonBacktracking, 0, int.MaxValue);
+                return true;
+            case Utf8SliceNode.SetNode set:
+                facts = new(false, false, 1, set.Negated || set.FoldCase || set.Members.Length != 0 ? 4 : 1);
+                return true;
+            case Utf8SliceNode.DotNode or Utf8SliceNode.ShorthandNode or Utf8SliceNode.CategorySetNode:
+                facts = new(false, false, 1, 4);
+                return true;
+            case Utf8SliceNode.BackrefNode:
+                facts = new(true, false, 0, int.MaxValue);
+                return true;
+            default:
+                facts = default;
+                return false;
+        }
+    }
+
+    private static NodeFacts ReadNodeFacts(Utf8SliceNode node, Utf8ConstructionMap<Utf8SliceNode, NodeFacts> facts,
+        bool nonBacktracking, Utf8ConstructionBudget budget)
+    {
+        if (!TryGetLeafFacts(node, nonBacktracking, out var leaf)) return facts[node];
+        budget.ChargeWork(1);
+        return leaf;
+    }
+
     private static Utf8ConstructionMap<Utf8SliceNode, NodeFacts> AnalyzeNodes(Utf8SliceNode root, bool nonBacktracking, Utf8ConstructionBudget budget)
     {
-        // Slice nodes are records: structural hashing itself would recurse.
-        // One identity cache serves the main and every nested assertion program.
+        // Slice nodes are records. Reference identity avoids recursive hashing.
+        // The main and assertion programs share composite facts. Leaf facts are
+        // cheap to derive from the node and need no table entry.
         using var frames = Utf8ConstructionFrames<AnalysisFrame>.Create(budget, new(root));
         var facts = Utf8ConstructionMap<Utf8SliceNode, NodeFacts>.Create(budget, ReferenceEqualityComparer.Instance);
         try
@@ -1314,119 +1357,73 @@ internal static class Utf8SliceLowerer
                     continue;
                 }
                 frames.Pop();
-                var node = frame.Node;
-                var empty = node switch
-                {
-                    Utf8SliceNode.EmptyNode or Utf8SliceNode.AnchorNode or Utf8SliceNode.BoundaryNode or
-                        Utf8SliceNode.LookaheadNode or Utf8SliceNode.LookbehindNode or Utf8SliceNode.BackrefNode or Utf8SliceNode.BalanceNode => true,
-                    Utf8SliceNode.ConditionalNode conditional => facts[conditional.YesBody].CanMatchEmpty || facts[conditional.NoBody].CanMatchEmpty,
-                    Utf8SliceNode.CaptureNode capture => facts[capture.Body].CanMatchEmpty,
-                    Utf8SliceNode.AtomicNode atomic => facts[atomic.Body].CanMatchEmpty,
-                    Utf8SliceNode.ConcatNode concat => All(concat.Children, facts, true, budget),
-                    Utf8SliceNode.AlternationNode alternation => AnyEmptyBranch(alternation.Branches, facts, budget),
-                    Utf8SliceNode.RepeatNode repeat => repeat.Minimum == 0 || facts[repeat.Body].CanMatchEmpty,
-                    _ => false,
-                };
-                var (minimum, maximum) = Measure(node, facts);
-                var zeroWidth = nonBacktracking && (node switch
-                {
-                    Utf8SliceNode.EmptyNode or Utf8SliceNode.FailNode or Utf8SliceNode.AnchorNode or
-                        Utf8SliceNode.BoundaryNode or Utf8SliceNode.LookaheadNode or Utf8SliceNode.LookbehindNode => true,
-                    Utf8SliceNode.LiteralNode literal => !System.Text.Rune.IsValid(literal.Value),
-                    Utf8SliceNode.CaptureNode capture => facts[capture.Body].IsZeroWidth,
-                    Utf8SliceNode.BalanceNode balance => facts[balance.Body].IsZeroWidth,
-                    Utf8SliceNode.AtomicNode atomic => facts[atomic.Body].IsZeroWidth,
-                    Utf8SliceNode.ConcatNode concat => All(concat.Children, facts, false, budget),
-                    Utf8SliceNode.AlternationNode alternation => AllZeroWidthBranches(alternation.Branches, facts, budget),
-                    Utf8SliceNode.RepeatNode repeat => repeat.Maximum == 0 || facts[repeat.Body].IsZeroWidth,
-                    Utf8SliceNode.ConditionalNode conditional => facts[conditional.YesBody].IsZeroWidth && facts[conditional.NoBody].IsZeroWidth,
-                    _ => false,
-                });
-                facts[node] = new NodeFacts(empty, zeroWidth, minimum, maximum);
+                if (!TryGetLeafFacts(frame.Node, nonBacktracking, out _))
+                    facts[frame.Node] = Summarize(frame.Node);
             }
             return facts;
         }
         catch { facts.Dispose(); throw; }
-        static bool All(Utf8SliceNode[] nodes, Utf8ConstructionMap<Utf8SliceNode, NodeFacts> facts, bool empty, Utf8ConstructionBudget budget)
-        {
-            foreach (var node in nodes)
-            {
-                budget.ChargeWork(1);
-                var fact = facts[node];
-                if (!(empty ? fact.CanMatchEmpty : fact.IsZeroWidth)) return false;
-            }
-            return true;
-        }
 
-        static bool AnyEmptyBranch(Utf8SliceNode[][] branches, Utf8ConstructionMap<Utf8SliceNode, NodeFacts> facts, Utf8ConstructionBudget budget)
-        {
-            foreach (var branch in branches)
-            {
-                budget.ChargeWork(1);
-                if (All(branch, facts, true, budget)) return true;
-            }
-            return false;
-        }
+        NodeFacts Get(Utf8SliceNode node) => ReadNodeFacts(node, facts, nonBacktracking, budget);
 
-        static bool AllZeroWidthBranches(Utf8SliceNode[][] branches, Utf8ConstructionMap<Utf8SliceNode, NodeFacts> facts, Utf8ConstructionBudget budget)
-        {
-            foreach (var branch in branches)
-            {
-                budget.ChargeWork(1);
-                if (!All(branch, facts, false, budget)) return false;
-            }
-            return true;
-        }
-
-        static (int Minimum, int Maximum) Measure(Utf8SliceNode node, Utf8ConstructionMap<Utf8SliceNode, NodeFacts> facts)
+        NodeFacts Summarize(Utf8SliceNode node)
         {
             switch (node)
             {
-                case Utf8SliceNode.EmptyNode or Utf8SliceNode.AnchorNode or Utf8SliceNode.BoundaryNode or Utf8SliceNode.LookaheadNode or Utf8SliceNode.LookbehindNode:
-                    return (0, 0);
-                case Utf8SliceNode.LiteralNode literal:
-                    if (!System.Text.Rune.IsValid(literal.Value)) return (0, 0);
-                    var width = literal.Value < 0x80 ? 1 : literal.Value < 0x800 ? 2 : literal.Value < 0x10000 ? 3 : 4;
-                    return literal.FoldCase ? (1, 4) : (width, width);
-                case Utf8SliceNode.SetNode set: return set.Negated || set.FoldCase || set.Members.Length != 0 ? (1, 4) : (1, 1);
-                case Utf8SliceNode.DotNode: return (1, 4);
-                case Utf8SliceNode.ShorthandNode or Utf8SliceNode.CategorySetNode: return (1, 4);
-                case Utf8SliceNode.BackrefNode: return (0, int.MaxValue);
-                case Utf8SliceNode.CaptureNode capture: return (facts[capture.Body].Minimum, facts[capture.Body].Maximum);
-                case Utf8SliceNode.BalanceNode balance: return (facts[balance.Body].Minimum, facts[balance.Body].Maximum);
-                case Utf8SliceNode.AtomicNode atomic: return (facts[atomic.Body].Minimum, facts[atomic.Body].Maximum);
+                case Utf8SliceNode.LookaheadNode or Utf8SliceNode.LookbehindNode:
+                    return new(true, nonBacktracking, 0, 0);
+                case Utf8SliceNode.CaptureNode capture:
+                    return Get(capture.Body);
+                case Utf8SliceNode.BalanceNode balance:
+                    return Get(balance.Body) with { CanMatchEmpty = true };
+                case Utf8SliceNode.AtomicNode atomic:
+                    return Get(atomic.Body);
                 case Utf8SliceNode.ConditionalNode conditional:
-                    return (Math.Min(facts[conditional.YesBody].Minimum, facts[conditional.NoBody].Minimum),
-                        Math.Max(facts[conditional.YesBody].Maximum, facts[conditional.NoBody].Maximum));
+                    var yes = Get(conditional.YesBody);
+                    var no = Get(conditional.NoBody);
+                    return new(yes.CanMatchEmpty || no.CanMatchEmpty, yes.IsZeroWidth && no.IsZeroWidth,
+                        Math.Min(yes.Minimum, no.Minimum), Math.Max(yes.Maximum, no.Maximum));
                 case Utf8SliceNode.ConcatNode concat:
-                    long minimum = 0, maximum = 0;
-                    foreach (var child in concat.Children)
-                    {
-                        minimum += facts[child].Minimum;
-                        maximum += facts[child].Maximum;
-                    }
-                    return (Saturate(minimum), Saturate(maximum));
+                    return SummarizeSequence(concat.Children);
                 case Utf8SliceNode.AlternationNode alternation:
-                    var branchMinimum = int.MaxValue;
-                    var branchMaximum = 0;
+                    var anyEmpty = false;
+                    var allZeroWidth = nonBacktracking;
+                    var minimum = int.MaxValue;
+                    var maximum = 0;
                     foreach (var branch in alternation.Branches)
                     {
-                        long low = 0, high = 0;
-                        foreach (var child in branch)
-                        {
-                            low += facts[child].Minimum;
-                            high += facts[child].Maximum;
-                        }
-                        branchMinimum = Math.Min(branchMinimum, Saturate(low));
-                        branchMaximum = Math.Max(branchMaximum, Saturate(high));
+                        budget.ChargeWork(1);
+                        var sequence = SummarizeSequence(branch);
+                        anyEmpty |= sequence.CanMatchEmpty;
+                        allZeroWidth &= sequence.IsZeroWidth;
+                        minimum = Math.Min(minimum, sequence.Minimum);
+                        maximum = Math.Max(maximum, sequence.Maximum);
                     }
-                    return alternation.Branches.Length == 0 ? (0, 0) : (branchMinimum, branchMaximum);
+                    return new(anyEmpty, allZeroWidth, alternation.Branches.Length == 0 ? 0 : minimum, maximum);
                 case Utf8SliceNode.RepeatNode repeat:
-                    var body = facts[repeat.Body];
-                    return (Saturate((long)body.Minimum * repeat.Minimum),
+                    var body = Get(repeat.Body);
+                    return new(repeat.Minimum == 0 || body.CanMatchEmpty, nonBacktracking && (repeat.Maximum == 0 || body.IsZeroWidth),
+                        Saturate((long)body.Minimum * repeat.Minimum),
                         repeat.Maximum == long.MaxValue || body.Maximum == int.MaxValue ? int.MaxValue : Saturate((long)body.Maximum * repeat.Maximum));
-                default: return (0, int.MaxValue);
+                default:
+                    return new(false, false, 0, int.MaxValue);
             }
+        }
+
+        NodeFacts SummarizeSequence(Utf8SliceNode[] nodes)
+        {
+            var empty = true;
+            var zeroWidth = nonBacktracking;
+            long minimum = 0, maximum = 0;
+            foreach (var node in nodes)
+            {
+                var fact = Get(node);
+                empty &= fact.CanMatchEmpty;
+                zeroWidth &= fact.IsZeroWidth;
+                minimum += fact.Minimum;
+                maximum += fact.Maximum;
+            }
+            return new(empty, zeroWidth, Saturate(minimum), Saturate(maximum));
         }
 
         static int Saturate(long value) => value > int.MaxValue ? int.MaxValue : (int)value;
@@ -1621,7 +1618,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog,
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.GetFacts(root).CanMatchEmpty, lowerer.CaptureCatalog,
             isRoot && usesInterpretedLazyLoopSemantics, isRoot && usesLiteralClassBracketSyntax, lowerer.CaseBehavior,
             lowerer.NonBacktracking, lowerer.CaptureOpeningCount,
             epsilonOrder, epsilonAncestors,
@@ -1731,7 +1728,7 @@ internal static class Utf8SliceLowerer
         internal readonly Utf8ScalarCaseBehavior CaseBehavior;
         internal readonly bool MirrorExecute;
         internal readonly bool NonBacktracking;
-        internal readonly Utf8ConstructionMap<Utf8SliceNode, NodeFacts> Facts;
+        private readonly Utf8ConstructionMap<Utf8SliceNode, NodeFacts> _facts;
         internal Utf8SliceProgram? LastSubprogram;
         internal bool Failed;
 
@@ -1751,7 +1748,7 @@ internal static class Utf8SliceLowerer
             NonBacktracking = nonBacktracking;
             CaptureOpenings = nonBacktracking ? new(budget, ReferenceEqualityComparer.Instance) : null;
             NonBacktrackingScopes = nonBacktracking ? new(budget) : null;
-            Facts = facts;
+            _facts = facts;
             // RTL references can precede their captures. Every program starts
             // with the final catalog tally when supplied, just as the old entry.
             if (groupNames is not null) GroupCount = groupNames.Length - 1;
@@ -1767,6 +1764,8 @@ internal static class Utf8SliceLowerer
             CaptureOpenings?.Dispose();
             NonBacktrackingScopes?.Dispose();
         }
+
+        internal NodeFacts GetFacts(Utf8SliceNode node) => ReadNodeFacts(node, _facts, NonBacktracking, Budget);
 
         private static int GetAsciiRange(ReadOnlySpan<byte> mask)
         {
@@ -1905,7 +1904,7 @@ internal static class Utf8SliceLowerer
                         {
                             frame.Minimum = repeat.Minimum;
                             frame.Maximum = repeat.Maximum;
-                            if (Facts[repeat.Body].IsZeroWidth)
+                            if (GetFacts(repeat.Body).IsZeroWidth)
                             {
                                 // Only the final zero-width completion is exposed.
                                 // Keep predicates/preference without expanding a bound.
@@ -1934,7 +1933,7 @@ internal static class Utf8SliceLowerer
                                 // minimum. Once it is met, an empty completion
                                 // exits rather than starting optional copies.
                                 if (frame.Index == frame.Minimum && frame.Minimum < frame.Maximum &&
-                                    Facts[repeat.Body].CanMatchEmpty && !Facts[repeat.Body].IsZeroWidth)
+                                    GetFacts(repeat.Body) is { CanMatchEmpty: true, IsZeroWidth: false })
                                 {
                                     frame.ParentScope = NonBacktrackingScope;
                                     NonBacktrackingScope = new(frame.ParentScope);
@@ -1971,7 +1970,7 @@ internal static class Utf8SliceLowerer
                             frame.Mark = Instructions.Count;
                             Emit(new(Utf8SliceInstructionKind.Fork, 0, repeat.Lazy ? 1 : 0, 0, 0));
                             frame.ParentScope = NonBacktrackingScope;
-                            frame.NullableLoop = Facts[repeat.Body].CanMatchEmpty && !Facts[repeat.Body].IsZeroWidth;
+                            frame.NullableLoop = GetFacts(repeat.Body) is { CanMatchEmpty: true, IsZeroWidth: false };
                             if (frame.NullableLoop)
                             {
                                 NonBacktrackingScope = new(frame.ParentScope);
@@ -2000,7 +1999,7 @@ internal static class Utf8SliceLowerer
                             candidateBody = capture.Body;
                         }
                         if (candidateBody is Utf8SliceNode.ConcatNode or Utf8SliceNode.AlternationNode &&
-                            !Facts[candidateBody].CanMatchEmpty && IsSmallPureBody(candidateBody, ref remaining, fixedOuter: true))
+                            !GetFacts(candidateBody).CanMatchEmpty && IsSmallPureBody(candidateBody, ref remaining, fixedOuter: true))
                             frame.Stage = 2;
                     }
                     if (frame.Stage == 2)
@@ -2020,7 +2019,7 @@ internal static class Utf8SliceLowerer
                             candidateBody = capture.Body;
                         }
                         if (repeat.Minimum == 1 && GetDelimitedAsciiRunByte(repeat.Body) >= 0 ||
-                            candidateBody is Utf8SliceNode.AlternationNode && Facts[candidateBody].Minimum > 0 &&
+                            candidateBody is Utf8SliceNode.AlternationNode && GetFacts(candidateBody).Minimum > 0 &&
                             IsSmallPureBody(candidateBody, ref remaining))
                         {
                             if (repeat.Minimum == 0)
@@ -2084,13 +2083,13 @@ internal static class Utf8SliceLowerer
                     var stopBytes = FindGuardedRepeatStopBytes(repeat, frame.Mark);
                     var orderedBodyConsumes = repeat is { Maximum: long.MaxValue, Minimum: <= 1 } &&
                         Instructions.Count < 64 && Instructions.Count - frame.Mark > 2 &&
-                        Facts[repeat.Body].Minimum > 0;
+                        GetFacts(repeat.Body).Minimum > 0;
                     Emit(new(Utf8SliceInstructionKind.RepeatEnd, frame.Mark, stopBytes, orderedBodyConsumes ? 1 : 0, 0));
                     var repeatExit = Instructions.Count;
                     Emit(new(Utf8SliceInstructionKind.RepeatExit, frame.RepeatId, 0, 0, 0));
                     var repeatKind = repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazy : Utf8SliceInstructionKind.RepeatGreedy;
                     if (repeat.GuardEmptyAfterMinimum && repeat.Minimum > 0 && repeat.Minimum < repeat.Maximum &&
-                        Facts[repeat.Body].CanMatchEmpty)
+                        GetFacts(repeat.Body).CanMatchEmpty)
                         repeatKind = repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazyAfterMinimum : Utf8SliceInstructionKind.RepeatGreedyAfterMinimum;
                     Instructions[frame.Mark] = new(repeatKind,
                         repeatExit, frame.RepeatId, unchecked((int)repeat.Minimum),
@@ -2290,7 +2289,7 @@ internal static class Utf8SliceLowerer
                     var body = LastSubprogram;
                     if (body is null) { Failed = true; return false; }
                     GroupCount = Math.Max(GroupCount, body.GroupCount);
-                    var width = Facts[behind.Body];
+                    var width = GetFacts(behind.Body);
                     var assertionIndex = Assertions.Count;
                     Assertions.Add(Utf8SliceAssertion.Create(body, width.Minimum, width.Maximum, true, behind.ForwardScalarCount));
                     Emit(new(Utf8SliceInstructionKind.Lookbehind, assertionIndex, behind.Positive ? 1 : 0, 0, 0));
@@ -2418,7 +2417,7 @@ internal static class Utf8SliceLowerer
                 var program = LastSubprogram;
                 if (program is null) { Failed = true; return false; }
                 GroupCount = Math.Max(GroupCount, program.GroupCount);
-                var width = Facts[body];
+                var width = GetFacts(body);
                 var index = Assertions.Count;
                 Assertions.Add(Utf8SliceAssertion.Create(program, width.Minimum, width.Maximum, false));
                 Emit(new(Utf8SliceInstructionKind.Lookahead, index, positive ? 1 : 0, 0, 0));
