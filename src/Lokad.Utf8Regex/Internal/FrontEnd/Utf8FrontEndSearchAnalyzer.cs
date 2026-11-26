@@ -117,29 +117,10 @@ internal static class Utf8FrontEndSearchAnalyzer
                        });
         }
 
-        if (TrySelectLeadingLiteral(findOptimizations, out var leadingLiteral) && IsAscii(leadingLiteral))
-        {
-            var searchKind = UsesInvariantIgnoreCase(semanticRegex.ExecutionOptions)
-                ? Utf8SearchKind.AsciiFoldedByteLiteral
-                : Utf8SearchKind.ExactAsciiLiteral;
-
-            return Utf8SearchFacts.Create(
-                       searchKind,
-                       new Utf8SearchFactData
-                       {
-                           LiteralUtf8 = EncodeLiteral(leadingLiteral),
-                           CanGuideFallbackStarts = CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
-                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
-                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           FallbackStartTransform = fallbackStartTransform,
-                           ExactRequiredLength = exactRequiredLength,
-                           MaxPossibleLength = maxPossibleLength,
-                           LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary
-                       });
-        }
-
-        if (TrySelectCandidateLiteral(findOptimizations, out var candidate) && IsAscii(candidate))
+        var leadingLiteral = findOptimizations.LeadingLiteral;
+        var hasAsciiLeadingLiteral = leadingLiteral is { Length: > 0 } && IsAscii(leadingLiteral);
+        var candidate = hasAsciiLeadingLiteral ? EncodeLiteral(leadingLiteral!) : SelectAsciiCandidateLiteral(findOptimizations);
+        if (candidate.Length != 0)
         {
             var searchKind = UsesInvariantIgnoreCase(semanticRegex.ExecutionOptions)
                 ? Utf8SearchKind.AsciiFoldedByteLiteral
@@ -150,6 +131,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                        new Utf8SearchFactData
                        {
                            LiteralUtf8 = candidate,
+                           CanGuideFallbackStarts = hasAsciiLeadingLiteral && CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
                            RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
                            RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
                            FallbackStartTransform = fallbackStartTransform,
@@ -216,43 +198,16 @@ internal static class Utf8FrontEndSearchAnalyzer
                    });
     }
 
-    private static bool TrySelectCandidateLiteral(Utf8OwnedFindFacts findOptimizations, out byte[] candidate)
+    private static byte[] SelectAsciiCandidateLiteral(Utf8OwnedFindFacts findOptimizations)
     {
-        if (findOptimizations.AlternatePrefixes is { Length: 1 } alternatePrefixes)
-        {
-            candidate = alternatePrefixes[0];
-            if (candidate.Length > 0)
-            {
-                return true;
-            }
-        }
+        if (findOptimizations.AlternatePrefixes is [{ Length: > 0 } prefix])
+            return IsAscii(prefix) ? prefix : [];
 
-        if (!string.IsNullOrEmpty(findOptimizations.LongestLiteral))
-        {
-            candidate = EncodeLiteral(findOptimizations.LongestLiteral);
-            return true;
-        }
-
-        if (!string.IsNullOrEmpty(findOptimizations.LeadingLiteral))
-        {
-            candidate = EncodeLiteral(findOptimizations.LeadingLiteral);
-            return true;
-        }
-
-        candidate = [];
-        return false;
-    }
-
-    private static bool TrySelectLeadingLiteral(Utf8OwnedFindFacts findOptimizations, out string leadingLiteral)
-    {
-        leadingLiteral = string.Empty;
-        if (string.IsNullOrEmpty(findOptimizations.LeadingLiteral))
-        {
-            return false;
-        }
-
-        leadingLiteral = findOptimizations.LeadingLiteral;
-        return true;
+        // Leading literals were already screened. Check the interior fragment
+        // before allocating UTF-8 for an ASCII-only candidate.
+        return findOptimizations.LongestLiteral is { Length: > 0 } literal && IsAscii(literal)
+            ? EncodeLiteral(literal)
+            : [];
     }
 
     private static bool UsesInvariantIgnoreCase(RegexOptions options)
