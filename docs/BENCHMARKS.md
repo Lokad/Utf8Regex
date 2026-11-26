@@ -20,7 +20,9 @@ cost of deadlines, cancellation and resource limits. Matching options and
 capture results are checked before timing. The comparison includes public
 result handling with the .NET byte-coordinate lookup prepared outside timing.
 `MatchSlots` uses the public caller-buffer match from a byte offset and reads
-one range per participating group. `Cursor` reads complete capture histories.
+one range per participating group. For capture-free patterns the .NET lane
+reads the first value match from `Regex.EnumerateMatches` at the same offset.
+`Cursor` reads complete capture histories.
 Archived `MatchCaptures` rows measure one cursor advance with histories.
 
 Run the existing Release driver, using the SDK from `global.json`:

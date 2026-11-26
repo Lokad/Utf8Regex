@@ -98,7 +98,7 @@ internal static partial class BenchmarkInspectReporter
                 Profile = "Core", Filter = filter, OperationFilter = operationFilter,
                 InputContract = "Caller-valid unchanged UTF-8 / predecoded .NET text; Core performs no subject validation. DecodeThenRegex includes decoding.",
                 Scope = "24 representative patterns; structural neighbours and everyday patterns. Not exhaustive old-catalog coverage or adapter coverage.",
-                OutputContract = "MatchSlots reads last captures into caller slots. Cursor reads complete capture histories. Both return byte ranges, with the BCL coordinate map prepared outside timing. No string materialization. Construction consumes the same CultureInvariant Options mask on every producer, without metadata-array copies.",
+                OutputContract = "MatchSlots reads last captures into caller slots. For capture-free patterns the BCL lane reads the first value match. Cursor reads complete capture histories. Both return byte ranges, with the BCL coordinate map prepared outside timing. No string materialization. Construction consumes the same CultureInvariant Options mask on every producer, without metadata-array copies.",
                 Policy = "Ordinary Core and .NET lanes use an infinite timeout. Controlled Core lanes use a token, " +
                     "10-second deadline, 50M work steps, 4096 depth, 16 MiB working/result and a caller working allowance in the combined lane.",
                 Results = results }, new JsonSerializerOptions { WriteIndented = true }) + "\n");
@@ -168,18 +168,26 @@ internal static partial class BenchmarkInspectReporter
                 var regex = lane == "CompiledRegex" ? _compiled : _oracle;
                 if (operation == "IsMatch") return regex.IsMatch(text) ? 1 : 0;
                 if (operation == "Count") return regex.Count(text);
-                var match = regex.Match(text, _start);
                 var checksum = 0;
                 if (operation == "MatchSlots")
                 {
+                    if (_numbers.Length == 1)
+                    {
+                        var matches = regex.EnumerateMatches(text.AsSpan(), _start);
+                        if (!matches.MoveNext()) return 0;
+                        var range = matches.Current;
+                        return AddRange(0, _boundaries[range.Index], _boundaries[range.Index + range.Length]);
+                    }
+                    var first = regex.Match(text, _start);
                     foreach (var number in _numbers)
                     {
-                        var group = match.Groups[number];
+                        var group = first.Groups[number];
                         if (group.Success)
                             checksum = AddRange(checksum, _boundaries[group.Index], _boundaries[group.Index + group.Length]);
                     }
                     return checksum;
                 }
+                var match = regex.Match(text, _start);
                 while (match.Success)
                 {
                     foreach (var number in _numbers)
@@ -250,6 +258,8 @@ internal static partial class BenchmarkInspectReporter
         {
             var reference = _oracle.Match(_text, _start);
             var compiled = _compiled.Match(_text, _start);
+            if (_numbers.Length == 1 && (!MatchesExtent(_oracle, reference) || !MatchesExtent(_compiled, compiled)))
+                throw new InvalidOperationException($"Generality value match range differs: {_pattern}.");
             Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[_numbers.Length];
             foreach (var core in _core)
             {
@@ -264,6 +274,13 @@ internal static partial class BenchmarkInspectReporter
                         throw new InvalidOperationException($"Generality capture slot {number} differs: {_pattern}.");
                 }
                 if (_allowance.Used != 0) throw new InvalidOperationException("Generality Match failed to return working storage.");
+            }
+
+            bool MatchesExtent(Regex regex, Match expected)
+            {
+                var values = regex.EnumerateMatches(_text.AsSpan(), _start);
+                return values.MoveNext() == expected.Success && (!expected.Success ||
+                    (values.Current.Index, values.Current.Length) == (expected.Index, expected.Length));
             }
         }
 
