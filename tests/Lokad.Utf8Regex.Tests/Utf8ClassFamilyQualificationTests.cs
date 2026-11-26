@@ -65,7 +65,40 @@ public sealed class Utf8ClassFamilyQualificationTests
         });
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         Assert.Equal(Utf8SliceTerminalRootKind.DelimitedClassRepeat, program.TerminalRoot);
-        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(text)));
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(expected, regex.IsMatch(input));
+        var reference = Regex.Match(text, pattern);
+        Assert.Equal(expected, reference.Success);
+        var range = reference.Success
+            ? new Utf8CaptureRange(Encoding.UTF8.GetByteCount(text.AsSpan(0, reference.Index)),
+                Encoding.UTF8.GetByteCount(text.AsSpan(0, reference.Index + reference.Length)))
+            : default;
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[1];
+        Assert.Equal(range, regex.Match(input, 0, slots));
+        Assert.Equal(range, slots[0]);
+    }
+
+    [Fact]
+    public void DelimitedRangesKeepTheSelectedEndAndTheNextCursorStart()
+    {
+        const string pattern = "\"[^\"\\n]*\"";
+        const string text = "⚑\"skip\n😀\"\" \"é\"";
+        var input = Encoding.UTF8.GetBytes(text);
+        var empty = "⚑\"skip\n😀"u8.Length;
+        var body = empty + "\"\" "u8.Length;
+        using var regex = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 128, MaxWorkSteps = 128 }
+        });
+
+        Assert.False(regex.Match(input, body, endOffsetInBytes: input.Length - 1).Success);
+        using var cursor = regex.CreateMatchCursor(input, "⚑"u8.Length);
+        Assert.True(cursor.MoveNext(out var first));
+        Assert.Equal(new Utf8CaptureRange(empty, empty + 2), first.Value);
+        Assert.True(cursor.MoveNext(out var second));
+        Assert.Equal(new Utf8CaptureRange(body, input.Length), second.Value);
+        Assert.False(cursor.MoveNext(out _));
+        Assert.True(first.GetValueMemory().Span.SequenceEqual("\"\""u8));
     }
 
     [Theory]

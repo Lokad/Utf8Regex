@@ -383,9 +383,9 @@ public sealed partial class Utf8Regex : IDisposable
         Utf8SliceBufferWork.Checkpoint(ref invocation);
         if (program.TerminalRoot == Utf8SliceTerminalRootKind.DelimitedClassRepeat)
         {
-            var breach = Utf8SliceRunner.IsMatchDelimitedClassRepeat(program, input, startByte, ref invocation, out var found);
-            if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
-            return found;
+            var range = Utf8SliceRunner.FindDelimitedClassRepeat(program, input, startByte, ref invocation);
+            if (range.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+            return range.Found;
         }
         // Boolean results need no capture storage. The bounded finder confirms
         // boundary requirements on the original subject under this invocation.

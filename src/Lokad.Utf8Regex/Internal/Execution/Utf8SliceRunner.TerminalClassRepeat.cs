@@ -136,12 +136,12 @@ internal static partial class Utf8SliceRunner
             ? new(true, start, delimiter + 1, breach) : new(false, -1, -1, breach);
     }
 
-    internal static Utf8ExecutionLimitKind IsMatchDelimitedClassRepeat(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int position, ref Utf8SliceInvocation invocation, out bool found)
+    internal static Utf8SliceSearchOutcome FindDelimitedClassRepeat(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, ref Utf8SliceInvocation invocation)
     {
-        found = false;
         var breach = invocation.TryReserveWorking(0);
-        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+        var start = -1;
         var code = program.Instructions;
         var head = (byte)code[0].A;
         var delimiter = (byte)code[5].A;
@@ -150,19 +150,20 @@ internal static partial class Utf8SliceRunner
         {
             breach = TrySeekLeadingByte(input, ref position, head, head, false, ref invocation);
             if (breach != Utf8ExecutionLimitKind.None || position < 0 || position == input.Length - 1) break;
+            var candidate = position;
             var body = RunUnboundedByteStops(input, position + 1, false, false, first, second,
                 ref invocation, out _, checkExitDeadline: true);
-            if (body.Breach != Utf8ExecutionLimitKind.None) return body.Breach;
+            if (body.Breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, body.Breach);
             position = body.EndIndex;
             if (position == input.Length) break;
             if (input[position] != delimiter)
                 continue; // Any head inside the run would reach the same wrong stop.
-            found = true;
+            start = candidate;
             break;
         }
         invocation.Budget.ThrowIfCancellationRequested();
         invocation.Budget.CheckDeadline();
-        return breach;
+        return start >= 0 ? new(true, start, position + 1, breach) : new(false, -1, -1, breach);
     }
 
     internal static bool PrepareRequiredLiteralWitness(Utf8SliceProgram program, ReadOnlySpan<byte> needle,
