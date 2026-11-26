@@ -48,7 +48,13 @@ internal partial struct PosixWorkspace
             : 0;
         workspace._lastOffset = checked(workspace._openOffset + tags);
         var count = checked(workspace._lastOffset + tags);
-        if (count == 0) return;
+        // Check interruption once after validating the start and before
+        // searching. Workspace admission already checks it before allocating.
+        if (count == 0)
+        {
+            Finish(ref invocation);
+            return;
+        }
         var bytes = Utf8ConstructionBudget.ArrayBytes<int>(count);
         Check(invocation.TryReserveWorking(bytes), ref invocation);
         try

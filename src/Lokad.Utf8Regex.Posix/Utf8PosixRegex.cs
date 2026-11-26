@@ -103,7 +103,7 @@ public sealed class Utf8PosixRegex : IDisposable
         PosixWorkspace workspace = default;
         try
         {
-            CheckStart(input, 0, ref invocation);
+            CheckStart(input, 0);
             var scalar = ScalarProgram;
             // POSIX's small-input loop avoids the shared search setup.
             if (input.Length > Utf8SliceRunner.ShortSingleOriginProofInputLimit &&
@@ -136,7 +136,7 @@ public sealed class Utf8PosixRegex : IDisposable
         PosixWorkspace workspace = default;
         try
         {
-            CheckStart(input, startOffsetInBytes, ref invocation);
+            CheckStart(input, startOffsetInBytes);
             var captureHistory = output.Length > 1;
             InitializeWorkspace(out workspace, ref invocation, captureHistory);
             Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
@@ -161,7 +161,7 @@ public sealed class Utf8PosixRegex : IDisposable
         PosixWorkspace workspace = default;
         try
         {
-            CheckStart(input, startOffsetInBytes, ref invocation);
+            CheckStart(input, startOffsetInBytes);
             InitializeWorkspace(out workspace, ref invocation, captureHistory: false);
             Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
             var count = 0; var position = startOffsetInBytes;
@@ -201,14 +201,13 @@ public sealed class Utf8PosixRegex : IDisposable
     internal void InitializeWorkspace(out PosixWorkspace workspace, ref Utf8SliceInvocation invocation, bool captureHistory = true)
         => PosixWorkspace.Initialize(out workspace, _program, ref invocation, captureHistory);
 
-    internal static void CheckStart(ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
+    internal static void CheckStart(ReadOnlySpan<byte> input, int start)
     {
         if (!Utf8BytePosition.IsScalarBoundary(input, start))
         {
             if ((uint)start > (uint)input.Length) throw new ArgumentOutOfRangeException("startOffsetInBytes");
             throw new ArgumentOutOfRangeException("startOffsetInBytes", "The start must be a Unicode scalar boundary.");
         }
-        PosixWorkspace.Finish(ref invocation);
     }
 
     internal Span<Utf8CaptureRange> OutputWindow(Span<Utf8CaptureRange> output) => output[..Math.Min(output.Length, GroupCount + 1)];

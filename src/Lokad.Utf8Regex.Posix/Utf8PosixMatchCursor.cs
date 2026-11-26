@@ -24,7 +24,7 @@ public sealed class Utf8PosixMatchCursor : IDisposable
         _regex = regex; _input = input; _position = start;
         try
         {
-            Utf8PosixRegex.CheckStart(input.Span, start, ref _invocation);
+            Utf8PosixRegex.CheckStart(input.Span, start);
             regex.InitializeWorkspace(out _workspace, ref _invocation);
             if (_workspace.StateLength != 0) _state = new int[_workspace.StateLength];
         }
