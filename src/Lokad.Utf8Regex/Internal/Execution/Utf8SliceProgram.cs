@@ -1247,43 +1247,34 @@ internal static class Utf8SliceLowerer
             while (frames.Count != 0)
             {
                 budget.ChargeWork(1);
-                var index = frames.Count - 1;
-                var frame = frames[index];
-                bool suspended;
-                EmissionRequest request;
-                try
-                {
-                    if (frame.Owner is null)
-                    {
-                        // The program frame is admitted before acquiring its
-                        // lowerer and scratch descriptors. Their separate object
-                        // admission remains work; referenced facts are borrowed.
-                        frame.Owner = new Lowering(groupNames, maintainBalance, matchCaseInsensitive,
-                            frame.RightToLeft, facts, caseBehavior, nonBacktracking, budget);
-                        frame.Owner.CaptureCatalog = captureCatalog;
-                    }
-                    suspended = frame.Owner.Advance(ref frame, out request);
-                }
-                finally { frames[index] = frame; }
-                var owner = frame.Owner ?? throw new InvalidOperationException("Missing emission owner.");
-                if (suspended)
+                // Advance borrows this slot only until the next push or pop.
+                // Failure cleanup sees the scratch recorded during the advance.
+                ref var frame = ref frames.Peek();
+                var owner = frame.Owner ??= new Lowering(groupNames, maintainBalance, matchCaseInsensitive,
+                    frame.RightToLeft, facts, caseBehavior, nonBacktracking, budget) { CaptureCatalog = captureCatalog };
+                if (owner.Advance(ref frame, out var request))
                 {
                     frames.Push(new(request.Node, request.Program, request.RightToLeft,
                         request.Program ? null : owner, request.LookaheadPolarity));
                     continue;
                 }
+                var node = frame.Root;
+                var isProgram = frame.Program;
+                var scratch = frame.Scratch;
                 frames.Pop();
-                frame.Scratch?.Dispose();
-                if (owner.Failed && !frame.Program) return null;
-                if (!frame.Program) continue;
+                scratch?.Dispose();
+                if (!isProgram)
+                {
+                    if (owner.Failed) return null;
+                    continue;
+                }
                 try
                 {
                     if (owner.Failed) return null;
-                    var program = FinishLowering(owner, frame.Root, frames.Count == 0,
+                    var program = FinishLowering(owner, node, frames.Count == 0,
                         usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, prepareUnbranchedSearch, proofCompilation);
-                    if (program is null) return null;
                     if (frames.Count == 0) { construction.Complete(); return program; }
-                    var parent = frames[frames.Count - 1].Owner
+                    var parent = frames.Peek().Owner
                         ?? throw new InvalidOperationException("Missing assertion parent.");
                     parent.LastSubprogram = program;
                 }
@@ -1361,17 +1352,16 @@ internal static class Utf8SliceLowerer
             while (frames.Count > 0)
             {
                 budget.ChargeWork(1);
-                var index = frames.Count - 1;
-                var frame = frames[index];
+                ref var frame = ref frames.Peek();
                 if (frame.NextChild(budget) is { } child)
                 {
-                    frames[index] = frame;
                     if (!TryGetLeafFacts(child, nonBacktracking, out _) && !facts.TryGetValue(child, out _))
                         frames.Push(new(child));
                     continue;
                 }
+                var node = frame.Node;
                 frames.Pop();
-                facts[frame.Node] = Summarize(frame.Node);
+                facts[node] = Summarize(node);
             }
             return facts;
         }
@@ -1496,7 +1486,7 @@ internal static class Utf8SliceLowerer
         internal Utf8ConstructionBuffer<int>? Scratch;
     }
 
-    private static Utf8SliceProgram? FinishLowering(Lowering lowerer, Utf8SliceNode root, bool isRoot,
+    private static Utf8SliceProgram FinishLowering(Lowering lowerer, Utf8SliceNode root, bool isRoot,
         bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, bool prepareUnbranchedSearch,
         Utf8BoundedProgramEmitter.Compilation proofCompilation)
     {
