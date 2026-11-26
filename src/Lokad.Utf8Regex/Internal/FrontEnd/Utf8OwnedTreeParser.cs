@@ -46,7 +46,7 @@ internal static class Utf8OwnedTreeParser
                 else frames.Pop();
             }
             frames.Dispose(); // Release continuation-array scratch before numbering.
-            var state = context.State;
+            ref var state = ref context.State;
             var root = context.Node;
             if (context.Failed || root is null || state.Position != pattern.Length)
             {
@@ -89,18 +89,8 @@ internal static class Utf8OwnedTreeParser
                 root = top;
             }
 
-            bool numbered;
-            int captureCount;
-            string[] captureNames;
-            IReadOnlyDictionary<string, int>? captureNameToNumber;
-            IReadOnlyDictionary<int, int>? captureSparseMapping;
-            try
-            {
-                numbered = FinishNumbering(ref state, ref root, out captureCount, out captureNames,
-                    out captureNameToNumber, out captureSparseMapping);
-            }
-            finally { context.State = state; }
-            if (!numbered)
+            if (!FinishNumbering(ref state, ref root, out var captureCount, out var captureNames,
+                    out var captureNameToNumber, out var captureSparseMapping))
             {
                 diagnostic = state.Failure.Error != Utf8PatternError.None ? state.Failure
                     : new(Utf8PatternError.UndefinedCapture, state.Position);
@@ -148,7 +138,7 @@ internal static class Utf8OwnedTreeParser
         static bool ParseAlternation(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
             child = default;
-            var state = context.State;
+            ref var state = ref context.State;
             if (frame.Stage == 0)
             {
                 frame.EntryOptions = state.Options;
@@ -156,7 +146,7 @@ internal static class Utf8OwnedTreeParser
             else
             {
                 var branch = context.Node;
-                if (branch is null) { context.Fail(state); return false; }
+                if (branch is null) { context.Fail(); return false; }
                 if (state.AtEnd || state.Pattern[state.Position] != '|')
                 {
                     if (frame.Nodes is { } branches)
@@ -164,7 +154,7 @@ internal static class Utf8OwnedTreeParser
                         branches.Add(branch);
                         branch = Alternate(frame.EntryOptions, branches);
                     }
-                    context.Complete(state, branch);
+                    context.Complete(branch);
                     return false;
                 }
                 // A separator proves that this frame needs a branch vector.
@@ -173,7 +163,6 @@ internal static class Utf8OwnedTreeParser
             }
             Utf8ConstructionScope.ChargeWork(1);
             if (frame.Depth == 0) state.Depth0Branch = frame.Nodes?.Count ?? 0;
-            context.State = state;
             frame.Stage = 1;
             child = new(OwnedParseProduction.Concatenation, frame.Depth);
             return true;
@@ -182,7 +171,7 @@ internal static class Utf8OwnedTreeParser
         static bool ParseConcatenation(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
             child = default;
-            var state = context.State;
+            ref var state = ref context.State;
             var depth = frame.Depth;
             Utf8TreeNode? node = null;
             if (frame.Nodes is null)
@@ -192,7 +181,7 @@ internal static class Utf8OwnedTreeParser
                 frame.EntryOptions = state.Options;
             }
             var children = frame.Nodes;
-            var run = frame.Run ?? throw new InvalidOperationException("Missing concatenation literal storage.");
+            var run = frame.Run;
             var concatenationEntryOptions = frame.EntryOptions;
             while (frame.Stage == 1 || !state.AtEnd)
             {
@@ -201,7 +190,7 @@ internal static class Utf8OwnedTreeParser
                 {
                     frame.Stage = 0;
                     var group = context.Node;
-                    if (group is null) { context.Fail(state); return false; }
+                    if (group is null) { context.Fail(); return false; }
                     atom = group;
                 }
                 else
@@ -248,7 +237,7 @@ internal static class Utf8OwnedTreeParser
                             var anchorAtom = anchor;
                             if (!ParseQuantifier(ref state, ref anchorAtom, out var decayedAnchor))
                             {
-                                context.Fail(state);
+                                context.Fail();
                                 return false;
                             }
 
@@ -267,7 +256,7 @@ internal static class Utf8OwnedTreeParser
                             var shorthandAtom = shorthand;
                             if (!ParseQuantifier(ref state, ref shorthandAtom, out var decayedShorthand))
                             {
-                                context.Fail(state);
+                                context.Fail();
                                 return false;
                             }
 
@@ -290,7 +279,7 @@ internal static class Utf8OwnedTreeParser
                             var backrefAtom = tentative;
                             if (!ParseQuantifier(ref state, ref backrefAtom, out var decayedBackref))
                             {
-                                context.Fail(state);
+                                context.Fail();
                                 return false;
                             }
 
@@ -329,7 +318,7 @@ internal static class Utf8OwnedTreeParser
                             var namedAtom = namedBackref;
                             if (!ParseQuantifier(ref state, ref namedAtom, out var decayedNamed))
                             {
-                                context.Fail(state);
+                                context.Fail();
                                 return false;
                             }
 
@@ -352,7 +341,7 @@ internal static class Utf8OwnedTreeParser
 
                         if (!DecodeEscape(ref state, out var escaped))
                         {
-                            context.Fail(state);
+                            context.Fail();
                             return false;
                         }
 
@@ -368,7 +357,7 @@ internal static class Utf8OwnedTreeParser
                             var impossible = Utf8TreeNode.Create(Utf8TreeNodeKind.Nothing, state.Options);
                             if (!ParseQuantifier(ref state, ref impossible, out _))
                             {
-                                context.Fail(state);
+                                context.Fail();
                                 return false;
                             }
                             children.Add(impossible);
@@ -380,7 +369,7 @@ internal static class Utf8OwnedTreeParser
                             FlushRun(state, children, run);
                             if (!ParseQuantifier(ref state, ref escapedAtom, out var decayedEscaped))
                             {
-                                context.Fail(state);
+                                context.Fail();
                                 return false;
                             }
 
@@ -420,7 +409,7 @@ internal static class Utf8OwnedTreeParser
                             var impossible = Utf8TreeNode.Create(Utf8TreeNodeKind.Nothing, state.Options);
                             if (!ParseQuantifier(ref state, ref impossible, out _))
                             {
-                                context.Fail(state);
+                                context.Fail();
                                 return false;
                             }
                             children.Add(impossible);
@@ -433,7 +422,7 @@ internal static class Utf8OwnedTreeParser
                             state.Position = nextPosition;
                             if (!ParseQuantifier(ref state, ref foldedAtom, out var decayedFolded))
                             {
-                                context.Fail(state);
+                                context.Fail();
                                 return false;
                             }
 
@@ -478,7 +467,7 @@ internal static class Utf8OwnedTreeParser
                         FlushRun(state, children, run);
                         if (!ParseQuantifier(ref state, ref unit, out var decayedUnit))
                         {
-                            context.Fail(state);
+                            context.Fail();
                             return false;
                         }
 
@@ -495,7 +484,7 @@ internal static class Utf8OwnedTreeParser
                     {
                         if (!SkipComment(ref state))
                         {
-                            context.Fail(state);
+                            context.Fail();
                             return false;
                         }
 
@@ -509,7 +498,7 @@ internal static class Utf8OwnedTreeParser
                     {
                         if (state.ExpressionBranchDepth == depth)
                         {
-                            context.Fail(state);
+                            context.Fail();
                             return false;
                         }
                         var toggleStart = state.Position;
@@ -548,7 +537,7 @@ internal static class Utf8OwnedTreeParser
                     {
                         if (!ParseClass(ref state, out var classNode) || classNode is null)
                         {
-                            context.Fail(state);
+                            context.Fail();
                             return false;
                         }
 
@@ -565,18 +554,17 @@ internal static class Utf8OwnedTreeParser
                         }
 
                         state.Fail(Utf8PatternError.MissingQuantifierOperand);
-                        context.Fail(state);
+                        context.Fail();
                         return false;
                     }
                     else if (character != '(')
                     {
                         state.Fail(IsQuantifierStart(character) ? Utf8PatternError.MissingQuantifierOperand : Utf8PatternError.InvalidSyntax);
-                        context.Fail(state);
+                        context.Fail();
                         return false;
                     }
                     else
                     {
-                        context.State = state;
                         frame.Stage = 1;
                         child = new(OwnedParseProduction.Group, depth);
                         return true;
@@ -585,7 +573,7 @@ internal static class Utf8OwnedTreeParser
 
                 if (!ParseQuantifier(ref state, ref atom, out var decayedAtom))
                 {
-                    context.Fail(state);
+                    context.Fail();
                     return false;
                 }
 
@@ -601,12 +589,12 @@ internal static class Utf8OwnedTreeParser
             if (children.Count == 0)
             {
                 node = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, concatenationEntryOptions);
-                context.Complete(state, node);
+                context.Complete(node);
                 return false;
             }
 
             node = children.Count == 1 ? children[0] : Concatenate(concatenationEntryOptions, children);
-            context.Complete(state, node);
+            context.Complete(node);
             return false;
         }
 
@@ -1457,7 +1445,7 @@ internal static class Utf8OwnedTreeParser
         static bool ParseNamedGroup(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
             child = default;
-            var state = context.State;
+            ref var state = ref context.State;
             Utf8TreeNode? node = null;
             if (frame.Stage == 0)
             {
@@ -1474,7 +1462,7 @@ internal static class Utf8OwnedTreeParser
 
                 if (state.AtEnd)
                 {
-                    context.Fail(state);
+                    context.Fail();
                     return false;
                 }
 
@@ -1494,14 +1482,14 @@ internal static class Utf8OwnedTreeParser
                     if (popName.Length == 0 || popName.Contains('-'))
                     {
                         state.Fail(Utf8PatternError.InvalidCaptureName, contentStart);
-                        context.Fail(state);
+                        context.Fail();
                         return false;
                     }
                 }
                 else if (name.Length == 0 || name.Contains('-'))
                 {
                     state.Fail(Utf8PatternError.InvalidCaptureName, contentStart);
-                    context.Fail(state);
+                    context.Fail();
                     return false;
                 }
 
@@ -1513,21 +1501,20 @@ internal static class Utf8OwnedTreeParser
                 frame.IsPop = isPop;
                 frame.EntryOptions = namedEntryOptions;
                 frame.Stage = 1;
-                context.State = state;
                 child = new(OwnedParseProduction.Alternation, frame.Depth + 1);
                 return true;
             }
             var body = context.Node;
             if (body is null)
             {
-                context.Fail(state);
+                context.Fail();
                 return false;
             }
 
             if (state.AtEnd || state.Pattern[state.Position] != ')')
             {
                 if (state.AtEnd) state.Fail(Utf8PatternError.UnclosedGroup);
-                context.Fail(state);
+                context.Fail();
                 return false;
             }
 
@@ -1545,7 +1532,7 @@ internal static class Utf8OwnedTreeParser
             {
                 group.M = -1;
                 group.N = -1;
-                context.Complete(state, node);
+                context.Complete(node);
                 return false;
             }
 
@@ -1555,7 +1542,7 @@ internal static class Utf8OwnedTreeParser
                 if (declared == 0)
                 {
                     state.Fail(Utf8PatternError.InvalidCaptureName, frame.OpenPosition + 1);
-                    context.Fail(state);
+                    context.Fail();
                     return false;
                 }
 
@@ -1569,7 +1556,7 @@ internal static class Utf8OwnedTreeParser
                     group.N = -1;
                     node = group;
                     state.RequireSlot(declared);
-                    context.Complete(state, node);
+                    context.Complete(node);
                     return false;
                 }
 
@@ -1582,7 +1569,7 @@ internal static class Utf8OwnedTreeParser
                     state.AddGroupDefinition(new OwnedGroupDefinition(node: group, name: groupName, declared: declared, isAuto: false, openPosition: frame.OpenPosition));
                 }
 
-                context.Complete(state, node);
+                context.Complete(node);
                 return false;
             }
 
@@ -1592,7 +1579,7 @@ internal static class Utf8OwnedTreeParser
                 // fails group-number construction, and digit-start names are
                 // invalid group names. Only (?:)-style transparency above serves.
                 state.Fail(Utf8PatternError.InvalidCaptureName, frame.OpenPosition + 1);
-                context.Fail(state);
+                context.Fail();
                 return false;
             }
 
@@ -1603,7 +1590,7 @@ internal static class Utf8OwnedTreeParser
                 // connector punctuation, nonspacing marks, ZWJ/ZWNJ). Anything
                 // else fails construction with the owned parser error below.
                 state.Fail(Utf8PatternError.InvalidCaptureName, frame.OpenPosition + 1);
-                context.Fail(state);
+                context.Fail();
                 return false;
             }
 
@@ -1613,7 +1600,7 @@ internal static class Utf8OwnedTreeParser
 
             state.AddGroupDefinition(new OwnedGroupDefinition(node: group, name: groupName, declared: -1, isAuto: true, openPosition: frame.OpenPosition));
 
-            context.Complete(state, node);
+            context.Complete(node);
             return false;
         }
 
@@ -2541,7 +2528,7 @@ internal static class Utf8OwnedTreeParser
         static bool ParseLookaround(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
             child = default;
-            var state = context.State;
+            ref var state = ref context.State;
             Utf8TreeNode? node = null;
             if (frame.Stage == 0)
             {
@@ -2551,7 +2538,6 @@ internal static class Utf8OwnedTreeParser
                     ? state.Options
                     : frame.IsLookbehind ? state.Options | RegexOptions.RightToLeft : state.Options & ~RegexOptions.RightToLeft;
                 state.Options = frame.EntryOptions;
-                context.State = state;
                 frame.Stage = 1;
                 child = new(OwnedParseProduction.Alternation, frame.Depth + 1);
                 return true;
@@ -2560,7 +2546,7 @@ internal static class Utf8OwnedTreeParser
             if (body is null)
             {
                 state.Options = frame.SavedOptions;
-                context.Fail(state);
+                context.Fail();
                 return false;
             }
 
@@ -2568,7 +2554,7 @@ internal static class Utf8OwnedTreeParser
             {
                 if (state.AtEnd) state.Fail(Utf8PatternError.UnclosedGroup);
                 state.Options = frame.SavedOptions;
-                context.Fail(state);
+                context.Fail();
                 return false;
             }
 
@@ -2579,7 +2565,7 @@ internal static class Utf8OwnedTreeParser
             body.Parent = assertion;
             node = assertion;
             state.Options = frame.SavedOptions;
-            context.Complete(state, node);
+            context.Complete(node);
             return false;
         }
 
@@ -2855,7 +2841,7 @@ internal static class Utf8OwnedTreeParser
         static bool TryTakeConditional(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
             child = default;
-            var state = context.State;
+            ref var state = ref context.State;
             var depth = frame.Depth;
             if (frame.Stage == 0)
             {
@@ -2874,7 +2860,7 @@ internal static class Utf8OwnedTreeParser
                     if (!TryParseGroupNumber(frame.Digits, out _) || state.AtEnd || state.Pattern[state.Position] != ')')
                     {
                         state.Fail(Utf8PatternError.InvalidConditional);
-                        context.Fail(state);
+                        context.Fail();
                         return false;
                     }
                     state.Position++;
@@ -2901,7 +2887,7 @@ internal static class Utf8OwnedTreeParser
                             if (state.Position + 1 >= state.Pattern.Length)
                             {
                                 state.Fail(Utf8PatternError.InvalidConditional);
-                                context.Fail(state);
+                                context.Fail();
                                 return false;
                             }
                             var marker = state.Pattern[state.Position + 1];
@@ -2909,7 +2895,7 @@ internal static class Utf8OwnedTreeParser
                                 marker == '<' && state.Position + 2 < state.Pattern.Length && state.Pattern[state.Position + 2] is not '=' and not '!')
                             {
                                 state.Fail(Utf8PatternError.InvalidConditional);
-                                context.Fail(state);
+                                context.Fail();
                                 return false;
                             }
                             state.Position = testParen;
@@ -2921,7 +2907,6 @@ internal static class Utf8OwnedTreeParser
                             frame.Stage = 2;
                             child = new(OwnedParseProduction.Alternation, depth + 1);
                         }
-                        context.State = state;
                         return true;
                     }
                 }
@@ -2933,7 +2918,7 @@ internal static class Utf8OwnedTreeParser
                 if (expression is null || frame.Stage == 2 && (state.AtEnd || state.Pattern[state.Position] != ')'))
                 {
                     state.Fail(Utf8PatternError.InvalidConditional);
-                    context.Fail(state);
+                    context.Fail();
                     return false;
                 }
                 if (frame.Stage == 2) state.Position++;
@@ -2957,7 +2942,6 @@ internal static class Utf8OwnedTreeParser
                     frame.YesBranch = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, frame.EntryOptions);
                 else
                 {
-                    context.State = state;
                     frame.Stage = 4;
                     child = new(OwnedParseProduction.Concatenation, depth + 1);
                     return true;
@@ -2967,11 +2951,11 @@ internal static class Utf8OwnedTreeParser
             if (frame.Stage == 4)
             {
                 frame.YesBranch = context.Node;
-                if (frame.YesBranch is null) { context.Fail(state); return false; }
+                if (frame.YesBranch is null) { context.Fail(); return false; }
                 frame.Stage = 5;
             }
             var yesBranch = frame.YesBranch;
-            if (yesBranch is null) { context.Fail(state); return false; }
+            if (yesBranch is null) { context.Fail(); return false; }
             if (frame.Stage == 5)
             {
                 if (!state.AtEnd && state.Pattern[state.Position] == '|')
@@ -2985,7 +2969,6 @@ internal static class Utf8OwnedTreeParser
                     }
                     else
                     {
-                        context.State = state;
                         frame.Stage = 6;
                         child = new(OwnedParseProduction.Concatenation, depth + 1);
                         return true;
@@ -3001,21 +2984,21 @@ internal static class Utf8OwnedTreeParser
                 else
                 {
                     state.Fail(Utf8PatternError.InvalidConditional);
-                    context.Fail(state);
+                    context.Fail();
                     return false;
                 }
             }
             if (frame.Stage == 6)
             {
                 var no = context.Node;
-                if (no is null) { context.Fail(state); return false; }
+                if (no is null) { context.Fail(); return false; }
                 frame.Nodes = state.Storage.Buffer<Utf8TreeNode>();
                 frame.Nodes.Add(yesBranch); frame.Nodes.Add(no);
             }
             if (state.AtEnd || state.Pattern[state.Position] != ')')
             {
                 state.Fail(Utf8PatternError.InvalidConditional);
-                context.Fail(state);
+                context.Fail();
                 return false;
             }
             state.Position++;
@@ -3036,7 +3019,7 @@ internal static class Utf8OwnedTreeParser
             }
             if (frame.Expression is null)
                 state.AddBackrefFixup(new OwnedBackrefFixup(conditional, frame.Digits, 0, frame.Name, false, true, null));
-            context.Complete(state, conditional);
+            context.Complete(conditional);
             return false;
         }
 
@@ -3055,7 +3038,7 @@ internal static class Utf8OwnedTreeParser
         static bool ParseGroup(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
             child = default;
-            var state = context.State;
+            ref var state = ref context.State;
             var depth = frame.Depth;
             if (frame.Stage == 1)
             {
@@ -3069,7 +3052,7 @@ internal static class Utf8OwnedTreeParser
                 if (body is null || state.AtEnd || state.Pattern[state.Position] != ')')
                 {
                     if (state.AtEnd) state.Fail(Utf8PatternError.UnclosedGroup);
-                    context.Fail(state);
+                    context.Fail();
                     return false;
                 }
                 state.Position++;
@@ -3084,7 +3067,7 @@ internal static class Utf8OwnedTreeParser
                     state.Options = frame.SavedOptions;
                 }
                 else state.Options = frame.EntryOptions;
-                context.Complete(state, group);
+                context.Complete(group);
                 return false;
             }
 
@@ -3104,12 +3087,12 @@ internal static class Utf8OwnedTreeParser
                     if (state.ExpressionBranchDepth == depth && !state.AtEnd &&
                         (IsScopeFlag(state.Pattern[state.Position]) || state.Pattern[state.Position] is '-' or '+'))
                     {
-                        context.Fail(state);
+                        context.Fail();
                         return false;
                     }
                     if (!TryTakeOptionScope(ref state, out var scopedOptions, out var scopeOn, out var scopeOff))
                     {
-                        context.Fail(state);
+                        context.Fail();
                         return false;
                     }
                     frame.IsLeadingScope = depth == 0 && state.Depth0Branch == 0 && state.Depth0Atom == 0;
@@ -3150,7 +3133,6 @@ internal static class Utf8OwnedTreeParser
                 frame.Stage = 3;
                 child = new(OwnedParseProduction.Alternation, depth + 1);
             }
-            context.State = state;
             return true;
         }
 
@@ -3435,7 +3417,7 @@ internal static class Utf8OwnedTreeParser
         internal string? Name, PopName, Digits;
         internal Utf8TreeNode? Expression, YesBranch;
         internal Utf8ConstructionBuffer<Utf8TreeNode>? Nodes;
-        internal OwnedLiteralRun? Run;
+        internal OwnedLiteralRun Run;
     }
 
     private ref struct OwnedParseContext
@@ -3446,17 +3428,11 @@ internal static class Utf8OwnedTreeParser
 
         internal OwnedParseContext(ParserState state) => State = state;
 
-        internal void Complete(ParserState state, Utf8TreeNode? node)
-        {
-            State = state;
-            Node = node;
-        }
+        internal void Complete(Utf8TreeNode? node) => Node = node;
 
-        internal void Fail(ParserState state)
+        internal void Fail()
         {
-            if (state.Failure.Error == Utf8PatternError.None)
-                state.Failure = new(Utf8PatternError.InvalidSyntax, state.Position);
-            State = state;
+            State.Fail(Utf8PatternError.InvalidSyntax);
             Node = null;
             Failed = true;
         }
