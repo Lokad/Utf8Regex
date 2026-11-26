@@ -71,8 +71,9 @@ Check actual available RAM and disk space, including `/dev/shm`. Retire archived
 fixture scratch before a full run. Size the reservation for each focused
 experiment to fit its workers and retained results. Keep the quiet VM's home
 paths matching `~/utf8regex-*` below 5 GiB in total. Check allocated space with
-`du -sch -- ~/utf8regex-*` when those paths exist. Use a separate scratch
-directory for each run, then remove it after checking the copied archive.
+`du -scB1 -- ~/utf8regex-*` when those paths exist. Use per-run scratch outside
+the home directory, such as `/dev/shm` when capacity permits. Remove it after
+checking the copied archive and recheck the home total.
 
 ```bash
 timeout --kill-after=5s 3600s pwsh -NoProfile -File ./tools/refresh-benchmarks.ps1
