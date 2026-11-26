@@ -29,6 +29,7 @@ internal readonly struct Utf8ConstructionFrames<T>(Utf8ConstructionBuffer<T> fra
 
     internal int Count => frames.Count;
     internal T this[int index] { get => frames[index]; set => frames[index] = value; }
+    internal ref T Peek() => ref frames.Peek();
 
     internal void Push(T child)
     {

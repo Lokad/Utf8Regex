@@ -40,12 +40,8 @@ internal static class Utf8OwnedTreeParser
             while (frames.Count != 0 && !context.Failed)
             {
                 construction.Budget.ChargeWork(1);
-                var index = frames.Count - 1;
-                var frame = frames[index];
-                bool suspended;
-                OwnedParseFrame child;
-                try { suspended = Advance(ref context, ref frame, out child); }
-                finally { frames[index] = frame; }
+                // Advance updates the current slot before the stack can grow or pop.
+                var suspended = Advance(ref context, ref frames.Peek(), out var child);
                 if (suspended) frames.Push(child);
                 else frames.Pop();
             }

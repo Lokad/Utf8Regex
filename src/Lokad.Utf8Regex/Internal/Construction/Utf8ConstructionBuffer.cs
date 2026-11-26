@@ -108,7 +108,7 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
     }
 
     internal void Push(T value) => Add(value);
-    internal T Peek() => _items[Count - 1];
+    internal ref T Peek() => ref _items[Count - 1];
     internal T Pop()
     {
         var value = _items[--Count];
