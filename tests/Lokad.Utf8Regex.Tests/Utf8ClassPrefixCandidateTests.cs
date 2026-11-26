@@ -146,6 +146,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.Equal(Range(expected[0]), regex.Match(input, 1, slots, source.Token));
         Assert.Equal(Range(expected[0].Groups[1]), slots[1]);
         Assert.Equal(Range(expected[0].Groups[2]), slots[2]);
+        Assert.Equal(expected.Count, regex.Count(input, source.Token));
         using var cursor = regex.CreateMatchCursor(input, 1, source.Token);
         foreach (Match match in expected)
         {
@@ -220,7 +221,37 @@ public sealed class Utf8ClassPrefixCandidateTests
         });
         using var source = new CancellationTokenSource();
         Assert.Equal(64, regex.Count(Encoding.UTF8.GetBytes(prefix), source.Token));
-        Assert.Equal(65, regex.Count(Encoding.UTF8.GetBytes(prefix + " Holmes!é Watson!"), source.Token));
+        // Rewind cannot prove the whole word before Watson in one probe.
+        var tail = " Holmes!" + new string('é', 48) + " Watson!";
+        Assert.Equal(65, regex.Count(Encoding.UTF8.GetBytes(prefix + tail), source.Token));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RejectedClassFamilyCandidatesObserveInterruption(bool expire)
+    {
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("Holmes!Watson! ", 128)));
+        using var source = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var regex = new Utf8Regex(@"(\w+)\s+(Holmes|Watson)", policy: new()
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (expire) ticks = 50;
+            else source.Cancel();
+        });
+        try
+        {
+            var failure = Record.Exception(() => regex.Count(input, source.Token));
+            if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
+            else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        }
+        finally { session.Complete(); }
     }
 
     [Theory]
