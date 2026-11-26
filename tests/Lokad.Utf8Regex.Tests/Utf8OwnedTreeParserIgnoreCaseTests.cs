@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
@@ -236,6 +237,32 @@ public sealed class Utf8OwnedTreeParserIgnoreCaseTests
             Assert.Equal(oracle.Matches(inputText).Count, product.Count(input));
         }
     }
+
+    [Theory]
+    [InlineData("(?i)a(?-i)bx", "é ABx Abx abx aBx", 7, 3, 2)]
+    [InlineData("(?i)a(?-i)b|xy", "é AB Ab xy XY", 6, 2, 2)]
+    [InlineData("(?i)a(?-i)b{1,2}", "é AB Abb ab aBB", 6, 3, 2)]
+    [InlineData("(?i)[a](?-i)[b]|xy", "é AB Ab xy XY", 6, 2, 2)]
+    public void FiniteLiteralExecutionHonorsUnscopedCaseToggles(string pattern, string subject,
+        int firstStart, int firstLength, int expectedCount)
+    {
+        var input = Encoding.UTF8.GetBytes(subject);
+        var patternUtf8 = Encoding.UTF8.GetBytes(pattern);
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            var options = RegexOptions.CultureInvariant | mode;
+            foreach (var regex in new[] { new Utf8Regex(pattern, options), Utf8Regex.Compile(patternUtf8, options) })
+            {
+                Assert.False(regex.IsMatch("ABX"u8));
+                Assert.Equal(expectedCount, regex.Count(input));
+                var match = regex.Match(input);
+                Assert.True(match.Success);
+                Assert.Equal(firstStart, match.StartOffsetInBytes);
+                Assert.Equal(firstStart + firstLength, match.EndOffsetInBytes);
+            }
+        }
+    }
+
     [Theory]
     [MemberData(nameof(IgnoreCaseAcceptCases))]
     public void OwnedIgnoreCaseServesWithBclMetadata(string pattern, int options, int expectedOptions)

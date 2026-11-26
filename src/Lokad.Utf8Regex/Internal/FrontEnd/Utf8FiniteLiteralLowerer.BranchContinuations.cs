@@ -39,9 +39,6 @@ internal static partial class Utf8FiniteLiteralLowerer
                     frame.Stage = 1;
                     switch (node.Kind)
                     {
-                        case Utf8TreeNodeKind.Group when ignoreCase && (node.Options & RegexOptions.IgnoreCase) == 0:
-                            // Folded branch normalization cannot honor a locally exact group.
-                            return false;
                         case Utf8TreeNodeKind.Capture:
                         case Utf8TreeNodeKind.Group:
                             if (node.ChildCount != 1) return false;
@@ -54,6 +51,9 @@ internal static partial class Utf8FiniteLiteralLowerer
                         case Utf8TreeNodeKind.Oneloop:
                         case Utf8TreeNodeKind.Set:
                         case Utf8TreeNodeKind.Setloop:
+                            // The published byte family has one fold mode. Check the
+                            // consuming node so unscoped toggles are covered too.
+                            if (node.MatchCaseInsensitive != ignoreCase) return false;
                             AsciiPatternToken token;
                             if (!budget.TryReserve(1, 1)) return false;
                             if (node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Oneloop)
@@ -76,7 +76,8 @@ internal static partial class Utf8FiniteLiteralLowerer
                                 !TryExpandFiniteRepeat(storage, result, node.M, node.N, budget, out result)) return false;
                             break;
                         case Utf8TreeNodeKind.Multi:
-                            if (!TryLowerLiteralText(storage, node, budget, out var tokens)) return false;
+                            if (node.MatchCaseInsensitive != ignoreCase ||
+                                !TryLowerLiteralText(storage, node, budget, out var tokens)) return false;
                             result = SingleBranch(storage, new(tokens));
                             break;
                         case Utf8TreeNodeKind.Loop:
