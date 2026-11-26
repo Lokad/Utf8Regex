@@ -1985,17 +1985,17 @@ internal static partial class Utf8SliceRunner
     }
 
     private static bool MayFinishTerminalClassRuns(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int position, int index, out int acceptedEnd, bool capturedRepeat = false, bool existenceOnly = false)
+        int position, int index, out int acceptedEnd, bool skipCaptureOpening = false, bool existenceOnly = false)
     {
-        // A value-only call can skip the opening capture marker. The repeat
-        // is followed only by its closing marker and Accept.
-        if (capturedRepeat) index++;
+        // The captured continuations prove either one terminal repeat or
+        // two runs with the same alphabet and an interior separator.
+        if (skipCaptureOpening) index++;
         // A shared run already verifies the interior separator and both
         // operands. Otherwise the separator must follow the first run.
         var remaining = BranchedPrefixInstructionLimit - index - 4;
         var code = program.Instructions;
         var end = TryMatchLongPrefixRepeat(program, input, position, index + 1, in code[index], ref remaining);
-        if (end >= 0 && !capturedRepeat && !code[index + 3].RepeatExitSharesTerminalRun)
+        if (end >= 0 && !skipCaptureOpening && !code[index + 3].RepeatExitSharesTerminalRun)
         {
             if (end == input.Length || input[end] != code[index + 4].A)
                 end = BranchedPrefixRejected;
@@ -2030,7 +2030,7 @@ internal static partial class Utf8SliceRunner
     {
         var (_, leadingClass, literalIndex, _, _) = program.LeadingClassDelimiter;
         var continuation = literalIndex + delimiter.Length;
-        var capturedRepeat = program.LeadingClassWindowProof.Completion == Utf8SliceClassWindowCompletion.CapturedRepeat;
+        var skipCaptureOpening = program.LeadingClassWindowProof.Completion != Utf8SliceClassWindowCompletion.TerminalRuns;
         var firstByte = delimiter[0];
         ref readonly var atom = ref program.Instructions[leadingClass];
         var count = 0;
@@ -2060,7 +2060,7 @@ internal static partial class Utf8SliceRunner
                     breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var member);
                     if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
                     if (member && MayFinishTerminalClassRuns(program, input, at + delimiter.Length,
-                        continuation, out var end, capturedRepeat))
+                        continuation, out var end, skipCaptureOpening))
                     {
                         // Replay from the previous proved floor if a run exceeds
                         // the bounded suffix proof's allowance.

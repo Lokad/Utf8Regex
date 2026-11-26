@@ -822,10 +822,11 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.True(regex.IsMatch("a@b.😀rest c@d.é"u8, token.Token));
     }
 
-    [Fact]
-    public void SharedTerminalClassCountKeepsBlockSeamsAndTheFirstUnresolvedRun()
+    [Theory]
+    [InlineData(@"[\w.+-]+@[\w.-]+\.[\w.-]+", false)]
+    [InlineData(@"([\w.+-]+)@([\w.-]+)\.([\w.-]+)", true)]
+    public void SharedTerminalClassCountKeepsBlockSeamsAndTheFirstUnresolvedRun(string pattern, bool captured)
     {
-        const string pattern = @"[\w.+-]+@[\w.-]+\.[\w.-]+";
         const string first = "λ@β.γ.δ";
         var unresolved = "long@" + new string('β', 128) + ".γ";
         const string last = "pé@hy-phen.end";
@@ -837,7 +838,10 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var token = new CancellationTokenSource();
         using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = Funded });
 
-        Assert.True(regex.Inspection.AvailableOwnedSliceProgram.LeadingClassWindowProof.CanFinishTerminalRuns);
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        Assert.Equal(captured ? Utf8SliceClassWindowCompletion.CapturedSharedRun : Utf8SliceClassWindowCompletion.TerminalRuns,
+            program.LeadingClassWindowProof.Completion);
+        Assert.Equal(program.LeadingClassDelimiter.LiteralIndex + 1, regex.RequiredLiteralContinuation);
         Assert.Equal(3, Regex.Count(text, pattern));
         Assert.Equal(3, regex.Count(input, token.Token));
         using var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token);

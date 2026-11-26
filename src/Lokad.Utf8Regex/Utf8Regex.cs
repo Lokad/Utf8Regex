@@ -633,7 +633,8 @@ public sealed partial class Utf8Regex : IDisposable
         if (_preparedRegex.SearchPlan.RequiredPrefilterSearcher.Kind != PreparedSearcherKind.ExactLiteral) screenedLiteral = -1;
         var classWindow = program.LeadingClassWindowProof;
         if (screenedLiteral >= 0 && input.Length - startByte >= 256 &&
-            classWindow.Completion is Utf8SliceClassWindowCompletion.TerminalRuns or Utf8SliceClassWindowCompletion.CapturedRepeat &&
+            classWindow.Completion is Utf8SliceClassWindowCompletion.TerminalRuns or
+                Utf8SliceClassWindowCompletion.CapturedRepeat or Utf8SliceClassWindowCompletion.CapturedSharedRun &&
             _preparedRegex.SearchPlan.RequiredPrefilterSearcher.LiteralSearch is var delimiter &&
             delimiter.Length == classWindow.LiteralLength &&
             RequiredLiteralContinuation == program.LeadingClassDelimiter.LiteralIndex + delimiter.Length &&
