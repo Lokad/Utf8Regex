@@ -33,12 +33,12 @@ internal readonly struct Utf8SearchPlan
              trailingLiteralUtf8 is not null)
             ? GetLiteralOverlap(alternateLiteralsUtf8)
             : Utf8AlternateLiteralOverlapKind.None;
-        LiteralSearch = literalUtf8 is not null
+        PreparedSubstringSearch? literalSearch = literalUtf8 is not null
             ? new PreparedSubstringSearch(literalUtf8, kind == Utf8SearchKind.AsciiFoldedByteLiteral)
             : null;
         if (scalarProgram is { RightToLeft: false, IsNonBacktracking: false, IgnoreCase: false,
                 HasContiguousAnchor: false, RepeatCount: > 0, LeadingByteCandidate.First: < 0 or >= 128 } &&
-            LiteralSearch is { IgnoreCase: false, Length: > 1 and <= 64 } prefixSearch)
+            literalSearch is { IgnoreCase: false, Length: > 1 and <= 64 } prefixSearch)
         {
             _repeatPrefix = Utf8SliceRunner.PrepareRepeatPrefix(scalarProgram, prefixSearch.Needle, budget);
             if (_repeatPrefix.Any.HasValue) _repeatPrefixProgram = scalarProgram;
@@ -51,7 +51,7 @@ internal readonly struct Utf8SearchPlan
         {
             BoundaryFamilyCounter = Utf8PackedNibbleLiteralFamilyCountStrategy.CreateBoundaryCounter(boundaryLiterals);
         }
-        PreparedSearcher = CreatePreparedSearcher(kind, LiteralSearch, CreateMultiLiteralSearch(kind, alternateLiteralsUtf8));
+        PreparedSearcher = CreatePreparedSearcher(kind, literalSearch, CreateMultiLiteralSearch(kind, alternateLiteralsUtf8));
         ref readonly var multiLiteralSearch = ref PreparedSearcher.MultiLiteralSearch;
         // Direct portfolios already own the exact tables used by compatibility
         // consumers. Borrow them instead of acquiring the same payload twice.
@@ -64,7 +64,7 @@ internal readonly struct Utf8SearchPlan
         // A short exact prefilter can share the same prepared needle as
         // candidate discovery. The runner can then reuse its first occurrence.
         _requiredPrefilterSearcher = requiredPrefilterLiteralUtf8 is { Length: <= 64 } &&
-            LiteralSearch is { IgnoreCase: false } exact && exact.Needle.AsSpan().SequenceEqual(requiredPrefilterLiteralUtf8)
+            literalSearch is { IgnoreCase: false } exact && exact.Needle.AsSpan().SequenceEqual(requiredPrefilterLiteralUtf8)
             ? new PreparedSearcher(exact, ignoreCase: false)
             : CreateRequiredPrefilter(requiredPrefilterLiteralUtf8, requiredPrefilterAlternateLiteralsUtf8);
         if (scalarProgram is not null && Utf8SliceRunner.PrepareAlignedDelimiterAlternatives(
@@ -104,7 +104,9 @@ internal readonly struct Utf8SearchPlan
 
     private Utf8AlternateLiteralOverlapKind AlternateLiteralOverlap { get; }
 
-    public PreparedSubstringSearch? LiteralSearch { get; }
+    public PreparedSubstringSearch? LiteralSearch =>
+        PreparedSearcher.Kind is PreparedSearcherKind.ExactLiteral or PreparedSearcherKind.IgnoreCaseLiteral
+            ? PreparedSearcher.LiteralSearch : null;
 
     private readonly Utf8SliceProgram? _repeatPrefixProgram;
     private readonly (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd, bool Terminal) _repeatPrefix;
@@ -213,7 +215,7 @@ internal readonly struct Utf8SearchPlan
     {
         return kind switch
         {
-            Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiChar when literalSearch.HasValue
+            Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiLiteral when literalSearch.HasValue
                 => new PreparedSearcher(literalSearch.Value, ignoreCase: false),
             Utf8SearchKind.AsciiFoldedByteLiteral when literalSearch.HasValue
                 => new PreparedSearcher(literalSearch.Value, ignoreCase: true),

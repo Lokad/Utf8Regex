@@ -96,10 +96,8 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
 
         return _regexPlan.ExecutionKind switch
         {
-            NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal
+            NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase
                 => FindLastLiteralViaSearch(input, budget) >= 0,
-            NativeExecutionKind.AsciiLiteralIgnoreCase
-                => FindLastIgnoreCaseLiteralViaSearch(input, budget) >= 0,
             NativeExecutionKind.ExactUtf8Literals
                 => IsMatchLiteralFamily(input, budget, rightToLeft: true),
             NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
@@ -874,8 +872,8 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     {
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
         var index = rightToLeft
-            ? FindLastIgnoreCaseLiteralViaSearch(input, budget)
-            : FindFirstIgnoreCaseLiteralViaSearch(input, budget);
+            ? FindLastLiteralViaSearch(input, budget)
+            : FindFirstLiteralViaSearch(input, budget);
         if (index < 0)
         {
             return default(Utf8CaptureRange);
@@ -886,53 +884,29 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     internal int FindFirstLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         budget.Step();
-        if (_regexPlan.SearchPlan.HasBoundaryRequirements || _regexPlan.SearchPlan.HasTrailingLiteralRequirement)
+        ref readonly var plan = ref _regexPlan.SearchPlan;
+        if (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement)
         {
-            return Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, input, 0, out var match)
+            return Utf8SearchExecutor.TryFindNextMatch(plan, input, 0, out var match)
                 ? match.Index
                 : -1;
         }
 
-        return Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, input);
+        return plan.PreparedSearcher.FindFirst(input);
     }
 
     private int FindLastLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         budget.Step();
-        if (_regexPlan.SearchPlan.HasBoundaryRequirements || _regexPlan.SearchPlan.HasTrailingLiteralRequirement)
+        ref readonly var plan = ref _regexPlan.SearchPlan;
+        if (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement)
         {
-            return Utf8SearchExecutor.TryFindLastMatch(_regexPlan.SearchPlan, input, input.Length, out var match)
+            return Utf8SearchExecutor.TryFindLastMatch(plan, input, input.Length, out var match)
                 ? match.Index
                 : -1;
         }
 
-        return Utf8SearchExecutor.FindLast(_regexPlan.SearchPlan, input);
-    }
-
-    private int FindFirstIgnoreCaseLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
-    {
-        budget.Step();
-        if (_regexPlan.SearchPlan.HasBoundaryRequirements || _regexPlan.SearchPlan.HasTrailingLiteralRequirement)
-        {
-            return Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, input, 0, out var match)
-                ? match.Index
-                : -1;
-        }
-
-        return Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, input);
-    }
-
-    private int FindLastIgnoreCaseLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
-    {
-        budget.Step();
-        if (_regexPlan.SearchPlan.HasBoundaryRequirements || _regexPlan.SearchPlan.HasTrailingLiteralRequirement)
-        {
-            return Utf8SearchExecutor.TryFindLastMatch(_regexPlan.SearchPlan, input, input.Length, out var match)
-                ? match.Index
-                : -1;
-        }
-
-        return Utf8SearchExecutor.FindLast(_regexPlan.SearchPlan, input);
+        return plan.PreparedSearcher.FindLast(input);
     }
 
     private int FindNextUtf8LiteralAlternationViaSearch(ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedByteLength)

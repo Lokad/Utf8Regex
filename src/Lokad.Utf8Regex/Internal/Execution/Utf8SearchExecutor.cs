@@ -1,7 +1,6 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Internal.Planning;
-using System.Buffers;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -38,32 +37,16 @@ internal static partial class Utf8SearchExecutor
             Utf8SearchKind.ExactUtf8Literals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
                 ? FindAnyLiteralWithBoundaries(plan, input, 0)
                 : FindAnyLiteralWithTrailingRequirement(plan, input, 0),
-            Utf8SearchKind.FixedDistanceAsciiLiteral when literal is not null => FindFixedDistanceLiteral(plan, input, 0),
-            Utf8SearchKind.FixedDistanceAsciiChar when literal is not null => FindFixedDistanceChar(plan, input, 0),
-            Utf8SearchKind.TrailingAnchorFixedLengthEnd => FindTrailingAnchorFixedLengthEnd(plan, input, 0),
-            Utf8SearchKind.TrailingAnchorFixedLengthEndZ => FindTrailingAnchorFixedLengthEndZ(plan, input, 0),
             _ => -1,
         };
     }
 
-    public static int FindNext(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
+    private static int FindNext(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
-        if (startIndex > input.Length)
-        {
-            return -1;
-        }
-
-        return plan.Kind switch
-        {
-            Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral => FindLiteralStart(plan, input, startIndex, reverse: false),
-            Utf8SearchKind.FixedDistanceAsciiLiteral => FindFixedDistanceLiteral(plan, input, startIndex),
-            Utf8SearchKind.FixedDistanceAsciiChar => FindFixedDistanceChar(plan, input, startIndex),
-            Utf8SearchKind.TrailingAnchorFixedLengthEnd => FindTrailingAnchorFixedLengthEnd(plan, input, startIndex),
-            Utf8SearchKind.TrailingAnchorFixedLengthEndZ => FindTrailingAnchorFixedLengthEndZ(plan, input, startIndex),
-            _ =>
-                FindRelativeNext(plan, input, startIndex),
-        };
+        if (plan.Kind is Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral)
+            return FindLiteralStart(plan, input, startIndex, reverse: false);
+        var relative = FindFirst(plan, input[startIndex..]);
+        return relative < 0 ? -1 : startIndex + relative;
     }
 
     public static int FindLast(in Utf8SearchPlan plan, ReadOnlySpan<byte> input)
@@ -83,17 +66,6 @@ internal static partial class Utf8SearchExecutor
         };
     }
 
-    public static int FindPrevious(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
-        if (startIndex > input.Length)
-        {
-            startIndex = input.Length;
-        }
-
-        return FindLast(plan, input[..startIndex]);
-    }
-
     public static bool TryFindLastMatch(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, out PreparedSearchMatch match)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
@@ -109,12 +81,6 @@ internal static partial class Utf8SearchExecutor
             Utf8SearchKind.ExactUtf8Literals when plan.HasPreparedSearcher => TryFindLastPreparedMatch(plan, input, startIndex, out match),
             _ => TryFindFallbackMatch(plan, input, startIndex, reverse: true, out match),
         };
-    }
-
-    private static int FindRelativeNext(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
-    {
-        var relative = FindFirst(plan, input[startIndex..]);
-        return relative < 0 ? -1 : startIndex + relative;
     }
 
     private static int FindLiteralStart(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int index, bool reverse)
@@ -168,7 +134,7 @@ internal static partial class Utf8SearchExecutor
 
     private static bool TryFindFallbackMatch(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, bool reverse, out PreparedSearchMatch match)
     {
-        var index = reverse ? FindPrevious(plan, input, startIndex) : FindNext(plan, input, startIndex);
+        var index = reverse ? FindLast(plan, input[..startIndex]) : FindNext(plan, input, startIndex);
         if (index >= 0 && plan.PreparedSearcher.TryGetMatchedLength(input, index, out var matchedLength))
         {
             match = new PreparedSearchMatch(index, matchedLength, 0);
@@ -363,110 +329,6 @@ internal static partial class Utf8SearchExecutor
             }
 
             searchLength = candidate;
-        }
-
-        return -1;
-    }
-
-    private static int FindFixedDistanceLiteral(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
-    {
-        var literal = plan.LiteralUtf8;
-        if (literal is null)
-        {
-            return -1;
-        }
-
-        var searchIndex = startIndex + plan.Distance;
-        if (searchIndex < 0 || searchIndex > input.Length)
-        {
-            return -1;
-        }
-
-        var relative = AsciiSearch.IndexOfExact(input[searchIndex..], literal);
-        while (relative >= 0)
-        {
-            var absolute = searchIndex + relative;
-            var candidate = absolute - plan.Distance;
-            if (candidate >= startIndex &&
-                candidate >= 0 &&
-                candidate <= input.Length - Math.Max(plan.MinRequiredLength, literal.Length))
-            {
-                Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                return candidate;
-            }
-
-            searchIndex = absolute + 1;
-            if (searchIndex > input.Length)
-            {
-                break;
-            }
-
-            relative = AsciiSearch.IndexOfExact(input[searchIndex..], literal);
-        }
-
-        return -1;
-    }
-
-    private static int FindFixedDistanceChar(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
-    {
-        var literal = plan.LiteralUtf8;
-        if (literal is not { Length: 1 })
-        {
-            return -1;
-        }
-
-        var searchIndex = startIndex + plan.Distance;
-        if (searchIndex < 0 || searchIndex > input.Length)
-        {
-            return -1;
-        }
-
-        var relative = input[searchIndex..].IndexOf(literal[0]);
-        while (relative >= 0)
-        {
-            var absolute = searchIndex + relative;
-            var candidate = absolute - plan.Distance;
-            if (candidate >= startIndex &&
-                candidate >= 0 &&
-                candidate <= input.Length - Math.Max(plan.MinRequiredLength, 1))
-            {
-                Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                return candidate;
-            }
-
-            searchIndex = absolute + 1;
-            if (searchIndex > input.Length)
-            {
-                break;
-            }
-
-            relative = input[searchIndex..].IndexOf(literal[0]);
-        }
-
-        return -1;
-    }
-
-    private static int FindTrailingAnchorFixedLengthEnd(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
-    {
-        var candidate = input.Length - plan.MinRequiredLength;
-        return candidate >= startIndex && candidate >= 0 ? candidate : -1;
-    }
-
-    private static int FindTrailingAnchorFixedLengthEndZ(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
-    {
-        var candidate = input.Length - plan.MinRequiredLength;
-        if (candidate >= startIndex && candidate >= 0)
-        {
-            return candidate;
-        }
-
-        if (input.Length > 0 && input[^1] == (byte)'\n')
-        {
-            candidate = input.Length - plan.MinRequiredLength - 1;
-            if (candidate >= startIndex && candidate >= 0)
-            {
-                return candidate;
-            }
         }
 
         return -1;
