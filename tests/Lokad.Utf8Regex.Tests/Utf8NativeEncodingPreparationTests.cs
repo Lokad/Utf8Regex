@@ -40,8 +40,7 @@ public sealed class Utf8NativeEncodingPreparationTests
         var alternate = Node(Utf8TreeNodeKind.Alternate, One('a'), Text("😀"));
         var root = route switch
         {
-            2 => Node(Utf8TreeNodeKind.Concatenate, One('é'), Text("😀"), Node(Utf8TreeNodeKind.PositiveLookaround, One('x'))),
-            3 or 10 => Node(Utf8TreeNodeKind.Concatenate, Wrap(alternate, depth), Node(Utf8TreeNodeKind.PositiveLookaround, One('x'))),
+            10 => Node(Utf8TreeNodeKind.Concatenate, Wrap(alternate, depth), Node(Utf8TreeNodeKind.PositiveLookaround, One('x'))),
             4 or 8 => Wrap(alternate, depth),
             5 => Wrap(One('é'), depth),
             6 => Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Boundary), Wrap(alternate, depth), Node(Utf8TreeNodeKind.Boundary)),
@@ -78,25 +77,21 @@ public sealed class Utf8NativeEncodingPreparationTests
 
         var name = route switch
         {
-            2 => "TryExtractLiteralPrefixWithPositiveLiteralLookahead", 3 => "TryExtractPositiveLiteralLookahead",
             4 => "TryUnwrapLiteralAlternation", 5 => "TryGetLiteralBranchUtf8",
-            6 => "TryUnwrapLiteralAlternationWithBoundaries", 7 => "TryExtractBoundaryWrappedLiteral",
+            6 => "TryUnwrapLiteralAlternationWithBoundaries", 7 => "TryExtractBoundaryWrappedLiteralTree",
             8 => "TryExtractUtf8LiteralAlternationTree", 9 => "TryExtractLiteralWithPositiveLiteralLookaheadTree",
             _ => "TryExtractLiteralAlternationWithPositiveLiteralLookaheadTree",
         };
         object?[] args = route switch
         {
-            2 or 3 => [root, options, null, null],
-            4 or 5 => [root, null], 6 or 7 => [root, null, null, null],
-            8 => [input.Semantic, null, null, null],
+            4 or 5 => [root, null], 6 => [root, null, null, null],
+            7 or 8 => [input.Semantic, null, null, null],
             9 => [input.Semantic, null, null],
             _ => [input.Semantic, options, null, null, null, null],
         };
         Assert.True(Assert.IsType<bool>(Call(name, args)));
         switch (route)
         {
-            case 2: Assert.Equal("é😀"u8.ToArray(), args[2]); Assert.Equal("x"u8.ToArray(), args[3]); break;
-            case 3: Assert.Same(root.Child(0), args[2]); Assert.Equal("x"u8.ToArray(), args[3]); break;
             case 4: Assert.Equal(new[] { "a", "😀" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.UTF8.GetString)); break;
             case 5: Assert.Equal("é"u8.ToArray(), args[1]); break;
             case 7: Assert.Equal("é", args[1]); break;
@@ -108,7 +103,7 @@ public sealed class Utf8NativeEncodingPreparationTests
     }
     public static IEnumerable<object[]> RootDenials()
     {
-        for (var route = 0; route < 12; route++)
+        foreach (var route in new[] { 0, 1, 4, 5, 6, 7, 8, 9, 10, 11 })
         for (var denial = route == 0 ? 1 : 0; denial < 3; denial++) yield return [route, denial];
     }
     [Theory]
@@ -126,7 +121,7 @@ public sealed class Utf8NativeEncodingPreparationTests
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
+    [InlineData(0)] [InlineData(1)] [InlineData(4)] [InlineData(5)]
     [InlineData(6)] [InlineData(7)] [InlineData(8)] [InlineData(9)] [InlineData(10)] [InlineData(11)]
     public void EveryWorkCutoffRecoversParentAndAcceptedOutputsRetainLoans(int route)
     {
@@ -184,31 +179,43 @@ public sealed class Utf8NativeEncodingPreparationTests
     {
         var root = Input(7, 0);
         var resultBytes = Utf8ConstructionBudget.StringBytes(1);
-        using var owner = new Utf8ConstructionScope(0, resultBytes, ulong.MaxValue, 2);
+        using var owner = new Utf8ConstructionScope(0, resultBytes, ulong.MaxValue, 4);
         Run(7, root);
-        Assert.Equal(2ul, owner.Budget.PeakDepth);
+        Assert.Equal(4ul, owner.Budget.PeakDepth);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(resultBytes, owner.Budget.PeakBytes);
         Assert.Equal(resultBytes, owner.Budget.ReservedBytes);
     }
 
     [Fact]
-    public void LookaheadProbeBorrowsLiteralBytesWithoutAcquiringScratch()
+    public void LookaheadLiteralBorrowsUtf8WithoutAcquiringScratch()
     {
         const RegexOptions options = RegexOptions.CultureInvariant;
         var expected = "é😀"u8.ToArray();
-        var prefix = One('a');
-        var lookahead = Node(Utf8TreeNodeKind.PositiveLookaround, Utf8TreeNode.CreateUtf8Literal(options, expected));
-        var body = Node(Utf8TreeNodeKind.Concatenate, prefix, lookahead);
-        using var owner = new Utf8ConstructionScope(0, 0, ulong.MaxValue, 2);
-        object?[] args = [body, options, null, null];
+        var atom = Utf8TreeNode.CreateUtf8Literal(options, expected);
+        using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
+        object?[] args = [atom, options, null];
 
-        Assert.True(Assert.IsType<bool>(Call("TryExtractPositiveLiteralLookahead", args)));
-        Assert.Same(prefix, args[2]);
-        Assert.Same(expected, args[3]);
-        Assert.Equal(2ul, owner.Budget.PeakDepth);
+        Assert.True(Assert.IsType<bool>(Call("TryGetNativeLookaheadLiteralUtf8", args)));
+        Assert.Same(expected, args[2]);
+        Assert.Equal(0ul, owner.Budget.PeakDepth);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(0ul, owner.Budget.PeakBytes);
+    }
+
+    [Fact]
+    public void IneligibleNativeShapesDeclineWithoutEnteringConstructionDepth()
+    {
+        const RegexOptions options = RegexOptions.CultureInvariant;
+        var semantic = Semantic(Node(Utf8TreeNodeKind.Concatenate, One('a'), One('b'), One('c')), "abc", options);
+        using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
+
+        Assert.Equal(false, Call("TryExtractBoundaryWrappedLiteralTree", semantic, null, null, null));
+        Assert.Equal(false, Call("TryExtractLiteralWithPositiveLiteralLookaheadTree", semantic, null, null));
+        Assert.Equal(false, Call("TryExtractLiteralAlternationWithPositiveLiteralLookaheadTree", semantic, options, null, null, null, null));
+        Assert.Equal(0ul, owner.Budget.PeakDepth);
+        Assert.Equal(0ul, owner.Budget.PeakBytes);
+        Assert.Equal(0ul, owner.Budget.WorkSteps);
     }
 
     [Theory]
@@ -217,16 +224,18 @@ public sealed class Utf8NativeEncodingPreparationTests
     {
         var alternate = Node(Utf8TreeNodeKind.Alternate, One('a'), One('b'));
         var empty = Node(Utf8TreeNodeKind.Empty);
+        const RegexOptions options = RegexOptions.CultureInvariant;
         object?[] args = route switch
         {
-            0 => [Node(Utf8TreeNodeKind.Concatenate, One('a'), empty, Node(Utf8TreeNodeKind.PositiveLookaround, One('x'))), RegexOptions.CultureInvariant, null, null],
+            0 => [Semantic(Node(Utf8TreeNodeKind.Concatenate, One('a'), empty, Node(Utf8TreeNodeKind.PositiveLookaround, One('x'))), "a(?=x)", options), null, null],
             1 => [Node(Utf8TreeNodeKind.Alternate, One('a'), empty), null],
             2 => [Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Boundary), alternate, empty), null, null, null],
-            3 => [Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Boundary), One('a'), empty), null, null, null],
+            3 => [Semantic(Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Boundary), One('a'), Node(Utf8TreeNodeKind.Boundary)),
+                @"\b a \b", options | RegexOptions.IgnorePatternWhitespace), null, null, null],
             _ => [],
         };
-        var name = route switch { 0 => "TryExtractLiteralPrefixWithPositiveLiteralLookahead", 1 => "TryUnwrapLiteralAlternation",
-            2 => "TryUnwrapLiteralAlternationWithBoundaries", 3 => "TryExtractBoundaryWrappedLiteral",
+        var name = route switch { 0 => "TryExtractLiteralWithPositiveLiteralLookaheadTree", 1 => "TryUnwrapLiteralAlternation",
+            2 => "TryUnwrapLiteralAlternationWithBoundaries", 3 => "TryExtractBoundaryWrappedLiteralTree",
             _ => string.Empty };
         const RegexOptions folded = RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
         Utf8SemanticRegex? nonAscii = route == 5
