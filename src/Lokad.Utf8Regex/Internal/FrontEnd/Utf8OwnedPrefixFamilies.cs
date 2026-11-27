@@ -11,6 +11,9 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 /// prefixes are materialized, without an intermediate UTF-16 prefix.</summary>
 internal static class Utf8OwnedPrefixFamilies
 {
+    private const int MaxProductMembers = 16;
+    private const int MaxClassMembers = 256;
+
     private readonly record struct Family(int Start, int Count, bool Complete);
     private readonly record struct Part(int Left, int Right, object? Source, int Scalar,
         int ByteLength, int ScalarLength, int SourceLength = 0);
@@ -66,6 +69,14 @@ internal static class Utf8OwnedPrefixFamilies
                             frames.Push(new(node.Child(0), -1, default, frame.BaseScalars, null));
                             continue;
                         }
+                    }
+                    else if (node.Kind == Utf8TreeNodeKind.Set)
+                    {
+                        var maxClassMembers = MaxClassMembers;
+                        if (!topFold && index > 0 && frames[index - 1] is
+                            { Node.Kind: Utf8TreeNodeKind.Concatenate, Accumulated.Count: > 0 } parent)
+                            maxClassMembers = MaxProductMembers / parent.Accumulated.Count;
+                        result = Class(node, maxClassMembers);
                     }
                     else result = Leaf(node, frame.BaseScalars);
                     frames.Pop();
@@ -183,7 +194,7 @@ internal static class Utf8OwnedPrefixFamilies
         Family Product(Family left, Family right)
         {
             scope.Budget.ChargeWork(1);
-            if ((long)left.Count * right.Count > 16) return left with { Complete = false };
+            if ((long)left.Count * right.Count > MaxProductMembers) return left with { Complete = false };
             var start = families.Count;
             for (var r = 0; r < right.Count; r++)
             for (var l = 0; l < left.Count; l++)
@@ -248,7 +259,7 @@ internal static class Utf8OwnedPrefixFamilies
             return lower is >= 'a' and <= 'z' ? Union(first, One(ScalarPart(lower - 32))) : first;
         }
 
-        Family Class(Utf8TreeNode node)
+        Family Class(Utf8TreeNode node, int maxClassMembers = MaxClassMembers)
         {
             if (node.ScalarClass is not { } scalarClass) return empty with { Complete = false };
             var data = scalarClass.Data;
@@ -261,7 +272,9 @@ internal static class Utf8OwnedPrefixFamilies
                 var low = data[index]; var high = data[index + 1];
                 if (low < 0 || high > 0x110000 || low >= high) return empty with { Complete = false };
                 var valid = high - low - Math.Max(0, Math.Min(high, 0xe000) - Math.Max(low, 0xd800));
-                if (valid > 256 - count) return empty with { Complete = false };
+                // An unfolded interval has distinct members even if other intervals overlap it.
+                // If it cannot fit the parent's product, the stopped empty suffix keeps the same covering prefix.
+                if (valid > MaxClassMembers - count || valid > maxClassMembers) return empty with { Complete = false };
                 count += valid;
                 if (topFold && high > 128) return empty with { Complete = false };
                 if (node.MatchCaseInsensitive)
@@ -400,7 +413,6 @@ internal static class Utf8OwnedPrefixFamilies
         {
             Utf8TreeNodeKind.One => Literal(node.Ch, node.MatchCaseInsensitive, node.Options),
             Utf8TreeNodeKind.Multi => Text(node),
-            Utf8TreeNodeKind.Set => Class(node),
             Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy =>
                 node.M == 0 && node.N == 0 ? empty : Repeat(Literal(node.Ch, node.MatchCaseInsensitive, node.Options), node.M, node.N, preceding),
             Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy =>

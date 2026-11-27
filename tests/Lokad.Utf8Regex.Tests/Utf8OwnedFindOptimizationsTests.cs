@@ -386,6 +386,8 @@ public sealed class Utf8OwnedFindOptimizationsTests
         yield return new object?[] { "(a|bc|def)", RegexOptions.CultureInvariant, new string[] { "a", "bc", "def" } };
         yield return new object?[] { "(a|)", RegexOptions.CultureInvariant, null };
         yield return new object?[] { "x[yz]", RegexOptions.CultureInvariant, new string[] { "xy", "xz" } };
+        yield return new object?[] { "(?:ab|cd)[0-9]", RegexOptions.CultureInvariant, new string[] { "ab", "cd" } };
+        yield return new object?[] { "[A-H][0-9]", RegexOptions.CultureInvariant, null };
         yield return new object?[] { "a{2}", RegexOptions.CultureInvariant, new string[] { "aa" } };
         yield return new object?[] { "a{2,4}", RegexOptions.CultureInvariant, new string[] { "aa" } };
         yield return new object?[] { "(a)(b)(c)", RegexOptions.CultureInvariant, new string[] { "abc" } };
