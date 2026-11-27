@@ -266,12 +266,29 @@ internal static class Utf8OwnedTreeSliceLowerer
                 var foldedMask = foldCase && !Utf8ScalarAsciiProjector.CloseAsciiCaseFiber(asciiMask, caseBehavior);
                 return new Utf8SliceNode.SetNode(asciiMask, false, [], foldedMask);
             }
+            if (data.IsEmpty) return null;
             var position = 0;
+            var first = DecodeSegment(data, ref position, foldCase, caseBehavior, arena);
+            if (first is null || position == data.Length) return first;
+
+            // Only a subtraction chain needs to retain multiple segments.
             using var segments = new Utf8ConstructionBuffer<Utf8SliceNode>(arena.Budget);
-            while (position < data.Length)
+            segments.Add(first);
+            do
+            {
+                var segment = DecodeSegment(data, ref position, foldCase, caseBehavior, arena);
+                if (segment is null) return null;
+                segments.Add(segment);
+            }
+            while (position < data.Length);
+            return Utf8SliceClassProgram.Subtract(segments, arena);
+
+            static Utf8SliceNode? DecodeSegment(ReadOnlySpan<int> data, ref int position, bool foldCase,
+                Utf8ScalarCaseBehavior caseBehavior, Utf8ConstructionArena arena)
             {
                 Utf8ConstructionScope.ChargeWork(1);
                 if (data.Length - position < 3) return null;
+                var followingSegment = position != 0;
                 var negated = data[position] != 0;
                 var rangeLength = data[position + 1];
                 var categoryLength = data[position + 2];
@@ -355,13 +372,11 @@ internal static class Utf8OwnedTreeSliceLowerer
                 }
                 var foldMask = foldCase && (categories.Count != 0 || members.Count != 0 ||
                     !Utf8ScalarAsciiProjector.CloseAsciiCaseFiber(mask, caseBehavior));
-                var shorthand = arena.Take(members, segments.Count != 0 || position < data.Length);
-                segments.Add(categories.Count == 0
+                var shorthand = arena.Take(members, followingSegment || position < data.Length);
+                return categories.Count == 0
                     ? new Utf8SliceNode.SetNode(mask, negated, shorthand, foldMask)
-                    : new Utf8SliceNode.CategorySetNode(mask, negated, shorthand, arena.Take(categories, true), foldMask));
+                    : new Utf8SliceNode.CategorySetNode(mask, negated, shorthand, arena.Take(categories, true), foldMask);
             }
-            if (segments.Count == 0) return null;
-            return segments.Count == 1 ? segments[0] : Utf8SliceClassProgram.Subtract(segments, arena);
         }
 
         static void AppendRange(Utf8ConstructionBuffer<int> ranges, int low, int high)
