@@ -5,13 +5,13 @@ using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Posix;
 
-/// <summary>Matches the invariant POSIX ERE subset over caller-valid UTF-8 text.</summary>
+/// <summary>Matches invariant POSIX patterns over caller-valid UTF-8 text.</summary>
 /// <remarks>Selected matches are leftmost-longest with hierarchical subpattern priority. Instances are immutable and reusable; there is no native or BCL matcher fallback.</remarks>
 public sealed class Utf8PosixRegex : IDisposable
 {
-    /// <summary>Constructs an ERE with immutable construction, execution and optional program-funding settings.</summary>
+    /// <summary>Constructs a POSIX expression with immutable syntax, resource and program-funding settings.</summary>
     /// <remarks>Null policy timeouts mean infinite. Default construction borrows existing internal admission; explicit construction/funding controls own one scope. Funded expressions reject new matching calls after close, while already-admitted calls/cursors retain program funding. Subjects remain caller-valid unchanged UTF-8.</remarks>
-    /// <exception cref="PosixUnsupportedSyntaxException">The parser encountered syntax outside the supported ERE subset.</exception>
+    /// <exception cref="PosixUnsupportedSyntaxException">The parser encountered syntax outside the selected subset.</exception>
     /// <exception cref="ArgumentException">The pattern is malformed.</exception>
     public Utf8PosixRegex(string pattern, PosixCompileOptions options = PosixCompileOptions.None,
         Utf8RegexPolicy? policy = null) : this(pattern, options, policy, default, explicitCompile: false) { }
@@ -27,7 +27,16 @@ public sealed class Utf8PosixRegex : IDisposable
         constructionPolicy.Validate(nameof(policy));
         Utf8MatchTimeout.Validate(constructionTimeout, nameof(policy));
         ArgumentNullException.ThrowIfNull(pattern);
-        if ((options & ~(PosixCompileOptions.Newline | PosixCompileOptions.IgnoreCase)) != 0) throw new ArgumentOutOfRangeException(nameof(options));
+        const PosixCompileOptions dialectOptions = PosixCompileOptions.GnuBasic | PosixCompileOptions.GnuExtended;
+        if ((options & ~(PosixCompileOptions.Newline | PosixCompileOptions.IgnoreCase | dialectOptions)) != 0 ||
+            (options & dialectOptions) == dialectOptions)
+            throw new ArgumentOutOfRangeException(nameof(options));
+        var dialect = (options & dialectOptions) switch
+        {
+            PosixCompileOptions.GnuBasic => PosixParser.Dialect.GnuBasic,
+            PosixCompileOptions.GnuExtended => PosixParser.Dialect.GnuExtended,
+            _ => PosixParser.Dialect.Extended,
+        };
         MatchTimeout = Utf8MatchTimeout.Validate(policy.MatchTimeout ?? Regex.InfiniteMatchTimeout, nameof(policy));
         var resources = policy.ResourcePolicy;
         resources.Validate(nameof(policy));
@@ -46,7 +55,7 @@ public sealed class Utf8PosixRegex : IDisposable
             : Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token, account);
         try
         {
-            _program = PosixProgram.Compile(pattern, options, enableExistenceTier);
+            _program = PosixProgram.Compile(pattern, options & ~dialectOptions, enableExistenceTier, dialect);
             GroupCount = _program.CaptureTags.Length - 1;
             if (construction is not null)
             {
@@ -73,9 +82,9 @@ public sealed class Utf8PosixRegex : IDisposable
     private readonly Utf8ExecutionLimits _limits;
     private readonly Utf8FundedStorage? _programMemory;
 
-    /// <summary>Compiles an ERE eagerly under one policy and an independent construction token.</summary>
+    /// <summary>Compiles a POSIX expression eagerly under one policy and an independent construction token.</summary>
     /// <remarks>Entry cancellation precedes policy/pattern work. One construction owner covers admission and publication. The token is not retained for matching; later operations use their own deadlines and cancellation.</remarks>
-    /// <exception cref="PosixUnsupportedSyntaxException">The parser encountered syntax outside the supported ERE subset.</exception>
+    /// <exception cref="PosixUnsupportedSyntaxException">The parser encountered syntax outside the selected subset.</exception>
     /// <exception cref="ArgumentException">The pattern is malformed.</exception>
     public static Utf8PosixRegex Compile(string pattern, PosixCompileOptions options = PosixCompileOptions.None,
         Utf8RegexPolicy? policy = null, CancellationToken cancellationToken = default)
@@ -88,7 +97,7 @@ public sealed class Utf8PosixRegex : IDisposable
     /// <remarks>No-op without program funding. Closing rejects new matching calls but does not cancel existing ones. Retained scalar metadata and copied ranges remain valid. There is no finalizer.</remarks>
     public void Dispose() => _programMemory?.Close();
 
-    /// <summary>Gets the original ERE pattern.</summary>
+    /// <summary>Gets the original pattern.</summary>
     public string Pattern { get; }
     /// <summary>Gets the admitted compile options.</summary>
     public PosixCompileOptions Options { get; }

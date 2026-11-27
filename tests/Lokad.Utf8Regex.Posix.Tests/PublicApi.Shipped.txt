@@ -1,4 +1,4 @@
-[Flags] enum Posix.PosixCompileOptions : Int32 { IgnoreCase = 2, Newline = 1, None = 0 }
+[Flags] enum Posix.PosixCompileOptions : Int32 { GnuBasic = 4, GnuExtended = 8, IgnoreCase = 2, Newline = 1, None = 0 }
 sealed class Posix.PosixUnsupportedSyntaxException : ArgumentException, Runtime.Serialization.ISerializable
 sealed class Posix.Utf8PosixMatchCursor : IDisposable
   method Boolean MoveNext(out Utf8CaptureRange match, Span<Utf8CaptureRange> captures = default)

@@ -25,6 +25,7 @@ internal partial struct PosixWorkspace
     private Utf8InvocationStateBuffer<Frame> _frames;
     private Utf8InvocationStateBuffer<Mutation> _undo;
     private Utf8InvocationStateBuffer<TagEvent> _trace;
+    private Utf8InvocationStateBuffer<TagEvent> _winnerTrace;
     private Dictionary<ChartKey, int>? _chartMemo;
     private int _chartCapacity;
     private ulong _chartBytes;
@@ -43,7 +44,7 @@ internal partial struct PosixWorkspace
         workspace = default;
         workspace._program = program;
         workspace._openOffset = program.DirectGreedyRuns ? 0 : checked(program.Scalar.RepeatCount * 2);
-        var tags = captureHistory
+        var tags = program.Scalar.ReadsCaptures ? program.Parents.Length : captureHistory
             ? program.FirstAcceptanceIsLongest && !program.DirectGreedyRuns ? program.Parents.Length : program.CaptureTags.Length - 1
             : 0;
         workspace._lastOffset = checked(workspace._openOffset + tags);
@@ -71,7 +72,8 @@ internal partial struct PosixWorkspace
         ref Utf8SliceInvocation invocation, out int start, out int end, bool captureHistory = true)
     {
         captureHistory &= !existenceOnly && _program.CaptureTags.Length > 1;
-        var generalCaptures = captureHistory && !_program.FirstAcceptanceIsLongest;
+        var readsCaptures = _program.Scalar.ReadsCaptures;
+        var generalCaptures = captureHistory && !_program.FirstAcceptanceIsLongest && !readsCaptures;
         var firstAtomIndex = _program.FirstRequiredRunAtom;
         var firstAtom = firstAtomIndex >= 0 ? _program.Scalar.Instructions[firstAtomIndex] : default;
         var lastCandidate = _program.StartsAtInputStart ? 0 : input.Length;
@@ -131,7 +133,8 @@ internal partial struct PosixWorkspace
                 }
                 else if (captureHistory && !_program.UseCaptureOffsets)
                 {
-                    var trace = _trace.WrittenItems;
+                    var trace = readsCaptures ? _winnerTrace.WrittenItems : _trace.WrittenItems;
+                    if (readsCaptures) ResetState(state[_lastOffset..], ref invocation);
                     for (var index = 0; index < trace.Length; index++)
                     {
                         if ((index & 63) == 0) Charge(ref invocation);
@@ -155,6 +158,9 @@ internal partial struct PosixWorkspace
         // outside the repeat bodies and is written on each successful attempt.
         if (!directGreedyRuns) Reset(state, ref invocation);
         var code = _program.Scalar.Instructions;
+        var readsCaptures = _program.Scalar.ReadsCaptures;
+        var rememberCaptures = captureHistory || readsCaptures;
+        var useCaptureOffsets = _program.UseCaptureOffsets || !captureHistory;
         var pc = 0; var at = start; end = -1;
         var maximumEnd = input.Length;
         while (true)
@@ -285,20 +291,23 @@ internal partial struct PosixWorkspace
                     if (count < 0) { count = 0; SetState(state, slot, 0, ref invocation); }
                     var minimum = instruction.RepeatMinimum;
                     var maximum = instruction.RepeatMaximum;
+                    // A finite dependent repeat may establish different empty
+                    // captures in separate iterations at the same byte.
+                    var stopWithoutProgress = !readsCaptures || maximum == long.MaxValue;
                     if (count < minimum)
                     {
                         SetState(state, slot, count + 1, ref invocation);
                         SetState(state, slot + 1, at, ref invocation);
                         pc++;
                     }
-                    else if (count >= maximum || count > 0 && state[slot + 1] == at)
+                    else if (count >= maximum || stopWithoutProgress && count > 0 && state[slot + 1] == at)
                     {
                         // The saved optional exit has the same endpoint and
                         // earlier occurrences. A redundant empty body loses to
                         // its shorter history before descendants can break ties.
                         // Keep first/mandatory empties; saturated min0 counts
                         // cannot establish a prior occurrence and remain1.
-                        if (count > 1 && count > minimum && state[slot + 1] == at) failed = true;
+                        if (stopWithoutProgress && count > 1 && count > minimum && state[slot + 1] == at) failed = true;
                         else pc = instruction.A;
                     }
                     else
@@ -316,9 +325,9 @@ internal partial struct PosixWorkspace
                     pc++;
                     break;
                 case Utf8SliceInstructionKind.CaptureStart:
-                    if (captureHistory)
+                    if (rememberCaptures)
                     {
-                        if (_program.UseCaptureOffsets)
+                        if (useCaptureOffsets)
                             SetState(state, _openOffset + instruction.A, at, ref invocation);
                         else
                         {
@@ -329,17 +338,29 @@ internal partial struct PosixWorkspace
                     pc++;
                     break;
                 case Utf8SliceInstructionKind.CaptureEnd:
-                    if (captureHistory)
+                    if (rememberCaptures)
                     {
-                        if (_program.UseCaptureOffsets)
+                        if (useCaptureOffsets)
                             SetState(state, _lastOffset + instruction.A, at, ref invocation);
                         else
+                        {
+                            if (readsCaptures)
+                                SetState(state, _lastOffset + instruction.A, _trace.Count, ref invocation);
                             Check(_trace.TryPush(new(instruction.A, at, state[_openOffset + instruction.A]), ref invocation), ref invocation);
+                        }
                     }
                     pc++;
                     break;
+                case Utf8SliceInstructionKind.Backref:
+                    var close = state[_lastOffset + instruction.A];
+                    if (close < 0) { failed = true; break; }
+                    var captureStart = useCaptureOffsets ? state[_openOffset + instruction.A] : _trace[_trace[close].Opening].Position;
+                    var captureEnd = useCaptureOffsets ? close : _trace[close].Position;
+                    if (TryMatchReference(input, captureStart, captureEnd, instruction.B != 0, ref at, ref invocation)) pc++;
+                    else failed = true;
+                    break;
                 case Utf8SliceInstructionKind.Accept:
-                    if (!existenceOnly && !_program.FirstAcceptanceIsLongest &&
+                    if (!readsCaptures && !existenceOnly && !_program.FirstAcceptanceIsLongest &&
                         (end < 0 || at > end && maximumEnd == input.Length))
                     {
                         if (at < input.Length) maximumEnd = FindBoundaryCeiling(input, start, at, ref invocation);
@@ -348,6 +369,9 @@ internal partial struct PosixWorkspace
                     // match regardless of the histories on other pending paths.
                     if (existenceOnly || !captureHistory && at == maximumEnd || _program.FirstAcceptanceIsLongest)
                     { end = at; return true; }
+                    if (readsCaptures && captureHistory &&
+                        (at > end || at == end && BetterHistory(ref invocation)))
+                        SaveWinningHistory(ref invocation);
                     end = Math.Max(end, at);
                     failed = true;
                     break;
@@ -596,7 +620,8 @@ internal partial struct PosixWorkspace
 
     internal readonly bool GetCapture(scoped ReadOnlySpan<int> state, int slot, ref Utf8SliceInvocation invocation, out int start, out int end)
     {
-        if (!_program.FirstAcceptanceIsLongest)
+        var readsCaptures = _program.Scalar.ReadsCaptures;
+        if (!_program.FirstAcceptanceIsLongest && !readsCaptures)
         {
             start = state[_openOffset + slot - 1]; end = state[_lastOffset + slot - 1];
             return start >= 0;
@@ -610,7 +635,8 @@ internal partial struct PosixWorkspace
         var close = state[_lastOffset + tag];
         start = end = -1;
         if (close < 0) return false;
-        var open = _trace[close].Opening;
+        var trace = readsCaptures ? _winnerTrace.WrittenItems : _trace.WrittenItems;
+        var open = trace[close].Opening;
         // Tag zero encloses the entire winning trace, including when it is a
         // public root capture. Only repeated inner parents can make a group's
         // last occurrence absent from its parent's final occurrence.
@@ -618,9 +644,9 @@ internal partial struct PosixWorkspace
         {
             Charge(ref invocation);
             var parentClose = state[_lastOffset + parent];
-            if (parentClose < 0 || _trace[parentClose].Opening > open || parentClose < close) return false;
+            if (parentClose < 0 || trace[parentClose].Opening > open || parentClose < close) return false;
         }
-        start = _trace[open].Position; end = _trace[close].Position;
+        start = trace[open].Position; end = trace[close].Position;
         return true;
     }
 
@@ -628,7 +654,13 @@ internal partial struct PosixWorkspace
     {
         Clear(ref _frames, ref invocation); Clear(ref _undo, ref invocation);
         Clear(ref _trace, ref invocation);
+        Clear(ref _winnerTrace, ref invocation);
         ResetChart(ref invocation);
+        ResetState(state, ref invocation);
+    }
+
+    private static void ResetState(scoped Span<int> state, ref Utf8SliceInvocation invocation)
+    {
         for (var offset = 0; offset < state.Length;)
         {
             Charge(ref invocation);
@@ -650,6 +682,7 @@ internal partial struct PosixWorkspace
     {
         _frames.Release(ref invocation); _undo.Release(ref invocation);
         _trace.Release(ref invocation);
+        _winnerTrace.Release(ref invocation);
         ReleaseChart(ref invocation);
         invocation.Ledger.Release(_stateBytes);
         this = default;

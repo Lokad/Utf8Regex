@@ -39,11 +39,12 @@ internal sealed partial class PosixProgram
     internal ChartNode[] Chart { get; }
     internal Utf8SliceNode.CategorySetNode[] ChartClasses { get; }
 
-    internal static PosixProgram Compile(string pattern, PosixCompileOptions options, bool enableExistenceTier = false)
+    internal static PosixProgram Compile(string pattern, PosixCompileOptions options, bool enableExistenceTier = false,
+        PosixParser.Dialect dialect = PosixParser.Dialect.Extended)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        var root = PosixParser.Parse(pattern, options, out var groups);
+        var (root, groups, hasBackreferences) = PosixParser.Parse(pattern, options, dialect);
         var captureTags = budget.AllocateArray<int>(checked(groups + 1), false);
         using var parents = Utf8ConstructionBuffer<int>.Create(budget);
         using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(root, -1));
@@ -63,7 +64,7 @@ internal sealed partial class PosixProgram
                     // With no public descendants, equal occurrence boundaries
                     // leave no observable choice inside this capture. Keep its
                     // complete history, but omit its internal fictive tags.
-                    if (!ContainsCapture(capture.Body, budget))
+                    if (!hasBackreferences && !ContainsCapture(capture.Body, budget))
                     {
                         completed = budget.AllocateObject((frame.Tag, capture.Body),
                             static x => new Utf8SliceNode.CaptureNode(x.Tag, x.Body));
@@ -116,6 +117,8 @@ internal sealed partial class PosixProgram
                 Utf8SliceNode.AlternationNode => budget.AllocateObject(frame.Children!, static x => new Utf8SliceNode.AlternationNode(x)),
                 Utf8SliceNode.RepeatNode repeat => budget.AllocateObject((frame.Body!, repeat.Minimum, repeat.Maximum),
                     static x => new Utf8SliceNode.RepeatNode(x.Item1, x.Minimum, x.Maximum, false)),
+                Utf8SliceNode.BackrefNode reference => budget.AllocateObject((Tag: captureTags[reference.Slot], reference.FoldCase),
+                    static x => new Utf8SliceNode.BackrefNode(x.Tag, x.FoldCase, false)),
                 Utf8SliceNode.EmptyNode or Utf8SliceNode.LiteralNode or Utf8SliceNode.DotNode or
                     Utf8SliceNode.AnchorNode or Utf8SliceNode.CategorySetNode => frame.Node,
                 _ => throw new InvalidOperationException("An unsupported node entered POSIX lowering."),
@@ -125,19 +128,22 @@ internal sealed partial class PosixProgram
         }
         var scalar = Utf8SliceLowerer.Lower(completed!, null, false,
             (options & PosixCompileOptions.IgnoreCase) != 0, false, null, false, false, Utf8ScalarCaseBehavior.Invariant,
-            false, proofCompilation: enableExistenceTier ? Utf8BoundedProgramEmitter.Compilation.TieredLiteralExistence : default)
+            false, proofCompilation: enableExistenceTier && !hasBackreferences ? Utf8BoundedProgramEmitter.Compilation.TieredLiteralExistence : default)
             ?? throw new InvalidOperationException("The admitted POSIX tree could not be lowered.");
-        var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget, out var capturesOpenOnce);
+        var capturesOpenOnce = false;
+        var firstAcceptanceIsLongest = !hasBackreferences && CanSelectFirst(scalar, budget, out capturesOpenOnce);
         var canReplayDirectly = true;
         var firstRunAtom = -1;
         var terminalLineEndRepeat = -1;
-        var greedyRuns = scalar.RepeatCount > 0 && CanSelectGreedyRuns(scalar, captureTags.AsSpan(1), budget,
+        var greedyRuns = !hasBackreferences && scalar.RepeatCount > 0 && CanSelectGreedyRuns(scalar, captureTags.AsSpan(1), budget,
             out canReplayDirectly, out firstRunAtom, out terminalLineEndRepeat);
         var directGreedyRuns = greedyRuns && canReplayDirectly;
-        if (!firstAcceptanceIsLongest)
+        if (!hasBackreferences && !firstAcceptanceIsLongest)
+        {
             firstAcceptanceIsLongest = greedyRuns || CanSelectRepeatedLiteralCapture(scalar, budget);
-        if (!firstAcceptanceIsLongest) PreferLongerScalarAlternatives(scalar.Instructions, budget);
-        var chart = !firstAcceptanceIsLongest && groups != 0 ? CreateChart(root, budget)
+            if (!firstAcceptanceIsLongest) PreferLongerScalarAlternatives(scalar.Instructions, budget);
+        }
+        var chart = !hasBackreferences && !firstAcceptanceIsLongest && groups != 0 ? CreateChart(root, budget)
             : (Nodes: Array.Empty<ChartNode>(), Classes: Array.Empty<Utf8SliceNode.CategorySetNode>());
         int[] parentTags = directGreedyRuns ? [] : parents.Take();
         var useCaptureOffsets = firstAcceptanceIsLongest;

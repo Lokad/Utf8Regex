@@ -11,7 +11,7 @@ public sealed class PosixParserTests
     [InlineData("^(.{2,3})$", 1)]
     public void LoweredProgramKeepsTheAdmittedScalarShape(string pattern, int expectedGroups)
     {
-        var root = PosixParser.Parse(pattern, default, out var groups);
+        var (root, groups, _) = PosixParser.Parse(pattern, default);
         var program = Utf8SliceLowerer.Lower(root, null, false, false, false);
         Assert.Equal(expectedGroups, groups);
         Assert.NotNull(program);
@@ -39,7 +39,7 @@ public sealed class PosixParserTests
     {
         foreach (var input in new[] { "\ud800", "[\udc00]", "abc\ud800" })
             Assert.Throws<ArgumentException>(() => new Utf8PosixRegex(input));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PosixRegex("a", options: (PosixCompileOptions)4, policy: new Utf8RegexPolicy()
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PosixRegex("a", options: (PosixCompileOptions)16, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = default
@@ -50,7 +50,7 @@ public sealed class PosixParserTests
     public void NestedGroupsUseAdmittedFramesRatherThanRecursiveParsing()
     {
         const int depth = 4096;
-        var root = PosixParser.Parse(new string('(', depth) + "😀" + new string(')', depth), default, out var groups);
+        var (root, groups, _) = PosixParser.Parse(new string('(', depth) + "😀" + new string(')', depth), default);
         Assert.Equal(depth, groups);
         for (var slot = 1; slot <= depth; slot++)
         {
@@ -69,7 +69,7 @@ public sealed class PosixParserTests
         using var scope = new Utf8ConstructionScope(1024,
             kind == Utf8ResourceLimitKind.ConstructionBytes ? 128UL : 1UL << 20,
             kind == Utf8ResourceLimitKind.ConstructionDepth ? 2UL : 100);
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => PosixParser.Parse("(((abcdef)))", default, out _));
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => PosixParser.Parse("(((abcdef)))", default));
         Assert.Equal(kind, error.ResourceKind);
         Assert.Equal(0UL, scope.Budget.Depth);
         Assert.Equal(0UL, scope.Budget.ReservedBytes);
@@ -84,7 +84,7 @@ public sealed class PosixParserTests
         using var scope = Utf8ConstructionScope.Enter(default, Timeout.InfiniteTimeSpan, canceled.Token);
         var checkpoints = 0;
         scope.Budget.CheckpointHook = () => { if (checkpoints++ >= 32) canceled.Cancel(); };
-        var error = Assert.Throws<OperationCanceledException>(() => PosixParser.Parse(new string('a', 2048), default, out _));
+        var error = Assert.Throws<OperationCanceledException>(() => PosixParser.Parse(new string('a', 2048), default));
         Assert.Equal(canceled.Token, error.CancellationToken);
         Assert.Equal(0UL, scope.Budget.Depth);
         Assert.Equal(0UL, scope.Budget.ReservedBytes);

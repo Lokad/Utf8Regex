@@ -1,7 +1,7 @@
 # POSIX profile contract
 
-`Lokad.Utf8Regex.Posix` implements an invariant subset of POSIX extended
-regular expressions (ERE). It uses Unicode scalars for matching and owns
+`Lokad.Utf8Regex.Posix` implements an invariant POSIX ERE subset and optional
+GNU basic and extended syntax. It uses Unicode scalars for matching and owns
 leftmost-longest selection and capture priority.
 [API snapshot](../tests/Lokad.Utf8Regex.Posix.Tests/PublicApi.Shipped.txt)
 
@@ -53,9 +53,10 @@ edges. It excludes LF from dot and negated brackets. With default options
 dot and negated brackets can include LF and `$` means true end. CR has no
 special meaning.
 
-BRE, collating or equivalence elements, backreferences, assertions other
-than `^` and `$`, shorthand or property escapes, extended groups and
-non-ERE quantifier suffixes are outside this subset.
+Collating or equivalence elements, assertions other than `^` and `$`,
+shorthand or property escapes, extended groups and lazy or possessive
+repetition suffixes are outside the supported syntax. The default ERE
+also excludes BRE operators and backreferences.
 
 The constructor and `Compile` throw `PosixUnsupportedSyntaxException`
 when the parser encounters an extended group such as `a(?=b)`, a collating
@@ -64,6 +65,28 @@ possessive repetition suffix. A malformed ERE such as `(a` throws
 `ArgumentException` directly. Both carry `ParamName = "pattern"` and
 the UTF-16 pattern offset in the diagnostic. Classification uses the
 first parser error in the POSIX grammar.
+
+### GNU backreference syntax
+
+Choose `PosixCompileOptions.GnuExtended` for ERE with `\1` through `\9`, or
+`PosixCompileOptions.GnuBasic` for the same references with BRE spelling.
+The two options are mutually exclusive and compose with `IgnoreCase` and
+`Newline`. GNU BRE uses escaped grouping, alternation, `+`, `?` and interval
+delimiters. `^`, `$` and an initial `*` follow their BRE context rules.
+
+A reference requires a group that has already closed in the current branch
+scope. Groups inside a completed enclosing expression can be referenced
+after it, including groups declared in one of its alternatives. `\10` means
+reference one followed by literal `0`. Unset references fail. A completed
+empty capture is available, and a repeated group can supply a capture from
+an earlier iteration. `IgnoreCase` compares the referenced scalars using the
+profile's invariant relation and preserves the original byte widths.
+
+The managed repeat rules govern nullable subexpressions. Finite repetitions
+can establish different empty captures in successive iterations. Unbounded
+repetitions retain the POSIX progress guard. Some nullable repeated patterns
+therefore select different extents from glibc. For example, `(a*)+\1` can
+match all of `aaa` with two one-byte captures and a final one-byte reference.
 
 ## Selection and captures
 
@@ -85,6 +108,13 @@ final iteration of its enclosing group is absent. `GroupCount` excludes
 slot zero, which holds the whole match. An absent capture is the default
 unsuccessful value. A participating empty capture retains its byte position
 and `Success = true`.
+
+GNU reference execution uses the last completed capture in the current
+path. Public capture slots keep the hierarchical selection rule above. A
+reference can therefore use an earlier capture that does not appear in the
+final enclosing iteration. GNU grep and glibc serve as comparators for
+reference matching and whole ranges. Ambiguous public capture slots can
+differ from glibc's branch ordering.
 
 ## Public surface and lifetimes
 

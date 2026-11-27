@@ -873,6 +873,25 @@ public sealed class PosixPublicContractTests
         Assert.Equal(expected[0].GetInt32(), actual.StartOffsetInBytes); Assert.Equal(expected[1].GetInt32(), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
+    [Fact]
+    public void RefusedBackreferenceCaptureStorageRefundsTheWholeInvocation()
+    {
+        using var regex = new Utf8PosixRegex(@"(a|aa)(a{1,4})\1", PosixCompileOptions.GnuExtended,
+            new Utf8RegexPolicy { ResourcePolicy = new() { MaxResultBytes = 1 } });
+        var output = new Utf8CaptureRange[3];
+        var measured = new Account();
+        Assert.True(regex.Match("aaaaaa"u8, captures: output, workingMemoryAllowance: measured).Success);
+        Assert.Equal(0UL, measured.Used);
+        Assert.True(measured.Attempts > 1);
+
+        var refused = new Account { AllowedAttempts = measured.Attempts - 1 };
+        Assert.Throws<Utf8MemoryAdmissionException>(() => regex.Match("aaaaaa"u8,
+            captures: output, workingMemoryAllowance: refused));
+        Assert.Equal(measured.Attempts, refused.Attempts);
+        Assert.Equal(0UL, refused.Used);
+        Assert.All(output, range => Assert.False(range.Success));
+    }
+
     private sealed class Account : IUtf8MemoryAllowance
     {
         internal ulong Used, Peak, Maximum = 1 << 20;

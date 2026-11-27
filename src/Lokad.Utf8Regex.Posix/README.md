@@ -1,7 +1,7 @@
 # Lokad.Utf8Regex.Posix
 
-A managed implementation of selected POSIX extended regular expressions
-for .NET 10 and 11. It uses leftmost-longest selection and hierarchical
+A managed implementation of selected POSIX regular expressions for .NET 10
+and 11. It uses leftmost-longest selection and hierarchical
 capture priority. The adapter requires the exact matching Core package.
 
 ## Subject text contract
@@ -15,8 +15,11 @@ start offsets and capture ranges use byte coordinates.
 
 `IgnoreCase` uses invariant Unicode 16 simple-lowercase equivalence.
 `Newline` enables LF line anchors and excludes LF from dot and negated
-brackets. The profile excludes locale collation, backreferences and
-lookaround. [Grammar and options](../../docs/SPEC-POSIX.md#input-and-syntax)
+brackets. The profile excludes locale collation and lookaround.
+The default ERE subset is suitable for callers that reject backreferences.
+Select `GnuBasic` for BRE spelling or `GnuExtended` for ERE with single-digit
+backreferences. [Grammar and options](../../docs/SPEC-POSIX.md#input-and-syntax) ·
+[GNU reference rules and limitations](../../docs/SPEC-POSIX.md#gnu-backreference-syntax)
 
 ## Example
 
@@ -28,6 +31,9 @@ var regex = new Utf8PosixRegex("(a|aa)(a*)");
 Span<Utf8CaptureRange> groups = stackalloc Utf8CaptureRange[3];
 var match = regex.Match("aaa"u8, captures: groups);
 // Whole match: [0,3); group 1: [0,2); group 2: [2,3), all byte ranges.
+
+var repeated = new Utf8PosixRegex(@"(a|aa)\1", PosixCompileOptions.GnuExtended);
+var longest = repeated.Match("aaaa"u8); // [0,4)
 ```
 
 `Match` writes as many slots as fit, starting with slot zero for the whole
