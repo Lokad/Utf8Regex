@@ -11,6 +11,7 @@
 - Add opt-in GNU basic and extended backreferences to POSIX longest matching.
 - Align PCRE2 `\X` boundaries with native 10.47 for Indic conjuncts,
   regional indicators followed by marks or joiners, and `Prepend` before pictographs.
+- Preserve regional-indicator pairing when PCRE2 `\X` starts inside a run.
 - Accept numbered PCRE2 callouts without callbacks.
 - Keep subject anchors, boundaries and nested lookaheads visible inside
   PCRE2 lookbehind assertions.

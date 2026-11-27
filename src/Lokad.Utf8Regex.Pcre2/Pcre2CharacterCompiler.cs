@@ -1,5 +1,7 @@
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -1234,7 +1236,8 @@ internal static class Pcre2CharacterRunner
                 return true;
 
             case Pcre2CharacterTokenKind.ExtendedGraphemeCluster:
-                if (!Pcre2GraphemeClusterSemantics.TryGetWidth(input, index, ref budget, out var graphemeWidth))
+                if (!Pcre2GraphemeClusterSemantics.TryGetWidth(input, index, ref budget, out var graphemeWidth,
+                        fragment.ReadFloor))
                 {
                     return false;
                 }
@@ -1376,7 +1379,8 @@ internal static class Pcre2GraphemeClusterSemantics
         Extenders,                                     // ExtendedPictographic
     ];
 
-    internal static bool TryGetWidth(ReadOnlySpan<byte> input, int offset, ref Pcre2ResourceBudget budget, out int width)
+    internal static bool TryGetWidth(ReadOnlySpan<byte> input, int offset, ref Pcre2ResourceBudget budget, out int width,
+        int readFloor = 0)
     {
         var controlled = !budget.IsUnmetered;
         if (controlled) budget.CheckWorkspace();
@@ -1389,8 +1393,6 @@ internal static class Pcre2GraphemeClusterSemantics
         var end = offset + previousWidth;
         var previousBreak = Pcre2GraphemeData.GetBreak(previous.Value);
         var joiningKinds = JoiningKinds;
-        // Pairing here starts at the current cluster. Native also considers
-        // earlier regional indicators when starting inside a run.
         var joinedRegionalPair = false;
         var zwjFollowsExtendedPictographic = false;
 
@@ -1407,7 +1409,8 @@ internal static class Pcre2GraphemeClusterSemantics
             if ((joiningKinds[(int)previousBreak] & (1 << (int)nextBreak)) == 0 ||
                 previousBreak == Pcre2GraphemeBreak.ZWJ && nextBreak == Pcre2GraphemeBreak.ExtendedPictographic &&
                 !zwjFollowsExtendedPictographic ||
-                previousBreak == Pcre2GraphemeBreak.RegionalIndicator && joinedRegionalPair)
+                previousBreak == Pcre2GraphemeBreak.RegionalIndicator &&
+                (joinedRegionalPair || HasOddRegionalPrefix(input, end - 4, readFloor, ref budget)))
                 break;
 
             end += nextWidth;
@@ -1421,6 +1424,41 @@ internal static class Pcre2GraphemeClusterSemantics
 
         width = end - offset;
         return true;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool HasOddRegionalPrefix(ReadOnlySpan<byte> input, int position, int readFloor,
+        ref Pcre2ResourceBudget budget)
+    {
+        // Only called after decoding two adjacent indicators. Each occupies
+        // exactly four bytes. The extent belongs to this unchanged subject.
+        var knownStart = budget.RegionalRunStart;
+        var knownEnd = budget.RegionalRunEnd;
+        var sameFloor = budget.RegionalRunReadFloor == readFloor;
+        var canReuse = sameFloor && knownEnd > knownStart &&
+            position >= knownStart && ((position - knownStart) & 3) == 0;
+        var start = position;
+        if (canReuse && position <= knownEnd) start = knownStart;
+        else
+        {
+            while (start - readFloor >= 4)
+            {
+                if (canReuse && start == knownEnd)
+                {
+                    start = knownStart;
+                    break;
+                }
+                // U+1F1E6 through U+1F1FF have contiguous UTF-8 encodings.
+                var previous = BinaryPrimitives.ReadUInt32BigEndian(input[(start - 4)..start]);
+                if (previous is < 0xF09F87A6u or > 0xF09F87BFu) break;
+                start -= 4;
+                if (((position - start) & 1023) == 0) budget.CheckWorkspace();
+            }
+        }
+        budget.RegionalRunReadFloor = readFloor;
+        budget.RegionalRunStart = start;
+        budget.RegionalRunEnd = sameFloor && start == knownStart ? Math.Max(knownEnd, position + 8) : position + 8;
+        return ((position - start) & 4) != 0;
     }
 }
 

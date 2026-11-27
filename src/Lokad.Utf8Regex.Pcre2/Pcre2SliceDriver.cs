@@ -402,7 +402,7 @@ internal static class Pcre2SliceDriver
     }
 
     internal static bool TryCountSingleToken(Pcre2BacktrackingProgram program, ReadOnlySpan<byte> input,
-        scoped ref Utf8SliceInvocation invocation, out int count)
+        int startOffset, scoped ref Utf8SliceInvocation invocation, out int count)
     {
         count = 0;
         var code = program.Instructions;
@@ -425,18 +425,18 @@ internal static class Pcre2SliceDriver
             (token.Options & Pcre2CharacterOptions.Caseless) == 0 &&
             token.CharacterClass.TryGetGeneralCategories(out var categories))
         {
-            ThrowIfSliceBreached(Utf8UnicodeCategoryExecutor.TryCount(input, categories,
+            ThrowIfSliceBreached(Utf8UnicodeCategoryExecutor.TryCount(input[startOffset..], categories,
                 token.CharacterClass.AsciiSet.ActualLowMask, token.CharacterClass.AsciiSet.ActualHighMask, ref invocation, out count));
             return true;
         }
 
         if (token.Kind != Pcre2CharacterTokenKind.ExtendedGraphemeCluster) return false;
-        count = CountGraphemeClusters(input, program.Request.DefaultLimits, ref invocation);
+        count = CountGraphemeClusters(input, startOffset, program.Request.DefaultLimits, ref invocation);
         return true;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int CountGraphemeClusters(ReadOnlySpan<byte> input, Utf8Pcre2ExecutionLimits limits,
+    private static int CountGraphemeClusters(ReadOnlySpan<byte> input, int startOffset, Utf8Pcre2ExecutionLimits limits,
         scoped ref Utf8SliceInvocation invocation)
     {
         ThrowIfSliceBreached(invocation.TryReserveWorking(0));
@@ -444,7 +444,7 @@ internal static class Pcre2SliceDriver
         // Each cluster begins at the preceding match end. The existing width
         // matcher polls inside long clusters under the same authority.
         var count = 0;
-        var position = 0;
+        var position = startOffset;
         while (position < input.Length && Pcre2GraphemeClusterSemantics.TryGetWidth(input, position, ref budget, out var width))
         {
             count++;

@@ -140,11 +140,11 @@ Caseless `Xuc` does not add ASCII K. `Xps`, `Xsp` and UCP space include NEL
 and U+180E. Without UCP, generic and POSIX space are ASCII. Explicit property
 escapes remain Unicode-aware.
 
-`\X` uses pinned Unicode 16 grapheme data and the native 10.47
-adjacent-break rules, including for Indic conjuncts and emoji sequences.
-Regional-indicator pairing begins at the current cluster. Native 10.47 can
-also inspect the prefix of a regional-indicator run when a match starts
-inside it. Extended substitution can differ when uppercasing final sigma.
+`\X` uses pinned Unicode 16 grapheme data and native 10.47 break rules,
+including for Indic conjuncts and emoji sequences. Regional indicators pair
+from the start of their contiguous subject run, even when matching starts
+inside the run. With `MatchInvalidUtf8`, pairing stays within each admitted
+UTF-8 fragment. Extended substitution can differ when uppercasing final sigma.
 Other Unicode properties can depend on the host runtime.
 
 ## Partial probing

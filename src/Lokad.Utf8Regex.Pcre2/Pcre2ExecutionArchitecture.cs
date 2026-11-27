@@ -1752,7 +1752,7 @@ internal static class Pcre2GlobalOperationDriver
 
         if (!compiledProgram.Request.MatchesInvalidUtf8 && matchOptions == Pcre2MatchOptions.None &&
             program is Pcre2BacktrackingDirectProgram tokenProgram &&
-            Pcre2SliceDriver.TryCountSingleToken(tokenProgram.Program, input[start.Value..], ref invocation, out result))
+            Pcre2SliceDriver.TryCountSingleToken(tokenProgram.Program, input, start.Value, ref invocation, out result))
             return true;
 
         if (program is Pcre2LiteralFamilyDirectProgram literalFamilyProgram &&
@@ -2751,6 +2751,11 @@ internal struct Pcre2ResourceBudget : IUtf8InvocationBufferControl
     // profile diagnostic counts stay local. Default unlimited runs stay inline.
     private Utf8SliceInvocation _invocation;
     private readonly Pcre2ExecutionDiagnosticsCollector? _diagnostics;
+    // Contiguous regional indicators already observed in this immutable
+    // subject, across attempts and advances. Empty until a pair is examined.
+    internal int RegionalRunStart;
+    internal int RegionalRunEnd;
+    internal int RegionalRunReadFloor;
 
     internal Pcre2ResourceBudget(
         Utf8Pcre2ExecutionLimits limits,

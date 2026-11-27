@@ -518,7 +518,8 @@ internal static class Pcre2BacktrackingRunner
 
             if (program.LeadingExtendedGraphemeCluster &&
                 (program.Request.Options & Pcre2CompileOptions.FirstLine) == 0 &&
-                Pcre2GraphemeClusterSemantics.TryGetWidth(bytes, candidate, ref budget, out var graphemeWidth))
+                Pcre2GraphemeClusterSemantics.TryGetWidth(bytes, candidate, ref budget, out var graphemeWidth,
+                    fragment.ReadFloor))
             {
                 candidate += graphemeWidth;
             }

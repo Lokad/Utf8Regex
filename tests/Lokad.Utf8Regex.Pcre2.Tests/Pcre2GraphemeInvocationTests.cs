@@ -43,6 +43,66 @@ public sealed class Pcre2GraphemeInvocationTests
     }
 
     [Fact]
+    public void RegionalIndicatorPairsKeepSubjectContextAtNonzeroStarts()
+    {
+        using var regex = new Utf8Pcre2Regex(@"\X");
+        ReadOnlyMemory<byte> input = "🇦🇧🇨🇩🇪"u8.ToArray();
+        Assert.Equal(3, regex.Count(input.Span, 4));
+        Assert.Equal(8, regex.Match(input.Span, 4).EndOffsetInBytes);
+        Assert.Equal(16, regex.Match(input.Span, 8).EndOffsetInBytes);
+
+        var span = regex.EnumerateMatches(input.Span, 4);
+        using var memory = regex.CreateMatchCursor(input, 4);
+        foreach (var end in new[] { 8, 16, 20 })
+        {
+            Assert.True(span.MoveNext());
+            Assert.True(memory.MoveNext(out var range));
+            Assert.Equal(end, span.Current.EndOffsetInBytes);
+            Assert.True(range.TryGetGroup(0, out var whole));
+            Assert.Equal(end, whole.EndOffsetInBytes);
+        }
+        Assert.False(span.MoveNext());
+        Assert.False(memory.MoveNext(out _));
+
+        using var capture = new Utf8Pcre2Regex(@"\A🇦(?<g>\X)");
+        Span<Utf8Pcre2CaptureRange> slots = stackalloc Utf8Pcre2CaptureRange[2];
+        var captured = capture.Match(input.Span, captures: slots);
+        Assert.True(captured.Success);
+        Assert.Equal((4, 8), (slots[1].StartOffsetInBytes, slots[1].EndOffsetInBytes));
+    }
+
+    [Fact]
+    public void RegionalIndicatorPairsRestartAtMalformedFragmentBoundaries()
+    {
+        using var regex = new Utf8Pcre2Regex(@"\X", Pcre2CompileOptions.MatchInvalidUtf8);
+        byte[] input = [.."🇦🇧"u8, 0xff, .."🇦🇧🇨"u8];
+        Assert.Equal(3, regex.Count(input));
+        Assert.Equal(17, regex.Match(input, 9).EndOffsetInBytes);
+        Assert.Equal(17, regex.Match(input, 13).EndOffsetInBytes);
+        Assert.Equal(2, regex.Count(input, 13));
+    }
+
+    [Fact]
+    public void CancellationDuringRegionalPrefixScanKeepsOriginalToken()
+    {
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("🇦", 2048)));
+        using var regex = new Utf8Pcre2Regex(@"\X", policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromHours(1),
+        });
+        using var source = new CancellationTokenSource();
+        var checkpoints = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (InsideGrapheme() && ++checkpoints == 3) source.Cancel();
+            return 0;
+        });
+        var failure = Assert.Throws<OperationCanceledException>(() => regex.Count(
+            input, input.Length - 8, cancellationToken: source.Token));
+        Assert.Equal(source.Token, failure.CancellationToken);
+    }
+
+    [Fact]
     public void BooleanGraphemeProofKeepsValidationFlagsAndReturnedClusterEndpoints()
     {
         var regex = new Utf8Pcre2Regex(@"\X");
