@@ -13,7 +13,6 @@ internal readonly struct Utf8SearchFacts(Utf8SearchKind kind)
     public byte[]? RequiredPrefilterLiteralUtf8 { get; init; }
     public byte[][]? RequiredPrefilterAlternateLiteralsUtf8 { get; init; }
     public byte[]? TrailingLiteralUtf8 { get; init; }
-    public int Distance { get; init; }
     public int MinRequiredLength { get; init; }
     public int? ExactRequiredLength { get; init; }
     public int? MaxPossibleLength { get; init; }

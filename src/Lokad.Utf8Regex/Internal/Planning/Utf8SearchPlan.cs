@@ -24,7 +24,6 @@ internal readonly struct Utf8SearchPlan
         var requiredPrefilterLiteralUtf8 = NullIfEmpty(facts.RequiredPrefilterLiteralUtf8);
         var requiredPrefilterAlternateLiteralsUtf8 = NullIfEmpty(facts.RequiredPrefilterAlternateLiteralsUtf8);
         var trailingLiteralUtf8 = NullIfEmpty(facts.TrailingLiteralUtf8);
-        var distance = facts.Distance;
         var minRequiredLength = facts.MinRequiredLength;
         var exactRequiredLength = facts.ExactRequiredLength;
         var maxPossibleLength = facts.MaxPossibleLength;
@@ -78,7 +77,6 @@ internal readonly struct Utf8SearchPlan
             scalarProgram, RequiredPrefilterSearcher, budget))
             AlignedClassDelimiterProgram = scalarProgram;
         TrailingLiteralUtf8 = trailingLiteralUtf8;
-        Distance = distance;
         MinRequiredLength = minRequiredLength;
         ExactRequiredLength = exactRequiredLength;
         MaxPossibleLength = maxPossibleLength;
@@ -177,7 +175,6 @@ internal readonly struct Utf8SearchPlan
     public byte[]? TrailingLiteralUtf8 { get; }
 
 
-    public int Distance { get; }
 
     public int MinRequiredLength { get; }
 

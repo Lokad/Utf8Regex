@@ -151,7 +151,7 @@ internal struct PythonReScalarMatchState
         var nativeResult = program.GroupCount == 0 && candidateRegex.CanFindNativeLiteralForResult;
         return !program.CanMatchEmpty && !program.HasContiguousAnchor && !program.RightToLeft &&
             !program.IgnoreCase && (nativeResult ||
-                candidatePlan.CanGuideFallbackStarts && candidatePlan.Distance == 0 &&
+                candidatePlan.CanGuideFallbackStarts &&
                 candidatePlan.Kind is Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals);
     }
 

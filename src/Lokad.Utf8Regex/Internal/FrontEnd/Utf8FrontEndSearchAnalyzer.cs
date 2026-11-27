@@ -36,8 +36,8 @@ internal static class Utf8FrontEndSearchAnalyzer
             return facts with { Kind = trailingKind };
 
         var invariantIgnoreCase = UsesInvariantIgnoreCase(options);
-        if (!invariantIgnoreCase && TrySelectFixedDistanceLiteral(root, out var fixedLiteral, out var distance))
-            return facts with { Kind = Utf8SearchKind.FixedDistanceAsciiLiteral, LiteralUtf8 = fixedLiteral, Distance = distance };
+        if (!invariantIgnoreCase && TrySelectFixedDistanceLiteral(root) is { } fixedLiteral)
+            return facts with { Kind = Utf8SearchKind.FixedDistanceAsciiLiteral, LiteralUtf8 = fixedLiteral };
 
         var prefixes = Utf8OwnedFindOptimizations.FindAlternatePrefixes(root, tree.Options);
         if (!invariantIgnoreCase && prefixes is { Length: > 1 })
@@ -256,11 +256,8 @@ internal static class Utf8FrontEndSearchAnalyzer
         return kind != Utf8SearchKind.None;
     }
 
-    private static bool TrySelectFixedDistanceLiteral(Utf8TreeNode root,
-        out byte[] literalUtf8, out int distance)
+    private static byte[]? TrySelectFixedDistanceLiteral(Utf8TreeNode root)
     {
-        literalUtf8 = [];
-        distance = 0;
         // An exact literal cannot follow an uncertified byte width. Check the
         // first class or scalar repeat before allocating the per-node widths.
         var leading = GetLeadingContentNode(root);
@@ -270,11 +267,9 @@ internal static class Utf8FrontEndSearchAnalyzer
             Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(root) is not { } fixedDistance ||
             !IsAscii(fixedDistance.Literal) ||
             fixedDistance.Literal.Length <= 1)
-            return false;
+            return null;
 
-        literalUtf8 = EncodeLiteral(fixedDistance.Literal);
-        distance = fixedDistance.Distance;
-        return true;
+        return EncodeLiteral(fixedDistance.Literal);
     }
 
     private static bool TrySelectRequiredLiteralPrefilter(

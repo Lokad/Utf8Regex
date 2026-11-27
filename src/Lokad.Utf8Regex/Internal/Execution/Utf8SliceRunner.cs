@@ -1457,7 +1457,7 @@ internal static partial class Utf8SliceRunner
     // Count and primary matching share the same necessary-prefix proof. Every
     // candidate is still verified by the scalar VM under the original invocation.
     private static bool CanSeekExactPrefix(Utf8SliceProgram program, in Utf8SearchPlan candidatePlan)
-        => candidatePlan.CanGuideFallbackStarts && candidatePlan.Distance == 0 &&
+        => candidatePlan.CanGuideFallbackStarts &&
             !program.RightToLeft && !program.CanMatchEmpty && !program.HasContiguousAnchor && !program.IgnoreCase &&
             candidatePlan.Kind is
                 Utf8SearchKind.ExactAsciiLiteral or

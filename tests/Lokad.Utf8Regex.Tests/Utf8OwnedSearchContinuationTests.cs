@@ -50,7 +50,7 @@ public sealed class Utf8OwnedSearchContinuationTests
         facts.Kind, facts.LiteralUtf8, facts.AlternateLiteralsUtf8, facts.CanGuideFallbackStarts,
         facts.RequiredPrefilterLiteralUtf8, facts.RequiredPrefilterAlternateLiteralsUtf8,
         facts.TrailingLiteralUtf8,
-        facts.Distance, facts.MinRequiredLength, facts.ExactRequiredLength,
+        facts.MinRequiredLength, facts.ExactRequiredLength,
         facts.MaxPossibleLength, facts.LeadingBoundary, facts.TrailingBoundary,
     });
 

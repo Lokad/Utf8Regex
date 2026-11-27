@@ -21,7 +21,6 @@ public sealed class Utf8PrefixCountPublicationTests
             }
         });
         Assert.True(regex.Inspection.SearchPlan.CanGuideFallbackStarts);
-        Assert.Equal(0, regex.Inspection.SearchPlan.Distance);
         var observed = 0;
         for (var blocks = 0; blocks <= 128; blocks++)
         {
