@@ -360,8 +360,13 @@ public sealed class Utf8SharedStatePoolTests
         if (table is null) { Assert.Equal(0, count); Assert.Equal(0, Utf8ExactStatePool.RetainedBytes); return (0, 0); }
         Assert.Equal(Utf8ExactStatePool.MaximumEntries, table.Length);
         var entryType = table.GetType().GetElementType()!;
-        Assert.Equal(2, entryType.GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Length);
+        // Each slot owns one array and its shared runtime type key. The scalar
+        // lookup metadata is part of the table extent below.
+        Assert.Equal(2, entryType.GetFields(BindingFlags.Instance | BindingFlags.NonPublic)
+            .Count(field => !field.FieldType.IsValueType));
         var valueProperty = entryType.GetProperty("Value")!;
+        var arrayTypeProperty = entryType.GetProperty("ArrayType")!;
+        var capacityProperty = entryType.GetProperty("Capacity")!;
         var bytesProperty = entryType.GetProperty("Bytes")!;
         var bytes = Physical(table);
         var identities = new HashSet<object>(ReferenceEqualityComparer.Instance);
@@ -371,7 +376,15 @@ public sealed class Utf8SharedStatePoolTests
             var value = valueProperty.GetValue(entry);
             if (index < count) Assert.NotNull(value);
             else Assert.Null(value);
-            if (value is not Array leaf) { Assert.Equal(0, bytesProperty.GetValue(entry)); continue; }
+            if (value is not Array leaf)
+            {
+                Assert.Null(arrayTypeProperty.GetValue(entry));
+                Assert.Equal(0, capacityProperty.GetValue(entry));
+                Assert.Equal(0, bytesProperty.GetValue(entry));
+                continue;
+            }
+            Assert.Same(leaf.GetType(), arrayTypeProperty.GetValue(entry));
+            Assert.Equal(leaf.Length, capacityProperty.GetValue(entry));
             Assert.True(identities.Add(leaf));
             var extent = Physical(leaf);
             Assert.Equal(extent, bytesProperty.GetValue(entry));
