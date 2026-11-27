@@ -60,12 +60,11 @@ internal readonly struct Utf8SearchPlan
         }
         PreparedSearcher = CreatePreparedSearcher(kind, literalSearch, CreateMultiLiteralSearch(kind, alternateLiteralsUtf8));
         ref readonly var multiLiteralSearch = ref PreparedSearcher.MultiLiteralSearch;
-        // Direct portfolios already own the exact tables used by compatibility
-        // consumers. Borrow them instead of acquiring the same payload twice.
+        // Reuse exact tables or trie nodes already prepared from this family.
         AlternateLiteralSearch = alternateLiteralsUtf8 is { Length: > 0 } && kind != Utf8SearchKind.AsciiFoldedByteLiterals
             ? multiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactDirect
                 ? multiLiteralSearch.ExactSearch
-                : new PreparedLiteralSetSearch(alternateLiteralsUtf8)
+                : new PreparedLiteralSetSearch(alternateLiteralsUtf8, multiLiteralSearch.TrieSearch)
             : null;
         PortfolioKind = DeterminePortfolioKind(kind, PreparedSearcher.Kind, multiLiteralSearch.Kind);
         // A short exact prefilter can share the same prepared needle as
@@ -174,9 +173,6 @@ internal readonly struct Utf8SearchPlan
 
     public Utf8SearchOperationPlan SearchOperation =>
         Utf8SearchStrategySelector.Create(this, ConfirmationPlan);
-
-    public AsciiExactLiteralSearchData? AlternateLiteralSearchData => AlternateLiteralSearch?.SearchData;
-
 
     public byte[]? TrailingLiteralUtf8 { get; }
 

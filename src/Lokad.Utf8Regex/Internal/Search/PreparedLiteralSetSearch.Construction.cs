@@ -6,7 +6,8 @@ internal readonly partial struct PreparedLiteralSetSearch
         PreparedMultiLiteralTrieSearch trie, PreparedLiteralSetStrategy strategy)
     { SearchData = data; UniqueAnchor = anchor; MultiLiteral = trie; Strategy = strategy; }
 
-    public PreparedLiteralSetSearch(byte[][] literals)
+    // A supplied trie was built from these literals in their original order.
+    public PreparedLiteralSetSearch(byte[][] literals, in PreparedMultiLiteralTrieSearch preparedTrie = default)
     {
         if (literals.Length == 0)
         { this = new(AsciiSearch.CreateExactLiteralSearchData(literals), null, default, PreparedLiteralSetStrategy.Empty); return; }
@@ -15,14 +16,14 @@ internal readonly partial struct PreparedLiteralSetSearch
         budget.EnterDepth();
         try
         {
-            this = Prepare(AsciiSearch.CreateExactLiteralSearchData(literals), literals, budget);
+            this = Prepare(AsciiSearch.CreateExactLiteralSearchData(literals), literals, preparedTrie, budget);
             scope.Complete();
         }
         finally { budget.LeaveDepth(); }
     }
 
     private static PreparedLiteralSetSearch Prepare(AsciiExactLiteralSearchData data, byte[][] literals,
-        Utf8ConstructionBudget budget)
+        in PreparedMultiLiteralTrieSearch preparedTrie, Utf8ConstructionBudget budget)
     {
         if (data.Buckets.Length == 1)
         {
@@ -46,7 +47,8 @@ internal readonly partial struct PreparedLiteralSetSearch
         if (anchor.HasValue) return new(data, anchor, default, PreparedLiteralSetStrategy.UniqueAnchorByte);
         if (count < MultiLiteralThreshold || data.ShortestLength == 0)
             return new(data, null, default, PreparedLiteralSetStrategy.Bucketed);
-        return new(data, null, PreparedMultiLiteralTrieSearch.Create(literals), PreparedLiteralSetStrategy.MultiLiteralTrie);
+        var trie = preparedTrie.StateCount > 0 ? preparedTrie : PreparedMultiLiteralTrieSearch.Create(literals);
+        return new(data, null, trie, PreparedLiteralSetStrategy.MultiLiteralTrie);
     }
 
     private static PreparedLiteralSetUniqueAnchor? CreateUniqueAnchor(AsciiExactLiteralSearchData data, int count,
