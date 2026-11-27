@@ -31,7 +31,6 @@ public class Utf8PythonReTemplateBenchmarks
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 50_000_000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 64 << 20,
                 MaxResultBytes = 128 << 20

@@ -50,7 +50,6 @@ public sealed class BalancingGroupTests
                 MatchTimeout = finite ? TimeSpan.FromSeconds(10) : null,
                 ResourcePolicy = finite ? new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 4096,
                     MaxWorkingBytes = 16 << 20,
                     MaxResultBytes = 16 << 20
@@ -140,7 +139,7 @@ public sealed class BalancingGroupTests
     {
         var pattern = Pattern("BEGIN", "END");
         var input = "BEGINBEGIN😀ENDEND"u8.ToArray();
-        foreach (var policy in new[] { new Utf8ResourcePolicy { MaxWorkSteps = 1 }, new() { MaxDepth = 1 }, new() { MaxWorkingBytes = 1 } })
+        foreach (var policy in new[] { new Utf8ResourcePolicy { MaxDepth = 1 }, new() { MaxWorkingBytes = 1 } })
         {
             var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
             {

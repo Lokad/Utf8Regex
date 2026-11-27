@@ -6,7 +6,7 @@ using Lokad.Utf8Regex.Internal.Input;
 namespace Lokad.Utf8Regex.Pcre2;
 
 /// <summary>Discovers PCRE2 matches incrementally over one borrowed UTF-8 memory subject.</summary>
-/// <remarks>Keep subject bytes unchanged and their memory manager alive. Aliases share position/lifetime; concurrent or reentrant access is rejected. Sequential advances may cross awaits under one original deadline and cumulative work/result policy. Dispose early abandonment; there is no finalizer. EOF, failure and Dispose refund exclusive scratch and program use. Returned ranges survive later moves and close.</remarks>
+/// <remarks>Keep subject bytes unchanged and their memory manager alive. Aliases share position/lifetime; concurrent or reentrant access is rejected. Sequential advances may cross awaits under one original deadline and cumulative result policy. Dispose early abandonment; there is no finalizer. EOF, failure and Dispose refund exclusive scratch and program use. Returned ranges survive later moves and close.</remarks>
 public sealed class Utf8Pcre2MatchCursor : IDisposable
 {
     private ReadOnlyMemory<byte> _input;
@@ -164,7 +164,7 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
 
     private void Checkpoint()
     {
-        Pcre2SliceDriver.ThrowIfSliceBreached(_budget.WorkingInvocation.TryChargeInputStep());
+        Pcre2SliceDriver.ThrowIfSliceBreached(_budget.WorkingInvocation.CheckInput());
         Pcre2SliceDriver.CheckInvocation(ref _budget.WorkingInvocation);
         _budget.WorkingInvocation.Budget.ThrowIfCancellationRequested();
     }

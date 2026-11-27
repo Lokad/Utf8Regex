@@ -18,7 +18,7 @@ public sealed class Pcre2SubroutineCaptureReturnTests
     public void ImmediateBackreferenceKeepsReturnedAndFoldedMatches(string pattern, string text, bool expected)
     {
         using var regex = new Utf8Pcre2Regex(pattern,
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64 } });
+            policy: new() { ResourcePolicy = new() { MaxDepth = 64 } });
         using var source = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.IsMatch(input, cancellationToken: source.Token));
@@ -40,7 +40,7 @@ public sealed class Pcre2SubroutineCaptureReturnTests
     public void RecursiveAlternativeAtEndRestoresTheCallerCaptures()
     {
         using var regex = new Utf8Pcre2Regex(@"\A(é)(?&body)\z(?(DEFINE)(?<body>(?<scalar>.)(?&body)|(?<empty>\z)))",
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 32 } });
+            policy: new() { ResourcePolicy = new() { MaxDepth = 32 } });
         Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[5];
         using var cancellation = new CancellationTokenSource();
 
@@ -60,7 +60,7 @@ public sealed class Pcre2SubroutineCaptureReturnTests
     {
         using var regex = new Utf8Pcre2Regex(
             @"\A(?<caller>é)(?&unit){24}\k<caller>END\z(?(DEFINE)(?<unit>(?<inner>😀)a" + returnSuffix + "))",
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 100_000, MaxWorkingBytes = 2 << 10 } });
+            policy: new() { ResourcePolicy = new() { MaxWorkingBytes = 2 << 10 } });
         var input = Encoding.UTF8.GetBytes("é" + string.Concat(Enumerable.Repeat("😀a", 24)) + "éEND");
         Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[4];
 
@@ -78,7 +78,7 @@ public sealed class Pcre2SubroutineCaptureReturnTests
     public void LazyCallRepeatResumesAtTheSavedScalarBoundary()
     {
         using var regex = new Utf8Pcre2Regex(@"\A(?<x>(?&unit){1,4}?)Z\z(?(DEFINE)(?<unit>é😀|a))",
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 16 << 10 } });
+            policy: new() { ResourcePolicy = new() { MaxDepth = 64, MaxWorkingBytes = 16 << 10 } });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
         Assert.Contains(program.Instructions, instruction => instruction is
             { Kind: Pcre2BacktrackingInstructionKind.Repeat, Preference: Pcre2RepeatPreference.Lazy });
@@ -100,7 +100,7 @@ public sealed class Pcre2SubroutineCaptureReturnTests
         using var regex = new Utf8Pcre2Regex(@"^(?<word>[😀a]+)(?&tail)$(?(DEFINE)(?<tail>[😀a]+!))",
             policy: funded ? new Utf8RegexPolicy
             {
-                ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 16 << 10 }
+                ResourcePolicy = new() { MaxDepth = 64, MaxWorkingBytes = 16 << 10 }
             } : null);
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
         Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyClassRepeat);
@@ -119,7 +119,7 @@ public sealed class Pcre2SubroutineCaptureReturnTests
     public void SiblingCallRetriesKeepTheRequiredHistoryAfterGrowth(bool retryFirst)
     {
         using var regex = new Utf8Pcre2Regex(@"\A(?<first>(?&unit))(?<rest>(?&unit){12})c\z(?(DEFINE)(?<unit>a|ab))",
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 20_000, MaxDepth = 256, MaxWorkingBytes = 1 << 20 } });
+            policy: new() { ResourcePolicy = new() { MaxDepth = 256, MaxWorkingBytes = 1 << 20 } });
         var tail = new string('a', 12);
         var input = Encoding.UTF8.GetBytes(retryFirst ? "ab" + tail + "c" : tail + "abc");
         var firstEnd = retryFirst ? 2 : 1;
@@ -155,7 +155,7 @@ public sealed class Pcre2SubroutineCaptureReturnTests
         using var cancellation = new CancellationTokenSource();
         foreach (var limits in new[] { default(Utf8Pcre2ExecutionLimits), new Utf8Pcre2ExecutionLimits
         {
-            MatchLimit = 1000000, DepthLimit = 256,
+            DepthLimit = 256,
             HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20
         } })
         {
@@ -163,7 +163,6 @@ public sealed class Pcre2SubroutineCaptureReturnTests
             {
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                     MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                     MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                     MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
@@ -209,7 +208,6 @@ public sealed class Pcre2SubroutineCaptureReturnTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -250,7 +248,6 @@ public sealed class Pcre2SubroutineCaptureReturnTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20

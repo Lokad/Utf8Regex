@@ -16,7 +16,7 @@ internal ref partial struct Utf8OperationMatchCursor
 
     internal void CheckCancellationAtEntry() => _sliceInvocation.Budget.ThrowIfCancellationRequested();
 
-    internal ulong DebugInvocationSteps => _sliceInvocation.Budget.Steps;
+    internal ulong DiagnosticCheckpointCount => _sliceInvocation.Budget.DiagnosticCheckpoints;
 
     internal bool HasResourceLimitBreach => _sliceInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None;
 
@@ -344,7 +344,7 @@ internal ref partial struct Utf8OperationMatchCursor
 
     internal void CheckOwnedSliceCursorBoundary()
     {
-        var breach = _sliceInvocation.TryChargeInputStep();
+        var breach = _sliceInvocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned slice cursor exceeded {breach}.");
         _sliceInvocation.Budget.ThrowIfCancellationRequested();
     }
@@ -517,7 +517,7 @@ internal ref partial struct Utf8OperationMatchCursor
 
     private bool MoveNextEmptyLiteral()
     {
-        var breach = _sliceInvocation.TryChargeInputStep();
+        var breach = _sliceInvocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException($"Empty scalar cursor exceeded {breach}.");
         _sliceInvocation.Budget.ThrowIfCancellationRequested();

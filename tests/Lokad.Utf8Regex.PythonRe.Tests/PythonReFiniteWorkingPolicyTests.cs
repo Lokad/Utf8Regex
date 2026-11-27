@@ -43,7 +43,7 @@ public sealed class PythonReFiniteWorkingPolicyTests
 
     public static IEnumerable<object[]> Operations()
     {
-        foreach (var operation in PythonReFiniteWorkPolicyTests.OperationIds())
+        foreach (var operation in PythonReOperationTests.OperationIds())
             foreach (var bytePattern in new[] { false, true }) yield return [operation, bytePattern];
     }
 
@@ -55,24 +55,24 @@ public sealed class PythonReFiniteWorkingPolicyTests
         // needs real VM working storage and retains a meaningful denial cutoff.
         var pattern = operation == 4 ? "(?P<x>(?:😀a)+)(?P<y>ab)" : "(?P<x>😀+)(?P<y>ab)";
         var input = operation == 4 ? "😀a😀aab"u8.ToArray() : "😀😀ab"u8.ToArray();
-        var expected = PythonReFiniteWorkPolicyTests.Run(new(pattern), input, operation);
-        Assert.Equal(expected, PythonReFiniteWorkPolicyTests.Run(Create(pattern, ulong.MaxValue, bytePattern), input, operation));
+        var expected = PythonReOperationTests.Run(new(pattern), input, operation);
+        Assert.Equal(expected, PythonReOperationTests.Run(Create(pattern, ulong.MaxValue, bytePattern), input, operation));
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            PythonReFiniteWorkPolicyTests.Run(Create(pattern, 1, bytePattern), input, operation)), 1, operation);
+            PythonReOperationTests.Run(Create(pattern, 1, bytePattern), input, operation)), 1, operation);
         ulong low = 1, high = 1_048_576;
         while (high - low > 1)
         {
             var middle = low + (high - low) / 2;
             try
             {
-                Assert.Equal(expected, PythonReFiniteWorkPolicyTests.Run(Create(pattern, middle, bytePattern), input, operation));
+                Assert.Equal(expected, PythonReOperationTests.Run(Create(pattern, middle, bytePattern), input, operation));
                 high = middle;
             }
             catch (Utf8ResourceLimitExceededException error) { Denied(error, middle, operation); low = middle; }
         }
-        Assert.Equal(expected, PythonReFiniteWorkPolicyTests.Run(Create(pattern, high, bytePattern), input, operation));
+        Assert.Equal(expected, PythonReOperationTests.Run(Create(pattern, high, bytePattern), input, operation));
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            PythonReFiniteWorkPolicyTests.Run(Create(pattern, high - 1, bytePattern), input, operation)), high - 1, operation);
+            PythonReOperationTests.Run(Create(pattern, high - 1, bytePattern), input, operation)), high - 1, operation);
     }
 
     [Theory]
@@ -84,13 +84,12 @@ public sealed class PythonReFiniteWorkingPolicyTests
     public void NativeEligibleScalarAndEmptyRoutesCannotBypassWorkingPolicy(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        foreach (var operation in PythonReFiniteWorkPolicyTests.OperationIds())
-            Assert.Equal(PythonReFiniteWorkPolicyTests.Run(new(pattern), input, operation),
-                PythonReFiniteWorkPolicyTests.Run(Create(pattern, 1_048_576, false), input, operation));
+        foreach (var operation in PythonReOperationTests.OperationIds())
+            Assert.Equal(PythonReOperationTests.Run(new(pattern), input, operation),
+                PythonReOperationTests.Run(Create(pattern, 1_048_576, false), input, operation));
     }
 
     [Theory]
-    [InlineData(Utf8ResourceLimitKind.ExecutionWorkSteps)]
     [InlineData(Utf8ResourceLimitKind.ExecutionDepth)]
     [InlineData(Utf8ResourceLimitKind.ExecutionWorkingBytes)]
     [InlineData(Utf8ResourceLimitKind.ExecutionResultBytes)]
@@ -98,7 +97,6 @@ public sealed class PythonReFiniteWorkingPolicyTests
     {
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = kind == Utf8ResourceLimitKind.ExecutionWorkSteps ? 1 : ulong.MaxValue,
             MaxDepth = kind == Utf8ResourceLimitKind.ExecutionDepth ? 1 : uint.MaxValue,
             MaxWorkingBytes = kind == Utf8ResourceLimitKind.ExecutionWorkingBytes ? 1 : ulong.MaxValue,
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue

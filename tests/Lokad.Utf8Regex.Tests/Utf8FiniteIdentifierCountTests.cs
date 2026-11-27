@@ -35,7 +35,6 @@ public sealed class Utf8FiniteIdentifierCountTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 128,
                     MaxWorkingBytes = 1000000,
                     MaxResultBytes = 1
@@ -62,7 +61,6 @@ public sealed class Utf8FiniteIdentifierCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000
@@ -82,20 +80,16 @@ public sealed class Utf8FiniteIdentifierCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(input)).ResourceKind);
         var tiny = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1000000
@@ -120,7 +114,7 @@ public sealed class Utf8FiniteIdentifierCountTests
         using var regex = new Utf8Regex(KeywordPattern, RegexOptions.Compiled, new()
         {
             MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
-            ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 1, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         Assert.Equal(1, regex.Count(input, cancellation.Token));
 
@@ -167,7 +161,6 @@ public sealed class Utf8FiniteIdentifierCountTests
                 MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 10000000,
                     MaxDepth = 128,
                     MaxWorkingBytes = 1000000,
                     MaxResultBytes = 1

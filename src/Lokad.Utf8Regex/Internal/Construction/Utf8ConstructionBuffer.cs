@@ -29,14 +29,14 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
     {
         var count = checked(Count + values.Length);
         EnsureCapacity(count);
-        budget.ChargeWork((ulong)values.Length);
+        budget.Checkpoint();
         values.CopyTo(_items.AsSpan(Count));
         Count = count;
     }
 
     internal void Clear()
     {
-        budget.ChargeWork((ulong)Count);
+        budget.Checkpoint();
         _items.AsSpan(0, Count).Clear();
         Count = 0;
     }
@@ -44,7 +44,7 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
     internal void Truncate(int count)
     {
         if ((uint)count > (uint)Count) throw new ArgumentOutOfRangeException(nameof(count));
-        budget.ChargeWork((ulong)(Count - count));
+        budget.Checkpoint();
         _items.AsSpan(count, Count - count).Clear();
         Count = count;
     }
@@ -52,7 +52,7 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
     internal void RemoveAt(int index)
     {
         if ((uint)index >= (uint)Count) throw new ArgumentOutOfRangeException(nameof(index));
-        budget.ChargeWork((ulong)(Count - index));
+        budget.Checkpoint();
         _items.AsSpan(index + 1, Count - index - 1).CopyTo(_items.AsSpan(index));
         _items.AsSpan(--Count, 1).Clear();
     }
@@ -61,7 +61,7 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
     {
         if ((uint)index > (uint)Count) throw new ArgumentOutOfRangeException(nameof(index));
         EnsureCapacity(checked(Count + 1));
-        budget.ChargeWork((ulong)(Count - index) + 1);
+        budget.Checkpoint();
         _items.AsSpan(index, Count - index).CopyTo(_items.AsSpan(index + 1));
         _items[index] = value;
         Count++;
@@ -76,7 +76,7 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
         if (values.Overlaps(_items)) throw new ArgumentException("Insertion requires a distinct source vector.", nameof(values));
         var count = checked(Count + values.Length);
         EnsureCapacity(count);
-        budget.ChargeWork((ulong)(Count - index) + (ulong)values.Length);
+        budget.Checkpoint();
         _items.AsSpan(index, Count - index).CopyTo(_items.AsSpan(index + values.Length));
         values.CopyTo(_items.AsSpan(index));
         Count = count;
@@ -98,7 +98,7 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
             var grown = budget.AllocateArray<T>(capacity, instructions);
             try
             {
-                budget.ChargeWork((ulong)Count);
+                budget.Checkpoint();
                 _items.AsSpan(0, Count).CopyTo(grown);
             }
             catch { budget.ReleaseArray(grown, instructions); throw; }
@@ -133,7 +133,7 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
             result = budget.AllocateArray<T>(Count, instructions);
             try
             {
-                budget.ChargeWork((ulong)Count);
+                budget.Checkpoint();
                 _items.AsSpan(0, Count).CopyTo(result);
             }
             catch { budget.ReleaseArray(result, instructions); throw; }

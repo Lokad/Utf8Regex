@@ -31,7 +31,6 @@ public sealed class PythonReCaptureCursorInterruptionTests
             MatchTimeout = timeout,
             ResourcePolicy = finite ? new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576

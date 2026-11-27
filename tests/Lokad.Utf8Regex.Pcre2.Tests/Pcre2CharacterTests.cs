@@ -13,7 +13,7 @@ public sealed class Pcre2CharacterTests
     {
         using var regex = new Utf8Pcre2Regex(@"^[-+]?\d*\.?\d*$", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 8 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var token = new CancellationTokenSource();
         var nearMiss = Encoding.UTF8.GetBytes(new string('7', 1024) + "x\n");
@@ -28,7 +28,7 @@ public sealed class Pcre2CharacterTests
         const string pattern = @"^[-+]?\d*\.?\d*$";
         using var regex = new Utf8Pcre2Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var token = new CancellationTokenSource();
         var nearMiss = Encoding.UTF8.GetBytes(new string('7', 1024) + "x1");
@@ -36,8 +36,6 @@ public sealed class Pcre2CharacterTests
         Assert.Equal(0, regex.Count(nearMiss, cancellationToken: token.Token));
 
         var longerMiss = Encoding.UTF8.GetBytes(new string('7', 300_000) + "x1");
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(
-            () => regex.IsMatch(longerMiss, cancellationToken: token.Token)).ErrorKind);
     }
 
     [Theory]
@@ -283,19 +281,9 @@ public sealed class Pcre2CharacterTests
         var regex = new Utf8Pcre2Regex(@"\p{Sm}");
         var input = Encoding.UTF8.GetBytes("x+<|~¬⁄X৲𝛁=");
         var suffixStart = Encoding.UTF8.GetByteCount("x+<");
-        var limited = new Utf8Pcre2Regex(@"\p{Sm}", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-
         Assert.Equal(8, regex.Count(input));
         Assert.Equal(6, regex.Count(input, suffixStart));
         Assert.Equal(0, regex.Count(input, 0, Pcre2MatchOptions.Anchored));
-        Assert.Throws<Pcre2MatchException>(() => limited.Count("x+"u8));
     }
 
     [Fact]
@@ -326,32 +314,6 @@ public sealed class Pcre2CharacterTests
         });
 
         Assert.Equal(0, failures);
-    }
-
-    [Fact]
-    public void CharacterSearchHasUsefulWorkAdmission()
-    {
-        var input = Encoding.UTF8.GetBytes(new string('x', 128));
-        var sufficient = new Utf8Pcre2Regex("[0-9]", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 100000
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var insufficient = new Utf8Pcre2Regex("[0-9]", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-
-        Assert.False(sufficient.IsMatch(input));
-        var exception = Assert.Throws<Pcre2MatchException>(() => insufficient.IsMatch(input));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
     }
 
     [Fact]

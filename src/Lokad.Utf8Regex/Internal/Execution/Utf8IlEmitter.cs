@@ -23,7 +23,7 @@ internal readonly struct Utf8IlEmitter
 
     internal T[] AllocateScratch<T>(int count) => _il.AllocateScratch<T>(count);
 
-    internal void ChargeWork(ulong steps) => _il.Budget.ChargeWork(steps);
+    internal void Checkpoint() => _il.Budget.Checkpoint();
 
     public Utf8IlLabel DefineLabel() => _il.DefineLabel();
 

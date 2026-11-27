@@ -14,7 +14,6 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                 MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                 MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                 MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
@@ -41,56 +40,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         Assert.False(Pcre2ReplacementPreparationControl.IsActive);
     }
 
-    [Fact]
-    public void UnchangedCopyCannotResetSpentDiscoveryWork()
-    {
-        var input = Encoding.UTF8.GetBytes(new string('z', 8192));
-        // Calibrate the replacement's actual discovery cursor. Public detailed
-        // matching now includes validation, which would overfund this writer test.
-        bool DiscoverySucceeds(uint cap)
-        {
-            var compiled = Create(new() { MatchLimit = cap }).DebugCompiledProgram;
-            var native = (Pcre2BacktrackingDirectProgram)compiled.Operations.Replace;
-            var budget = new Pcre2ResourceBudget(compiled.Request.DefaultLimits,
-                Pcre2SliceDriver.CreateInvocation(compiled.Request, default), false);
-            var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(native.Program, compiled.CandidateSearchPlan,
-                input, new(0), Pcre2MatchOptions.None, compiled.Request, budget);
-            return !cursor.MoveNext();
-        }
-        uint first = 1, last = 65536;
-        while (first < last)
-        {
-            var cap = first + (last - first) / 2;
-            try { Assert.True(DiscoverySucceeds(cap)); last = cap; }
-            catch (Pcre2MatchException error) { Assert.Equal(Pcre2ErrorKind.MatchLimit, error.ErrorKind); first = cap + 1; }
-        }
-        var regex = Create(new() { MatchLimit = first });
-        Assert.True(DiscoverySucceeds(first));
-        var failure = Assert.Throws<Pcre2MatchException>(() =>
-        {
-            _ = regex.Replace(input, "$2$1"u8);
-        });
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
-    }
-
-    [Fact]
-    public void LongTemplateOutputCannotEscapeTheWorkAllowance()
-    {
-        var regex = Create(new() { MatchLimit = 200 });
-        var input = "é😀"u8.ToArray();
-        Assert.True(regex.Match(input).Success);
-        var template = new string('x', 1 << 20) + "$2";
-        var failure = Assert.Throws<Pcre2MatchException>(() =>
-        {
-            _ = regex.Replace(input, Encoding.UTF8.GetBytes(template));
-        });
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
-        Assert.False(Pcre2ReplacementPreparationControl.IsActive);
-    }
-
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
     public void PublicWorkAndHeapCutoffsCoverFinalOutput(bool heap, bool hit)
@@ -101,10 +51,10 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         var expected = hit ? literal + "😀é" + literal + "😀é" : Encoding.UTF8.GetString(input);
         string Invoke(ulong cap)
         {
-            var regex = Create(new() { HeapLimitInBytes = heap ? cap : 0, MatchLimit = heap ? 0 : (uint)cap });
+            var regex = Create(new() { HeapLimitInBytes = heap ? cap : 0 });
             return Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
         }
-        var kind = heap ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.MatchLimit;
+        var kind = Pcre2ErrorKind.HeapLimit;
         ulong first = 1, last = 1UL << 20;
         Assert.Equal(expected, Invoke(last));
         while (first < last)
@@ -122,7 +72,8 @@ public sealed class Pcre2NativeTemplateAuthorityTests
     [Fact]
     public void DiscoveryAndWriterShareCountersOverlapAndRetainedCaptures()
     {
-        var regex = Create(new() { MatchLimit = 1000000, HeapLimitInBytes = 1000000 });
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
+        var regex = Create(new() { HeapLimitInBytes = 1000000 });
         var compiled = regex.DebugCompiledProgram;
         var native = (Pcre2BacktrackingDirectProgram)compiled.Operations.Replace;
         var input = "é😀é😀"u8.ToArray();
@@ -133,7 +84,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
             new Pcre2ResourceBudget(compiled.Request.DefaultLimits, invocation, false));
         Assert.True(cursor.MoveNext());
         var retained = cursor.ProjectCurrentCaptures();
-        var beforeWriting = invocation.Budget.Steps;
+        var beforeWriting = invocation.Budget.DiagnosticCheckpoints;
         var discoveryPeak = invocation.Budget.PeakWorkingBytes;
         var preparation = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse("$2$1"u8, Pcre2SubstitutionOptions.None));
         cursor.WorkingInvocation.ShareStorageForCursor();
@@ -142,7 +93,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         {
             Assert.Equal(7 + Utf8ConstructionBudget.ArrayBytes<byte>(input.Length), invocation.Ledger.ReservedBytes);
             writer.AppendTemplate(preparation, Pcre2SubstitutionOptions.None, retained, 0, 6, cursor.Current.Mark);
-            Assert.True(invocation.Budget.Steps > beforeWriting);
+            Assert.True(invocation.Budget.DiagnosticCheckpoints > beforeWriting);
             Assert.True(cursor.MoveNext());
             Assert.True(invocation.Budget.PeakWorkingBytes > discoveryPeak);
             var current = cursor.ProjectCurrentCaptures();
@@ -209,7 +160,6 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxWorkingBytes = 1000000
             },
             MatchTimeout = Timeout.InfiniteTimeSpan

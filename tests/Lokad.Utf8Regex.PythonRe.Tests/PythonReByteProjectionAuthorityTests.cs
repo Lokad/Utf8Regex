@@ -15,7 +15,7 @@ public sealed class PythonReByteProjectionAuthorityTests
     {
         var input = Enumerable.Repeat((byte)'a', length).ToArray();
         var cursor = new PythonReScalarMatchCursor(input, Program, 0, Timeout.InfiniteTimeSpan,
-            null, ".", new(new(1000000, 128, 8 << 20, 8 << 20), Timeout.InfiniteTimeSpan, default));
+            null, ".", new(new(128, 8 << 20, 8 << 20), Timeout.InfiniteTimeSpan, default));
         byte[] result;
         try
         {
@@ -38,7 +38,7 @@ public sealed class PythonReByteProjectionAuthorityTests
         using var cancellation = new CancellationTokenSource();
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
         var cursor = new PythonReScalarMatchCursor("é"u8, Program, 0, timeout,
-            null, ".", new(new(1000000, 128, 8 << 20, 1), timeout, cancellation.Token));
+            null, ".", new(new(128, 8 << 20, 1), timeout, cancellation.Token));
         try
         {
             var baseline = cursor.ReservedBytes;
@@ -64,7 +64,7 @@ public sealed class PythonReByteProjectionAuthorityTests
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
         var input = Encoding.UTF8.GetBytes(new string('é', 150000));
         var cursor = new PythonReScalarMatchCursor(input, Program, 0, timeout,
-            null, ".", new(new(1000000, 128, 8 << 20, 8 << 20), timeout, cancellation.Token));
+            null, ".", new(new(128, 8 << 20, 8 << 20), timeout, cancellation.Token));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         var observer = cursor.WorkingInvocation;
         var baseline = cursor.ReservedBytes;

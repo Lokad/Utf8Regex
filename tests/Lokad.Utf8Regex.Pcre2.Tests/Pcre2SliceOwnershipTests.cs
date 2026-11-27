@@ -341,29 +341,6 @@ public sealed class Pcre2SliceOwnershipTests
     }
 
     [Fact]
-    public void ExhaustedMatchLimitFailsDetailedWithMatchLimitIdentity()
-    {
-        var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
-        });
-        var exception = Assert.Throws<Pcre2MatchException>(
-            () =>
-            {
-                ReadOnlyMemory<byte> result6Input = Utf8("xxaaabbyy");
-                using var result6Cursor = regex.CreateMatchCursor(result6Input);
-                result6Cursor.MoveNext(out var result6Result);
-                result6Cursor.Dispose();
-                _ = result6Result;
-            });
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
-    }
-
-    [Fact]
     public void OwnedDetailedTimeoutThrowsTimeoutIdentity()
     {
         var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
@@ -482,30 +459,6 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Throws<OperationCanceledException>(
             () => regex.EnumerateMatches(
                 Utf8("aab"), 0, Pcre2MatchOptions.None, canceled.Token));
-    }
-
-    [Fact]
-    public void ExhaustedMatchLimitFailsEnumerationWithMatchLimitIdentity()
-    {
-        var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
-        });
-
-        try
-        {
-            var enumerator = regex.EnumerateMatches(Utf8("aab aabb"), 0);
-            enumerator.MoveNext();
-            Assert.Fail("Expected Pcre2MatchException.");
-        }
-        catch (Pcre2MatchException exception)
-        {
-            Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
-        }
     }
 
     [Fact]
@@ -710,22 +663,6 @@ public sealed class Pcre2SliceOwnershipTests
     }
 
     [Fact]
-    public void ExhaustedMatchLimitFailsReplaceWithMatchLimitIdentity()
-    {
-        var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
-        });
-        var exception = Assert.Throws<Pcre2MatchException>(
-            () => System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("xxaaabbyy"), "<$0>"u8)));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
-    }
-
-    [Fact]
     public void OwnedReplaceTimeoutThrowsTimeoutIdentity()
     {
         var input = Utf8(new string('a', 8192));
@@ -771,13 +708,13 @@ public sealed class Pcre2SliceOwnershipTests
     }
 
     [Fact]
-    public void GenerousMatchLimitSucceedsOnSlice()
+    public void FiniteDepthSucceedsOnSlice()
     {
         var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000
+                MaxDepth = 4096
             },
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });
@@ -785,24 +722,6 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.True(regex.IsMatch(input, 0));
         Assert.Equal(1, regex.Count(input, 0));
         Assert.True(regex.Match(input).Success);
-    }
-
-    [Fact]
-    public void ExhaustedMatchLimitFailsWithMatchLimitIdentity()
-    {
-        var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
-        });
-        var input = Utf8("xxaaabbyy");
-        var countException = Assert.Throws<Pcre2MatchException>(() => regex.Count(input, 0));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, countException.ErrorKind);
-        var searchException = Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input, 0));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, searchException.ErrorKind);
     }
 
     [Fact]

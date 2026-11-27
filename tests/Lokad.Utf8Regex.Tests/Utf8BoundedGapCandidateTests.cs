@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8BoundedGapCandidateTests
 {
     private const string Pattern = @"[A-Za-z]{10}\s+[\s\S]{0,100}Result[\s\S]{0,100}\s+[A-Za-z]{10}";
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 4000000, MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };
 
     private static int ScalarCount(Utf8Regex regex, byte[] input, int fromByte)
     {
@@ -115,14 +115,12 @@ public sealed class Utf8BoundedGapCandidateTests
     [Fact]
     public void DiscoveryRespectsFiniteAdmissionAndEveryWorkCutoff()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var input = Encoding.UTF8.GetBytes(new string('!', 100000) + "abcdefghij 😀Result klmnopqrst");
         var efficient = new Utf8Regex(Pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = Funded with
-            {
-                MaxWorkSteps = 4096
-            }
+            ResourcePolicy = Funded
         });
         using var token = new CancellationTokenSource();
         Assert.Equal(1, efficient.Count(input, token.Token));
@@ -139,29 +137,17 @@ public sealed class Utf8BoundedGapCandidateTests
         Assert.Equal(1, new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = Funded with
-            {
-                MaxWorkSteps = 16384
-            }
+            ResourcePolicy = Funded
         }).Count(longClass, token.Token));
 
         var regex = new Utf8Regex(@"(?<w>[a-z]{2,4})\s+[\s\S]{0,3}Result\k<w>");
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var witness = Encoding.UTF8.GetBytes(new string('!', 260) + "abc 😀Resultbc");
-        var complete = new Utf8SliceInvocation(new(100000, 0, 0), Timeout.InfiniteTimeSpan, default);
+        var complete = new Utf8SliceInvocation(new(0, 0), Timeout.InfiniteTimeSpan, default);
         Assert.True(complete.Ledger.TryReserve(13));
         var result = Utf8SliceRunner.CountFromBytes(program, witness, 0, new int[program.GroupCount],
             new int[program.GroupCount], ref complete, regex.Inspection.PreparedRegex.SearchPlan);
         Assert.Equal((1, Utf8ExecutionLimitKind.None), (result.Count, result.Breach));
-        for (ulong cap = 1; cap <= complete.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            result = Utf8SliceRunner.CountFromBytes(program, witness, 0, new int[program.GroupCount],
-                new int[program.GroupCount], ref invocation, regex.Inspection.PreparedRegex.SearchPlan);
-            Assert.Equal(cap < complete.Budget.Steps ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.None, result.Breach);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]

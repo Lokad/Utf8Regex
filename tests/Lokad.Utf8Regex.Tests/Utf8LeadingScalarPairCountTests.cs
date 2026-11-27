@@ -57,7 +57,6 @@ public sealed class Utf8LeadingScalarPairCountTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20

@@ -10,13 +10,14 @@ public sealed class Utf8WholeMatchRangeTests
     [InlineData(true)]
     public void PublicationObservesOriginalInterruptionWithoutCoordinateScanning(bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(128, 0, 0),
+        var invocation = new Utf8SliceInvocation(new(0, 0),
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         // Place publication at a real diagnostic checkpoint after discovery.
         for (var i = 0; i < 63; i++)
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeStep());
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckProgress());
         invocation.CheckpointHook = _ => { if (expire) clock.Advance(250); else source.Cancel(); };
         var result = default(Utf8CaptureRange);
         Exception? failure = null;
@@ -24,16 +25,6 @@ public sealed class Utf8WholeMatchRangeTests
         catch (Exception error) { failure = error; }
         if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
         else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        Assert.Equal(default(Utf8CaptureRange), result);
-    }
-
-    [Fact]
-    public void DeniedPublicationLeavesTheRangeUnpublished()
-    {
-        var invocation = new Utf8SliceInvocation(new(1, 0, 0), Regex.InfiniteMatchTimeout, default);
-        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeStep());
-        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps,
-            Utf8SliceBufferWork.TryCreateMatchRange(2, 6, ref invocation, out var result));
         Assert.Equal(default(Utf8CaptureRange), result);
     }
 
@@ -76,7 +67,6 @@ public sealed class Utf8WholeMatchRangeTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
             }

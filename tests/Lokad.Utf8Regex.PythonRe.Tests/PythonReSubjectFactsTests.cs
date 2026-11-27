@@ -13,7 +13,6 @@ public sealed class PythonReSubjectFactsTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 64,
                 MaxWorkingBytes = 32768,
                 MaxResultBytes = 512
             }
@@ -38,7 +37,6 @@ public sealed class PythonReSubjectFactsTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 128,
                 MaxWorkingBytes = 32768,
                 MaxResultBytes = 128
             }
@@ -62,7 +60,6 @@ public sealed class PythonReSubjectFactsTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 128,
                 MaxWorkingBytes = 32768,
                 MaxResultBytes = 512
             }

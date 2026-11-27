@@ -13,7 +13,6 @@ public sealed class Utf8HexColorValueMatchTests
     private const RegexOptions Fold = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
     private static readonly Utf8ResourcePolicy Funded = new()
     {
-        MaxWorkSteps = 100000,
         MaxDepth = 256,
         MaxWorkingBytes = 1 << 20,
         MaxResultBytes = 1 << 20
@@ -95,7 +94,6 @@ public sealed class Utf8HexColorValueMatchTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = Funded with
             {
-                MaxWorkSteps = 4,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -107,13 +105,8 @@ public sealed class Utf8HexColorValueMatchTests
         var denied = new Utf8Regex(Color, options: Fold, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = Funded with
-            {
-                MaxWorkSteps = 1
-            }
+            ResourcePolicy = Funded
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match(input)).ResourceKind);
     }
 
     [Theory]

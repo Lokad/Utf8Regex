@@ -88,7 +88,6 @@ public sealed class Utf8AdjacentSetRepeatTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 10000,
                 MaxWorkingBytes = 1 << 24,
                 MaxResultBytes = 1 << 24
@@ -149,7 +148,7 @@ public sealed class Utf8AdjacentSetRepeatTests
     [InlineData(@"(é+)(β+)", "😀ééβββ")]
     public void FusedRunsNeedNoRepeatOrRewindStorage(string pattern, string text)
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1,
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1,
             MaxWorkingBytes = 1, MaxResultBytes = 1 };
         var owner = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
@@ -176,7 +175,6 @@ public sealed class Utf8AdjacentSetRepeatTests
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1 << 20
             }

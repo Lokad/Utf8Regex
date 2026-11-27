@@ -11,7 +11,7 @@ internal static partial class Pcre2Runner
     {
         Pcre2SliceDriver.CheckInvocation(ref invocation);
         var position = Utf8BytePosition.CreateScalarChecked(input, start, "startOffsetInBytes");
-        Pcre2SliceDriver.ThrowIfSliceBreached(invocation.TryChargeInputStep());
+        Pcre2SliceDriver.ThrowIfSliceBreached(invocation.CheckInput());
         invocation.Budget.ThrowIfCancellationRequested();
         return position;
     }

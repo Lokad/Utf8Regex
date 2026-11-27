@@ -77,30 +77,6 @@ public sealed class Pcre2WindowSemanticsTests
     }
 
     [Fact]
-    public void WindowsPreserveSupplementaryScalarsAndFiniteLimits()
-    {
-        var unicode = new Utf8Pcre2Regex("Holmes.{0,25}Watson|Watson.{0,25}Holmes");
-        Assert.Equal(1, unicode.Count("HolmeséWatson"u8));
-        var unicodeInput = Encoding.UTF8.GetBytes($"Holmes{string.Concat(Enumerable.Repeat("😀", 25))}Watson");
-        Assert.Equal(1, unicode.Count(unicodeInput));
-        Assert.Equal(Encoding.UTF8.GetString(unicodeInput), System.Text.Encoding.UTF8.GetString(unicode.Match(unicodeInput).GetValueBytes()));
-        Assert.Equal(0, unicode.Count("xHolmes and Watson"u8, 0, Pcre2MatchOptions.Anchored));
-        Assert.Equal(1, unicode.Count("xHolmes and Watson"u8, 1, Pcre2MatchOptions.Anchored));
-
-        var metered = new Utf8Pcre2Regex(            "Holmes.{0,25}Watson|Watson.{0,25}Holmes", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Regex.InfiniteMatchTimeout
-        });
-        Assert.Equal(
-            Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => metered.Count("Holmes and Watson"u8)).ErrorKind);
-    }
-
-    [Fact]
     public void WindowPriorityAndNewlineOptionsKeepProfileSemantics()
     {
         const string greedy = "Holmes.{0,25}Watson|Watson.{0,25}Holmes";

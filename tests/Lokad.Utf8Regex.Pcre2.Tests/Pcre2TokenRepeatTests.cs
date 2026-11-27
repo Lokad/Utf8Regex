@@ -71,22 +71,6 @@ public sealed class Pcre2TokenRepeatTests
     }
 
     [Fact]
-    public void TokenRepeatObservesFiniteWork()
-    {
-        var regex = new Utf8Pcre2Regex(            @"\w+", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
-        });
-        Assert.Equal(
-            Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => regex.IsMatch("abc"u8)).ErrorKind);
-    }
-
-    [Fact]
     public void TokenRepeatPreservesVariableWidthTokenBoundaries()
     {
         var graphemes = new Utf8Pcre2Regex(@"\X+");
@@ -108,7 +92,7 @@ public sealed class Pcre2TokenRepeatTests
     {
         using var regex = new Utf8Pcre2Regex(@"\G(?<body>" + run + @"\z)", options: options,
             compileSettings: new() { Newline = newline },
-            policy: new() { ResourcePolicy = new() { MaxDepth = 8, MaxWorkSteps = 1024 } });
+            policy: new() { ResourcePolicy = new() { MaxDepth = 8 } });
         var text = "é" + string.Concat(Enumerable.Repeat("😀é", 64));
         var input = Encoding.UTF8.GetBytes(text);
         var captures = new Utf8Pcre2CaptureRange[2];

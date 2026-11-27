@@ -64,7 +64,7 @@ internal struct Utf8InvocationStateBuffer<T>
         var adopted = false;
         try
         {
-            breach = control.TryChargeWorkspaceStepAfterReservation();
+            breach = control.CheckWorkspaceAfterReservation();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var grown = Utf8ExactStatePool<T>.Rent(capacity, control.CanRetainWorkspace);
             rented = true;
@@ -72,7 +72,7 @@ internal struct Utf8InvocationStateBuffer<T>
             {
                 for (var offset = 0; offset < count;)
                 {
-                    breach = control.TryChargeWorkspaceStep();
+                    breach = control.CheckWorkspace();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     var block = Math.Min(2048, count - offset);
                     old.AsSpan(offset, block).CopyTo(grown.AsSpan(offset, block));

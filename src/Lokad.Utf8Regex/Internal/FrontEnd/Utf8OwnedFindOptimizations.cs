@@ -26,7 +26,7 @@ internal static class Utf8OwnedFindOptimizations
             budget.EnterDepth();
             try
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 return new WidthFrame(node).Complete();
             }
             finally { budget.LeaveDepth(); }
@@ -43,7 +43,7 @@ internal static class Utf8OwnedFindOptimizations
     {
         while (true)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var index = frames.Count - 1;
             var frame = frames[index];
             if (frame.NextChild < frame.Node.ChildCount)
@@ -84,7 +84,7 @@ internal static class Utf8OwnedFindOptimizations
                 case Utf8TreeNodeKind.Group:
                 case Utf8TreeNodeKind.Atomic:
                 case Utf8TreeNodeKind.Concatenate:
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     _width = new(CapMinimum((long)_width.Minimum + child.Minimum),
                         _width.Maximum is int head && child.Maximum is int tail ? CapMaximum((long)head + tail) : null);
                     break;
@@ -94,7 +94,7 @@ internal static class Utf8OwnedFindOptimizations
                 case Utf8TreeNodeKind.Alternate:
                 case Utf8TreeNodeKind.BackreferenceConditional:
                 case Utf8TreeNodeKind.ExpressionConditional:
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     _width = new(Math.Min(_width.Minimum, child.Minimum),
                         _width.Maximum is int current && child.Maximum is int bound ? Math.Max(current, bound) : null);
                     break;
@@ -131,7 +131,7 @@ internal static class Utf8OwnedFindOptimizations
                     long nativeLow = 0, nativeHigh = 0;
                     for (var offset = 0; offset < bytes.Length;)
                     {
-                        budget.ChargeWork(1);
+                        budget.Checkpoint();
                         if (Rune.DecodeFromUtf8(bytes.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done)
                             return new(0, null);
                         var atom = ComputeScalarByteWidth(scalar.Value, node.MatchCaseInsensitive, node.Options);
@@ -143,7 +143,7 @@ internal static class Utf8OwnedFindOptimizations
                 long low = 0, high = 0;
                 for (var offset = 0; offset < text.Length;)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     if (Rune.DecodeFromUtf16(text.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done)
                         return new(0, null);
                     var atom = ComputeScalarByteWidth(scalar.Value, node.MatchCaseInsensitive, node.Options);
@@ -202,7 +202,7 @@ internal static class Utf8OwnedFindOptimizations
             var minimum = 4; var maximum = 0;
             for (var index = 0; index < ranges; index += 2)
             {
-                owner.ChargeWork(1);
+                owner.Checkpoint();
                 var low = data[3 + index]; var high = data[4 + index];
                 var range = Range(low, high);
                 if (range.Maximum is null) return new(0, null);
@@ -233,7 +233,7 @@ internal static class Utf8OwnedFindOptimizations
 
     internal static ByteWidth ComputeScalarByteWidth(int scalar, bool folded, RegexOptions options)
     {
-        var owner = Utf8ConstructionScope.CurrentBudget; owner.ChargeWork(1);
+        var owner = Utf8ConstructionScope.CurrentBudget; owner.Checkpoint();
         if (!Rune.IsValid(scalar)) return new(0, null);
         var width = new Rune(scalar).Utf8SequenceLength;
         if (!folded) return new(width, width);
@@ -244,11 +244,11 @@ internal static class Utf8OwnedFindOptimizations
         var lastBehavior = (options & RegexOptions.CultureInvariant) != 0 ? 0 : 2;
         for (var behavior = 0; behavior <= lastBehavior; behavior++)
         {
-            owner.ChargeWork(1);
+            owner.Checkpoint();
             foreach (var equivalent in Internal.Execution.Utf8SliceCaseEquivalences.GetEquivalents((char)scalar,
                 (Internal.Execution.Utf8ScalarCaseBehavior)behavior))
             {
-                owner.ChargeWork(1); var bytes = new Rune(equivalent).Utf8SequenceLength;
+                owner.Checkpoint(); var bytes = new Rune(equivalent).Utf8SequenceLength;
                 low = Math.Min(low, bytes); high = Math.Max(high, bytes);
             }
         }
@@ -262,12 +262,12 @@ internal static class Utf8OwnedFindOptimizations
         budget.EnterDepth();
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic or Utf8TreeNodeKind.Concatenate)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (node.ChildCount == 0) return Utf8TreeNodeKind.Unknown;
             node = node.Child(node.ChildCount - 1);
             budget.EnterDepth();
         }
-        budget.ChargeWork(1);
+        budget.Checkpoint();
         switch (node.Kind)
         {
             case Utf8TreeNodeKind.EndZ:
@@ -287,7 +287,7 @@ internal static class Utf8OwnedFindOptimizations
         if (node.Kind != Utf8TreeNodeKind.Multi) return false;
         if (node.LiteralUtf8 is { Length: > 0 } native)
         {
-            Utf8ConstructionScope.ChargeWork((ulong)native.Length);
+            Utf8ConstructionScope.Checkpoint();
             for (var offset = 0; offset < native.Length;)
             {
                 if (Rune.DecodeFromUtf8(native.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done ||
@@ -299,7 +299,7 @@ internal static class Utf8OwnedFindOptimizations
         if (node.Str is not { Length: > 0 } text) return false;
         // Admit the bounded pattern-text scan before it runs. Supplementary
         // pairs are text interoperability storage, not matching coordinates.
-        Utf8ConstructionScope.ChargeWork((ulong)text.Length);
+        Utf8ConstructionScope.Checkpoint();
         for (var offset = 0; offset < text.Length;)
         {
             if (Rune.DecodeFromUtf16(text.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done ||
@@ -310,7 +310,7 @@ internal static class Utf8OwnedFindOptimizations
 
         static bool ExactScalar(int value, Utf8TreeNode node)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (!Rune.IsValid(value)) return false;
             if (!node.MatchCaseInsensitive) return true;
             // The BMP table proves identity. Supplementary folded literals use
@@ -320,11 +320,11 @@ internal static class Utf8OwnedFindOptimizations
             var last = (node.Options & RegexOptions.CultureInvariant) != 0 ? 0 : 2;
             for (var behavior = 0; behavior <= last; behavior++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents((char)value,
                     (Utf8ScalarCaseBehavior)behavior))
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     if (equivalent != value) return false;
                 }
             }
@@ -340,12 +340,12 @@ internal static class Utf8OwnedFindOptimizations
         budget.EnterDepth();
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (node.ChildCount != 1) return null;
             node = node.Child(0);
             budget.EnterDepth();
         }
-        budget.ChargeWork(1);
+        budget.Checkpoint();
         var result = node.Kind switch
         {
             Utf8TreeNodeKind.One when IsExactLiteral(node) => budget.CopyText([node.Ch]),
@@ -367,7 +367,7 @@ internal static class Utf8OwnedFindOptimizations
             using var run = Utf8ConstructionText.Create();
             for (var i = 0; i < parent.ChildCount; i++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var child = parent.Child(i);
                 if (child.Kind == Utf8TreeNodeKind.One && IsExactLiteral(child))
                 {
@@ -403,7 +403,7 @@ internal static class Utf8OwnedFindOptimizations
         using var frames = Utf8ConstructionFrames<LongestLiteralFrame>.Create(budget, new(node));
         while (true)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             ref var frame = ref frames.Peek();
             var current = frame.Node;
             var kind = current.Kind;
@@ -442,7 +442,7 @@ internal static class Utf8OwnedFindOptimizations
             {
                 // An alternate contributes a literal only when every branch
                 // proves the same spelling.
-                budget.ChargeWork((ulong)literal.Length);
+                budget.Checkpoint();
                 if (!string.Equals(common, literal, StringComparison.Ordinal)) parent.Literal = null;
             }
             else
@@ -457,7 +457,7 @@ internal static class Utf8OwnedFindOptimizations
             using var run = Utf8ConstructionText.Create();
             for (var i = 0; i < parent.ChildCount; i++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var child = parent.Child(i);
                 if (child.Kind == Utf8TreeNodeKind.One && IsExactLiteral(child))
                 {
@@ -498,7 +498,7 @@ internal static class Utf8OwnedFindOptimizations
         frames.Push(new(node));
         while (frames.Count != 0)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var index = frames.Count - 1; var frame = frames[index]; var current = frame.Node;
             if (current.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic or Utf8TreeNodeKind.Concatenate)
             {

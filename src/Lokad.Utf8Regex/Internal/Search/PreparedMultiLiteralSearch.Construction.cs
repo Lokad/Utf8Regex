@@ -42,12 +42,12 @@ internal readonly partial struct PreparedMultiLiteralSearch
         {
             var count = 0;
             foreach (var bucket in search.SearchData.Buckets)
-            { budget.ChargeWork(1); count = checked(count + bucket.Literals.Length); }
+            { budget.Checkpoint(); count = checked(count + bucket.Literals.Length); }
             var literals = budget.AllocateArray<byte[]>(count, false);
             var next = 0;
             foreach (var bucket in search.SearchData.Buckets)
             {
-                budget.ChargeWork(1 + (ulong)bucket.Literals.Length);
+                budget.Checkpoint();
                 bucket.Literals.CopyTo(literals, next); next += bucket.Literals.Length;
             }
             this = PrepareExact(literals, search, budget);
@@ -67,12 +67,12 @@ internal readonly partial struct PreparedMultiLiteralSearch
         {
             var count = 0;
             foreach (var bucket in search.Buckets)
-            { budget.ChargeWork(1); count = checked(count + bucket.Literals.Length); }
+            { budget.Checkpoint(); count = checked(count + bucket.Literals.Length); }
             var literals = budget.AllocateArray<byte[]>(count, false);
             var next = 0;
             foreach (var bucket in search.Buckets)
             {
-                budget.ChargeWork(1 + (ulong)bucket.Literals.Length);
+                budget.Checkpoint();
                 bucket.Literals.CopyTo(literals, next); next += bucket.Literals.Length;
             }
             this = new(literals, PreparedMultiLiteralKind.AsciiIgnoreCase, default, default, default, default, default, search);
@@ -98,7 +98,7 @@ internal readonly partial struct PreparedMultiLiteralSearch
         if (literals.Length <= 3 && shortest >= 4)
         {
             ulong totalBytes = 0;
-            foreach (var literal in literals) { budget.ChargeWork(1); totalBytes += (ulong)literal.Length; }
+            foreach (var literal in literals) { budget.Checkpoint(); totalBytes += (ulong)literal.Length; }
             if (totalBytes >= 24)
                 return new(literals, PreparedMultiLiteralKind.ExactEarliest, default, default, default, new(literals), default, default);
         }
@@ -132,8 +132,8 @@ internal readonly partial struct PreparedMultiLiteralSearch
     {
         foreach (var literal in literals)
         {
-            budget.ChargeWork(1);
-            foreach (var value in literal) { budget.ChargeWork(1); if (value >= 0x80) return true; }
+            budget.Checkpoint();
+            foreach (var value in literal) { budget.Checkpoint(); if (value >= 0x80) return true; }
         }
         return false;
     }
@@ -144,7 +144,7 @@ internal readonly partial struct PreparedMultiLiteralSearch
         var first = literals[0];
         foreach (var literal in literals)
         {
-            budget.ChargeWork(2);
+            budget.Checkpoint();
             if (literal[0] != first[0] || literal[1] != first[1]) return false;
         }
         return true;
@@ -153,11 +153,11 @@ internal readonly partial struct PreparedMultiLiteralSearch
     private static bool HasSmallUniqueAnchor(byte[][] literals, int shortest, Utf8ConstructionBudget budget)
     {
         Span<bool> seen = stackalloc bool[256];
-        budget.ChargeWork(256); seen.Clear();
+        budget.Checkpoint(); seen.Clear();
         var distinctFirst = 0;
         foreach (var literal in literals)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (seen[literal[0]]) continue;
             seen[literal[0]] = true; distinctFirst++;
         }
@@ -166,11 +166,11 @@ internal readonly partial struct PreparedMultiLiteralSearch
         if (distinctFirst == 1 || distinctFirst == literals.Length) return false;
         for (var offset = 1; offset < shortest; offset++)
         {
-            budget.ChargeWork(256); seen.Clear();
+            budget.Checkpoint(); seen.Clear();
             var unique = true;
             foreach (var literal in literals)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (seen[literal[offset]]) { unique = false; break; }
                 seen[literal[offset]] = true;
             }
@@ -193,7 +193,7 @@ internal readonly partial struct PreparedMultiLiteralEarliestExactSearch
         {
             foreach (var literal in literals)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 ShortestLength = Math.Min(ShortestLength, literal.Length);
                 LongestLength = Math.Max(LongestLength, literal.Length);
             }

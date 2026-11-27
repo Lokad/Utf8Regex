@@ -6,7 +6,6 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal enum Utf8ExecutionLimitKind : byte
 {
     None = 0,
-    WorkSteps = 1,
     Depth = 2,
     WorkingBytes = 3,
     ResultBytes = 4,

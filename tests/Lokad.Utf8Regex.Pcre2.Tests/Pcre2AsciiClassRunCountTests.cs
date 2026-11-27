@@ -32,7 +32,6 @@ public sealed class Pcre2AsciiClassRunCountTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 1,
                     MaxWorkingBytes = 1,
                     MaxResultBytes = 1
@@ -67,7 +66,6 @@ public sealed class Pcre2AsciiClassRunCountTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 1024,
                     MaxWorkingBytes = atomic ? 1UL << 20 : 1,
                     MaxResultBytes = 1
@@ -84,39 +82,6 @@ public sealed class Pcre2AsciiClassRunCountTests
                     regex.Count(bytes, Encoding.UTF8.GetByteCount(text.AsSpan(0, floor))));
             }
         }
-    }
-
-    [Fact]
-    public void LargeUnionKeepsBoundedWorkWithoutWorkspace()
-    {
-        var pattern = "[" + string.Concat(Enumerable.Repeat("a-zA-Z0-9", 43)) + "]+";
-        var bounded = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 2,
-                MaxDepth = 1,
-                MaxWorkingBytes = 1,
-                MaxResultBytes = 1
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => bounded.Count("a"u8)).ErrorKind);
-        var admitted = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 100000,
-                MaxDepth = 1,
-                MaxWorkingBytes = 1,
-                MaxResultBytes = 1
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var allowance = new RejectStorage();
-        Assert.Equal(1, admitted.Count("a"u8, 0, default, default, allowance));
-        Assert.Equal(0, admitted.Count([], 0, default, default, allowance));
-        Assert.Equal(0, allowance.Attempts);
     }
 
     [Theory]
@@ -214,7 +179,6 @@ public sealed class Pcre2AsciiClassRunCountTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -247,7 +211,6 @@ public sealed class Pcre2AsciiClassRunCountTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100_000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -264,44 +227,14 @@ public sealed class Pcre2AsciiClassRunCountTests
     }
 
     [Theory]
-    [InlineData("[a-z]+")]
-    [InlineData("[a-zA-Z0-9]+")]
-    public void WorkAdmissionStillBoundsLongRunsAndDenseCandidates(string pattern)
-    {
-        var regex = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 100
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        Assert.Equal(1, regex.Count("abc"u8));
-        foreach (var text in new[] { new string('a', 1 << 20), string.Concat(Enumerable.Repeat("a!", 4096)) })
-        {
-            var bytes = Encoding.ASCII.GetBytes(text);
-            Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-                regex.Count(bytes)).ErrorKind);
-            // Also exercise the global driver with its own invocation budget.
-            ReadOnlySpan<byte> input = bytes;
-            var invocation = new Utf8SliceInvocation(new() { MaxWorkSteps = 100 }, Timeout.InfiniteTimeSpan, default);
-            Pcre2MatchException? failure = null;
-            try { Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, input, new(0), default, ref invocation, out _); }
-            catch (Pcre2MatchException error) { failure = error; }
-            Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        }
-    }
-
-    [Theory]
-    [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
     public void EmptyStreamCannotIgnoreAnExistingSharedDenial(int kind)
     {
         var regex = new Utf8Pcre2Regex(@"[a-z]+");
-        var invocation = new Utf8SliceInvocation(new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 1 },
+        var invocation = new Utf8SliceInvocation(new() { MaxDepth = 1, MaxWorkingBytes = 1 },
             Timeout.InfiniteTimeSpan, default);
-        if (kind == 0) { invocation.TryChargeStep(); invocation.TryChargeStep(); }
+        if (kind == 0) { invocation.CheckProgress(); invocation.CheckProgress(); }
         else if (kind == 1) invocation.Budget.TryNoteDepth(2);
         else invocation.TryReserveWorking(2);
         ReadOnlySpan<byte> input = [];
@@ -310,7 +243,6 @@ public sealed class Pcre2AsciiClassRunCountTests
         catch (Pcre2MatchException error) { failure = error; }
         Assert.Equal(kind switch
         {
-            0 => Pcre2ErrorKind.MatchLimit,
             1 => Pcre2ErrorKind.DepthLimit,
             _ => Pcre2ErrorKind.HeapLimit
         }, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);

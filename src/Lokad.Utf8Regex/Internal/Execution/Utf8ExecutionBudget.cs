@@ -1,10 +1,11 @@
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>
-/// Flavor-neutral, invocation-local execution budget: step, depth, and working-bytes
+/// Flavor-neutral, invocation-local execution budget for depth and storage
 /// accounting with deadline and cancellation checkpoints. Limit breaches are reported
 /// as return values so each profile maps them onto its own failure vocabulary without
 /// paying exception costs on the hot path; expired deadlines and cancelled tokens
@@ -15,6 +16,7 @@ internal struct Utf8ExecutionBudget
 {
     private readonly Utf8ExecutionDeadline _deadline;
     private CancellationToken _token;
+    private readonly bool _observeCheckpoints;
 
     internal Utf8ExecutionBudget(Utf8ExecutionLimits limits, TimeSpan timeout, CancellationToken token)
         : this(limits, Utf8ExecutionDeadline.Start(timeout), token)
@@ -26,16 +28,16 @@ internal struct Utf8ExecutionBudget
         Limits = limits;
         _deadline = deadline;
         _token = token;
+        _observeCheckpoints = Utf8SearchDiagnosticsSession.Current is not null;
     }
 
     internal Utf8ExecutionLimits Limits { get; }
 
-    internal ulong Steps { get; private set; }
+    // Used only by tests and benchmark diagnostics.
+    internal ulong DiagnosticCheckpoints;
 
-    // Sticky denial distinguishes an exhausted ulong.MaxValue cap from its
-    // last admitted step. Steps saturates; even an unlimited counter never wraps.
+    // The first resource denial remains authoritative.
     internal Utf8ExecutionLimitKind LimitBreach { get; private set; }
-    internal bool WorkLimitExceeded => LimitBreach == Utf8ExecutionLimitKind.WorkSteps;
 
     // Conservative cumulative result/staging capacity requests. No identities,
     // retention roots or refunds; the first resource denial stays authoritative.
@@ -64,7 +66,6 @@ internal struct Utf8ExecutionBudget
     }
 
     internal bool IsUnmetered =>
-        Limits.MaxWorkSteps == 0 &&
         Limits.MaxDepth == 0 &&
         Limits.MaxWorkingBytes == 0 &&
         Limits.MaxResultBytes == 0 &&
@@ -74,14 +75,11 @@ internal struct Utf8ExecutionBudget
     internal void CheckDeadline() => _deadline.CheckNow();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal Utf8ExecutionLimitKind TryChargeStep()
+    internal Utf8ExecutionLimitKind CheckProgress(bool hasDiagnosticHook = false)
     {
         _token.ThrowIfCancellationRequested();
-        var overflow = Steps == ulong.MaxValue;
-        if (!overflow) Steps++;
+        if (_observeCheckpoints || hasDiagnosticHook) DiagnosticCheckpoints++;
         _deadline.Step();
-        if (LimitBreach == Utf8ExecutionLimitKind.None && Limits.MaxWorkSteps != 0 && (overflow || Steps > Limits.MaxWorkSteps))
-            LimitBreach = Utf8ExecutionLimitKind.WorkSteps;
         return LimitBreach;
     }
 
@@ -115,7 +113,6 @@ internal struct Utf8ExecutionBudget
     internal readonly Utf8ResourceLimitExceededException CreateResourceFailure()
         => LimitBreach switch
         {
-            Utf8ExecutionLimitKind.WorkSteps => new(Utf8ResourceLimitKind.ExecutionWorkSteps, Limits.MaxWorkSteps, Steps),
             Utf8ExecutionLimitKind.ResultBytes => new(Utf8ResourceLimitKind.ExecutionResultBytes, Limits.MaxResultBytes, ResultBytes),
             Utf8ExecutionLimitKind.Depth => new(Utf8ResourceLimitKind.ExecutionDepth, Limits.MaxDepth, PeakDepth),
             Utf8ExecutionLimitKind.WorkingBytes => new(Utf8ResourceLimitKind.ExecutionWorkingBytes, Limits.MaxWorkingBytes, PeakWorkingBytes),

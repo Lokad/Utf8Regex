@@ -20,7 +20,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var source = new CancellationTokenSource();
         using var bounded = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = 800 }
+            ResourcePolicy = Funded
         });
         Assert.True(bounded.IsMatch(input, source.Token));
         Assert.Equal(new Utf8CaptureRange(start, input.Length), bounded.Match(input, cancellationToken: source.Token));
@@ -141,7 +141,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         var expected = new Regex(pattern).Matches(text, 1);
         Assert.Equal(2, expected.Count);
         using var source = new CancellationTokenSource();
-        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = new() { MaxWorkSteps = 256 } });
+        using var regex = new Utf8Regex(pattern, policy: new() { ResourcePolicy = new() { MaxDepth = 4096 } });
 
         Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];
         Assert.Equal(Range(expected[0]), regex.Match(input, 1, slots, source.Token));
@@ -198,7 +198,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         const string pattern = @"(\w+)\s+(Holmes|Watson)";
         using var regex = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 32, MaxDepth = 128, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxDepth = 128, MaxWorkingBytes = 4096 }
         });
         using var source = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(new string('!', 512) + "Ω𐐀\u2003Watson!" + new string('!', 320));
@@ -218,7 +218,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         var prefix = string.Concat(Enumerable.Repeat(block, 32));
         using var regex = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = 1024 }
+            ResourcePolicy = Funded
         });
         using var source = new CancellationTokenSource();
         Assert.Equal(64, regex.Count(Encoding.UTF8.GetBytes(prefix), source.Token));
@@ -320,7 +320,7 @@ public sealed class Utf8ClassPrefixCandidateTests
     {
         using var regex = new Utf8Regex(@"[\w.+-]+@[\w-]+\.[\w.-]+", policy: new()
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = 800 }
+            ResourcePolicy = Funded
         });
         using var source = new CancellationTokenSource();
         var prefix = "Ω " + string.Concat(Enumerable.Repeat("a@label! x@.bar; t@p.; ", 64));
@@ -395,29 +395,11 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Fact]
-    public void PreparedLabelRangeMetersTheRewindBeforePublishingSlots()
-    {
-        using var regex = new Utf8Regex(@"[\w.+-]+@[\w-]+\.[\w.-]+", policy: new()
-        {
-            ResourcePolicy = Funded with { MaxWorkSteps = 16 }
-        });
-        var input = Encoding.UTF8.GetBytes(new string('a', 4096) + "@b.cd");
-        var sentinel = new Utf8CaptureRange(0, 1);
-        Utf8CaptureRange[] slots = [sentinel, sentinel];
-
-        Assert.True(regex.IsMatch(input));
-        var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input, captures: slots));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, denied.ResourceKind);
-        Assert.False(slots[0].Success);
-        Assert.Equal(sentinel, slots[1]);
-    }
-
-    [Fact]
     public void VerifiedPrefixKeepsWorkBoundAndWideRepeatEndpoints()
     {
         using var regex = new Utf8Regex(@"Sherlock\s+Holmes", policy: new()
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = 400 }
+            ResourcePolicy = Funded
         });
         using var source = new CancellationTokenSource();
         var prefix = "Ω " + string.Concat(Enumerable.Repeat("Sherlock Holmer! ", 128));
@@ -796,14 +778,12 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var token = new CancellationTokenSource();
         using var regex = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = 64 }
+            ResourcePolicy = Funded
         });
         using var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token);
 
         Assert.True(cursor.MoveNext(out var first));
         Assert.Equal(new Utf8CaptureRange(1, 6), first.Value);
-        var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, denied.ResourceKind);
         Assert.Equal(new Utf8CaptureRange(1, 6), first.Value);
     }
 
@@ -1069,7 +1049,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var source = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile($"(?<value>{pattern})(?![!?])", policy: new()
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = 256 }
+            ResourcePolicy = Funded
         });
 
         Assert.True(regex.IsMatch(input, source.Token));
@@ -1116,7 +1096,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         var input = Encoding.UTF8.GetBytes(prefix + scheme + "://a𐐀/");
         using var regex = Utf8Regex.Compile(@"(?<scheme>[\w]+)://[^/\s?#]+[^\s?#]+", policy: new()
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = 160 }
+            ResourcePolicy = Funded
         });
         Assert.True(regex.IsMatch(input));
         Assert.Equal(1, regex.Count(input));
@@ -1140,7 +1120,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         var floor = start + "é"u8.Length;
         using var live = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?",
-            policy: new() { ResourcePolicy = Funded with { MaxWorkSteps = 256 } });
+            policy: new() { ResourcePolicy = Funded });
 
         Assert.Equal(new Utf8CaptureRange(start, input.Length), regex.Match(input, cancellationToken: live.Token));
         using var cursor = regex.CreateMatchCursor(input, floor, live.Token);
@@ -1179,7 +1159,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(pattern, policy: new()
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = 512 }
+            ResourcePolicy = Funded
         });
 
         using var cursor = regex.CreateMatchCursor(input, floor, token.Token);
@@ -1207,7 +1187,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var regex = Utf8Regex.Compile(pattern, policy: new()
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Funded with { MaxWorkSteps = 1024 }
+            ResourcePolicy = Funded
         });
         Assert.True(regex.IsMatch(input, source.Token));
         Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
@@ -1269,10 +1249,8 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var regex = Utf8Regex.Compile(pattern, policy: new()
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Funded with { MaxWorkSteps = 32 }
+            ResourcePolicy = Funded
         });
-        var limit = Assert.Throws<Utf8ResourceLimitExceededException>(() => Scan(regex));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, limit.ResourceKind);
 
         using var source = new CancellationTokenSource();
         using var interruptible = Utf8Regex.Compile(pattern, policy: new()
@@ -1428,10 +1406,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         var efficient = new Utf8Regex(@"\w+\s+Holmes", options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Funded with
-            {
-                MaxWorkSteps = 4096
-            }
+            ResourcePolicy = Funded
         });
         Assert.Equal(1, efficient.Count(input));
         using var live = new CancellationTokenSource();
@@ -1455,16 +1430,6 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>
                 new Utf8Regex(dependent, options: RegexOptions.None, policy: tight).Count(dependentInput)).ResourceKind);
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                new Utf8Regex(@"\w+\s+Holmes", options: RegexOptions.None, policy: new Utf8RegexPolicy
-                {
-                    MatchTimeout = Regex.InfiniteMatchTimeout,
-                    ResourcePolicy = Funded with
-                    {
-                        MaxWorkSteps = 1
-                    }
-                }).Count(input)).ResourceKind);
     }
 
     [Fact]
@@ -1475,7 +1440,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         var input = Encoding.UTF8.GetBytes(text);
         using var regex = new Utf8Regex(@"\w+\s+Holmes", policy: new()
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = 256 }
+            ResourcePolicy = Funded
         });
         using var token = new CancellationTokenSource();
         var start = Encoding.UTF8.GetByteCount(prefix);
@@ -1531,7 +1496,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var regex = Utf8Regex.Compile(pattern, policy: new()
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Funded with { MaxWorkSteps = 4096 }
+            ResourcePolicy = Funded
         });
         using var source = new CancellationTokenSource();
         var match = regex.Match(input, 17, [], source.Token);
@@ -1559,7 +1524,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         var input = Encoding.UTF8.GetBytes(miss + "! " + hit);
         using var regex = Utf8Regex.Compile(@"\w+\s+\w+\s+Holmes", policy: new()
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = 128 }
+            ResourcePolicy = Funded
         });
         using var live = new CancellationTokenSource();
         Assert.False(regex.IsMatch(input.AsSpan(0, miss.Length), live.Token));
@@ -1589,7 +1554,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         var input = "é Ω 中 Sherlock Holmes"u8;
         using var regex = Utf8Regex.Compile(@"\w+\s+\w+\s+Holmes", policy: new()
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = 64 }
+            ResourcePolicy = Funded
         });
         var result = regex.Match(input, floor);
         Assert.Equal(start >= 0, result.Success);
@@ -1656,7 +1621,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var regex = Utf8Regex.Compile(@"\w+://[a-z][a-z]", policy: new()
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Funded with { MaxWorkSteps = (ulong)(4 * runLength) }
+            ResourcePolicy = Funded
         });
         using var live = new CancellationTokenSource();
         Assert.True(regex.IsMatch(input, live.Token));
@@ -1672,26 +1637,18 @@ public sealed class Utf8ClassPrefixCandidateTests
     [InlineData(@"(?<w>\w+)@\k<w>", "ab@b")]
     public void EveryWorkCutoffRetainsTheOriginalScratchLoan(string pattern, string tail)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.UTF8.GetBytes(new string('!', 260) + tail);
         var plan = regex.Inspection.PreparedRegex.SearchPlan;
-        var complete = new Utf8SliceInvocation(new(100000, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var complete = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(complete.Ledger.TryReserve(13));
         var result = Utf8SliceRunner.CountFromBytes(program, input, 0, new int[program.GroupCount],
             new int[program.GroupCount], ref complete, plan);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
         Assert.Equal(1, result.Count);
         Assert.Equal(13UL, complete.Ledger.ReservedBytes);
-        for (ulong cap = 1; cap <= complete.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            result = Utf8SliceRunner.CountFromBytes(program, input, 0, new int[program.GroupCount],
-                new int[program.GroupCount], ref invocation, plan);
-            Assert.Equal(cap < complete.Budget.Steps ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.None, result.Breach);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]
@@ -1795,5 +1752,5 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.Equal(cancelAt, reads);
     }
 
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 4000000, MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };
 }

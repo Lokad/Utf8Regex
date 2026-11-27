@@ -25,30 +25,20 @@ public sealed class Utf8SplitInvocationTests
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
-    public void PreparationWorkCutoffsPreserveBorrowedCapacityWithoutCoordinateStorage(int count)
+    public void PreparationPreservesBorrowedCapacityWithoutCoordinateStorage(int count)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex("(ab)", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("é😀 abab ab");
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var baseline = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(7));
         var prepared = Utf8OwnedSplitPreparation.Create(Program(regex), input, count, ref baseline);
-        var steps = prepared.DebugInvocationSteps;
         var total = prepared.DebugInvocationReservedBytes;
         Assert.Equal(0UL, prepared.DebugPeakWorkingBytes);
         Assert.Equal(7UL, total);
-        for (ulong cap = 1; cap < steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            var denied = false;
-            try { _ = Utf8OwnedSplitPreparation.Create(Program(regex), input, count, ref invocation); }
-            catch (InvalidOperationException) { denied = true; }
-            Assert.True(denied);
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        }
         foreach (var cap in new[] { total, total + 1 })
         {
-            var invocation = new Utf8SliceInvocation(new(0, 0, cap), Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(new(0, cap), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
             var denied = false;
             try
@@ -73,10 +63,11 @@ public sealed class Utf8SplitInvocationTests
     [Fact]
     public void ControlledBoundarySplitsShareWorkWithIndependentPositions()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const string pattern = @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b";
         using var regex = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
         });
         using var source = new CancellationTokenSource();
         var input = "éLogTrace|😀LogTrace😀|LogWarning\u200c|LogError"u8;
@@ -84,11 +75,11 @@ public sealed class Utf8SplitInvocationTests
         var copy = cursor;
         Assert.True(cursor.MoveNext());
         Assert.Equal((0, 15), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
-        var firstWork = cursor.DebugInvocationSteps;
-        Assert.Equal(firstWork, copy.DebugInvocationSteps);
+        var firstWork = cursor.DiagnosticCheckpointCount;
+        Assert.Equal(firstWork, copy.DiagnosticCheckpointCount);
         Assert.True(copy.MoveNext());
         Assert.Equal((0, 15), (copy.Current.IndexInBytes, copy.Current.LengthInBytes));
-        Assert.True(cursor.DebugInvocationSteps > firstWork);
+        Assert.True(cursor.DiagnosticCheckpointCount > firstWork);
         Assert.True(cursor.MoveNext());
         Assert.Equal((23, 19), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
         Assert.True(cursor.MoveNext());
@@ -97,13 +88,7 @@ public sealed class Utf8SplitInvocationTests
         Assert.Equal(0UL, cursor.DebugPeakWorkingBytes);
         Assert.Equal((0, 15), (copy.Current.IndexInBytes, copy.Current.LengthInBytes));
 
-        using var limited = new Utf8Regex(pattern, policy: new() { ResourcePolicy = new() { MaxWorkSteps = 3 } });
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-        {
-            var splits = limited.EnumerateSplits("LogTrace"u8);
-            splits.MoveNext();
-        });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
+        using var limited = new Utf8Regex(pattern, policy: new() { ResourcePolicy = new() { MaxDepth = 4096 } });
     }
 
     [Theory]

@@ -69,10 +69,10 @@ public sealed class Utf8SimpleCountSearchLifetimeTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ScalarValidationAndControlledCallsKeepTheirAuthority(bool compiled)
+    public void ScalarOffsetsAndControlledCallsKeepTheirAuthority(bool compiled)
     {
         var input = Encoding.UTF8.GetBytes("😀ab12é b34");
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
         var ordinary = new Utf8Regex("a?b[0-9]{2}", options: Options(compiled));
         var finite = new Utf8Regex("a?b[0-9]{2}", options: Options(compiled), policy: new Utf8RegexPolicy
         {
@@ -84,15 +84,6 @@ public sealed class Utf8SimpleCountSearchLifetimeTests
         Assert.Equal(2, finite.Count(input, tokens.Token));
         var match = ordinary.Match(input);
         Assert.Equal((4, 4), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
-        var denied = new Utf8Regex("a?b[0-9]{2}", options: Options(compiled), policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = policy with
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input));
         tokens.Cancel();
         Assert.Throws<OperationCanceledException>(() => ordinary.Count(input, tokens.Token));
         Assert.Throws<OperationCanceledException>(() => finite.Count(input, tokens.Token));

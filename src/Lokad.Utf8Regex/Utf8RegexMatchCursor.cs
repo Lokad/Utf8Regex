@@ -290,7 +290,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
 
     private void Checkpoint()
     {
-        if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
+        if (_invocation.CheckInput() != Utf8ExecutionLimitKind.None)
             throw _invocation.Budget.CreateResourceFailure();
         _invocation.Budget.ThrowIfCancellationRequested();
     }

@@ -19,7 +19,6 @@ public sealed class Pcre2AdjacentSetRepeatTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1 << 24,
                 MaxResultBytes = 1 << 24

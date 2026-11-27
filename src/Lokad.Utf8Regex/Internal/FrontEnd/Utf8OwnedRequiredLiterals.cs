@@ -24,7 +24,7 @@ internal static class Utf8OwnedRequiredLiterals
         {
             while (true)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (top.Kind is not (Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic) || top.ChildCount != 1) break;
                 top = top.Child(0);
                 wrappers.Push(top);
@@ -45,7 +45,7 @@ internal static class Utf8OwnedRequiredLiterals
         // Candidate arrays remain scratch. Copy only the selected family into a
         // transferred payload, admitting overlap with the still-live candidates.
         var result = budget.AllocateArray<byte[]>(selected.Length, false);
-        budget.ChargeWork((ulong)selected.Length);
+        budget.Checkpoint();
         selected.AsSpan().CopyTo(result);
         scope.Complete();
         return result;
@@ -56,7 +56,7 @@ internal static class Utf8OwnedRequiredLiterals
             var bestScore = TotalLength(best, budget);
             for (var i = 1; i < families.Count; i++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var candidate = families[i];
                 var score = TotalLength(candidate, budget);
                 // For equal one-byte exact filters, the rarer byte is more
@@ -75,7 +75,7 @@ internal static class Utf8OwnedRequiredLiterals
         static long TotalLength(byte[][] family, Utf8ConstructionBudget budget)
         {
             long total = 0;
-            foreach (var member in family) { budget.ChargeWork(1); total += member.Length; }
+            foreach (var member in family) { budget.Checkpoint(); total += member.Length; }
             return total;
         }
 
@@ -85,7 +85,7 @@ internal static class Utf8OwnedRequiredLiterals
             using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(node, 0, false));
             while (frames.Count != 0)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var index = frames.Count - 1;
                 var frame = frames[index];
                 node = frame.Node;
@@ -138,7 +138,7 @@ internal static class Utf8OwnedRequiredLiterals
             using var result = Utf8ConstructionBuffer<byte[]>.Create(budget);
             for (var i = 0; i < node.ChildCount; i++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var literal = BranchBytes(node.Child(i), budget);
                 if (literal is null) return null;
                 result.Add(literal);
@@ -149,7 +149,7 @@ internal static class Utf8OwnedRequiredLiterals
 
         static int CompareBytes(byte[] left, byte[] right)
         {
-            Utf8ConstructionScope.ChargeWork((ulong)Math.Min(left.Length, right.Length));
+            Utf8ConstructionScope.Checkpoint();
             return left.AsSpan().SequenceCompareTo(right);
         }
 
@@ -160,23 +160,23 @@ internal static class Utf8OwnedRequiredLiterals
             CollectInto(node.Child(0), candidates, true, budget, arena);
             for (var branch = 1; branch < node.ChildCount && candidates.Count != 0; branch++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 using var families = Utf8ConstructionBuffer<byte[][]>.Create(budget);
                 CollectInto(node.Child(branch), families, true, budget, arena);
                 var kept = 0;
                 for (var index = 0; index < candidates.Count; index++)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     var candidate = candidates[index];
                     var covered = false;
                     foreach (var family in families)
                     {
-                        budget.ChargeWork(1);
+                        budget.Checkpoint();
                         if (Covers(candidate, family)) { covered = true; break; }
                     }
                     if (covered) candidates[kept++] = candidate;
                 }
-                while (candidates.Count > kept) { budget.ChargeWork(1); candidates.Pop(); }
+                while (candidates.Count > kept) { budget.Checkpoint(); candidates.Pop(); }
             }
             return candidates.Count == 0 ? null : BestByTotalLength(candidates, budget);
 
@@ -191,7 +191,7 @@ internal static class Utf8OwnedRequiredLiterals
                 {
                     while (index < candidate.Length)
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         var order = CompareBytes(candidate[index], member);
                         if (order > 0) return false;
                         if (order == 0) break;
@@ -208,7 +208,7 @@ internal static class Utf8OwnedRequiredLiterals
             using var frames = Utf8ConstructionFrames<Utf8TreeNode>.Create(budget, node);
             while (true)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (node.Kind is not (Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic)) break;
                 if (node.ChildCount != 1) return null;
                 node = node.Child(0);

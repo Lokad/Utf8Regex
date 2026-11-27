@@ -63,7 +63,7 @@ public sealed class Pcre2ResultPolicyTests
     public void ResultCapacityIsCumulativeWithoutInvalidatingPublishedSnapshots()
     {
         var bytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0, 2 * bytes - 1), Timeout.InfiniteTimeSpan, default);
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 2 * bytes - 1), Timeout.InfiniteTimeSpan, default);
         var first = Pcre2Runner.PublishSliceCaptures(1, 0, 4, [], [], ref invocation);
         Pcre2SliceDriver.DetachProjectedGroups(first, ref invocation);
         var alias = invocation;
@@ -71,7 +71,7 @@ public sealed class Pcre2ResultPolicyTests
         try { _ = Pcre2Runner.PublishSliceCaptures(1, 0, 4, [], [], ref alias); }
         catch (Exception error) { failure = error; }
         Assert.Equal("ResultLimit", Assert.IsType<Pcre2MatchException>(failure).ErrorKind.ToString());
-        Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, invocation.TryChargeStep());
+        Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, invocation.CheckProgress());
         Assert.Equal((0, 4), (first[0].StartOffsetInBytes, first[0].EndOffsetInBytes));
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
@@ -154,7 +154,6 @@ public sealed class Pcre2ResultPolicyTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20

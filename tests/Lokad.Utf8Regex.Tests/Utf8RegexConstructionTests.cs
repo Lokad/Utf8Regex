@@ -942,7 +942,7 @@ public sealed class Utf8RegexConstructionTests
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4000, MaxWorkingBytes = 32768 }
+            ResourcePolicy = new() { MaxWorkingBytes = 32768 }
         });
         Assert.Equal(trailingWhitespace ? 1 : 0, regex.Count(bytes, token.Token));
         var match = regex.Match(bytes, cancellationToken: token.Token);

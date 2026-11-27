@@ -12,24 +12,25 @@ public sealed class Utf8ProgramPublicationTests
     [InlineData(1, true)] [InlineData(2, false)] [InlineData(2, true)]
     public void OwnedPublicationKeepsConfigurationOrFailsEagerlyAndRecovers(int mode, bool valid)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var options = RegexOptions.CultureInvariant | (mode == 1 ? RegexOptions.Compiled :
             mode == 2 ? RegexOptions.NonBacktracking : RegexOptions.None);
         if (!valid)
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
             var checkpoint = owner.Budget.ReservedBytes;
             ArgumentException? first = null;
             for (var attempt = 0; attempt < 2; attempt++)
             {
                 Utf8Regex? unpublished = null;
-                var workBefore = owner.Budget.WorkSteps;
+                var workBefore = owner.Budget.DiagnosticCheckpoints;
                 var error = Assert.ThrowsAny<ArgumentException>(() => unpublished = new Utf8Regex("(", options: options));
                 Assert.Null(unpublished);
                 if (first is not null) { Assert.Equal(first.Message, error.Message); Assert.Equal(first.ParamName, error.ParamName); }
                 first = error;
                 Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-                Assert.Equal(0ul, owner.Budget.Depth); Assert.True(owner.Budget.WorkSteps > workBefore);
+                Assert.Equal(0ul, owner.Budget.Depth); Assert.True(owner.Budget.DiagnosticCheckpoints > workBefore);
             }
             Assert.Equal(17, parent.Value);
             var recovered = new Utf8Regex("(?<x>a)", options: options);

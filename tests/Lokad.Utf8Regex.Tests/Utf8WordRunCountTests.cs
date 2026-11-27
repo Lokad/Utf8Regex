@@ -146,7 +146,6 @@ public sealed class Utf8WordRunCountTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 8 << 20,
                 MaxResultBytes = 1
@@ -156,15 +155,6 @@ public sealed class Utf8WordRunCountTests
         Assert.True(account.TryReserve(17));
         Assert.Equal(2, regex.Count(input));
         Assert.Equal(2, regex.Count(input, default, account));
-        Assert.Equal(17UL, account.Used);
-        var denied = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input, default, account));
         Assert.Equal(17UL, account.Used);
         using var source = new CancellationTokenSource(); source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token, account)).CancellationToken);
@@ -187,7 +177,6 @@ public sealed class Utf8WordRunCountTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 8 << 20,
                 MaxResultBytes = 1
@@ -200,11 +189,9 @@ public sealed class Utf8WordRunCountTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             }
         });
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => tooLittle.Count(new byte[4096]));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
     }
 
     [Theory]
@@ -247,36 +234,5 @@ public sealed class Utf8WordRunCountTests
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(malformed, token.Token)).CancellationToken);
         Assert.Equal(0, regex.Count(ReadOnlySpan<byte>.Empty));
-    }
-
-    [Fact]
-    public void ScalarCountingCannotOutrunFiniteWork()
-    {
-        const string pattern = @"\b\w{10,}\b";
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("abcdefghijkl ", 1024))); ulong firstNative = 0;
-        var reference = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1_000_000
-            }
-        });
-        var session = Utf8SearchDiagnosticsSession.Start(steps =>
-        {
-            if (firstNative == 0 && steps >= 64) firstNative = steps;
-        });
-        try { Assert.Equal(1024, reference.Count(input)); } finally { session.Complete(); }
-        Assert.True(firstNative > 1);
-        var limited = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = firstNative - 1
-            }
-        });
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
     }
 }

@@ -21,7 +21,7 @@ public sealed class PythonReClassDelimiterWindowTests
         using var ordinary = new Utf8PythonRegex(pattern);
         using var funded = new Utf8PythonRegex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 512, MaxDepth = 32, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxDepth = 32, MaxWorkingBytes = 4096 }
         });
 
         Assert.Equal(expected.Length != 0, ordinary.IsMatch(input));
@@ -49,7 +49,6 @@ public sealed class PythonReClassDelimiterWindowTests
                 MatchTimeout = Timeout.InfiniteTimeSpan,
                 ResourcePolicy = finite ? new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 128,
                     MaxWorkingBytes = 1_000_000,
                     MaxResultBytes = 1_000_000
@@ -100,7 +99,6 @@ public sealed class PythonReClassDelimiterWindowTests
                     MatchTimeout = Timeout.InfiniteTimeSpan,
                     ResourcePolicy = finite ? new()
                     {
-                        MaxWorkSteps = 1_000_000,
                         MaxDepth = 4096,
                         MaxWorkingBytes = 1_000_000,
                         MaxResultBytes = 1_000_000
@@ -132,11 +130,12 @@ public sealed class PythonReClassDelimiterWindowTests
     [Fact]
     public void DirectWindowCountKeepsEveryWorkCutoffAndParentLoan()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var program = PythonReScalarCompiler.Compile(new PythonReParser(@"[a-z]+@z").Parse(default));
         var input = Encoding.UTF8.GetBytes(new string('x', 256) + " \t @bad ok@z");
         ulong Run(ulong cap)
         {
-            var invocation = new Utf8SliceInvocation(new(cap, 256, 1_000_000, 1), Timeout.InfiniteTimeSpan, default);
+            var invocation = new Utf8SliceInvocation(new(256, 1_000_000, 1), Timeout.InfiniteTimeSpan, default);
             Assert.True(invocation.Ledger.TryReserve(13));
             try
             {
@@ -145,12 +144,12 @@ public sealed class PythonReClassDelimiterWindowTests
                 {
                     throw invocation.Budget.CreateResourceFailure();
                 }
-                if (invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
+                if (invocation.CheckInput() != Utf8ExecutionLimitKind.None)
                 {
                     throw invocation.Budget.CreateResourceFailure();
                 }
                 Assert.Equal(1, outcome.Count);
-                return invocation.Budget.Steps;
+                return invocation.Budget.DiagnosticCheckpoints;
             }
             catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
                 invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
@@ -164,11 +163,6 @@ public sealed class PythonReClassDelimiterWindowTests
         }
         var steps = Run(1_000_000);
         Assert.InRange(steps, 1UL, 1024UL);
-        for (ulong cap = 1; cap < steps; cap++)
-        {
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-                        Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(cap)).ResourceKind);
-        }
         Assert.Equal(steps, Run(steps));
     }
 
@@ -235,7 +229,6 @@ public sealed class PythonReClassDelimiterWindowTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = finite ? new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxWorkingBytes = 1_000_000,
                 MaxResultBytes = 1_000_000,
                 MaxDepth = 128
@@ -312,18 +305,19 @@ public sealed class PythonReClassDelimiterWindowTests
     [InlineData(512)]
     public void EveryWorkCutoffRetainsTheCallerLoanAndRefusesPartialSuccess(int prefix)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var program = PythonReScalarCompiler.Compile(new PythonReParser("([a-z]+)-([0-9]+)").Parse(default));
         var input = Encoding.UTF8.GetBytes(new string('x', prefix) + " item-123");
         ulong Run(ulong cap)
         {
-            var invocation = new Utf8SliceInvocation(new(cap, 128, 1_000_000, 1), Timeout.InfiniteTimeSpan, default);
+            var invocation = new Utf8SliceInvocation(new(128, 1_000_000, 1), Timeout.InfiniteTimeSpan, default);
             Assert.True(invocation.Ledger.TryReserve(13));
             PythonReScalarMatchState.Initialize(out var state, input, program, 0, Timeout.InfiniteTimeSpan, "pattern", invocation, null);
             try
             {
                 Assert.True(state.MoveNext(input));
                 state.Checkpoint();
-                return state.WorkingInvocation.Budget.Steps;
+                return state.WorkingInvocation.Budget.DiagnosticCheckpoints;
             }
             finally
             {
@@ -333,11 +327,6 @@ public sealed class PythonReClassDelimiterWindowTests
         }
         var steps = Run(1_000_000);
         Assert.InRange(steps, 1UL, 1024UL);
-        for (ulong cap = 1; cap < steps; cap++)
-        {
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-                        Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(cap)).ResourceKind);
-        }
         Assert.Equal(steps, Run(steps));
     }
 
@@ -352,7 +341,7 @@ public sealed class PythonReClassDelimiterWindowTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var duration = timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan;
-        var invocation = new Utf8SliceInvocation(new(1_000_000, 128, 1_000_000, 1), duration, token.Token);
+        var invocation = new Utf8SliceInvocation(new(128, 1_000_000, 1), duration, token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         PythonReScalarMatchState.Initialize(out var state, input, program, 0, duration, "pattern", invocation, null);
         var reached = false;
@@ -423,7 +412,6 @@ public sealed class PythonReClassDelimiterWindowTests
                 MatchTimeout = mode == 2 ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan,
                 ResourcePolicy = mode == 0 ? default : new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 128,
                     MaxWorkingBytes = 1_000_000,
                     MaxResultBytes = 1_000_000

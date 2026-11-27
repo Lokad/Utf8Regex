@@ -48,7 +48,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
                 search, emitted, small, firstBytes, prefilter, automaton,
                 primitive, allowsSmallAsciiFamilyOutput, shortCounter, threeByteFamily, composite),
                 static state => new Utf8LiteralCompiledEngineRuntime(state));
-            budget.ChargeWork(0); // Check the original interruption authority before publication.
+            budget.Checkpoint(); // Check the original interruption authority before publication.
             scope.Complete();
             return result;
         }
@@ -72,12 +72,12 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             var alreadyOrdered = true;
             for (var index = 0; index < candidates.Length; index++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var literal = candidates[index];
                 if (literal.Length == 0) return false;
-                budget.ChargeWork((ulong)literal.Length);
+                budget.Checkpoint();
                 if (!Ascii.IsValid(literal)) return false;
-                budget.ChargeWork((ulong)index);
+                budget.Checkpoint();
                 if (values[..index].Contains(literal[0])) return false;
                 values[index] = literal[0]; order[index] = index;
                 if (index > 0 && values[index - 1] > values[index]) alreadyOrdered = false;
@@ -86,22 +86,22 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             // or candidate vector. Distinct first bytes make its order unique.
             for (var index = 1; index < candidates.Length; index++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var value = values[index]; var ordinal = order[index]; var position = index;
                 while (position > 0)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     if (values[position - 1] < value) break;
-                    budget.ChargeWork(2);
+                    budget.Checkpoint();
                     values[position] = values[position - 1]; order[position] = order[position - 1]; position--;
                 }
-                budget.ChargeWork(2); values[position] = value; order[position] = ordinal;
+                budget.Checkpoint(); values[position] = value; order[position] = ordinal;
             }
             var sorted = candidates;
             if (!alreadyOrdered)
             {
                 sorted = budget.AllocateArray<byte[]>(candidates.Length, false);
-                budget.ChargeWork((ulong)candidates.Length);
+                budget.Checkpoint();
                 for (var index = 0; index < sorted.Length; index++) sorted[index] = candidates[order[index]];
             }
             firstBytes = PreparedByteSearch.Create(values[..candidates.Length]);
@@ -125,7 +125,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         {
             foreach (var literal in literals)
             {
-                budget.ChargeWork(3); // Admit the literal header check.
+                budget.Checkpoint(); // Admit the literal header check.
                 if (!HasLeadingThreeByteScalarAndTail(literal)) return false;
             }
             var prepared = PreparedMultiLiteralCandidatePrefilter.CreateLeadingUtf8Segment(literals);
@@ -148,7 +148,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             regexPlan.SearchPlan.AlternateLiteralsUtf8 is not { Length: > 0 } literals) return false;
         foreach (var literal in literals)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (literal.Length < 3 || literal[0] is < 0xE0 or >= 0xF0) return false;
         }
         return true;
@@ -184,7 +184,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         for (var offset = 0; offset < pattern.Length;)
         {
             var length = Math.Min(2048, pattern.Length - offset);
-            budget.ChargeWork((ulong)length);
+            budget.Checkpoint();
             if (pattern.Slice(offset, length).Contains('(')) return false;
             offset += length;
         }
@@ -204,9 +204,9 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         try
         {
             var bytes = budget.AllocateArray<byte>(checked(leading.Length + trailing.Length), false);
-            budget.ChargeWork((ulong)bytes.Length);
+            budget.Checkpoint();
             leading.CopyTo(bytes, 0); trailing.CopyTo(bytes, leading.Length);
-            budget.ChargeWork((ulong)bytes.Length + (ulong)leading.Length);
+            budget.Checkpoint();
             var state = new CompositeConstructionState(new PreparedSubstringSearch(bytes, false),
                 leading.Length);
             var result = budget.AllocateObject(state, static value => new CompositeTrailingLiteralSearch(

@@ -12,7 +12,6 @@ public sealed class PythonReSharedPrefixAdmissionTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 2000,
                 MaxWorkingBytes = 1UL << 20,
                 MaxResultBytes = 1UL << 20
             }

@@ -157,7 +157,7 @@ internal sealed class Utf8SliceCategoryTable
     {
         using var owner = Utf8ConstructionScope.Enter();
         var copied = owner.Budget.AllocateArray<int>(checked(ranges.Length + (ranges.Length & 1)), false);
-        owner.Budget.ChargeWork((ulong)ranges.Length + (ulong)(ranges.Length & 1));
+        owner.Budget.Checkpoint();
         for (var index = 0; index < ranges.Length; index++) copied[index] = ranges[index];
         if ((ranges.Length & 1) != 0) copied[^1] = 0x10000;
         var result = owner.Budget.AllocateObject((mask, copied, ClassProgram: (Utf8SliceClassProgram?)null, Predicate: (Func<int, bool>?)null),
@@ -365,7 +365,7 @@ internal sealed class Utf8SliceAssertion
     {
         var length = end - first;
         if (length is < 1 or > 32) return -1;
-        budget.ChargeWork((ulong)length);
+        budget.Checkpoint();
         var prefixEnd = EndOfAsciiLiterals(code, first, end);
         var position = prefixEnd;
         while (position < end)
@@ -550,7 +550,7 @@ internal sealed class Utf8SliceProgram
                         instructions[index] is ({ Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } or
                             { Kind: Utf8SliceInstructionKind.Set, B: 0, C: not 0 }))
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         exactPrefix &= instructions[index].Kind == Utf8SliceInstructionKind.Literal;
                         index++;
                     }
@@ -580,7 +580,7 @@ internal sealed class Utf8SliceProgram
                 {
                     // The lowered invariant K/k mask still needs scalar
                     // folding. Its only wider equivalent is Kelvin.
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     var mask = SetMasks[first.A].AsSpan();
                     const ulong kelvinLetters = (1UL << ('K' - 64)) | (1UL << ('k' - 64));
                     if (BinaryPrimitives.ReadUInt64LittleEndian(mask) == 0 &&
@@ -596,7 +596,7 @@ internal sealed class Utf8SliceProgram
             // The class/delimiter shape is independent of the subject and its
             // search plan. Charge for the bounded inspection before it starts.
             var construction = Utf8ConstructionScope.CurrentBudget;
-            construction.ChargeWork((ulong)Math.Min(instructions.Length, 64));
+            construction.Checkpoint();
             var literal = Utf8SliceRunner.FindLeadingClassDelimiter(this,
                 out var leadingClass, out var literalIndex, out var gapMaximum, out var direct);
             LeadingClassDelimiter = (literal, leadingClass, literalIndex, gapMaximum, direct);
@@ -611,19 +611,19 @@ internal sealed class Utf8SliceProgram
             RequiredBranchLiteral = Utf8SliceRunner.PrepareRequiredBranchLiteral(this);
         if (leadingIndex > 0 && repeatCount != 0)
         {
-            Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
+            Utf8ConstructionScope.CurrentBudget.Checkpoint();
             LeadingRepeatLiteralWindow = Utf8SliceRunner.GetShortRepeatLiteralWindow(this, leadingIndex);
         }
         if (LeadingScalarIsDecimal && LeadingClassDelimiter is { Direct: true, LiteralIndex: >= 0 } delimiter &&
             instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } boundary)
         {
-            Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
+            Utf8ConstructionScope.CurrentBudget.Checkpoint();
             FollowingDecimalLiteralWindow = Utf8SliceRunner.GetShortRepeatLiteralWindow(this, delimiter.LiteralIndex + 2);
             if (FollowingDecimalLiteralWindow is { Min: > 0, Literal: var next } &&
                 !Utf8AsciiBytePredicates.IsDigit(next) && instructions[delimiter.LiteralIndex + 2].IsDecimalDigitSet)
             {
                 var index = delimiter.LiteralIndex + 6;
-                Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
+                Utf8ConstructionScope.CurrentBudget.Checkpoint();
                 // The class delimiter has already proved forward, case-sensitive
                 // search with no contiguous anchor. Cache the remaining program tests.
                 var aligned = !readsCaptures && boundary is { B: (int)Utf8SliceWordKind.Unicode, C: 0 } &&
@@ -705,7 +705,7 @@ internal sealed class Utf8SliceProgram
         var nonBacktrackingOrderedForwardOnly = nonBacktrackingOrdered.Closures is { Length: > 0 };
         var terminalDotTail = default((int Start, int TrailingBoundary, byte[]? Bytes));
         ulong consumers = 0, accepts = 0;
-        budget.ChargeWork((ulong)instructions.Length);
+        budget.Checkpoint();
         for (var pc = 0; pc < instructions.Length; pc++)
         {
             var instruction = instructions[pc];
@@ -729,7 +729,7 @@ internal sealed class Utf8SliceProgram
             else if (instruction is { Kind: Utf8SliceInstructionKind.Set, D: > 0 } &&
                 !rightToLeft && !isNonBacktracking && pc + 1 < instructions.Length)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (instructions[pc + 1] is { Kind: Utf8SliceInstructionKind.Set } follower && follower.D == instruction.D)
                     instructions[pc] = new(instruction.Kind, instruction.A, instruction.B, instruction.C,
                         instruction.D | Utf8SliceInstruction.AsciiIntervalPairFlag, instruction.IsLiteralChoice);
@@ -793,7 +793,7 @@ internal sealed class Utf8SliceProgram
                     break;
             }
         }
-        budget.ChargeWork((ulong)assertions.Length);
+        budget.Checkpoint();
         foreach (var assertion in assertions)
         {
             usesCaptureOpeningJournal |= assertion.Body.UsesCaptureOpeningJournal;
@@ -808,7 +808,7 @@ internal sealed class Utf8SliceProgram
             if (assertion.IsLookbehind)
             {
                 hasNonFixedLookbehind |= assertion.MinLengthBytes != assertion.MaxLengthBytes;
-                budget.ChargeWork((ulong)assertion.Body.Instructions.Length);
+                budget.Checkpoint();
                 foreach (var instruction in assertion.Body.Instructions)
                     hasOrderSensitiveLookbehind |= instruction.Kind is Utf8SliceInstructionKind.Backref
                         or Utf8SliceInstructionKind.TestGroup or Utf8SliceInstructionKind.Lookahead
@@ -818,11 +818,11 @@ internal sealed class Utf8SliceProgram
         var groupNumbers = captureCatalog?.GroupNumbers ?? budget.AllocateArray<int>(checked(groupCount + 1), false);
         if (captureCatalog is null)
         {
-            budget.ChargeWork((ulong)groupNumbers.Length);
+            budget.Checkpoint();
             for (var group = 0; group < groupNumbers.Length; group++) groupNumbers[group] = group;
         }
         budget.CheckBytes(ObjectBytes);
-        budget.ChargeWork(2);
+        budget.Checkpoint();
         budget.ReserveBytes(ObjectBytes);
         var result = new Utf8SliceProgram(
             instructions,
@@ -1110,7 +1110,7 @@ internal sealed class Utf8SliceProgram
         var hasRepeat = RepeatCount != 0;
         for (var pc = end - 1; pc >= 0; pc--)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var instruction = code[pc];
             var next = empty[pc + 1];
             empty[pc] = false;
@@ -1248,7 +1248,7 @@ internal static class Utf8SliceLowerer
         {
             while (frames.Count != 0)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 // Advance borrows this slot only until the next push or pop.
                 // Failure cleanup sees the scratch recorded during the advance.
                 ref var frame = ref frames.Peek();
@@ -1340,7 +1340,7 @@ internal static class Utf8SliceLowerer
         bool nonBacktracking, Utf8ConstructionBudget budget)
     {
         if (!TryGetLeafFacts(node, nonBacktracking, out var leaf)) return facts![node];
-        budget.ChargeWork(1);
+        budget.Checkpoint();
         return leaf;
     }
 
@@ -1357,7 +1357,7 @@ internal static class Utf8SliceLowerer
         {
             while (frames.Count > 0)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 ref var frame = ref frames.Peek();
                 if (frame.NextChild(budget) is { } child)
                 {
@@ -1401,7 +1401,7 @@ internal static class Utf8SliceLowerer
                     var maximum = 0;
                     foreach (var branch in alternation.Branches)
                     {
-                        budget.ChargeWork(1);
+                        budget.Checkpoint();
                         var fact = Get(branch);
                         anyEmpty |= fact.CanMatchEmpty;
                         allZeroWidth &= fact.IsZeroWidth;
@@ -1445,7 +1445,7 @@ internal static class Utf8SliceLowerer
 
         internal Utf8SliceNode? NextChild(Utf8ConstructionBudget budget)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             switch (Node)
             {
                 case Utf8SliceNode.ConcatNode concat:
@@ -1509,7 +1509,7 @@ internal static class Utf8SliceLowerer
             resolvedNames = lowerer.Budget.AllocateArray<string>(lowerer.GroupCount + 1, false);
             for (var number = 0; number <= lowerer.GroupCount; number++)
             {
-                lowerer.Budget.ChargeWork(1);
+                lowerer.Budget.Checkpoint();
                 if (!((uint)number).TryFormat(numberText, out var written))
                     throw new InvalidOperationException("A scalar group number exceeds its decimal scratch.");
                 resolvedNames[number] = lowerer.Budget.CopyText(numberText[..written]);
@@ -1565,7 +1565,7 @@ internal static class Utf8SliceLowerer
         var shortAsciiAlternation = hasAlternation && code.Length <= 32;
         for (var index = end - 1; index >= start; index--)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var instruction = code[index];
             var next = limits[index - start + 1];
             long limit = 0;
@@ -1738,7 +1738,7 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.LiteralRunNode run:
                     foreach (var scalar in run.Scalars)
                     {
-                        Budget.ChargeWork(1);
+                        Budget.Checkpoint();
                         EmitLiteral(scalar, run.FoldCase);
                     }
                     break;
@@ -1779,7 +1779,7 @@ internal static class Utf8SliceLowerer
                         if (child is Utf8SliceNode.LiteralNode concatenatedLiteral)
                         {
                             // A literal emits one instruction without suspending this frame.
-                            Budget.ChargeWork(1);
+                            Budget.Checkpoint();
                             EmitLiteral(concatenatedLiteral.Value, concatenatedLiteral.FoldCase);
                             continue;
                         }
@@ -1809,7 +1809,7 @@ internal static class Utf8SliceLowerer
                     }
                     while (frame.Index < alternate.Branches.Length)
                     {
-                        Budget.ChargeWork(1);
+                        Budget.Checkpoint();
                         if (frame.Stage == 1)
                         {
                             frame.Mark = Instructions.Count;
@@ -1831,11 +1831,11 @@ internal static class Utf8SliceLowerer
                     }
                     if (frame.Scratch is { } pending)
                     {
-                        foreach (var jump in pending) { Budget.ChargeWork(1); Patch(jump, Instructions.Count); }
+                        foreach (var jump in pending) { Budget.Checkpoint(); Patch(jump, Instructions.Count); }
                     }
                     else if (alternate.Branches.Length == 2)
                     {
-                        Budget.ChargeWork(1);
+                        Budget.Checkpoint();
                         Patch(frame.Jump, Instructions.Count);
                     }
                     break;
@@ -1927,7 +1927,7 @@ internal static class Utf8SliceLowerer
                             return true;
                         }
                         if (frame.Scratch is { } remainingExits)
-                            foreach (var exit in remainingExits) { Budget.ChargeWork(1); Patch(exit, Instructions.Count); }
+                            foreach (var exit in remainingExits) { Budget.Checkpoint(); Patch(exit, Instructions.Count); }
                         break;
                     }
                     if (frame.Stage == 0 && !MirrorExecute && repeat.Minimum is 2 or 3 && repeat.Minimum == repeat.Maximum)
@@ -2091,7 +2091,7 @@ internal static class Utf8SliceLowerer
                         var complete = low | Utf8AsciiBytePredicates.DecimalMask;
                         if (!foldCategorySet && complete != low)
                         {
-                            Budget.ChargeWork(2);
+                            Budget.Checkpoint();
                             categoryMask = Budget.AllocateArray<byte>(16, false);
                             BinaryPrimitives.WriteUInt64LittleEndian(categoryMask, complete);
                             BinaryPrimitives.WriteUInt64LittleEndian(categoryMask.AsSpan(8), high);
@@ -2102,7 +2102,7 @@ internal static class Utf8SliceLowerer
                         // Complete the existing positive ASCII mask once. Runtime
                         // scalar tables still govern wider characters and misses.
                         // Keep the immutable source mask available to other lowerings.
-                        Budget.ChargeWork(128);
+                        Budget.Checkpoint();
                         Span<byte> completed = stackalloc byte[16];
                         categoryMask.CopyTo(completed);
                         for (var value = 0; value < 128; value++)
@@ -2277,7 +2277,7 @@ internal static class Utf8SliceLowerer
                     Body: Utf8SliceNode.SetNode { Negated: true, FoldCase: false } second })
                 return child;
 
-            Budget.ChargeWork((ulong)first.Members.Length + (ulong)second.Members.Length + 16);
+            Budget.Checkpoint();
             if (!first.Members.AsSpan().SequenceEqual(second.Members)) return child;
             for (var i = 0; i < first.Mask16.Length; i++)
                 if ((second.Mask16[i] & ~first.Mask16[i]) != 0) return child;
@@ -2291,7 +2291,7 @@ internal static class Utf8SliceLowerer
         private bool IsSmallPureBody(Utf8SliceNode node, ref int remaining, bool fixedOuter = false)
         {
             if (--remaining < 0) return false;
-            Budget.ChargeWork(1);
+            Budget.Checkpoint();
             switch (node)
             {
                 case Utf8SliceNode.LiteralNode or Utf8SliceNode.SetNode or Utf8SliceNode.ShorthandNode or
@@ -2424,7 +2424,7 @@ internal static class Utf8SliceLowerer
             for (var arms = 0; position < atom &&
                 code[position] is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } arm; arms++)
             {
-                Budget.ChargeWork(33);
+                Budget.Checkpoint();
                 if (arms == 3 || arm.A <= position || arm.A >= atom ||
                     !Utf8SliceInstruction.TryGetLiteralAfterCaptureMarkers(code, position + 1, out var first) ||
                     !AddStop(stops, ref count, first))
@@ -2437,7 +2437,7 @@ internal static class Utf8SliceLowerer
 
             var assertionEnd = atom - 2;
             position++;
-            Budget.ChargeWork((ulong)(assertionEnd - position));
+            Budget.Checkpoint();
             // A common prefix contributes just its first byte. Otherwise all
             // arms must start with a literal. An empty arm would always match.
             if (guard.C == 1)

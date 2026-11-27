@@ -50,7 +50,7 @@ internal static class Utf8BoundedProgramEmitter
         counts.Clear();
         var opened = 0;
         var captures = 0;
-        budget.ChargeWork((ulong)code.Length);
+        budget.Checkpoint();
         for (var pc = 0; pc < code.Length - 1; pc++)
         {
             ref readonly var instruction = ref code[pc];
@@ -111,7 +111,7 @@ internal static class Utf8BoundedProgramEmitter
             // anchor behavior before admitting the shared runner.
             if (entry != 0 || program.CanMatchEmpty || program.LeadingByteCandidate is not { FromBranch: true })
                 return false;
-            budget.ChargeWork((ulong)program.Instructions.Length);
+            budget.Checkpoint();
             foreach (var instruction in program.Instructions)
                 if (instruction is not ({ Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } or
                     { Kind: Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump, B: 0 } or
@@ -183,7 +183,7 @@ internal static class Utf8BoundedProgramEmitter
             {
                 while (true)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     if (continuation.Index != 0 && continuation.Index == pc)
                     {
                         LoadPosition(origin, offset);
@@ -202,7 +202,7 @@ internal static class Utf8BoundedProgramEmitter
                             while (pc < code.Length && pc != continuation.Index && code[pc].Kind is
                                 Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set)
                             {
-                                budget.ChargeWork(1);
+                                budget.Checkpoint();
                                 pc++;
                             }
                             EmitByteLimit(origin, offset + pc - runStart, retry);
@@ -585,7 +585,7 @@ internal static class Utf8BoundedProgramEmitter
             var consumesDelimiter = false;
             for (var pc = entry; pc < literal.Instruction; pc++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (program.TryGetUnfoldedAsciiSet(code[pc], out var bytes, out _) && bytes.Contains(literal.Value))
                 {
                     consumesDelimiter = true;
@@ -610,7 +610,7 @@ internal static class Utf8BoundedProgramEmitter
             A: (int)Utf8SliceAnchorKind.Beginning, B: 0, D: 1 };
         var shortContiguousOrigin = code[0] is { Kind: Utf8SliceInstructionKind.Anchor,
             A: (int)Utf8SliceAnchorKind.Contiguous, B: 0, D: 1 };
-        budget.ChargeWork((ulong)(end - entry));
+        budget.Checkpoint();
         // Count every expanded continuation, including retries that never
         // run on a successful input. Reject before allocating the IL builder.
         Span<int> visits = stackalloc int[end + 1];

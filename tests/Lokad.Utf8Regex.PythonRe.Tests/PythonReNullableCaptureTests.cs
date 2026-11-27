@@ -29,7 +29,6 @@ public sealed class PythonReNullableCaptureTests
         Utf8PythonRangeMatch cursorRange = default;
         var policy = finite ? new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 1_000_000,
             MaxDepth = 1024,
             MaxWorkingBytes = 1_048_576,
             MaxResultBytes = 4_194_304

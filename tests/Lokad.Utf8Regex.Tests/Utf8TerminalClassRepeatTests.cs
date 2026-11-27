@@ -59,7 +59,7 @@ public sealed class Utf8TerminalClassRepeatTests
         var input = Encoding.UTF8.GetBytes("///" + whitespace + body + suffix);
         using var funded = Utf8Regex.Compile(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         using var token = new CancellationTokenSource();
         var end = input.Length - Encoding.UTF8.GetByteCount(suffix);
@@ -102,7 +102,7 @@ public sealed class Utf8TerminalClassRepeatTests
     {
         using var regex = Utf8Regex.Compile(@"\A!(?<head>[^ ]+)(?<rest>.*)" + anchor, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 32, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxDepth = 32, MaxWorkingBytes = 4096 }
         });
         using var token = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(text);
@@ -130,7 +130,7 @@ public sealed class Utf8TerminalClassRepeatTests
         using var regex = new Utf8Regex(pattern, options);
         using var funded = new Utf8Regex(pattern, options, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4, MaxDepth = 1, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         using var cancellation = new CancellationTokenSource();
         Utf8CaptureRange expected = success ? new(0, 6) : default;
@@ -144,10 +144,8 @@ public sealed class Utf8TerminalClassRepeatTests
 
         using var limited = new Utf8Regex(pattern, options, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input)).ResourceKind);
     }
 
     [Theory]
@@ -161,7 +159,7 @@ public sealed class Utf8TerminalClassRepeatTests
         var input = Encoding.UTF8.GetBytes(text);
         using var funded = Utf8Regex.Compile(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = captureStart == 0 ? 1ul : 4096ul }
+            ResourcePolicy = new() { MaxWorkingBytes = captureStart == 0 ? 1ul : 4096ul }
         });
         using var cancellation = new CancellationTokenSource();
         var whole = new Utf8CaptureRange(0, input.Length);
@@ -183,10 +181,8 @@ public sealed class Utf8TerminalClassRepeatTests
         Assert.Equal(5, regex.Count(input, token.Token));
         using var limited = Utf8Regex.Compile(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 2, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input, token.Token)).ResourceKind);
     }
 
     [Theory]
@@ -199,7 +195,7 @@ public sealed class Utf8TerminalClassRepeatTests
         var input = Encoding.UTF8.GetBytes("X" + run + stop + "é");
         using var regex = Utf8Regex.Compile(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 16, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxDepth = 16, MaxWorkingBytes = 4096 }
         });
         using var source = new CancellationTokenSource();
         Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
@@ -245,26 +241,6 @@ public sealed class Utf8TerminalClassRepeatTests
     }
 
     [Theory]
-    [InlineData(@"\AX[A-Za-z0-9_]+!", 2048)]
-    [InlineData(@"\AX[^\s!]+!", 64)]
-    [InlineData(@"\AX[-A~]+!", 64)]
-    public void AsciiClassRunIsAdmittedInBoundedWorkBlocks(string pattern, int blockLength)
-    {
-        var input = Encoding.UTF8.GetBytes("X" + new string('A', 12 * blockLength) + "!");
-        using var admitted = RunWithWork(64);
-        Assert.Equal(1, admitted.Count(input));
-        using var limited = RunWithWork(8);
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-        Assert.Equal(8UL, error.Limit);
-
-        Utf8Regex RunWithWork(ulong work) => Utf8Regex.Compile(pattern, policy: new()
-        {
-            ResourcePolicy = new() { MaxWorkSteps = work, MaxWorkingBytes = 1 }
-        });
-    }
-
-    [Theory]
     [InlineData(63)]
     [InlineData(64)]
     [InlineData(65)]
@@ -273,7 +249,7 @@ public sealed class Utf8TerminalClassRepeatTests
         var bytes = Encoding.UTF8.GetBytes("padX" + new string('_', length) + "é");
         using var regex = Utf8Regex.Compile(@"\AX([A-C_]+)é\z", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 40 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var token = new CancellationTokenSource();
         var input = bytes.AsSpan(3);
@@ -293,7 +269,7 @@ public sealed class Utf8TerminalClassRepeatTests
         using var regex = Utf8Regex.Compile(pattern, policy: new()
         {
             MatchTimeout = deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
-            ResourcePolicy = new() { MaxWorkSteps = 512, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         using var clock = Utf8DeadlineTestClock.Start();
         using var token = new CancellationTokenSource();
@@ -319,13 +295,11 @@ public sealed class Utf8TerminalClassRepeatTests
         var input = Encoding.UTF8.GetBytes("https://ab/" + new string('x', 65_536) + "?key=😀#fragment");
         using var limited = Utf8Regex.Compile(pattern, options, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var full = Utf8Regex.Compile(pattern, options);
         using var token = new CancellationTokenSource();
         Assert.True(limited.IsMatch(input, token.Token));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input.AsSpan(), cancellationToken: token.Token)).ResourceKind);
         Assert.Equal(input.Length, full.Match(input.AsSpan(), cancellationToken: token.Token).EndOffsetInBytes);
         token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => limited.IsMatch(input, token.Token)).CancellationToken);
@@ -370,22 +344,13 @@ public sealed class Utf8TerminalClassRepeatTests
         var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Missing scalar program.");
         var input = Encoding.UTF8.GetBytes(text);
-        var baseline = new Utf8SliceInvocation(new(100000, 1, 1 << 20, 1), Timeout.InfiniteTimeSpan, default);
+        var baseline = new Utf8SliceInvocation(new(1, 1 << 20, 1), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         var result = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref baseline);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
         Assert.Equal(expected, result.Count);
         Assert.Equal(0U, baseline.Budget.PeakDepth);
-        Assert.InRange(baseline.Budget.Steps, 8UL, 100UL);
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
-        for (ulong limit = 1; limit <= baseline.Budget.Steps; limit++)
-        {
-            var invocation = new Utf8SliceInvocation(new(limit, 1, 1 << 20, 1), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var actual = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation);
-            Assert.Equal(limit == baseline.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, actual.Breach);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Fact]
@@ -393,14 +358,14 @@ public sealed class Utf8TerminalClassRepeatTests
     {
         var regex = new Utf8Regex(@"\p{L}+");
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Missing scalar program.");
-        var invocation = new Utf8SliceInvocation(new(100000, 1, 13, 1), Timeout.InfiniteTimeSpan, default);
+        var invocation = new Utf8SliceInvocation(new(1, 13, 1), Timeout.InfiniteTimeSpan, default);
         Assert.True(invocation.Ledger.TryReserve(13));
         var result = Utf8SliceRunner.CountFromBytes(program, "éé A𐐀!"u8, 0, [], [], ref invocation);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
         Assert.Equal(2, result.Count);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         Assert.Equal(13UL, invocation.Budget.PeakWorkingBytes);
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
         var plain = new Utf8Regex(@"\w+", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
@@ -432,6 +397,7 @@ public sealed class Utf8TerminalClassRepeatTests
     [InlineData(false, @"\AX[A-Za-z0-9_]+!")] [InlineData(true, @"\AX[A-Za-z0-9_]+!")]
     public void OriginalInterruptionDuringTheRunReleasesScratch(bool timeout, string pattern)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Missing scalar program.");
         var input = Encoding.UTF8.GetBytes(pattern switch
@@ -444,7 +410,7 @@ public sealed class Utf8TerminalClassRepeatTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var session = Utf8SearchDiagnosticsSession.Start(_ => { if (timeout) ticks = 25; else token.Cancel(); });
-        var invocation = new Utf8SliceInvocation(new(100000, 1, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
+        var invocation = new Utf8SliceInvocation(new(1, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         try
         {
@@ -452,7 +418,7 @@ public sealed class Utf8TerminalClassRepeatTests
             if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-            Assert.True(invocation.Budget.Steps >= 64);
+            Assert.True(invocation.Budget.DiagnosticCheckpoints >= 64);
         }
         finally { session.Complete(); }
     }
@@ -463,7 +429,6 @@ public sealed class Utf8TerminalClassRepeatTests
         ResourcePolicy = new Utf8ResourcePolicy
         {
             MaxDepth = depth,
-            MaxWorkSteps = 1000000,
             MaxWorkingBytes = 1 << 20,
             MaxResultBytes = 1
         }

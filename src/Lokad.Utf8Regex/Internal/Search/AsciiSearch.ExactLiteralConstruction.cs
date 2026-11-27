@@ -19,7 +19,7 @@ internal static partial class AsciiSearch
             var longest = 0;
             foreach (var literal in literals)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 shortest = Math.Min(shortest, literal.Length);
                 if (shortest == 0) break;
                 longest = Math.Max(longest, literal.Length);
@@ -31,7 +31,7 @@ internal static partial class AsciiSearch
                 var emptyBuckets = budget.AllocateArray<AsciiExactLiteralBucket>(1, false);
                 emptyBuckets[0] = new(0, references, [], null, default);
                 var emptyMap = budget.AllocateArray<int>(256, false);
-                budget.ChargeWork(257);
+                budget.Checkpoint();
                 Array.Fill(emptyMap, -1);
                 emptyMap[0] = 0;
                 var empty = new AsciiExactLiteralSearchData(PreparedByteSearch.FromOwnedValues([], null), emptyBuckets, emptyMap, 0, 0);
@@ -42,13 +42,13 @@ internal static partial class AsciiSearch
             Span<int> indexByByte = stackalloc int[256];
             Span<int> counts = stackalloc int[256];
             Span<byte> firstBytes = stackalloc byte[256];
-            budget.ChargeWork(512);
+            budget.Checkpoint();
             indexByByte.Fill(-1);
             counts.Clear();
             var distinct = 0;
             foreach (var literal in literals)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var first = literal[0];
                 var group = indexByByte[first];
                 if (group < 0)
@@ -62,19 +62,19 @@ internal static partial class AsciiSearch
             var buckets = budget.AllocateArray<AsciiExactLiteralBucket>(distinct, false);
             for (var group = 0; group < distinct; group++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 buckets[group] = new(firstBytes[group], budget.AllocateArray<byte[]>(counts[group], false), [], null, default);
                 counts[group] = 0;
             }
             foreach (var literal in literals)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var group = indexByByte[literal[0]];
                 buckets[group].Literals[counts[group]++] = literal;
             }
             for (var group = 0; group < distinct; group++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var references = buckets[group].Literals;
                 var prefixLength = 0;
                 var prefix = fullMetadata || references.Length > 1
@@ -84,7 +84,7 @@ internal static partial class AsciiSearch
                     CreatePrefixDiscriminator(references, prefixLength, budget));
             }
             var map = budget.AllocateArray<int>(256, false);
-            budget.ChargeWork(256);
+            budget.Checkpoint();
             indexByByte.CopyTo(map);
             var result = new AsciiExactLiteralSearchData(PreparedByteSearch.Create(firstBytes[..distinct]), buckets, map, shortest, longest);
             scope.Complete();
@@ -99,13 +99,13 @@ internal static partial class AsciiSearch
         var length = first.Length;
         for (var index = 1; index < literals.Length && length > 1; index++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var other = literals[index];
             var limit = Math.Min(length, other.Length);
             var common = 0;
             while (common < limit)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (first[common] != other[common]) break;
                 common++;
             }
@@ -114,7 +114,7 @@ internal static partial class AsciiSearch
         prefixLength = length <= 1 ? 0 : length;
         if (prefixLength == 0 || !retain) return [];
         var prefix = budget.AllocateArray<byte>(length, false);
-        budget.ChargeWork((ulong)length);
+        budget.Checkpoint();
         first.AsSpan(0, length).CopyTo(prefix);
         return prefix;
     }
@@ -124,12 +124,12 @@ internal static partial class AsciiSearch
         if (literals.Length <= 1) return null;
         Span<bool> seen = stackalloc bool[256];
         Span<byte> values = stackalloc byte[256];
-        budget.ChargeWork(256);
+        budget.Checkpoint();
         seen.Clear();
         var count = 0;
         foreach (var literal in literals)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (literal.Length <= 1) return null;
             var value = literal[1];
             if (seen[value]) continue;
@@ -138,7 +138,7 @@ internal static partial class AsciiSearch
         }
         if (count <= 1) return null;
         var owned = budget.AllocateArray<byte>(count, false);
-        budget.ChargeWork((ulong)count);
+        budget.Checkpoint();
         values[..count].CopyTo(owned);
         return owned;
     }
@@ -150,11 +150,11 @@ internal static partial class AsciiSearch
         var shortest = PreparedMultiLiteralConstruction.GetShortestLength(literals, budget);
         if (prefixLength >= shortest) return default;
         Span<bool> seen = stackalloc bool[256];
-        budget.ChargeWork(256);
+        budget.Checkpoint();
         seen.Clear();
         foreach (var literal in literals)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var value = literal[prefixLength];
             if (seen[value]) return default;
             seen[value] = true;
@@ -162,7 +162,7 @@ internal static partial class AsciiSearch
         var map = budget.AllocateArray<ushort>(256, false);
         for (var index = 0; index < literals.Length; index++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             map[literals[index][prefixLength]] = (ushort)(index + 1);
         }
         return new(prefixLength, map);

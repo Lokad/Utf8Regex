@@ -18,7 +18,7 @@ public sealed class Utf8LeadingAsciiCandidateTests
         const string pattern = @"^([a-z_]+)@([a-z-]+\.)+[a-z]{2,12}$";
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4, MaxDepth = 1, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         using var source = new CancellationTokenSource();
         Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(text), source.Token));
@@ -29,14 +29,12 @@ public sealed class Utf8LeadingAsciiCandidateTests
     {
         using var regex = new Utf8Regex(@"\A([a-z_]+)@(?:q[ab]|[xy][cz])+!\z", RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var source = new CancellationTokenSource();
         Assert.True(regex.IsMatch("a_b@qaxc!"u8, source.Token));
         Assert.False(regex.IsMatch("a_b@qaxb!"u8, source.Token));
         var longer = Encoding.UTF8.GetBytes("a_b@" + string.Concat(Enumerable.Repeat("qa", 24)) + "!");
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(longer, source.Token));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
     }
 
     [Theory]
@@ -58,15 +56,6 @@ public sealed class Utf8LeadingAsciiCandidateTests
                 }
             });
             Assert.Equal(0, regex.Count(storage.AsSpan(1, input.Length), cancellation.Token));
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(StraightPrefixPattern, options:                     options, policy: new Utf8RegexPolicy
-                {
-                    MatchTimeout = Regex.InfiniteMatchTimeout,
-                    ResourcePolicy = Funded with
-                    {
-                        MaxWorkSteps = 1
-                    }
-                }).Count(input)).ResourceKind);
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count("# noqa: A123"u8)).ResourceKind);
         }
@@ -267,15 +256,6 @@ public sealed class Utf8LeadingAsciiCandidateTests
                 MaxWorkingBytes = 1
             }
         }).Count(input));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern, options:                 RegexOptions.None, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Regex.InfiniteMatchTimeout,
-                ResourcePolicy = Funded with
-                {
-                    MaxWorkSteps = 4096
-                }
-            }).Count(input)).ResourceKind);
     }
 
     [Theory]
@@ -305,10 +285,7 @@ public sealed class Utf8LeadingAsciiCandidateTests
         Assert.Equal(1, new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Funded with
-            {
-                MaxWorkSteps = 4096
-            }
+            ResourcePolicy = Funded
         }).Count(input));
         // The external complete-repeat plan is retired. Both root forms now
         // admit the scalar verifier storage after the independent start filter.
@@ -341,15 +318,6 @@ public sealed class Utf8LeadingAsciiCandidateTests
         Assert.Equal(0, anchored.Count(Encoding.UTF8.GetBytes(new string('x', 8192) + "😀")));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => anchored.Count("xx\nAb Cd"u8)).ResourceKind);
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern, options:                 RegexOptions.None, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Regex.InfiniteMatchTimeout,
-                ResourcePolicy = Funded with
-                {
-                    MaxWorkSteps = 1
-                }
-            }).Count(input)).ResourceKind);
     }
 
     [Theory]
@@ -358,25 +326,17 @@ public sealed class Utf8LeadingAsciiCandidateTests
     [InlineData(@"(?m)^(?<w>[A-Z])[a-z]+")]
     public void EveryWorkCutoffPreservesTheOriginalScratchLoan(string pattern)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var input = "éABaB😀\nAb CdA"u8.ToArray();
-        var complete = new Utf8SliceInvocation(new(100000, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var complete = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(complete.Ledger.TryReserve(13));
         var outcome = Utf8SliceRunner.CountFromBytes(program, input, 0, new int[program.GroupCount],
             new int[program.GroupCount], ref complete);
         Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
         Assert.Equal(1, outcome.Count);
         Assert.Equal(13UL, complete.Ledger.ReservedBytes);
-        for (ulong cap = 1; cap <= complete.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            outcome = Utf8SliceRunner.CountFromBytes(program, input, 0, new int[program.GroupCount],
-                new int[program.GroupCount], ref invocation);
-            Assert.Equal(cap < complete.Budget.Steps ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.None, outcome.Breach);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]
@@ -470,16 +430,16 @@ public sealed class Utf8LeadingAsciiCandidateTests
     }
 
     [Theory]
-    [InlineData(false, 512u)]
-    [InlineData(true, 6000u)]
-    public void BranchedStartSkipsRejectedPrefixesUnderAFiniteWorkLimit(bool falseDigitStarts, uint work)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BranchedStartSkipsRejectedPrefixesUnderAFiniteWorkLimit(bool falseDigitStarts)
     {
         const string octet = @"(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
         var prefix = falseDigitStarts ? string.Concat(Enumerable.Repeat("1x", 2048)) : new string('x', 32763);
         var input = Encoding.UTF8.GetBytes(prefix + "😀 123.17.24.25");
         using var regex = Utf8Regex.Compile(@"(?:" + octet + @"\.){3}" + octet, policy: new()
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = work }
+            ResourcePolicy = Funded
         });
         using var live = new CancellationTokenSource();
         Assert.Equal(1, regex.Count(input, live.Token));
@@ -495,7 +455,7 @@ public sealed class Utf8LeadingAsciiCandidateTests
         using var live = new CancellationTokenSource();
         using var value = Utf8Regex.Compile(pattern, policy: new()
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = 12, MaxWorkingBytes = 1 }
+            ResourcePolicy = Funded with { MaxWorkingBytes = 1 }
         });
         var range = value.Match(input, cancellationToken: live.Token);
         Assert.True(range.Success);
@@ -589,7 +549,7 @@ public sealed class Utf8LeadingAsciiCandidateTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("'AXz!'😀", 512)));
         using var regex = Utf8Regex.Compile(pattern, policy: new()
         {
-            ResourcePolicy = Funded with { MaxDepth = 1, MaxWorkSteps = 5000 }
+            ResourcePolicy = Funded with { MaxDepth = 1 }
         });
         using var token = new CancellationTokenSource();
         Assert.Equal(0, regex.Count(input, token.Token));
@@ -598,5 +558,5 @@ public sealed class Utf8LeadingAsciiCandidateTests
 
     private const string StraightPrefixPattern = @"(?:# [Nn][Oo][Qq][Aa])(?::\s?(([A-Z]+[0-9]+(?:[,\s]+)?)+))?";
 
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 4000000, MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };
 }

@@ -95,31 +95,12 @@ public sealed class Pcre2NonEmptyCountScopeTests
         }
     }
 
-    [Fact]
-    public void ValidationAndMatchingKeepOneCumulativeWorkAllowance()
-    {
-        var regex = Create("(a+)(b)");
-        var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 100)));
-        var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-        Pcre2Runner.AdmitStart(bytes, 0, ref invocation);
-        ReadOnlySpan<byte> input = bytes;
-        var validation = invocation.Budget.Steps;
-        Assert.True(Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, input,
-            new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
-        Assert.Equal(100, count);
-        var matching = invocation.Budget.Steps - validation;
-        Assert.True(validation > 0 && matching > 0);
-        var cap = checked((uint)Math.Max(validation, matching));
-        var denied = Create("(a+)(b)", work: cap);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => denied.Count(bytes)).ErrorKind);
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void InterruptionAfterValidationReleasesScratchAndKeepsRetainedCaptures(bool cancel)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
@@ -127,7 +108,6 @@ public sealed class Pcre2NonEmptyCountScopeTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
             },
@@ -140,7 +120,7 @@ public sealed class Pcre2NonEmptyCountScopeTests
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 3000)));
         Pcre2Runner.AdmitStart(bytes, 0, ref invocation);
         ReadOnlySpan<byte> input = bytes;
-        var validated = invocation.Budget.Steps;
+        var validated = invocation.Budget.DiagnosticCheckpoints;
         int checkpoints = 0;
         invocation.CheckpointHook = _ =>
         {
@@ -154,7 +134,7 @@ public sealed class Pcre2NonEmptyCountScopeTests
                 new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _);
         }
         catch (Exception error) { failure = error; }
-        Assert.True(checkpoints > 0 && invocation.Budget.Steps > validated);
+        Assert.True(checkpoints > 0 && invocation.Budget.DiagnosticCheckpoints > validated);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         if (cancel)
             Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
@@ -166,12 +146,11 @@ public sealed class Pcre2NonEmptyCountScopeTests
     }
 
     private static Utf8Pcre2Regex Create(string pattern, ulong working = 1 << 20,
-        ulong result = 1 << 20, uint work = 1000000) =>
+        ulong result = 1 << 20) =>
         new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (work) == 0 ? null : (work),
                 MaxDepth = 256,
                 MaxWorkingBytes = (working) == 0 ? null : (working),
                 MaxResultBytes = (result) == 0 ? null : (result)

@@ -7,13 +7,12 @@ namespace Lokad.Utf8Regex.Internal;
 /// Structural linear instructions/steps share instruction and byte admission;
 /// fixed-width checks and generated scalar group names share byte admission.
 /// Covered scans, parser/conversion loops, vectors/maps/sorts and preparation
-/// resumes share cumulative work admission; core/Python parser, preparation and
+/// resumes check cooperative interruption. Core/Python parser, preparation and
 /// byte-safe DFA frames share live depth admission. DFA/NFA state vectors,
 /// edges, closures, bucket maps and covered helper state share capacity admission.
 /// Owned dynamic emission also admits IL/fixup/local/token/stack buffers,
 /// runtime managed copies, dispatch/lowering tables and complete wrapper state.
 /// Serialized IL byte capacity conservatively counts as instruction capacity.
-/// Speculative failure never refunds admitted work.
 /// Covered tree/AST/helper objects use numeric conservative charges; no object
 /// registry keeps discarded helpers alive. Covered text and arrays have separate
 /// length-based admission. Failed scopes restore numeric capacity without
@@ -25,7 +24,6 @@ internal sealed class Utf8ConstructionScope : IDisposable
     // BCL decline. A final safe default needs the full resource/corpus qualification.
     internal const ulong DefaultInstructionCapacity = 1_048_576;
     internal const ulong DefaultBufferBytes = 64 * 1024 * 1024;
-    internal const ulong DefaultWorkSteps = 64 * 1024 * 1024;
     internal const ulong DefaultDepth = 65536;
     [ThreadStatic] private static Utf8ConstructionScope? s_current;
     private readonly Utf8ConstructionScope? _previous;
@@ -44,21 +42,11 @@ internal sealed class Utf8ConstructionScope : IDisposable
     {
     }
 
-    internal Utf8ConstructionScope(ulong maximum, ulong maximumBytes)
-        : this(maximum, maximumBytes, DefaultWorkSteps, DefaultDepth)
-    {
-    }
-
-    internal Utf8ConstructionScope(ulong maximum, ulong maximumBytes, ulong maximumWorkSteps, ulong maximumDepth)
-        : this(maximum, maximumBytes, maximumWorkSteps, maximumDepth, null)
-    {
-    }
-
-    private Utf8ConstructionScope(ulong maximum, ulong maximumBytes, ulong maximumWorkSteps, ulong maximumDepth,
-        IUtf8MemoryAllowance? memoryAllowance)
+    internal Utf8ConstructionScope(ulong maximum, ulong maximumBytes, ulong maximumDepth = DefaultDepth,
+        IUtf8MemoryAllowance? memoryAllowance = null)
     {
         _previous = s_current;
-        Budget = _previous?.Budget ?? new Utf8ConstructionBudget(maximum, maximumBytes, maximumWorkSteps, maximumDepth, memoryAllowance);
+        Budget = _previous?.Budget ?? new Utf8ConstructionBudget(maximum, maximumBytes, maximumDepth, memoryAllowance);
         _ownsFunding = _previous is null && memoryAllowance is not null;
         _checkpoint = Budget.Reserved;
         _byteCheckpoint = Budget.ReservedBytes;
@@ -68,7 +56,7 @@ internal sealed class Utf8ConstructionScope : IDisposable
 
     internal Utf8ConstructionBudget Budget { get; }
     internal static bool IsActive => s_current is not null;
-    internal static void ChargeWork(ulong steps) => s_current?.Budget.ChargeWork(steps);
+    internal static void Checkpoint() => s_current?.Budget.Checkpoint();
     internal static Utf8ConstructionBudget CurrentBudget => s_current?.Budget
         ?? throw new InvalidOperationException("No construction owner is active.");
 
@@ -87,7 +75,6 @@ internal sealed class Utf8ConstructionScope : IDisposable
         var scope = new Utf8ConstructionScope(
             Math.Min(policy.MaxInstructionCapacity ?? DefaultInstructionCapacity, DefaultInstructionCapacity),
             Math.Min(policy.MaxBytes ?? DefaultBufferBytes, DefaultBufferBytes),
-            Math.Min(policy.MaxWorkSteps ?? DefaultWorkSteps, DefaultWorkSteps),
             Math.Min(policy.MaxDepth ?? DefaultDepth, DefaultDepth));
         scope.Budget.CancellationToken = cancellationToken;
         scope.Budget.Deadline = Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline.Start(timeout);
@@ -103,7 +90,6 @@ internal sealed class Utf8ConstructionScope : IDisposable
         var scope = new Utf8ConstructionScope(
             Math.Min(policy.MaxInstructionCapacity ?? DefaultInstructionCapacity, DefaultInstructionCapacity),
             policy.MaxBytes ?? ulong.MaxValue,
-            Math.Min(policy.MaxWorkSteps ?? DefaultWorkSteps, DefaultWorkSteps),
             Math.Min(policy.MaxDepth ?? DefaultDepth, DefaultDepth), memoryAllowance);
         scope.Budget.CancellationToken = cancellationToken;
         scope.Budget.Deadline = Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline.Start(timeout);

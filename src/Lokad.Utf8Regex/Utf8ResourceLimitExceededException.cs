@@ -7,14 +7,10 @@ public enum Utf8ResourceLimitKind
     ConstructionInstructionCapacity,
     /// <summary>Admitted construction capacity, including covered arrays, decoded pattern text and copy overlap.</summary>
     ConstructionBytes,
-    /// <summary>Cumulative admitted units of covered construction scans, loop iterations and array work.</summary>
-    ConstructionWorkSteps,
     /// <summary>Combined live explicit traversal frames in covered construction walkers.</summary>
-    ConstructionDepth,
-    /// <summary>Cumulative bounded execution/checkpoint steps in one invocation.</summary>
-    ExecutionWorkSteps,
+    ConstructionDepth = 3,
     /// <summary>Cumulative modeled major result and staging capacity in one invocation.</summary>
-    ExecutionResultBytes,
+    ExecutionResultBytes = 5,
     /// <summary>Live backtracking/continuation frames or pending linear alternatives in one invocation.</summary>
     ExecutionDepth,
     /// <summary>Modeled major active working capacity, including growth overlap and published cursor credits.</summary>
@@ -38,7 +34,7 @@ public sealed class Utf8ResourceLimitExceededException : InvalidOperationExcepti
     /// <summary>Gets the configured maximum in the units of <see cref="ResourceKind"/>.</summary>
     public ulong Limit { get; }
 
-    /// <summary>Gets the combined capacity, work or depth requested before the denied operation.
-    /// An execution work, working or result-capacity request beyond ulong.MaxValue is reported as ulong.MaxValue.</summary>
+    /// <summary>Gets the capacity or depth requested before the denied operation.
+    /// An execution working or result-capacity request beyond ulong.MaxValue is reported as ulong.MaxValue.</summary>
     public ulong Requested { get; }
 }

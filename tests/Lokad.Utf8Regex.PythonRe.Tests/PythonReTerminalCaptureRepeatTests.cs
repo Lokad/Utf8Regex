@@ -7,7 +7,6 @@ public sealed class PythonReTerminalCaptureRepeatTests
         MatchTimeout = Timeout.InfiniteTimeSpan,
         ResourcePolicy = new()
         {
-            MaxWorkSteps = 100000,
             MaxDepth = 32,
             MaxWorkingBytes = 1 << 20,
             MaxResultBytes = 1 << 20

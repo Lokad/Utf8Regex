@@ -9,7 +9,6 @@ readonly struct Utf8ConstructionPolicy : IEquatable<Utf8ConstructionPolicy>
   property Nullable<UInt32> MaxDepth { get; init; }
   property Nullable<UInt64> MaxBytes { get; init; }
   property Nullable<UInt64> MaxInstructionCapacity { get; init; }
-  property Nullable<UInt64> MaxWorkSteps { get; init; }
   property static Utf8ConstructionPolicy Default { get; }
   method Boolean Equals(Utf8ConstructionPolicy other)
   method static Boolean op_Equality(Utf8ConstructionPolicy left, Utf8ConstructionPolicy right)
@@ -66,11 +65,10 @@ sealed class Utf8ResourceLimitExceededException : InvalidOperationException, Run
   property UInt64 Limit { get; }
   property UInt64 Requested { get; }
   property Utf8ResourceLimitKind ResourceKind { get; }
-enum Utf8ResourceLimitKind : Int32 { ConstructionBytes = 1, ConstructionDepth = 3, ConstructionInstructionCapacity = 0, ConstructionWorkSteps = 2, ExecutionDepth = 6, ExecutionResultBytes = 5, ExecutionWorkSteps = 4, ExecutionWorkingBytes = 7 }
+enum Utf8ResourceLimitKind : Int32 { ConstructionBytes = 1, ConstructionDepth = 3, ConstructionInstructionCapacity = 0, ExecutionDepth = 6, ExecutionResultBytes = 5, ExecutionWorkingBytes = 7 }
 readonly struct Utf8ResourcePolicy : IEquatable<Utf8ResourcePolicy>
   property Nullable<UInt32> MaxDepth { get; init; }
   property Nullable<UInt64> MaxResultBytes { get; init; }
-  property Nullable<UInt64> MaxWorkSteps { get; init; }
   property Nullable<UInt64> MaxWorkingBytes { get; init; }
   property static Utf8ResourcePolicy Unlimited { get; }
   method Boolean Equals(Utf8ResourcePolicy other)

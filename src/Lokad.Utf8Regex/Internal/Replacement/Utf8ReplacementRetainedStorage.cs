@@ -27,7 +27,7 @@ internal readonly struct Utf8ReplacementRetainedStorage : IUtf8RetainedStorage<b
 
         bool Add(ulong bytes)
         {
-            control.Check(); budget.ChargeWork(1);
+            control.Check(); budget.Checkpoint();
             if (bytes > maximum - total) return false;
             total += bytes; return true;
         }

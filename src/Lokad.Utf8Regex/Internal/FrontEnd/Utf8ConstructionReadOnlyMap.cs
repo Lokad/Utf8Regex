@@ -18,11 +18,11 @@ internal sealed class Utf8ConstructionReadOnlyMap<TKey, TValue>(
     // keep original interruption checks and charge the traversal itself below.
     public IEnumerable<TKey> Keys
     {
-        get { Utf8ConstructionScope.ChargeWork(0); return new KeyView(this); }
+        get { Utf8ConstructionScope.Checkpoint(); return new KeyView(this); }
     }
     public IEnumerable<TValue> Values
     {
-        get { Utf8ConstructionScope.ChargeWork(0); return new ValueView(this); }
+        get { Utf8ConstructionScope.Checkpoint(); return new ValueView(this); }
     }
 
     public bool ContainsKey(TKey key) => TryGetValue(key, out _);
@@ -30,17 +30,17 @@ internal sealed class Utf8ConstructionReadOnlyMap<TKey, TValue>(
     {
         if (entries.Length != 0)
         {
-            if (key is string text) Utf8ConstructionScope.ChargeWork((ulong)text.Length);
+            if (key is string text) Utf8ConstructionScope.Checkpoint();
             var hash = comparer.GetHashCode(key) & int.MaxValue;
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             var index = hash & (entries.Length - 1);
             var probes = 0;
             while (entries[index].Used)
             {
-                if ((++probes & 63) == 0) Utf8ConstructionScope.ChargeWork(1);
+                if ((++probes & 63) == 0) Utf8ConstructionScope.Checkpoint();
                 if (entries[index].Hash == hash)
                 {
-                    if (key is string candidate) Utf8ConstructionScope.ChargeWork((ulong)candidate.Length);
+                    if (key is string candidate) Utf8ConstructionScope.Checkpoint();
                     if (comparer.Equals(entries[index].Key, key)) { value = entries[index].Value; return true; }
                 }
                 index = (index + 1) & (entries.Length - 1);
@@ -52,7 +52,7 @@ internal sealed class Utf8ConstructionReadOnlyMap<TKey, TValue>(
 
     public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
     {
-        Utf8ConstructionScope.ChargeWork(0);
+        Utf8ConstructionScope.Checkpoint();
         return EnumeratePairs().GetEnumerator();
     }
 
@@ -60,10 +60,10 @@ internal sealed class Utf8ConstructionReadOnlyMap<TKey, TValue>(
     {
         // Admit the complete backing-table scan once. Early termination may
         // overcharge; individual slots and iterator helper objects are not metered.
-        Utf8ConstructionScope.ChargeWork((ulong)entries.Length);
+        Utf8ConstructionScope.Checkpoint();
         for (var index = 0; index < entries.Length; index++)
         {
-            if ((index & 63) == 0) Utf8ConstructionScope.ChargeWork(0);
+            if ((index & 63) == 0) Utf8ConstructionScope.Checkpoint();
             if (entries[index].Used) yield return new(entries[index].Key, entries[index].Value);
         }
     }
@@ -81,7 +81,7 @@ internal sealed class Utf8ConstructionReadOnlyMap<TKey, TValue>(
     {
         public IEnumerator<TKey> GetEnumerator()
         {
-            Utf8ConstructionScope.ChargeWork(0);
+            Utf8ConstructionScope.Checkpoint();
             return map.EnumerateKeys().GetEnumerator();
         }
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -90,7 +90,7 @@ internal sealed class Utf8ConstructionReadOnlyMap<TKey, TValue>(
     {
         public IEnumerator<TValue> GetEnumerator()
         {
-            Utf8ConstructionScope.ChargeWork(0);
+            Utf8ConstructionScope.Checkpoint();
             return map.EnumerateValues().GetEnumerator();
         }
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

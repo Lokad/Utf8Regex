@@ -82,10 +82,10 @@ public sealed partial class Utf8Regex : IDisposable
             Options = options;
             MatchTimeout = matchTimeout;
             InvocationLimits = new(resourcePolicy);
-            HasFiniteExecutionLimits = resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue ||
+            HasFiniteExecutionLimits = resourcePolicy.MaxDepth.HasValue ||
                 resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue;
             construction.Budget.CheckBytes(ProgramFixedMetadataBytes);
-            construction.Budget.ChargeWork(1);
+            construction.Budget.Checkpoint();
             construction.Budget.ReserveBytes(ProgramFixedMetadataBytes);
 
             var proofTier = canTierUp && matchTimeout == Regex.InfiniteMatchTimeout && !HasFiniteExecutionLimits
@@ -172,7 +172,7 @@ public sealed partial class Utf8Regex : IDisposable
                 // Parsing borrows only during this call. Retained source bytes are
                 // separately admitted and copied before the expression can escape.
                 _patternUtf8 = construction.Budget.AllocateArray<byte>(pattern.Utf8.Length, false);
-                construction.Budget.ChargeWork((ulong)pattern.Utf8.Length);
+                construction.Budget.Checkpoint();
                 pattern.Utf8.CopyTo(_patternUtf8);
             }
             if (account is not null)
@@ -182,11 +182,11 @@ public sealed partial class Utf8Regex : IDisposable
                 construction.Budget.ReserveBytes(_replacementCache.MaximumRetainedBytes);
                 var storage = construction.Budget.AllocateObject(account,
                     static allowance => new Utf8FundedStorage(allowance, nameof(Utf8Regex)));
-                construction.Budget.ChargeWork(0);
+                construction.Budget.Checkpoint();
                 storage.Retain(construction.Budget.TransferFundedBytes());
                 _programMemory = storage;
             }
-            else if (ownsConstruction) construction.Budget.ChargeWork(0);
+            else if (ownsConstruction) construction.Budget.Checkpoint();
             construction.Complete();
         }
         catch (Utf8ExecutionDeadlineExpiredException) when (ownsConstruction)
@@ -470,7 +470,7 @@ public sealed partial class Utf8Regex : IDisposable
         screenedLiteral = -1;
         if (program.RejectsByFinalAscii(input))
         {
-            if (invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
+            if (invocation.CheckInput() != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Final scalar screening breached the invocation budget.");
             return true;
         }
@@ -702,7 +702,7 @@ public sealed partial class Utf8Regex : IDisposable
         const int blockSize = 2048;
         for (var offset = 0; offset < input.Length;)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Folded literal screening exceeded the invocation budget.");
             var length = Math.Min(blockSize, input.Length - offset);

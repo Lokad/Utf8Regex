@@ -50,7 +50,6 @@ public sealed class PythonReOctalBoundaryTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10000,
                 MaxDepth = 64,
                 MaxWorkingBytes = 65536,
                 MaxResultBytes = 65536

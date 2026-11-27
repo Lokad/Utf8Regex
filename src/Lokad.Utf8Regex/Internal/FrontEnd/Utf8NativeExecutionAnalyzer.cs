@@ -151,7 +151,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 var hasNonAscii = false;
                 foreach (var literal in alternateLiterals)
                 {
-                    owner.ChargeWork((ulong)literal.Length + 1);
+                    owner.Checkpoint();
                     foreach (var value in literal) if (value > 0x7f) { hasNonAscii = true; break; }
                 }
                 if (ignoreCase && hasNonAscii)
@@ -192,7 +192,7 @@ internal static class Utf8NativeExecutionAnalyzer
     {
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group && node.ChildCount == 1)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             node = node.Child(0);
         }
         if (node.Kind == Utf8TreeNodeKind.Empty || node.Kind == Utf8TreeNodeKind.Concatenate && node.ChildCount == 0)
@@ -224,7 +224,7 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static bool IsPlainAsciiLiteral(ReadOnlySpan<byte> bytes)
     {
-        Utf8ConstructionScope.ChargeWork((ulong)bytes.Length);
+        Utf8ConstructionScope.Checkpoint();
         foreach (var value in bytes)
             if (value > 0x7f || Utf8RegexSyntax.IsRegexMetaCharacter((char)value)) return false;
         return true;
@@ -304,7 +304,7 @@ internal static class Utf8NativeExecutionAnalyzer
                     var firstBranchLength = literalBranches[0].Length;
                     for (var branchIndex = 1; branchIndex < literalBranches.Length; branchIndex++)
                     {
-                        owner.ChargeWork(1);
+                        owner.Checkpoint();
                         if (literalBranches[branchIndex].Length != firstBranchLength)
                         {
                             analyzedRegex = default;
@@ -357,18 +357,18 @@ internal static class Utf8NativeExecutionAnalyzer
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
         owner.EnterDepth();
-        owner.ChargeWork(1);
+        owner.Checkpoint();
         owner.EnterDepth();
-        owner.ChargeWork(1);
+        owner.Checkpoint();
         owner.EnterDepth();
-        owner.ChargeWork(1);
+        owner.Checkpoint();
         var executionOptions = semanticRegex.ExecutionOptions;
         if (!TryGetNativeLookaheadLiteralUtf8(lookahead, executionOptions, out var trailingLiteral)) return false;
         owner.LeaveDepth();
         using var bytes = Utf8ConstructionBuffer<byte>.Create(owner);
         for (var index = 0; index < body.ChildCount - 1; index++)
         {
-            owner.ChargeWork(1);
+            owner.Checkpoint();
             if (!TryGetNativeLookaheadLiteralUtf8(body.Child(index), executionOptions, out var part))
                 return false;
             bytes.AddRange(part);
@@ -392,11 +392,11 @@ internal static class Utf8NativeExecutionAnalyzer
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
         owner.EnterDepth();
-        owner.ChargeWork(1);
+        owner.Checkpoint();
         owner.EnterDepth();
-        owner.ChargeWork(1);
+        owner.Checkpoint();
         owner.EnterDepth();
-        owner.ChargeWork(1);
+        owner.Checkpoint();
         if (!TryGetNativeLookaheadLiteralUtf8(lookahead, executionOptions, out var trailingLiteral)) return false;
         owner.LeaveDepth();
         owner.LeaveDepth();
@@ -405,10 +405,10 @@ internal static class Utf8NativeExecutionAnalyzer
         var hasNonAscii = false;
         for (var index = 0; index < literalTexts.Length; index++)
         {
-            owner.ChargeWork(1);
+            owner.Checkpoint();
             var bytes = literalTexts[index];
             if (bytes.Length == 0) return false;
-            owner.ChargeWork((ulong)bytes.Length);
+            owner.Checkpoint();
             foreach (var value in bytes) if (value > 0x7f) { hasNonAscii = true; break; }
         }
         trailingLiteralUtf8 = trailingLiteral;
@@ -463,7 +463,7 @@ internal static class Utf8NativeExecutionAnalyzer
             !TryExtractInvariantIgnoreCaseAsciiLiteralFamilyStrings(node, out var texts)) return false;
         literals = construction.Budget.AllocateArray<byte[]>(texts.Length, false);
         for (var index = 0; index < texts.Length; index++)
-        { construction.Budget.ChargeWork(1); literals[index] = construction.Budget.EncodeUtf8(texts[index]); }
+        { construction.Budget.Checkpoint(); literals[index] = construction.Budget.EncodeUtf8(texts[index]); }
         construction.Budget.ReleaseArray(texts, false);
         construction.Complete(); return true;
     }
@@ -489,7 +489,7 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static bool IsPlainAsciiLiteral(ReadOnlySpan<char> pattern)
     {
-        Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
+        Utf8ConstructionScope.Checkpoint();
         foreach (var ch in pattern)
         {
             if (ch > 0x7F || Utf8RegexSyntax.IsRegexMetaCharacter(ch))
@@ -503,7 +503,7 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static bool IsPlainLiteral(ReadOnlySpan<char> pattern, bool freeSpacing = false)
     {
-        Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
+        Utf8ConstructionScope.Checkpoint();
         foreach (var ch in pattern)
         {
             if (Utf8RegexSyntax.IsRegexMetaCharacter(ch) || freeSpacing && IsFreeSpacingSyntax(ch))
@@ -522,7 +522,7 @@ internal static class Utf8NativeExecutionAnalyzer
         owner.EnterDepth();
         try
         {
-            owner.ChargeWork(1);
+            owner.Checkpoint();
             if (pattern.Length < 3 || pattern[0] != '(' || pattern[^1] != ')') return false;
             var inner = pattern[1..^1];
             if (!IsPlainLiteral(inner, freeSpacing)) return false;
@@ -549,14 +549,14 @@ internal static class Utf8NativeExecutionAnalyzer
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
         owner.EnterDepth();
-        owner.ChargeWork(1);
+        owner.Checkpoint();
         owner.EnterDepth();
-        owner.ChargeWork(1);
+        owner.Checkpoint();
         if (!TryUnwrapLiteralAlternation(atom, out var literals) || literals.Length <= 1) return false;
         owner.LeaveDepth();
         for (var index = 0; index < literals.Length; index++)
         {
-            owner.ChargeWork(1);
+            owner.Checkpoint();
             if (literals[index].Length == 0) return false;
         }
         alternateLiteralsUtf8 = literals;
@@ -574,7 +574,7 @@ internal static class Utf8NativeExecutionAnalyzer
         var owner = construction.Budget; owner.EnterDepth();
         try
         {
-            owner.ChargeWork((ulong)pattern.Length + 1);
+            owner.Checkpoint();
             if (pattern.Length == 0 || pattern[0] == '|' || pattern[^1] == '|') return false;
             var count = 1; var length = 0;
             foreach (var value in pattern)
@@ -593,7 +593,7 @@ internal static class Utf8NativeExecutionAnalyzer
             var start = 0; var index = 0;
             for (var offset = 0; offset <= pattern.Length; offset++)
             {
-                owner.ChargeWork(1);
+                owner.Checkpoint();
                 if (offset < pattern.Length && pattern[offset] != '|') continue;
                 result[index++] = owner.EncodeUtf8(pattern[start..offset]);
                 start = offset + 1;
@@ -612,11 +612,11 @@ internal static class Utf8NativeExecutionAnalyzer
         owner.EnterDepth();
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group && node.ChildCount == 1)
         {
-            owner.ChargeWork(1);
+            owner.Checkpoint();
             node = node.Child(0);
             owner.EnterDepth();
         }
-        owner.ChargeWork(1);
+        owner.Checkpoint();
         // Two unfolded scalar members are a complete UTF-8 literal pair.
         // Keep ASCII classes on their existing lowering and borrow the pair
         // search for mixed/wide classes without adding a matching primitive.
@@ -627,7 +627,7 @@ internal static class Utf8NativeExecutionAnalyzer
             var result = owner.AllocateArray<byte[]>(node.ChildCount, false);
             for (var index = 0; index < result.Length; index++)
             {
-                owner.ChargeWork(1);
+                owner.Checkpoint();
                 if (!TryGetLiteralBranchUtf8(node.Child(index), out result[index])) return false;
             }
             literals = result;
@@ -652,7 +652,7 @@ internal static class Utf8NativeExecutionAnalyzer
         {
             for (var scalar = data[index]; scalar < data[index + 1]; scalar++)
             {
-                owner.ChargeWork(1);
+                owner.Checkpoint();
                 if (count == scalars.Length || !Rune.IsValid(scalar)) return false;
                 scalars[count++] = scalar;
             }
@@ -679,11 +679,11 @@ internal static class Utf8NativeExecutionAnalyzer
         owner.EnterDepth();
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group && node.ChildCount == 1)
         {
-            owner.ChargeWork(1);
+            owner.Checkpoint();
             node = node.Child(0);
             owner.EnterDepth();
         }
-        owner.ChargeWork(1);
+        owner.Checkpoint();
         if (node.Kind is not Utf8TreeNodeKind.One and not Utf8TreeNodeKind.Multi ||
             !TryGetNativeLookaheadLiteralUtf8(node, node.Options, out literal)) return false;
         owner.Rollback(owner.Reserved, owner.ReservedBytes, depth);
@@ -704,10 +704,10 @@ internal static class Utf8NativeExecutionAnalyzer
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
         owner.EnterDepth();
-        owner.ChargeWork(1);
+        owner.Checkpoint();
         owner.EnterDepth();
         owner.EnterDepth();
-        owner.ChargeWork(1);
+        owner.Checkpoint();
         if (!TryGetLiteralText(atom, out var matchedLiteral) || matchedLiteral.Length == 0) return false;
         owner.LeaveDepth();
         if (!IsNativeLiteralExecutionPattern(semanticRegex)) return false;
@@ -758,7 +758,7 @@ internal static class Utf8NativeExecutionAnalyzer
         if (!Utf8ScalarAsciiProjector.TryProjectAsciiQuery(scalarClass, out var mask) || mask.IsEmpty) return false;
         for (var value = 0; value < 128; value++)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (mask.Contains((byte)value) && !Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value)) return false;
         }
         return true;
@@ -790,7 +790,7 @@ internal static class Utf8NativeExecutionAnalyzer
         string[] values = [];
         while (frames.Count != 0)
         {
-            owner.ChargeWork(1);
+            owner.Checkpoint();
             var index = frames.Count - 1; var frame = frames[index]; node = frame.Node;
             if (!frame.Entered)
             {
@@ -839,7 +839,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 foreach (var left in frame.Values)
                     foreach (var right in values)
                     {
-                        owner.ChargeWork(1);
+                        owner.Checkpoint();
                         if (left.Length == 0) next[output++] = right;
                         else if (right.Length == 0) next[output++] = left;
                         else
@@ -854,7 +854,7 @@ internal static class Utf8NativeExecutionAnalyzer
             var child = node.Child(frame.NextChild++); frames[index] = frame; frames.Push(new(child));
         }
         var result = arena.Allocate<string>(values.Length, true);
-        owner.ChargeWork((ulong)values.Length); values.CopyTo(result, 0);
+        owner.Checkpoint(); values.CopyTo(result, 0);
         literals = result; arena.Complete(); construction.Complete();
         return true;
     }
@@ -876,7 +876,7 @@ internal static class Utf8NativeExecutionAnalyzer
         using var text = Utf8ConstructionText.Create();
         while (frames.Count != 0)
         {
-            owner.ChargeWork(1);
+            owner.Checkpoint();
             var index = frames.Count - 1; var frame = frames[index]; node = frame.Node;
             if (!frame.Entered)
             {
@@ -892,7 +892,7 @@ internal static class Utf8NativeExecutionAnalyzer
                     case Utf8TreeNodeKind.Multi when node.Str is { } borrowed:
                         foreach (var value in borrowed)
                         {
-                            owner.ChargeWork(1);
+                            owner.Checkpoint();
                             if (value > 0x7f) return false;
                             text.Append((char)Internal.Search.AsciiSearch.FoldCase((byte)value));
                         }
@@ -934,7 +934,7 @@ internal static class Utf8NativeExecutionAnalyzer
         var folded = byte.MaxValue;
         for (var value = 0; value < 128; value++)
         {
-            owner.ChargeWork(1);
+            owner.Checkpoint();
             if (!mask.Contains((byte)value))
             {
                 continue;
@@ -969,7 +969,7 @@ internal static class Utf8NativeExecutionAnalyzer
         var owner = construction.Budget; owner.EnterDepth();
         try
         {
-            owner.ChargeWork(1);
+            owner.Checkpoint();
             switch (node.Kind)
             {
                 case Utf8TreeNodeKind.One:
@@ -989,7 +989,7 @@ internal static class Utf8NativeExecutionAnalyzer
         // no source text is needed for this conservative raw-text eligibility check.
         if (semanticRegex.Pattern is null) return true;
         var executionPattern = semanticRegex.ExecutionPattern;
-        Utf8ConstructionScope.ChargeWork((ulong)executionPattern.Length);
+        Utf8ConstructionScope.Checkpoint();
         if ((semanticRegex.ExecutionOptions & RegexOptions.IgnorePatternWhitespace) == 0)
         {
             return true;

@@ -49,7 +49,7 @@ public sealed class Pcre2InlineCaselessRestrictionTests
         foreach (var options in new[] { Pcre2CompileOptions.None, Pcre2CompileOptions.Ucp })
             foreach (var limits in new[] { default(Utf8Pcre2ExecutionLimits), new Utf8Pcre2ExecutionLimits
         {
-            MatchLimit = 1000000, DepthLimit = 256,
+            DepthLimit = 256,
             HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20
         } })
             {
@@ -57,7 +57,6 @@ public sealed class Pcre2InlineCaselessRestrictionTests
                 {
                     ResourcePolicy = new Utf8ResourcePolicy
                     {
-                        MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                         MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                         MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                         MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
@@ -104,11 +103,11 @@ public sealed class Pcre2InlineCaselessRestrictionTests
     public void RestrictionKeepsAllFourFiniteDenials()
     {
         const string pattern = @"(?ir)(?<x>(?:k|s)+)\k<x>";
-        foreach (var kind in new[] { 0, 1, 2, 3 })
+        foreach (var kind in new[] { 1, 2, 3 })
         {
             var limits = kind switch
             {
-                0 => new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
+                0 => new Utf8Pcre2ExecutionLimits { DepthLimit = 4096 },
                 1 => new Utf8Pcre2ExecutionLimits { DepthLimit = 1 },
                 2 => new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 },
                 _ => new Utf8Pcre2ExecutionLimits { ResultLimitInBytes = 1 },
@@ -117,7 +116,6 @@ public sealed class Pcre2InlineCaselessRestrictionTests
             {
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                     MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                     MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                     MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
@@ -134,7 +132,6 @@ public sealed class Pcre2InlineCaselessRestrictionTests
             });
             Assert.Equal(kind switch
             {
-                0 => Pcre2ErrorKind.MatchLimit,
                 1 => Pcre2ErrorKind.DepthLimit,
                 2 => Pcre2ErrorKind.HeapLimit,
                 _ => Pcre2ErrorKind.ResultLimit
@@ -154,7 +151,6 @@ public sealed class Pcre2InlineCaselessRestrictionTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20

@@ -54,13 +54,13 @@ internal sealed class Pcre2BacktrackingLowerer
         {
             var budget = Utf8ConstructionScope.CurrentBudget;
             var firstCalls = budget.AllocateArray<int>(_captureCount + 1, false);
-            budget.ChargeWork((ulong)firstCalls.Length);
+            budget.Checkpoint();
             firstCalls.AsSpan().Fill(-1);
             // Appended bodies can introduce more calls. The first linked call
             // supplies the body entry and byte minimum to all later callers.
             for (var index = 0; index < _instructions.Count; index++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var instruction = _instructions[index];
                 if (instruction.Kind != Pcre2BacktrackingInstructionKind.SubroutineCall)
                     continue;
@@ -125,7 +125,7 @@ internal sealed class Pcre2BacktrackingLowerer
         var canMatchEmpty = true;
         for (var index = children.Length - 2; index > 0; index--)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             var node = children[index];
             var minimum = 1;
             if (node is Pcre2RepeatBacktrackingNode repeat)
@@ -171,7 +171,7 @@ internal sealed class Pcre2BacktrackingLowerer
     {
         if (children.Length < 2 || children[^1] is not Pcre2TokenBacktrackingNode { Token: var end } ||
             !TryGetTerminalEnd(end, out var allowTrailingLf)) return (-1, -1);
-        budget.ChargeWork(1);
+        budget.Checkpoint();
         var final = -1;
         // A shorter endpoint would lie before a scalar the repeat consumed.
         // Only a final LF could satisfy a lax end there.
@@ -189,7 +189,7 @@ internal sealed class Pcre2BacktrackingLowerer
             final = children.Length - 2;
 
         if (children.Length < 4) return (-1, final);
-        budget.ChargeWork(3);
+        budget.Checkpoint();
         if (children[^4] is not Pcre2RepeatBacktrackingNode { Maximum: int.MaxValue, Preference: Pcre2RepeatPreference.Greedy,
                 Body: Pcre2TokenBacktrackingNode { Token: var first } } ||
             children[^3] is not Pcre2RepeatBacktrackingNode { Minimum: 0, Maximum: 1,
@@ -210,7 +210,7 @@ internal sealed class Pcre2BacktrackingLowerer
         var other = last.CharacterClass;
         if (own.Negated != other.Negated || own.Terms.Length > 16 || own.Terms.Length != other.Terms.Length ||
             own.AsciiSet.Contains(separatorByte) || own.AsciiSet.Contains((byte)'\n')) return (-1, final);
-        budget.ChargeWork((ulong)own.Terms.Length);
+        budget.Checkpoint();
         return (own.Terms.AsSpan().SequenceEqual(other.Terms) ? children.Length - 4 : -1, final);
     }
 
@@ -231,7 +231,7 @@ internal sealed class Pcre2BacktrackingLowerer
         {
             foreach (var term in characterClass.Terms)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (term is not { Kind: Pcre2CharacterClassTermKind.Range, Negated: false, Range.High: < 128 }) return false;
             }
             ascii = characterClass.AsciiSet;
@@ -242,7 +242,7 @@ internal sealed class Pcre2BacktrackingLowerer
         // the suffix. Every possible first consumer must reject that byte.
         for (var cursor = index + 1; cursor < children.Length - 1; cursor++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var child = children[cursor];
             var minimum = 1;
             if (child is Pcre2RepeatBacktrackingNode repeat)
@@ -309,7 +309,7 @@ internal sealed class Pcre2BacktrackingLowerer
                         repeated.Token.CharacterClass.Negated) return false;
                     foreach (var term in repeated.Token.CharacterClass.Terms)
                     {
-                        budget.ChargeWork(1);
+                        budget.Checkpoint();
                         if (term.Negated || (term.Kind switch
                         {
                             Pcre2CharacterClassTermKind.Digit or Pcre2CharacterClassTermKind.Word => false,
@@ -340,7 +340,7 @@ internal sealed class Pcre2BacktrackingLowerer
                 IPcre2BacktrackingNode candidate,
                 out Pcre2CharacterToken literal)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 switch (candidate)
                 {
                     case Pcre2TokenBacktrackingNode
@@ -638,7 +638,7 @@ internal sealed class Pcre2BacktrackingLowerer
     {
         if (body is Pcre2SubroutineCallBacktrackingNode || IsSingleScalarToken(body, out _)) return true;
         if (body is not Pcre2SequenceBacktrackingNode { Children: { Length: >= 2 and <= 16 } children }) return false;
-        budget.ChargeWork((ulong)children.Length);
+        budget.Checkpoint();
         foreach (var child in children)
         {
             var atom = child is Pcre2RepeatBacktrackingNode repeat ? repeat.Body : child;
@@ -669,7 +669,7 @@ internal sealed class Pcre2BacktrackingLowerer
         if ((capture?.Body ?? repeat.Body) is not Pcre2SequenceBacktrackingNode
             { Children: { Length: >= 2 and <= 8 } children }) return false;
 
-        budget.ChargeWork((ulong)children.Length);
+        budget.Checkpoint();
         foreach (var child in children)
         {
             if (child is Pcre2TokenBacktrackingNode
@@ -682,7 +682,7 @@ internal sealed class Pcre2BacktrackingLowerer
         // Every child consumes a fixed number of scalars without a retry.
         // Each copy writes the same capture slot, in the original order.
         // Admit bounded expansion work before the ordinary instruction writes.
-        budget.ChargeWork((ulong)(repeat.Minimum * (children.Length + (capture is null ? 0 : 2))));
+        budget.Checkpoint();
         for (var copy = 0; copy < repeat.Minimum; copy++)
             EmitNode(repeat.Body, null);
         return true;
@@ -832,7 +832,7 @@ internal sealed class Pcre2BacktrackingLowerer
 
     private static bool ContainsMatchBoundaryReset(IPcre2BacktrackingNode node)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         return node switch
         {
             Pcre2MatchBoundaryResetBacktrackingNode => true,

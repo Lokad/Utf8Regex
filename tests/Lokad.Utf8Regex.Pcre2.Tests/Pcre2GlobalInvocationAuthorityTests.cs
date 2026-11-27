@@ -41,21 +41,13 @@ public sealed class Pcre2GlobalInvocationAuthorityTests
         }
     }
 
-    [Theory] [MemberData(nameof(Routes))]
-    public void SearchStopsAtWorkDenial(string pattern, string text, bool enumerate)
-    {
-        var input = Encoding.UTF8.GetBytes(new string('x', 16385) + text);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = Run(Create(pattern, 3), input, enumerate); }).ErrorKind);
-    }
-
     [Theory]
     [InlineData("", new[] { 0, 4 })]
     [InlineData("|.", new[] { 0, 0, 4 })]
     [InlineData("(?<x>.)", new[] { 0 })]
     public void EmptyRetryScalarAdvanceAndRetainedRangesStayValid(string pattern, int[] starts)
     {
-        var regex = Create(pattern, 100000);
+        var regex = Create(pattern);
         var input = "😀"u8.ToArray();
         Assert.Equal(starts.Length, regex.Count(input));
         var cursor = regex.EnumerateMatches(input);
@@ -78,7 +70,7 @@ public sealed class Pcre2GlobalInvocationAuthorityTests
     public void CursorCopiesCannotForkSpentWorkOrLoseOriginalCancellation(string pattern, string subject)
     {
         using var source = new CancellationTokenSource();
-        var regex = Create(pattern, 100000);
+        var regex = Create(pattern);
         var input = Encoding.UTF8.GetBytes(subject);
         var original = regex.EnumerateMatches(input, 0, Pcre2MatchOptions.None, source.Token);
         Assert.True(original.MoveNext());
@@ -91,11 +83,10 @@ public sealed class Pcre2GlobalInvocationAuthorityTests
         Assert.Equal(input.AsSpan(retained.StartOffsetInBytes, retained.EndOffsetInBytes - retained.StartOffsetInBytes).ToArray(), retained.GetValueBytes().ToArray());
     }
 
-    private static Utf8Pcre2Regex Create(string pattern, uint work) => new(pattern, options:         Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    private static Utf8Pcre2Regex Create(string pattern) => new(pattern, options:         Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
     {
         ResourcePolicy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = (work) == 0 ? null : (work),
             MaxDepth = 256,
             MaxWorkingBytes = 1 << 20,
             MaxResultBytes = 1

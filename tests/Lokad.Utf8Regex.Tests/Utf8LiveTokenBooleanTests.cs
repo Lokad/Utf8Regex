@@ -82,19 +82,4 @@ public sealed class Utf8LiveTokenBooleanTests
         finally { session.Complete(); }
     }
 
-    [Fact]
-    public void ControlledBooleanStillAdmitsWorkBeforeNativeExecution()
-    {
-        using var live = new CancellationTokenSource();
-        var regex = new Utf8Regex("^[A-Z]{3}[0-9]{4}$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            regex.IsMatch("ABC0123"u8, live.Token)).ResourceKind);
-    }
 }

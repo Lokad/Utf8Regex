@@ -83,7 +83,7 @@ public sealed class Pcre2BacktrackingConstructionBoundsTests
     [Fact]
     public void MajorMetadataAdmissionPrecedesParsingAndFailureRestoresParent()
     {
-        using var owner = new Utf8ConstructionScope(1024, 64, ulong.MaxValue, 256);
+        using var owner = new Utf8ConstructionScope(1024, 64, 256);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             Pcre2BacktrackingCompiler.Compile(new(NestedPattern(64), default, default, default, Timeout.InfiniteTimeSpan)));
@@ -100,7 +100,7 @@ public sealed class Pcre2BacktrackingConstructionBoundsTests
         using var cancellation = new CancellationTokenSource();
         using var owner = new Utf8ConstructionScope(1024);
         owner.Budget.CancellationToken = cancellation.Token;
-        owner.Budget.CheckpointHook = _ =>
+        owner.Budget.CheckpointHook = () =>
         {
             if (owner.Budget.Reserved > 0) cancellation.Cancel();
         };

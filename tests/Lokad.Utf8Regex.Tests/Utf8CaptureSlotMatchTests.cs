@@ -51,7 +51,6 @@ public sealed class Utf8CaptureSlotMatchTests
         {
             ResourcePolicy = controlled ? new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 512,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -211,7 +210,7 @@ public sealed class Utf8CaptureSlotMatchTests
         const string pattern = "(?<piece>ab|ba|😀)+z";
         using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxWorkingBytes = maxWorkingBytes }
+            ResourcePolicy = new() { MaxWorkingBytes = maxWorkingBytes }
         });
         var prefix = "😀" + string.Concat(Enumerable.Repeat("ab", 160)) + " z! ";
         var start = Encoding.UTF8.GetByteCount(prefix);
@@ -244,7 +243,7 @@ public sealed class Utf8CaptureSlotMatchTests
         using var regex = new Utf8Regex(@"[A-Za-z]+ing|[A-Za-z]+ed|[A-Za-z]+ly", policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(50),
-            ResourcePolicy = new() { MaxWorkSteps = 100_000, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxWorkingBytes = 4096 }
         });
         var input = Encoding.UTF8.GetBytes(new string('a', length) + "ing");
         var output = new[] { new Utf8CaptureRange(0, 1) };
@@ -273,7 +272,7 @@ public sealed class Utf8CaptureSlotMatchTests
         using var regex = new Utf8Regex(@"[a-z]+ing|[a-z]+ed|[a-z]+ly", policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(50),
-            ResourcePolicy = new() { MaxWorkSteps = 100_000, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxWorkingBytes = 4096 }
         });
         var input = Encoding.UTF8.GetBytes(new string('a', 1 << 18) + "ing");
         var output = new[] { new Utf8CaptureRange(0, 1) };
@@ -296,7 +295,7 @@ public sealed class Utf8CaptureSlotMatchTests
         using var regex = new Utf8Regex("(?<left>[éö]+ed)|(?<right>[a-z]*ly)", policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromSeconds(10),
-            ResourcePolicy = new() { MaxDepth = 32, MaxWorkSteps = 4096, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxDepth = 32, MaxWorkingBytes = 4096 }
         });
         var prefix = "ly 😀 " + new string('q', 320) + " ";
         var start = Encoding.UTF8.GetByteCount(prefix);
@@ -339,7 +338,7 @@ public sealed class Utf8CaptureSlotMatchTests
         var input = Encoding.UTF8.GetBytes(prefix + hit);
         using var regex = new Utf8Regex("(?:ab|ba|😀)+z", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkingBytes = 72, MaxWorkSteps = 4096 }
+            ResourcePolicy = new() { MaxWorkingBytes = 72 }
         });
         Assert.Equal(new Utf8CaptureRange(prefix.Length, input.Length), regex.Match(input));
         Assert.False(regex.Match(input.AsSpan(0, prefix.Length)).Success);
@@ -352,7 +351,7 @@ public sealed class Utf8CaptureSlotMatchTests
         var expected = new Utf8CaptureRange(input.Length - 3, input.Length);
         using var regex = new Utf8Regex("(?<unit>ab|a)+[yz]", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1024, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxWorkingBytes = 4096 }
         });
         using var source = new CancellationTokenSource();
         Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
@@ -372,7 +371,7 @@ public sealed class Utf8CaptureSlotMatchTests
         var start = Encoding.UTF8.GetByteCount(prefix);
         using var regex = new Utf8Regex("(?<before>[a-z]+)ing|(?<other>[a-z]+)ly", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1024, MaxDepth = 64, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxDepth = 64, MaxWorkingBytes = 4096 }
         });
         using var source = new CancellationTokenSource();
         Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];
@@ -402,7 +401,7 @@ public sealed class Utf8CaptureSlotMatchTests
         var start = Encoding.UTF8.GetByteCount(prefix);
         using var regex = new Utf8Regex("(?<run>[ab]*?)[cd]", options, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1024, MaxDepth = 32, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxDepth = 32, MaxWorkingBytes = 4096 }
         });
         using var source = new CancellationTokenSource();
         var account = new Account { Maximum = 4096 };
@@ -424,7 +423,7 @@ public sealed class Utf8CaptureSlotMatchTests
         var start = Encoding.UTF8.GetByteCount(prefix);
         using var regex = new Utf8Regex("[aá😀]+[cd][ef]", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1024, MaxDepth = 32, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxDepth = 32, MaxWorkingBytes = 4096 }
         });
 
         Assert.Equal(new Utf8CaptureRange(start, input.Length), regex.Match(input));
@@ -439,7 +438,7 @@ public sealed class Utf8CaptureSlotMatchTests
         var input = Encoding.UTF8.GetBytes(text);
         using var regex = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 8, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         using var source = new CancellationTokenSource();
         Assert.True(regex.IsMatch(input, source.Token));
@@ -460,10 +459,8 @@ public sealed class Utf8CaptureSlotMatchTests
         var input = Encoding.UTF8.GetBytes(new string('a', 1 << 18) + "d");
         using var denied = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(denied));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
 
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -492,7 +489,7 @@ public sealed class Utf8CaptureSlotMatchTests
         var expected = new Utf8CaptureRange(4, 5);
         using var regex = new Utf8Regex("(?:(?<item>[ab][bc]|[ab])+[cd]|(?<winner>[ab]))", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 2048, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxWorkingBytes = 4096 }
         });
         using var source = new CancellationTokenSource();
         var account = new Account { Maximum = 4096 };
@@ -539,7 +536,7 @@ public sealed class Utf8CaptureSlotMatchTests
         var input = Encoding.UTF8.GetBytes(prefix + "bb😀");
         using var regex = new Utf8Regex("(a+é|b+😀)", RegexOptions.RightToLeft, new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxDepth = 32, MaxWorkSteps = 256, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxDepth = 32, MaxWorkingBytes = 4096 }
         });
         var slots = new Utf8CaptureRange[2];
         var account = new Account();
@@ -564,7 +561,7 @@ public sealed class Utf8CaptureSlotMatchTests
         var input = Encoding.UTF8.GetBytes(reverse ? hits + gap : gap + hits);
         using var regex = new Utf8Regex("(?<first>😀a?)|(?<second>z+😀a)", options, new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxDepth = 32, MaxWorkSteps = 256, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxDepth = 32, MaxWorkingBytes = 4096 }
         });
         var expected = reverse
             ? new Utf8CaptureRange(Encoding.UTF8.GetByteCount("😀 z"), Encoding.UTF8.GetByteCount(hits))
@@ -598,7 +595,7 @@ public sealed class Utf8CaptureSlotMatchTests
         using var regex = new Utf8Regex($"(?<first>é{repeat})|(?<second>{alternative})", options,
             new Utf8RegexPolicy
             {
-                ResourcePolicy = new() { MaxDepth = 32, MaxWorkSteps = 256, MaxWorkingBytes = 4096 }
+                ResourcePolicy = new() { MaxDepth = 32, MaxWorkingBytes = 4096 }
             });
         var start = reverse ? Encoding.UTF8.GetByteCount("😀zé") : gap.Length;
         var expected = new Utf8CaptureRange(start, start + Encoding.UTF8.GetByteCount("é"));
@@ -623,7 +620,7 @@ public sealed class Utf8CaptureSlotMatchTests
         using var regex = new Utf8Regex($"(?<piece>éa|a){repeat}(?<tail>[zy])|v[zy]",
             RegexOptions.RightToLeft | RegexOptions.Compiled, new Utf8RegexPolicy
             {
-                ResourcePolicy = new() { MaxDepth = 32, MaxWorkSteps = 256, MaxWorkingBytes = 4096 }
+                ResourcePolicy = new() { MaxDepth = 32, MaxWorkingBytes = 4096 }
             });
         using var source = new CancellationTokenSource();
         var account = new Account();
@@ -672,7 +669,7 @@ public sealed class Utf8CaptureSlotMatchTests
         var account = new Account { Maximum = 0 };
         using var regex = new Utf8Regex("(?:ab|ba|😀)+z", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkingBytes = 1, MaxWorkSteps = 4096 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         using var source = new CancellationTokenSource();
         Assert.True(regex.IsMatch(input, source.Token, account));
@@ -701,12 +698,12 @@ public sealed class Utf8CaptureSlotMatchTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+[InlineData(1)] [InlineData(2)]
     public void DenialAndCancellationClearWrittenSlotsAndRefundWorkingLoans(int failure)
     {
         var policy = failure switch
         {
-            0 => new Utf8ResourcePolicy { MaxWorkSteps = 1 },
+            0 => new Utf8ResourcePolicy { MaxDepth = 4096 },
             1 => new Utf8ResourcePolicy { MaxWorkingBytes = 1 },
             _ => new Utf8ResourcePolicy { MaxDepth = 1 },
         };
@@ -719,8 +716,7 @@ public sealed class Utf8CaptureSlotMatchTests
         var account = new Account();
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             regex.Match("a"u8, 0, output, workingMemoryAllowance: account));
-        Assert.Equal(failure switch { 0 => Utf8ResourceLimitKind.ExecutionWorkSteps,
-            1 => Utf8ResourceLimitKind.ExecutionWorkingBytes, _ => Utf8ResourceLimitKind.ExecutionDepth }, error.ResourceKind);
+        Assert.Equal(failure switch {             1 => Utf8ResourceLimitKind.ExecutionWorkingBytes, _ => Utf8ResourceLimitKind.ExecutionDepth }, error.ResourceKind);
         Assert.All(output[..2], range => Assert.False(range.Success));
         Assert.Equal(sentinel, output[2]);
         Assert.Equal(0UL, account.Held);
@@ -783,7 +779,7 @@ public sealed class Utf8CaptureSlotMatchTests
     {
         using var regex = new Utf8Regex("(a?b|c)*(dé|😀)[xy]", RegexOptions.NonBacktracking, new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 2048, MaxResultBytes = 1 }
+            ResourcePolicy = new() { MaxResultBytes = 1 }
         });
         var prefix = "😀y " + string.Concat(Enumerable.Repeat("aababc😀z é ", 64));
         var start = Encoding.UTF8.GetByteCount(prefix);
@@ -829,7 +825,7 @@ public sealed class Utf8CaptureSlotMatchTests
     {
         using var regex = new Utf8Regex("(?<x>😀a|b)+", RegexOptions.NonBacktracking, new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 64 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var text = "bé" + new string('z', gapBytes) + "💡😀ab!";
         var input = Encoding.UTF8.GetBytes(text);
@@ -861,7 +857,7 @@ public sealed class Utf8CaptureSlotMatchTests
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
             using var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking, new Utf8RegexPolicy
             {
-                ResourcePolicy = new() { MaxWorkSteps = 64 }
+                ResourcePolicy = new() { MaxDepth = 4096 }
             });
             var input = Encoding.UTF8.GetBytes(new string('z', floor) + tail);
             var slots = new Utf8CaptureRange[2];

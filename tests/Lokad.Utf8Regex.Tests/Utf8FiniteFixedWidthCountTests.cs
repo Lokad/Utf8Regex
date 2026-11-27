@@ -10,13 +10,12 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8FiniteFixedWidthCountTests
 {
     private static readonly byte[] Dense = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(" xx ab12 ab34 ", 1000)));
-    private static Utf8Regex Create(string pattern, ulong work = 1000000, ulong working = 1 << 20,
+    private static Utf8Regex Create(string pattern, ulong working = 1 << 20,
         RegexOptions options = RegexOptions.None) => new(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = work,
                 MaxDepth = 1024,
                 MaxWorkingBytes = working,
                 MaxResultBytes = 1
@@ -47,7 +46,7 @@ public sealed class Utf8FiniteFixedWidthCountTests
     [Fact]
     public void EligibleCountNeedsNoVmDepthOrWorkingStorage()
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
         foreach (var option in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex("ab[0-9]{2}", options: option | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy

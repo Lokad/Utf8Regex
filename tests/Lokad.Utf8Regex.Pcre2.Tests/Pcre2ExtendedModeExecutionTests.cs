@@ -30,7 +30,6 @@ public sealed class Pcre2ExtendedModeExecutionTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -63,7 +62,6 @@ public sealed class Pcre2ExtendedModeExecutionTests
             {
                 ResourcePolicy = controlled ? new()
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 256,
                     MaxWorkingBytes = 1 << 20,
                     MaxResultBytes = 1 << 20,

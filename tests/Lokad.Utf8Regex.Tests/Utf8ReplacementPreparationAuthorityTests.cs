@@ -35,7 +35,7 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
         foreign.Cancel();
         using var parent = Utf8ConstructionScope.Enter();
         var calls = 0;
-        parent.Budget.CheckpointHook = _ =>
+        parent.Budget.CheckpointHook = () =>
         {
             if (++calls != 32) return;
             if (deadline) throw new Utf8ExecutionDeadlineExpiredException();
@@ -57,7 +57,7 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000
+                MaxDepth = 4096
             }
         });
         var template = string.Concat(Enumerable.Repeat("$1", 32));
@@ -68,7 +68,7 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var parent = Utf8ConstructionScope.Enter();
         var calls = 0;
-        parent.Budget.CheckpointHook = _ => { if (++calls == 32) ticks = 15; };
+        parent.Budget.CheckpointHook = () => { if (++calls == 32) ticks = 15; };
         var entered = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -131,7 +131,7 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var parent = Utf8ConstructionScope.Enter();
         var calls = 0;
-        parent.Budget.CheckpointHook = _ => { if (++calls == 32) ticks = 25; };
+        parent.Budget.CheckpointHook = () => { if (++calls == 32) ticks = 25; };
         Assert.Throws<RegexMatchTimeoutException>(() => Replace(regex, destinationOutput, input, bytes, destination, CancellationToken.None));
         Assert.Equal(0, CacheCount(regex));
     }
@@ -145,7 +145,7 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000
+                MaxDepth = 4096
             }
         });
         _ = regex.Replace("a"u8, "$1"u8); // Warm the codec/cache/exception call paths.
@@ -193,7 +193,6 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1UL << 20,
                 MaxResultBytes = 1UL << 20
@@ -211,7 +210,7 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
         var held = parent.Budget.ReservedBytes;
         var parentDeadline = parent.Budget.Deadline;
         var calls = 0;
-        Action<ulong> hook = _ =>
+        Action hook = () =>
         {
             if (++calls != 32) return;
             if (timeout) ticks = 25; else token.Cancel();

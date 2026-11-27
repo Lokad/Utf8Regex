@@ -26,7 +26,7 @@ public sealed class Utf8ScalarPredicateBoundaryTests
             Assert.True(program.RequiresUnicodeWordBoundary);
             Assert.True(program.HasUnicodePatternAtoms);
             Assert.Empty(program.Assertions);
-            var invocation = new Utf8SliceInvocation(new(100000, 1000, 1 << 20, 1 << 20), Timeout.InfiniteTimeSpan, default);
+            var invocation = new Utf8SliceInvocation(new(1000, 1 << 20, 1 << 20), Timeout.InfiniteTimeSpan, default);
             Assert.True(invocation.Ledger.TryReserve(13));
             var start = reverse ? input.Length : 0;
             var found = Utf8SliceRunner.TryFindFirst(program, input, start, [], [], false, ref invocation);

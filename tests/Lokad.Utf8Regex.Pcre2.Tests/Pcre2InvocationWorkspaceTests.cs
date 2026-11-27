@@ -17,8 +17,8 @@ public sealed class Pcre2InvocationWorkspaceTests
 
     private static ref int[]? Items(ref Pcre2InvocationStateStack<int> stack) => ref Pcre2StackAccessor<int>.Items(ref stack);
 
-    private static Pcre2ResourceBudget Budget(ulong bytes, ulong steps = 0) => new(
-        new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = bytes, MatchLimit = checked((uint)steps) },
+    private static Pcre2ResourceBudget Budget(ulong bytes) => new(
+        new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = bytes },
         Timeout.InfiniteTimeSpan, collectDiagnostics: true);
 
     private static Pcre2BacktrackingWorkspace Acquire(int repeats, int captures, bool restoreRepeats, bool restoreCaptures,
@@ -48,7 +48,7 @@ public sealed class Pcre2InvocationWorkspaceTests
         long now = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         using var token = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(0, 0, 8, 0),
+        var invocation = new Utf8SliceInvocation(new(0, 8, 0),
             interruption == "deadline" ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan, token.Token);
         var budget = new Pcre2ResourceBudget(new() { HeapLimitInBytes = 8 }, invocation, false);
         budget.ReserveWorking(7);
@@ -128,25 +128,6 @@ public sealed class Pcre2InvocationWorkspaceTests
             }
             finally { budget.ReleaseWorking(parent); }
         }
-    }
-
-    [Theory]
-    [InlineData(1)]
-    [InlineData(2)]
-    [InlineData(3)]
-    public void PartialFixedAcquisitionRestoresParentAndKeepsSpentWork(ulong steps)
-    {
-        var budget = Budget(1UL << 20, steps);
-        budget.ReserveWorking(7);
-        try
-        {
-            try { _ = Acquire(1, 2, true, true, ref budget); Assert.Fail("Expected acquisition work denial."); }
-            catch (Pcre2MatchException failure) { Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind); }
-            Assert.Equal(7UL, budget.ReservedWorkingBytes);
-            try { budget.ChargeCandidate(); Assert.Fail("Spent work cannot be refunded."); }
-            catch (Pcre2MatchException failure) { Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind); }
-        }
-        finally { budget.ReleaseWorking(7); }
     }
 
     [Fact]
@@ -231,26 +212,6 @@ public sealed class Pcre2InvocationWorkspaceTests
             for (var i = 0; i < 16; i++) Assert.Equal(i, stack[i]);
         }
         finally { stack.Dispose(ref budget); parent.Dispose(ref budget); }
-        Assert.Equal(0UL, budget.ReservedWorkingBytes);
-    }
-
-    [Fact]
-    public void WorkFailureDuringGrowthCopyRetainsOriginalValuesAndCapacity()
-    {
-        var budget = Budget(1UL << 20, 2);
-        var stack = new Pcre2InvocationStateStack<int>(1024, true);
-        try
-        {
-            for (var i = 0; i < 16; i++) Assert.True(stack.TryPush(i, ref budget));
-            try { stack.TryPush(16, ref budget); Assert.Fail("Expected copy work denial."); }
-            catch (Pcre2MatchException failure) { Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind); }
-            Assert.Equal(16, stack.Count);
-            Assert.Equal(16, Items(ref stack)!.Length);
-            Assert.Equal(2, stack.RentCount);
-            Assert.Equal(Utf8ConstructionBudget.ArrayBytes<int>(16), budget.ReservedWorkingBytes);
-            for (var i = 0; i < 16; i++) Assert.Equal(i, stack[i]);
-        }
-        finally { stack.Dispose(ref budget); }
         Assert.Equal(0UL, budget.ReservedWorkingBytes);
     }
 

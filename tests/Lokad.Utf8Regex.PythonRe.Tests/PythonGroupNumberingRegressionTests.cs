@@ -30,7 +30,6 @@ public sealed class PythonGroupNumberingRegressionTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = finite ? new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 1000,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20

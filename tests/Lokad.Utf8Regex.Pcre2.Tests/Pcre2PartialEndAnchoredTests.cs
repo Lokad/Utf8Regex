@@ -54,7 +54,6 @@ public sealed class Pcre2PartialEndAnchoredTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = resultBytes
@@ -80,7 +79,6 @@ public sealed class Pcre2PartialEndAnchoredTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
             },

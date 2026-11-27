@@ -46,7 +46,6 @@ public sealed class PythonReAnchorQuantifierTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000

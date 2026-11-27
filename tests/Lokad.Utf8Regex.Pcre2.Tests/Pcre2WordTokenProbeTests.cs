@@ -173,7 +173,6 @@ public sealed class Pcre2WordTokenProbeTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = bytes
@@ -200,19 +199,16 @@ public sealed class Pcre2WordTokenProbeTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 200
+                MaxDepth = 4096
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         var input = Encoding.UTF8.GetBytes(new string('a', 1000) + "𐐀");
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = regex.Probe(input, Pcre2PartialMode.Soft); }).ErrorKind);
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("a𐐀"u8, Pcre2PartialMode.Soft).Kind);
         var heapLimited = new Utf8Pcre2Regex(@"^(a)++\w", options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxWorkingBytes = 1
             },
             MatchTimeout = Timeout.InfiniteTimeSpan

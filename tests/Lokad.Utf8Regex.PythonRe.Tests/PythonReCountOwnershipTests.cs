@@ -87,7 +87,6 @@ public sealed class PythonReCountOwnershipTests
     {
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000,
             MaxDepth = 1,
             MaxWorkingBytes = 1,
             MaxResultBytes = 1
@@ -118,7 +117,6 @@ public sealed class PythonReCountOwnershipTests
     {
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000,
             MaxDepth = 256,
             MaxWorkingBytes = 1,
             MaxResultBytes = 1
@@ -211,38 +209,5 @@ public sealed class PythonReCountOwnershipTests
         compound.Dispose();
         Assert.Equal(17UL, account.Used);
         account.Release(17);
-    }
-    [Fact]
-
-    public void CaptureFreeCountRetainsEveryUsefulWorkCutoff()
-    {
-        const string pattern = "([a-z]+)-([0-9]+)";
-        var input = "é😀item-12 other-345"u8.ToArray();
-        var succeeded = false;
-        for (ulong limit = 1; limit <= 256; limit++)
-        {
-            using var regex = new Utf8PythonRegex(pattern, policy: new Utf8RegexPolicy()
-            {
-                ResourcePolicy = new()
-                {
-                    MaxWorkSteps = limit,
-                    MaxDepth = 256,
-                    MaxWorkingBytes = 1,
-                    MaxResultBytes = 1
-                }
-            });
-            int? published = null;
-            var failure = Record.Exception(() => published = regex.Count(input));
-            if (failure is null)
-            {
-                Assert.Equal(2, published);
-                succeeded = true;
-                break;
-            }
-            var denied = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, denied.ResourceKind);
-            Assert.Null(published);
-        }
-        Assert.True(succeeded, "The bounded witness never admitted its complete count.");
     }
 }

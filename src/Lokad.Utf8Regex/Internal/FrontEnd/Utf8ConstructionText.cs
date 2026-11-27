@@ -18,7 +18,7 @@ internal sealed class Utf8ConstructionText(Utf8ConstructionBudget budget, Utf8Co
     internal void Truncate(int length) => characters.Truncate(length);
     internal Utf8ConstructionText Append(char value)
     {
-        budget.ChargeWork(1);
+        budget.Checkpoint();
         characters.Add(value);
         return this;
     }
@@ -30,21 +30,21 @@ internal sealed class Utf8ConstructionText(Utf8ConstructionBudget budget, Utf8Co
     internal Utf8ConstructionText Append(int value)
     {
         Span<char> formatted = stackalloc char[11];
-        budget.ChargeWork((ulong)formatted.Length);
+        budget.Checkpoint();
         value.TryFormat(formatted, out var written, provider: CultureInfo.InvariantCulture);
         return Append(formatted[..written]);
     }
     internal Utf8ConstructionText Append(uint value)
     {
         Span<char> formatted = stackalloc char[11];
-        budget.ChargeWork((ulong)formatted.Length);
+        budget.Checkpoint();
         value.TryFormat(formatted, out var written, provider: CultureInfo.InvariantCulture);
         return Append(formatted[..written]);
     }
     internal Utf8ConstructionText AppendHex(int value)
     {
         Span<char> formatted = stackalloc char[8];
-        budget.ChargeWork((ulong)formatted.Length);
+        budget.Checkpoint();
         value.TryFormat(formatted, out var written, "X4", CultureInfo.InvariantCulture);
         return Append(formatted[..written]);
     }
@@ -99,7 +99,7 @@ internal sealed class Utf8ConstructionText(Utf8ConstructionBudget budget, Utf8Co
         // at most once. Charge the pass, conservatively allowing a full needle
         // comparison per candidate, rather than charging overlapping suffixes.
         // Production needles are fixed, so dense normalization remains linear.
-        owner.ChargeWork((ulong)source.Length * (ulong)value.Length);
+        owner.Checkpoint();
         var index = source.IndexOf(value, StringComparison.Ordinal);
         if (index < 0) return source;
         using var text = Create();
@@ -108,7 +108,7 @@ internal sealed class Utf8ConstructionText(Utf8ConstructionBudget budget, Utf8Co
         {
             text.Append(source.AsSpan(start, index - start)).Append(replacement);
             start = index + value.Length;
-            owner.ChargeWork(0); // Keep interruption checkpoints between searches.
+            owner.Checkpoint(); // Keep interruption checkpoints between searches.
             index = source.IndexOf(value, start, StringComparison.Ordinal);
         } while (index >= 0);
         text.Append(source.AsSpan(start));

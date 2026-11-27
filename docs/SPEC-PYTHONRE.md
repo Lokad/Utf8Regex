@@ -177,9 +177,9 @@ after repeated searches that exceed one candidate's proof allowance. The
 proof uses the same Python scalar program. Calls with a token, deadline,
 resource limits or shared working admission use metered execution.
 
-Work, depth, working bytes and result bytes follow the shared policy. Covered
+Depth, working bytes and result bytes follow the shared policy. Covered
 storage is admitted before allocation, including overlapping capacity during
-growth. Work and capacity requirements can change by version. On failure the
+growth. Capacity requirements can change by version. On failure the
 operation releases temporary charges and publishes no partial successful
 result. [Shared resource contract](SPEC.md#cancellation-deadlines-and-resource-limits)
 

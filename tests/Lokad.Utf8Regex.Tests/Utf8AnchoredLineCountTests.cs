@@ -15,7 +15,7 @@ public sealed class Utf8AnchoredLineCountTests
             "\u2003é: yes\n\n  two: yes\n";
         using var regex = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 4096 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var live = new CancellationTokenSource();
         var bytes = Encoding.UTF8.GetBytes(text);
@@ -62,7 +62,7 @@ public sealed class Utf8AnchoredLineCountTests
         using var regex = new Utf8Regex(@"(?m)^\s*\w+:", policy: new()
         {
             MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,
-            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 4096 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var session = Utf8SearchDiagnosticsSession.Start(_ =>
         {
@@ -144,17 +144,7 @@ public sealed class Utf8AnchoredLineCountTests
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         var measured = Utf8SliceRunner.CountFromBytes(program, bytes, 0, [], [], ref baseline);
-        for (ulong limit = 1; limit <= baseline.Budget.Steps; limit++)
-        {
-            var invocation = new Utf8SliceInvocation(new(limit, 1, 13), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var found = Utf8SliceRunner.CountFromBytes(program, bytes, 0, [], [], ref invocation);
-            Assert.Equal(limit == baseline.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, found.Breach);
-            if (found.Breach == Utf8ExecutionLimitKind.None) Assert.Equal(measured.Count, found.Count);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-            Assert.Equal(13UL, invocation.Budget.PeakWorkingBytes);
-        }
-        var smaller = new Utf8SliceInvocation(new(0, 0, 12), Timeout.InfiniteTimeSpan, default);
+        var smaller = new Utf8SliceInvocation(new(0, 12), Timeout.InfiniteTimeSpan, default);
         Assert.True(smaller.Ledger.TryReserve(12));
         Assert.Equal(Utf8ExecutionLimitKind.None,
             Utf8SliceRunner.CountFromBytes(program, bytes, 0, [], [], ref smaller).Breach);
@@ -172,6 +162,7 @@ public sealed class Utf8AnchoredLineCountTests
     [InlineData("last", true)]
     public void RealScanQuantaAndPublicationObserveOriginalAuthority(string stage, bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var program = new Utf8Regex(@"^\s*key.*$", options: RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
         var text = stage switch { "seek" => new string('x', 8192), "white" => new string(' ', 4096) + "key",
             "tail" => "key" + new string('x', 8192), _ => "key" };
@@ -180,15 +171,14 @@ public sealed class Utf8AnchoredLineCountTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
             expire && stage == "last" && ++reads >= 6 ? 100 : ticks);
         using var live = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(1_000_000, 1, 13), TimeSpan.FromMilliseconds(50), live.Token);
+        var invocation = new Utf8SliceInvocation(new(1, 13), TimeSpan.FromMilliseconds(50), live.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
-        for (var i = 0; i < padding; i++) _ = invocation.TryChargeStep();
+        for (var i = 0; i < padding; i++) _ = invocation.CheckProgress();
         invocation.CheckpointHook = _ => { if (expire && stage != "last") ticks = 100; else if (!expire) live.Cancel(); };
         if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
             Utf8SliceRunner.CountFromBytes(program, Encoding.UTF8.GetBytes(text), 0, [], [], ref invocation));
         else Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() =>
             Utf8SliceRunner.CountFromBytes(program, Encoding.UTF8.GetBytes(text), 0, [], [], ref invocation)).CancellationToken);
-        Assert.Equal(64UL, invocation.Budget.Steps);
         Assert.Equal(13UL, invocation.Budget.PeakWorkingBytes);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
     }
@@ -196,6 +186,7 @@ public sealed class Utf8AnchoredLineCountTests
     [Fact]
     public void OverlappingNewlinePrefixesKeepLinearFailedEndWork()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var pattern = "^" + string.Concat(Enumerable.Repeat("ab\\n", 10)) + "ab.*\\z";
         var options = RegexOptions.NonBacktracking | RegexOptions.Multiline;
         var regex = new Utf8Regex(pattern, options: options);
@@ -216,8 +207,8 @@ public sealed class Utf8AnchoredLineCountTests
                 Assert.Equal(hit ? 1 : 0, found.Count);
                 Assert.Equal(13UL, invocation.Budget.PeakWorkingBytes);
                 Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-                if (previous != 0) Assert.InRange(invocation.Budget.Steps, previous, 2 * previous + 64);
-                previous = invocation.Budget.Steps;
+                if (previous != 0) Assert.InRange(invocation.Budget.DiagnosticCheckpoints, previous, 2 * previous + 64);
+                previous = invocation.Budget.DiagnosticCheckpoints;
             }
         }
     }

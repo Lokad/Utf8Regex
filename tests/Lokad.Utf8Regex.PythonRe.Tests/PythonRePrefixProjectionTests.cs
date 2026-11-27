@@ -17,7 +17,6 @@ public sealed class PythonRePrefixProjectionTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10000000,
                 MaxDepth = 4096,
                 MaxWorkingBytes = 4096,
                 MaxResultBytes = 4096

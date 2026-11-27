@@ -21,23 +21,23 @@ public sealed class Utf8NativeCountPublicationTests
     public void FinalCounterCheckpointCannotPublishAfterInterruption(
         string pattern, string text, int expected, bool expire, RegexOptions options)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var regex = new Utf8Regex(pattern, options);
         var plan = regex.Inspection.SearchPlan;
         // Cross a search window while retaining the same final counter output.
         var input = Encoding.UTF8.GetBytes(plan.HasBoundaryRequirements ? text.PadLeft(3004) : text);
-        var limits = new Utf8ExecutionLimits(10000, 0, 1000);
+        var limits = new Utf8ExecutionLimits(0, 1000);
         var measured = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None,
             Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan, input, false, ref measured, out var count));
         Assert.Equal(expected, count);
-        Assert.InRange(measured.Budget.Steps, 1UL, 63UL);
 
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(limits, TimeSpan.FromMilliseconds(20), token.Token);
-        for (ulong i = 0; i < 64 - measured.Budget.Steps; i++)
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+        for (ulong i = 0; i < 64 - measured.Budget.DiagnosticCheckpoints; i++)
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckInput());
         Assert.True(invocation.Ledger.TryReserve(13));
         var entered = false;
         invocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else token.Cancel(); };
@@ -52,7 +52,6 @@ public sealed class Utf8NativeCountPublicationTests
         if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
         else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal(64UL, invocation.Budget.Steps);
     }
 
     public static IEnumerable<object[]> PublicCases()
@@ -69,12 +68,12 @@ public sealed class Utf8NativeCountPublicationTests
     public void PublicCountKeepsOriginalInterruptionThroughFinalPublication(
         string pattern, RegexOptions mode, bool finite, bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var policy = finite ? new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000,
             MaxDepth = 1,
             MaxWorkingBytes = 1,
             MaxResultBytes = 1
@@ -92,9 +91,9 @@ public sealed class Utf8NativeCountPublicationTests
         for (var count = 1; count <= 128; count++)
         {
             input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(pattern == "😀" ? "😀" : "a", count)));
-            var measured = new Utf8SliceInvocation(new(100000, 1, 1, 1), regex.MatchTimeout, default);
+            var measured = new Utf8SliceInvocation(new(1, 1, 1), regex.MatchTimeout, default);
             Assert.Equal(count, regex.CountForResult(input, 0, ref measured));
-            terminal = measured.Budget.Steps;
+            terminal = measured.Budget.DiagnosticCheckpoints;
             if ((terminal & 63) == 0) { expected = count; break; }
         }
         Assert.True(expected > 0, "No bounded native terminal checkpoint witness found.");

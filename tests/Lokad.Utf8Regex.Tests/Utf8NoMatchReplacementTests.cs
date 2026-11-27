@@ -15,7 +15,6 @@ public sealed class Utf8NoMatchReplacementTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = result

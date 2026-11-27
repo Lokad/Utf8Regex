@@ -50,7 +50,7 @@ internal sealed partial class PosixProgram
         Utf8SliceNode? completed = null;
         while (frames.Count != 0)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var index = frames.Count - 1;
             var frame = frames[index];
             if (frame.Tag < 0)
@@ -147,7 +147,7 @@ internal sealed partial class PosixProgram
             // parent may need its last capture reconciled with that parent.
             foreach (var tag in captureTags.AsSpan(1))
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (parentTags[tag] <= 0) continue;
                 useCaptureOffsets = false;
                 break;
@@ -178,18 +178,18 @@ internal sealed partial class PosixProgram
         // buffer to map semantic tag IDs to compact public capture slots.
         for (var tag = 0; tag < tags.Count; tag++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             tags[tag] = -1;
         }
         for (var slot = 1; slot < captureTags.Length; slot++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             tags[captureTags[slot]] = slot - 1;
             captureTags[slot] = slot - 1;
         }
         for (var index = 0; index < code.Length; index++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             ref var instruction = ref code[index];
             if (instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy)
             {
@@ -214,7 +214,7 @@ internal sealed partial class PosixProgram
                     ref var marker = ref code[destination];
                     if (marker.Kind is not (Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) ||
                         tags[marker.A] >= 0) break;
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     marker = new(Utf8SliceInstructionKind.Jump, destination + 1, 0, 0, 0);
                 }
                 instruction = new(Utf8SliceInstructionKind.Jump, destination, 0, 0, 0);
@@ -229,7 +229,7 @@ internal sealed partial class PosixProgram
         // choice or consuming instruction before inferring a required anchor.
         foreach (var instruction in code)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
             return instruction is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning, B: 0 };
         }
@@ -243,7 +243,7 @@ internal sealed partial class PosixProgram
         // The negative Fork.C marker is private to this POSIX-owned stream.
         for (var pc = 0; pc < code.Length; pc++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var fork = code[pc];
             if (fork.Kind != Utf8SliceInstructionKind.Fork || fork.B != 0 ||
                 fork.A <= pc + 1 || fork.A >= code.Length ||
@@ -262,7 +262,7 @@ internal sealed partial class PosixProgram
         var length = 0;
         foreach (var instruction in branch)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (instruction.Kind is Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or
                 Utf8SliceInstructionKind.CategorySet) length++;
             else if (instruction.Kind is not (Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd))
@@ -286,7 +286,7 @@ internal sealed partial class PosixProgram
             var previousCaptureTag = -1;
             for (var index = 0; index < program.Instructions.Length; index++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var instruction = program.Instructions[index];
                 var kind = instruction.Kind;
                 if (kind == Utf8SliceInstructionKind.RepeatGreedy && singleRepeat < 0 &&
@@ -296,7 +296,7 @@ internal sealed partial class PosixProgram
                     program.Instructions[index + 2] is { Kind: Utf8SliceInstructionKind.RepeatEnd } end && end.A == index &&
                     program.Instructions[index + 3] is { Kind: Utf8SliceInstructionKind.RepeatExit } exit && exit.A == instruction.B)
                 {
-                    budget.ChargeWork(3);
+                    budget.Checkpoint();
                     singleRepeat = index;
                     index += 3;
                     continue;
@@ -341,7 +341,7 @@ internal sealed partial class PosixProgram
         var literal = -1;
         for (var index = 0; index < code.Length; index++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var instruction = code[index];
             if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
                 continue;
@@ -371,7 +371,7 @@ internal sealed partial class PosixProgram
     {
         var code = program.Instructions;
         if (code.Length != 12) return false;
-        budget.ChargeWork(12);
+        budget.Checkpoint();
         if (code[0] is not { Kind: Utf8SliceInstructionKind.CaptureStart, A: 0 } ||
             code[1] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 9 } outer ||
             code[2] is not { Kind: Utf8SliceInstructionKind.CaptureStart, A: 1 } ||
@@ -431,7 +431,7 @@ internal sealed partial class PosixProgram
         var code = program.Instructions;
         for (var index = 0; index < code.Length; index++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var instruction = code[index];
             if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
             if (instruction.Kind == Utf8SliceInstructionKind.Anchor)
@@ -478,7 +478,7 @@ internal sealed partial class PosixProgram
                     if (index > code.Length - 6 ||
                         code[index + 3] is not { Kind: Utf8SliceInstructionKind.CaptureEnd } close || close.A != open.A)
                         return false;
-                    budget.ChargeWork((ulong)publicTags.Length);
+                    budget.Checkpoint();
                     if (publicTags.Contains(open.A)) return false;
                     atomIndex++;
                     exitIndex += 2;
@@ -509,7 +509,7 @@ internal sealed partial class PosixProgram
                 // intersect exactly when these ASCII case keys intersect. Their
                 // Unicode partners still require ordinary scalar consumption.
                 mask.CopyTo(literalMask);
-                budget.ChargeWork(26);
+                budget.Checkpoint();
                 for (var upper = (int)'A'; upper <= 'Z'; upper++)
                 {
                     var lower = upper + ('a' - 'A');
@@ -524,7 +524,7 @@ internal sealed partial class PosixProgram
             var hasOtherByte = false;
             for (var octet = 0; octet < seen.Length; octet++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (required && (seen[octet] & mask[octet]) != 0) return false;
                 nonempty |= mask[octet] != 0;
                 hasOtherByte |= (octet == lineFeedOctet ? mask[octet] & ~lineFeedBit : mask[octet]) != 0;
@@ -561,7 +561,7 @@ internal sealed partial class PosixProgram
         // its absence. No suffix may introduce a longer competing endpoint.
         for (var index = jump.A; index < code.Length; index++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (code[index].Kind == Utf8SliceInstructionKind.Accept)
             {
                 if (index != code.Length - 1) return false;
@@ -589,7 +589,7 @@ internal sealed partial class PosixProgram
         var length = 0;
         foreach (var instruction in body)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
             {
                 // Internal descendants follow the whole-branch tag; a shared
@@ -611,7 +611,7 @@ internal sealed partial class PosixProgram
         using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(root, -1));
         while (frames.Count != 0)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var index = frames.Count - 1;
             var frame = frames[index];
             if (frame.Node is Utf8SliceNode.CaptureNode) return true;

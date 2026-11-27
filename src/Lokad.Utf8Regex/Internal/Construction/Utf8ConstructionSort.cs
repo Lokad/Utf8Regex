@@ -10,7 +10,7 @@ internal static class Utf8ConstructionSort
             SiftDown(items, root, items.Length, comparison, budget);
         for (var end = items.Length - 1; end > 0; end--)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             (items[0], items[end]) = (items[end], items[0]);
             SiftDown(items, 0, end, comparison, budget);
         }
@@ -23,12 +23,12 @@ internal static class Utf8ConstructionSort
             var child = root * 2 + 1;
             if (child + 1 < count)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (comparison(items[child], items[child + 1]) < 0) child++;
             }
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (comparison(items[root], items[child]) >= 0) return;
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             (items[root], items[child]) = (items[child], items[root]);
             root = child;
         }

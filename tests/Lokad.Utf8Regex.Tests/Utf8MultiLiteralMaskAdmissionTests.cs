@@ -78,7 +78,7 @@ public sealed class Utf8MultiLiteralMaskAdmissionTests
     public void PublishedMasksKeepTheirVectorsAdmittedAndMatchTheByteOracle(int mode, int family)
     {
         var literals = Family(family);
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 0xa5;
         var held = owner.Budget.ReservedBytes;
@@ -100,7 +100,7 @@ public sealed class Utf8MultiLiteralMaskAdmissionTests
     public void RootAndNestedSearchDepthAreAdmittedBeforeAcquisition(int mode, int depth)
     {
         var required = !Simd ? 1 : mode == 1 ? 3 : 2;
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, (ulong)depth);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Record.Exception(() => Prepare(mode, Family(2)));
         if (depth < required)
@@ -116,23 +116,23 @@ public sealed class Utf8MultiLiteralMaskAdmissionTests
     [Fact]
     public void EmptyFamiliesBorrowEveryExtentWithoutAnOwnerLoanOrWork()
     {
-        using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var owner = new Utf8ConstructionScope(0, 0, 0);
         for (var mode = 0; mode < 3; mode++) Assert.False(Prepare(mode, []).HasValue);
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
-        Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
+Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
     }
 
     [Fact]
     public void LongSelectorsKeepFixedStorageAndPreserveOffsetTieOrdering()
     {
         ulong shortLoan;
-        using (var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        using (var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue))
         {
             var literals = new[] { new string('a', 128) + 'q', new string('a', 128) + 'z' }.Select(Encoding.UTF8.GetBytes).ToArray();
             _ = PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateAsciiIgnoreCase(literals);
             shortLoan = owner.Budget.PeakBytes;
         }
-        using (var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        using (var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue))
         {
             var literals = new[] { new string('a', 4096) + 'q', new string('a', 4096) + 'z' }.Select(Encoding.UTF8.GetBytes).ToArray();
             var value = PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateAsciiIgnoreCase(literals);

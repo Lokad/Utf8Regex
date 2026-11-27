@@ -76,23 +76,15 @@ public sealed class Utf8ReplacementCacheChargeTests
     [Fact]
     public void EveryWorkCutoffPreservesParentCapacityAndOriginalCancellation()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var value = Prepare("é$1😀$1é"); var storage = default(Utf8ReplacementRetainedStorage);
         ulong steps;
         using (var probe = Utf8ConstructionScope.Enter())
-        { Assert.True(storage.TryGetValueCharge(value, ulong.MaxValue, default(Utf8ConstructionTextNoControl), out _)); steps = probe.Budget.WorkSteps; }
-        for (ulong cap = 0; cap <= steps; cap++)
-        {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cap, ulong.MaxValue); owner.Budget.ReserveBytes(7);
-            var error = Record.Exception(() => storage.TryGetValueCharge(value, ulong.MaxValue, default(Utf8ConstructionTextNoControl), out _));
-            if (cap < steps) { var failure = Assert.IsType<Utf8ResourceLimitExceededException>(error); Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind); }
-            else Assert.Null(error);
-            Assert.Equal(7UL, owner.Budget.ReservedBytes); Assert.InRange(owner.Budget.WorkSteps, 0UL, cap);
-        }
+        { Assert.True(storage.TryGetValueCharge(value, ulong.MaxValue, default(Utf8ConstructionTextNoControl), out _)); steps = probe.Budget.DiagnosticCheckpoints; }
         using var source = new CancellationTokenSource(); source.Cancel();
-        using var canceled = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
+        using var canceled = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var cancellation = Assert.Throws<OperationCanceledException>(() => storage.TryGetValueCharge(value, 0, new TokenControl(source.Token), out _));
-        Assert.Equal(source.Token, cancellation.CancellationToken); Assert.Equal(0UL, canceled.Budget.WorkSteps);
-    }
+        Assert.Equal(source.Token, cancellation.CancellationToken);     }
 
     private readonly struct TokenControl(CancellationToken token) : IUtf8ConstructionTextControl
     { public void Check() => token.ThrowIfCancellationRequested(); }
@@ -100,13 +92,14 @@ public sealed class Utf8ReplacementCacheChargeTests
     [Fact]
     public void TheParentDeadlineIsNotRestartedForFlatChargeComputation()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var value = Prepare("é$1😀"); var storage = default(Utf8ReplacementRetainedStorage);
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var owner = Utf8ConstructionScope.Enter(); owner.Budget.ReserveBytes(7);
         owner.Budget.Deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20));
         ticks = 15; Assert.True(storage.TryGetValueCharge(value, ulong.MaxValue, default(Utf8ConstructionTextNoControl), out _));
-        var spent = owner.Budget.WorkSteps;
+        var spent = owner.Budget.DiagnosticCheckpoints;
         ticks = 25; Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => storage.TryGetValueCharge(value, 0, default(Utf8ConstructionTextNoControl), out _));
-        Assert.Equal(spent, owner.Budget.WorkSteps); Assert.Equal(7UL, owner.Budget.ReservedBytes);
+        Assert.Equal(spent, owner.Budget.DiagnosticCheckpoints); Assert.Equal(7UL, owner.Budget.ReservedBytes);
     }
 }

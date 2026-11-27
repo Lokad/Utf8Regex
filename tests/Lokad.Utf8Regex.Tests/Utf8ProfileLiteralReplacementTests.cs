@@ -10,7 +10,7 @@ public sealed class Utf8ProfileLiteralReplacementTests
     {
         var regex = new Utf8Regex("foo");
         var input = Encoding.UTF8.GetBytes("é😀foo 中foo!");
-        var invocation = new Utf8SliceInvocation(new(10000, 0, 1 << 20), Timeout.InfiniteTimeSpan, default)
+        var invocation = new Utf8SliceInvocation(new(0, 1 << 20), Timeout.InfiniteTimeSpan, default)
 ;
         Assert.True(invocation.Ledger.TryReserve(17));
         Utf8InvocationResultLedger results = default;

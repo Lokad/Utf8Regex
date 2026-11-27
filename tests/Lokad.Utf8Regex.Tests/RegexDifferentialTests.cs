@@ -94,7 +94,6 @@ public sealed class RegexDifferentialTests
                 MatchTimeout = mode == "timeout" ? TimeSpan.FromSeconds(10) : null,
                 ResourcePolicy = mode == "budget" ? new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 4096,
                     MaxWorkingBytes = 16 << 20,
                     MaxResultBytes = 16 << 20
@@ -149,7 +148,7 @@ public sealed class RegexDifferentialTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1_000_000
+                    MaxDepth = 4096
                 }
             });
             var oracle = new Regex(pattern, options | RegexOptions.CultureInvariant);
@@ -183,7 +182,7 @@ public sealed class RegexDifferentialTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1_000_000
+                    MaxDepth = 4096
                 }
             });
             var oracle = new Regex(pattern.Replace("😀", "\ue000"), options);

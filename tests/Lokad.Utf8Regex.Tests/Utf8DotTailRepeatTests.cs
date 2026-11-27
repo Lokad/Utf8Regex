@@ -31,7 +31,7 @@ public sealed class Utf8DotTailRepeatTests
         using var regex = new Utf8Regex(@"([\w.+-]+)@([\w.-]+)\.([\w.-]+)",
             options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
             {
-                ResourcePolicy = new() { MaxWorkSteps = 6000, MaxWorkingBytes = 4096 }
+                ResourcePolicy = new() { MaxWorkingBytes = 4096 }
             });
         using var source = new CancellationTokenSource();
         var miss = Encoding.UTF8.GetBytes("u@" + new string('a', 4095) + "!");
@@ -111,7 +111,7 @@ public sealed class Utf8DotTailRepeatTests
     public void BoundedDotResumesScalarCountingAfterTheAsciiBlock(int asciiLength)
     {
         const string pattern = @"\A(?<gap>.{32,2051})\bfinish\b";
-        var policy = new Utf8RegexPolicy { ResourcePolicy = Policy() with { MaxWorkSteps = 64 } };
+        var policy = new Utf8RegexPolicy { ResourcePolicy = Policy() with {  } };
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled, policy);
         using var singleline = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.Singleline, policy);
         var prefix = new string('x', asciiLength) + "😀";
@@ -128,7 +128,6 @@ public sealed class Utf8DotTailRepeatTests
 
     private static Utf8ResourcePolicy Policy(uint depth = 128, ulong result = 1 << 20, ulong working = 1 << 20) => new()
     {
-        MaxWorkSteps = 1_000_000,
         MaxDepth = depth,
         MaxWorkingBytes = working,
         MaxResultBytes = result
@@ -164,7 +163,7 @@ public sealed class Utf8DotTailRepeatTests
         const int floor = 4; // After the first supplementary scalar.
         using var regex = new Utf8Regex("(.*?),", options, new Utf8RegexPolicy
         {
-            ResourcePolicy = Policy() with { MaxWorkSteps = 128 }
+            ResourcePolicy = Policy() with {  }
         });
         using var token = new CancellationTokenSource();
         using var cursor = regex.CreateMatchCursor(input, floor, token.Token);
@@ -187,7 +186,7 @@ public sealed class Utf8DotTailRepeatTests
     {
         using var regex = new Utf8Regex(pattern, options, new()
         {
-            ResourcePolicy = Policy(depth: 1, working: 1) with { MaxWorkSteps = 10 }
+            ResourcePolicy = Policy(depth: 1, working: 1) with {  }
         });
         using var token = new CancellationTokenSource();
         var input = "pre😀left\r\né😀,tail,\n"u8;
@@ -290,7 +289,7 @@ public sealed class Utf8DotTailRepeatTests
         using var token = new CancellationTokenSource();
         using var regex = new Utf8Regex(@"(?s:\A(?<body>.*?)\z)", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = Policy() with { MaxWorkSteps = 1024 }
+            ResourcePolicy = Policy() with {  }
         });
         Assert.True(regex.IsMatch(input, token.Token));
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
@@ -406,7 +405,7 @@ public sealed class Utf8DotTailRepeatTests
         var bytes = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options);
         using var regex = new Utf8Regex(pattern, options,
-            new() { ResourcePolicy = Policy() with { MaxWorkSteps = 512 } });
+            new() { ResourcePolicy = Policy() with {  } });
         using var source = new CancellationTokenSource();
 
         Assert.Equal(1, oracle.Count(text));
@@ -494,18 +493,10 @@ public sealed class Utf8DotTailRepeatTests
         var input = Encoding.UTF8.GetBytes(text);
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
-        var baseline = new Utf8SliceInvocation(new(100000, depth, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var baseline = new Utf8SliceInvocation(new(depth, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         Assert.Equal(count, Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref baseline).Count);
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
-        for (ulong work = 1; work <= baseline.Budget.Steps; work++)
-        {
-            var invocation = new Utf8SliceInvocation(new(work, depth, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var result = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation);
-            Assert.Equal(work == baseline.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, result.Breach);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]
@@ -520,6 +511,7 @@ public sealed class Utf8DotTailRepeatTests
     public void ScalarRepeatObservesOriginalInterruptionAndReleasesScratch(
         string pattern, string atom, string suffix, uint expectedDepth, bool timeout)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         // The ASCII run ends before the first diagnostic checkpoint, during rewind.
@@ -528,7 +520,7 @@ public sealed class Utf8DotTailRepeatTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var session = Utf8SearchDiagnosticsSession.Start(_ => { if (timeout) ticks = 25; else token.Cancel(); });
-        var invocation = new Utf8SliceInvocation(new(100000, Math.Max(1u, expectedDepth), 1 << 20),
+        var invocation = new Utf8SliceInvocation(new(Math.Max(1u, expectedDepth), 1 << 20),
             TimeSpan.FromMilliseconds(20), token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         try
@@ -539,7 +531,7 @@ public sealed class Utf8DotTailRepeatTests
             if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-            Assert.True(invocation.Budget.Steps >= 64);
+            Assert.True(invocation.Budget.DiagnosticCheckpoints >= 64);
             Assert.Equal(expectedDepth, invocation.Budget.PeakDepth);
         }
         finally { session.Complete(); }

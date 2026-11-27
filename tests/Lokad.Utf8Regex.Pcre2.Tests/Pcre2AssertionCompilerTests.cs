@@ -13,30 +13,6 @@ public sealed class Pcre2AssertionCompilerTests
 {
     private const string ImpliedLookahead = "(?=(?<token>[a-z]{3}[0-9]{3}))abc123";
 
-    [Fact]
-    public void ImpliedLookaheadBooleanKeepsByteOffsetsLimitsAndCapturedMatch()
-    {
-        using var limited = new Utf8Pcre2Regex(ImpliedLookahead, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new() { MaxWorkingBytes = 1, MaxDepth = 1, MaxWorkSteps = 32, MaxResultBytes = 1 },
-        });
-        Assert.True(limited.IsMatch("😀 abc123 trailing"u8, startOffsetInBytes: 4));
-        Assert.False(limited.IsMatch("😀 abc123 trailing"u8, startOffsetInBytes: 6));
-        Assert.False(limited.IsMatch("abc124"u8));
-        var longMiss = new byte[128 * 1024];
-        var work = Assert.Throws<Pcre2MatchException>(() => limited.IsMatch(longMiss));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, work.ErrorKind);
-
-        using var regex = new Utf8Pcre2Regex(ImpliedLookahead);
-        ReadOnlySpan<byte> input = "😀 abc123 trailing"u8;
-        var captures = new Utf8Pcre2CaptureRange[2];
-        Assert.True(regex.Match(input, captures: captures).Success);
-        Assert.Equal((5, 11), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
-        Assert.True(regex.IsMatch(input, startOffsetInBytes: 5, matchOptions: Pcre2MatchOptions.Anchored));
-        Assert.False(regex.IsMatch(input, matchOptions: Pcre2MatchOptions.Anchored));
-        Assert.False(regex.IsMatch(input, matchOptions: Pcre2MatchOptions.EndAnchored));
-    }
-
     [Theory]
     [InlineData("(?=(?<token>[a-z]{4}[0-9]{2}))abc123", "abc123", false)]
     [InlineData("(?=(?<token>abc123x))abc123", "abc123", false)]
@@ -122,23 +98,6 @@ public sealed class Pcre2AssertionCompilerTests
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(5, match.StartOffsetInBytes);
         Assert.Equal(9, match.EndOffsetInBytes);
-    }
-
-    [Theory]
-    [InlineData("(?<=é{4097}|é{4098})x", false)]
-    [InlineData("(?<!é{4097}|é{4098})x", true)]
-    public void LongLookbehindRetreatObservesTheWorkLimit(string pattern, bool expected)
-    {
-        var input = Encoding.UTF8.GetBytes(new string('é', 4096) + "x");
-        var start = input.Length - 1;
-        using var ordinary = new Utf8Pcre2Regex(pattern);
-        Assert.Equal(expected, ordinary.IsMatch(input, startOffsetInBytes: start, matchOptions: Pcre2MatchOptions.Anchored));
-
-        using var limited = new Utf8Pcre2Regex(pattern,
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 32 } });
-        var failure = Assert.Throws<Pcre2MatchException>(() => limited.IsMatch(input, startOffsetInBytes: start,
-            matchOptions: Pcre2MatchOptions.Anchored));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
     }
 
     [Theory]

@@ -18,13 +18,11 @@ public sealed class Pcre2LiteralGlobalOperationTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         var bytes = Encoding.UTF8.GetBytes(new string('x', 8192) + "é");
-        var failure = Assert.Throws<Pcre2MatchException>(() => regex.Count(bytes));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
         using var token = new CancellationTokenSource();
         token.Cancel();
         var cancelled = Assert.Throws<OperationCanceledException>(() => regex.Count(bytes, 0, default, token.Token));
@@ -43,7 +41,6 @@ public sealed class Pcre2LiteralGlobalOperationTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -61,33 +58,22 @@ public sealed class Pcre2LiteralGlobalOperationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ByteOnlyCountKeepsCumulativeWorkDenialAndBorrowedCapacity(bool longNeedle)
+    public void ByteOnlyCountKeepsBorrowedCapacity(bool longNeedle)
     {
         var pattern = longNeedle ? new string('a', 2050) + "é" : "é";
         var regex = new Utf8Pcre2Regex(pattern);
         var program = Assert.IsType<Pcre2LiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Count).Program;
         var bytes = Encoding.UTF8.GetBytes(new string('x', 4095) + pattern + " " + pattern);
-        var required = Execute(100000, expectDenial: false);
-        Assert.True(required > 1);
-        Execute(required - 1, expectDenial: true);
-
-        ulong Execute(ulong work, bool expectDenial)
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(1, 64, 1),
+            Timeout.InfiniteTimeSpan, CancellationToken.None);
+        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(17));
+        try
         {
-            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(work, 1, 64, 1),
-                Timeout.InfiniteTimeSpan, CancellationToken.None);
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(17));
-            try
-            {
-                var breach = program.TryCountNonOverlapping(bytes, ref invocation, out var count);
-                Assert.Equal(expectDenial ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.None, breach);
-                Assert.Equal(expectDenial ? 0 : 2, count);
-                if (expectDenial)
-                    Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.TryChargeInputStep());
-                Assert.Equal(17UL, invocation.Ledger.ReservedBytes);
-                return invocation.Budget.Steps;
-            }
-            finally { invocation.Ledger.Release(17); Assert.Equal(0UL, invocation.Ledger.ReservedBytes); }
+            Assert.Equal(Utf8ExecutionLimitKind.None, program.TryCountNonOverlapping(bytes, ref invocation, out var count));
+            Assert.Equal(2, count);
+            Assert.Equal(17UL, invocation.Ledger.ReservedBytes);
         }
+        finally { invocation.Ledger.Release(17); }
     }
 
     [Theory]
@@ -104,7 +90,6 @@ public sealed class Pcre2LiteralGlobalOperationTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1

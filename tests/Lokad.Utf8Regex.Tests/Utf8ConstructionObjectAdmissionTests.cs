@@ -7,40 +7,35 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ConstructionObjectAdmissionTests
 {
     [Theory]
-    [InlineData(0ul, ulong.MaxValue)]
-    [InlineData(127ul, ulong.MaxValue)]
-    [InlineData(128ul, 0ul)]
-    [InlineData(128ul, 1ul)]
-    public void DenialPrecedesFactoryAndLeavesNoCapacityLoan(ulong bytes, ulong work)
+    [InlineData(0ul)]
+    [InlineData(127ul)]
+    public void DenialPrecedesFactoryAndLeavesNoCapacityLoan(ulong bytes)
     {
-        using var scope = new Utf8ConstructionScope(ulong.MaxValue, bytes, work, ulong.MaxValue);
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, bytes, ulong.MaxValue);
         var called = false;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             scope.Budget.AllocateObject(1, value => { called = true; return new Payload(value); }));
         Assert.False(called);
-        Assert.Equal(bytes < 128 ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.True(failure.Requested > failure.Limit);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         Assert.Equal(0ul, scope.Budget.PeakBytes);
-        Assert.Equal(0ul, scope.Budget.WorkSteps);
 
     }
 
     [Fact]
-    public void ThrowingFactoryPreservesParentObjectsAndKeepsAdmittedWorkSpent()
+    public void ThrowingFactoryPreservesParentObjects()
     {
         using var scope = Utf8ConstructionScope.Enter();
         var parent = scope.Budget.AllocateObject(42, static value => new Payload(value));
         var checkpoint = scope.Budget.ReservedBytes;
         var held = scope.Budget.ReservedBytes;
-        var work = scope.Budget.WorkSteps;
         var failure = Assert.Throws<InvalidOperationException>(() =>
             scope.Budget.AllocateObject<int, Payload>(1, static _ => throw new InvalidOperationException("factory")));
         Assert.Equal("factory", failure.Message);
         Assert.Equal(held, scope.Budget.ReservedBytes);
         Assert.Equal(checkpoint, scope.Budget.ReservedBytes);
         Assert.Equal(42, parent.Value);
-        Assert.Equal(work + 2, scope.Budget.WorkSteps);
     }
 
     [Theory]
@@ -60,7 +55,6 @@ public sealed class Utf8ConstructionObjectAdmissionTests
         }
         Assert.Equal(completed ? held * 2 : held, parent.Budget.ReservedBytes);
         Assert.Equal(completed ? checkpoint + 128ul : checkpoint, parent.Budget.ReservedBytes);
-        Assert.Equal(4ul, parent.Budget.WorkSteps);
     }
 
     [Theory]
@@ -73,14 +67,13 @@ public sealed class Utf8ConstructionObjectAdmissionTests
         if (completed) scope.Complete();
         scope.Dispose();
         Assert.Equal(completed ? 128ul : 0ul, scope.Budget.ReservedBytes);
-        Assert.Equal(2ul, scope.Budget.WorkSteps);
         Assert.False(Utf8ConstructionScope.IsActive);
     }
 
     [Fact]
     public void SaturatedByteOwnerDeniesWithoutCallingTheFactoryOrWrappingTheRequest()
     {
-        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         scope.Budget.ReserveBytes(ulong.MaxValue);
         var called = false;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
@@ -88,7 +81,6 @@ public sealed class Utf8ConstructionObjectAdmissionTests
         Assert.False(called);
         Assert.Equal(ulong.MaxValue, failure.Requested);
         Assert.Equal(ulong.MaxValue, scope.Budget.ReservedBytes);
-        Assert.Equal(0ul, scope.Budget.WorkSteps);
 
     }
 
@@ -109,7 +101,6 @@ public sealed class Utf8ConstructionObjectAdmissionTests
         Assert.False(weak.TryGetTarget(out _));
         Assert.Equal(128ul, held);
         Assert.Equal(held, owner.Budget.ReservedBytes);
-        Assert.Equal(2ul, owner.Budget.WorkSteps);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -128,13 +119,11 @@ public sealed class Utf8ConstructionObjectAdmissionTests
         }
         var alias = retained;
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
-        Assert.Equal(4ul, owner.Budget.WorkSteps);
         owner.Dispose();
         GC.Collect();
         Assert.Same(retained, alias);
         Assert.Equal(42, alias.Value);
         Assert.Equal(17, parent.Value);
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
-        Assert.Equal(4ul, owner.Budget.WorkSteps);
     }
 }

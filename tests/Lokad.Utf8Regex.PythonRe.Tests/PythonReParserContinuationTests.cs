@@ -70,7 +70,8 @@ public sealed class PythonReParserContinuationTests
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(8)]
     public void ParserDepthDenialRestoresParentLoansBeforeAnotherParse(int maximum)
     {
-        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, (ulong)maximum + 1);
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, (ulong)maximum + 1);
         var parent = scope.Budget.AllocateArray<byte>(1, false);
         scope.Budget.EnterDepth();
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
@@ -82,8 +83,8 @@ public sealed class PythonReParserContinuationTests
         Assert.Equal(48ul, scope.Budget.ReservedBytes);
         // With no child frame available, only the held parent's array
         // initialization was admitted; no parser resume may execute.
-        if (maximum == 0) Assert.Equal(1ul, scope.Budget.WorkSteps);
-        else Assert.True(scope.Budget.WorkSteps > 1);
+        if (maximum == 0) Assert.Equal(1ul, scope.Budget.DiagnosticCheckpoints);
+        else Assert.True(scope.Budget.DiagnosticCheckpoints > 1);
         if (maximum >= 2)
             Assert.IsType<PythonReLiteralNode>(new PythonReParser("a").Parse(PythonReCompileOptions.None).Root);
         scope.Budget.LeaveDepth();
@@ -96,38 +97,14 @@ public sealed class PythonReParserContinuationTests
     [InlineData("(a)(?(1)|b)")]
     public void EveryParserWorkCutoffRestoresParentLoansAndDoesNotRefundWork(string pattern)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         ulong work;
         using (var measured = Utf8ConstructionScope.Enter())
         {
             _ = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
-            work = measured.Budget.WorkSteps;
+            work = measured.Budget.DiagnosticCheckpoints;
         }
         Assert.InRange(work, 1ul, 512ul);
-        for (var cutoff = 0ul; cutoff <= work; cutoff++)
-        {
-            using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cutoff + 1, ulong.MaxValue);
-            var parent = scope.Budget.AllocateArray<byte>(1, false);
-            scope.Budget.EnterDepth();
-            var failure = Record.Exception(() => new PythonReParser(pattern).Parse(PythonReCompileOptions.None));
-            Assert.Equal(1ul, scope.Budget.Depth);
-            if (cutoff < work)
-            {
-                var limit = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
-                Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, limit.ResourceKind);
-                Assert.True(limit.Requested > limit.Limit);
-                Assert.True(scope.Budget.WorkSteps <= cutoff + 1);
-                Assert.Equal(48ul, scope.Budget.ReservedBytes);
-
-            }
-            else
-            {
-                Assert.Null(failure);
-                Assert.True(scope.Budget.ReservedBytes > 48);
-                Assert.True(scope.Budget.ReservedBytes > 0);
-            }
-            scope.Budget.LeaveDepth();
-            scope.Budget.ReleaseArray(parent, false);
-        }
     }
 
     [Theory]
@@ -138,6 +115,7 @@ public sealed class PythonReParserContinuationTests
     [InlineData("(?:", "a**", ")", "multiple repeat", 5)]
     public void DeepGrammarFailuresKeepThePythonErrorAndReleaseAllFrames(string opener, string body, string closer, string message, int offset)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const int depth = 16385;
         var prefix = string.Concat(Enumerable.Repeat(opener, depth));
         var pattern = prefix + body + string.Concat(Enumerable.Repeat(closer, message.StartsWith("missing") ? depth - 1 : depth));
@@ -146,11 +124,11 @@ public sealed class PythonReParserContinuationTests
         var failure = Assert.Throws<PythonRePatternException>(() => new PythonReParser(pattern).Parse(PythonReCompileOptions.None));
         Assert.StartsWith(message, failure.Message);
         Assert.Equal(message.StartsWith("missing") ? 0 : prefix.Length - opener.Length + offset, failure.Position);
-        var spent = scope.Budget.WorkSteps;
+        var spent = scope.Budget.DiagnosticCheckpoints;
         Assert.Equal(48ul, scope.Budget.ReservedBytes);
         Assert.Equal(0ul, scope.Budget.Depth);
         Assert.IsType<PythonReLiteralNode>(new PythonReParser("a").Parse(PythonReCompileOptions.None).Root);
-        Assert.True(scope.Budget.WorkSteps > spent);
+        Assert.True(scope.Budget.DiagnosticCheckpoints > spent);
         Assert.True(scope.Budget.ReservedBytes >= 48ul + 128ul);
         Assert.Equal(0, parent[0]);
         scope.Budget.ReleaseArray(parent, false);
@@ -159,7 +137,7 @@ public sealed class PythonReParserContinuationTests
     [Fact]
     public void ExhaustedParserFrameCapacityRejectsBeforeParsingAndRecoversInANewOwner()
     {
-        using (var scope = new Utf8ConstructionScope(ulong.MaxValue, 48, ulong.MaxValue, ulong.MaxValue))
+        using (var scope = new Utf8ConstructionScope(ulong.MaxValue, 48, ulong.MaxValue))
         {
             var parent = scope.Budget.AllocateArray<byte>(1, false);
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>

@@ -20,7 +20,7 @@ public sealed class Pcre2PolicyOwnershipTests
         var policy = new Utf8RegexPolicy
         {
             ProgramMemoryAllowance = account,
-            ResourcePolicy = new() { MaxWorkSteps = 100000 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         };
         using var regex = creation switch
         {
@@ -78,7 +78,7 @@ public sealed class Pcre2PolicyOwnershipTests
     public void FundedSpanCopiesBorrowOpenProducerWithoutHostWorkingLoans(string pattern, string text, bool slice)
     {
         var account = new Account(); using var regex = new Utf8Pcre2Regex(pattern, policy: new()
-        { ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxWorkSteps = 100000 } });
+        { ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxDepth = 4096 } });
         Assert.Equal(slice, regex.DebugCompiledProgram.Operations.Enumerate is Pcre2SliceDirectProgram);
         var input = Encoding.UTF8.GetBytes(text); var attempts = account.Attempts;
         var cursor = regex.EnumerateMatches(input); var alias = cursor;
@@ -162,7 +162,7 @@ public sealed class Pcre2PolicyOwnershipTests
     }
 
     [Theory]
-    [InlineData(0)]
+
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
@@ -170,7 +170,7 @@ public sealed class Pcre2PolicyOwnershipTests
     {
         var limit = kind switch
         {
-            0 => new Utf8ConstructionPolicy { MaxWorkSteps = 1 },
+
             1 => new Utf8ConstructionPolicy { MaxDepth = 1 },
             2 => new Utf8ConstructionPolicy { MaxInstructionCapacity = 1 },
             _ => new Utf8ConstructionPolicy { MaxBytes = 1 }
@@ -194,12 +194,13 @@ public sealed class Pcre2PolicyOwnershipTests
     [Fact]
     public void ExplicitConstructionCannotReplaceInheritedAuthorityAndCompileTokenEndsAtPublication()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using (var owner = Utf8ConstructionScope.Enter())
         {
-            using var expression = new Utf8Pcre2Regex("a"); var work = owner.Budget.WorkSteps; Assert.True(work > 0);
+            using var expression = new Utf8Pcre2Regex("a"); var work = owner.Budget.DiagnosticCheckpoints; Assert.True(work > 0);
             Assert.Throws<InvalidOperationException>(() => Utf8Pcre2Regex.Compile("a"));
-            Assert.Throws<InvalidOperationException>(() => new Utf8Pcre2Regex("a", policy: new() { ConstructionPolicy = new() { MaxWorkSteps = 100000 } }));
-            Assert.Equal(work, owner.Budget.WorkSteps);
+            Assert.Throws<InvalidOperationException>(() => new Utf8Pcre2Regex("a", policy: new() { ConstructionPolicy = new() { MaxDepth = 128 } }));
+            Assert.Equal(work, owner.Budget.DiagnosticCheckpoints);
         }
         using var source = new CancellationTokenSource(); using var regex = Utf8Pcre2Regex.Compile("a", cancellationToken: source.Token);
         source.Cancel(); Assert.True(regex.IsMatch("a"u8));
@@ -222,7 +223,7 @@ public sealed class Pcre2PolicyOwnershipTests
         using var regex = new Utf8Pcre2Regex("(?<名>a)", policy: new()
         {
             ProgramMemoryAllowance = account,
-            ResourcePolicy = new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
         });
         var destination = new byte[3]; var attempts = account.Attempts;
         Assert.Equal(System.Buffers.OperationStatus.Done,

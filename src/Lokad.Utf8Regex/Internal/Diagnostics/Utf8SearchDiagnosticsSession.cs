@@ -1,6 +1,6 @@
 namespace Lokad.Utf8Regex.Internal.Diagnostics;
 
-internal sealed class Utf8SearchDiagnosticsSession
+internal sealed class Utf8SearchDiagnosticsSession : IDisposable
 {
     [ThreadStatic]
     private static Utf8SearchDiagnosticsSession? t_current;
@@ -88,4 +88,6 @@ internal sealed class Utf8SearchDiagnosticsSession
             t_current = _previous;
         }
     }
+
+    public void Dispose() => Complete();
 }

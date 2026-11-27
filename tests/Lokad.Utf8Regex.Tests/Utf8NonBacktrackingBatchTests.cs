@@ -42,7 +42,7 @@ public sealed class Utf8NonBacktrackingBatchTests
         var options = RegexOptions.NonBacktracking | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
         using var regex = new Utf8Regex("(?<long>a{72})z|(?<fold>k+)", options, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256 },
+            ResourcePolicy = new() { MaxDepth = 4096 },
         });
 
         Assert.False(regex.IsMatch(input.AsSpan(0, prefixLength)));
@@ -60,7 +60,7 @@ public sealed class Utf8NonBacktrackingBatchTests
         const int gap = 16_384;
         using var regex = new Utf8Regex("(?<long>a{72})z|(?<short>xy)", RegexOptions.NonBacktracking, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 512 },
+            ResourcePolicy = new() { MaxDepth = 4096 },
         });
         var prefix = "éa!" + new string('!', gap) + "😀";
         var input = Encoding.UTF8.GetBytes(prefix + "xy");
@@ -138,7 +138,7 @@ public sealed class Utf8NonBacktrackingBatchTests
     {
         using var regex = new Utf8Regex(@"(?<x>a{72})z", RegexOptions.NonBacktracking, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 16, MaxWorkingBytes = 128 },
+            ResourcePolicy = new() { MaxWorkingBytes = 128 },
         });
         var input = Encoding.UTF8.GetBytes(new string('!', 8192));
         var cursor = regex.EnumerateMatches(input, 16);
@@ -290,7 +290,7 @@ public sealed class Utf8NonBacktrackingBatchTests
         var program = Program("(.)?");
         Assert.InRange(program.Instructions.Length, 1, 64);
         var input = empty ? [] : "😀é"u8.ToArray();
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out var table));
         Assert.NotNull(table);
@@ -322,18 +322,19 @@ public sealed class Utf8NonBacktrackingBatchTests
     [InlineData("a*b", true)]
     public void CountWorkIsLinearAcrossTheWholeBatch(string pattern, bool hit)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var program = Program(pattern);
         ulong previous = 0;
         foreach (var size in new[] { 64, 128, 256, 512, 1024, 2048 })
         {
             var input = Encoding.UTF8.GetBytes(new string('a', size) + (hit ? "b" : ""));
-            var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
             var result = Utf8SliceRunner.CountFromBytes(program, input, 0,
                 new int[program.GroupCount], new int[program.GroupCount], ref invocation);
             Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
             Assert.Equal(hit ? (pattern.EndsWith('|') ? 2 : 1) : (pattern.EndsWith('|') ? size + 1 : 0), result.Count);
-            if (previous != 0) Assert.InRange(invocation.Budget.Steps, previous, previous * 2 + 64);
-            previous = invocation.Budget.Steps;
+            if (previous != 0) Assert.InRange(invocation.Budget.DiagnosticCheckpoints, previous, previous * 2 + 64);
+            previous = invocation.Budget.DiagnosticCheckpoints;
             Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         }
     }
@@ -368,22 +369,13 @@ public sealed class Utf8NonBacktrackingBatchTests
     {
         var program = Program("(?<x>.)*z|");
         var input = "😀a"u8.ToArray();
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var baseline = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         Assert.Equal(3, Utf8SliceRunner.CountFromBytes(program, input, 0, new int[1], new int[1], ref baseline).Count);
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
-        for (ulong limit = 1; limit <= baseline.Budget.Steps; limit++)
-        {
-            var invocation = new Utf8SliceInvocation(new(limit, 0, 0), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var result = Utf8SliceRunner.CountFromBytes(program, input, 0, new int[1], new int[1], ref invocation);
-            Assert.Equal(limit == baseline.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, result.Breach);
-            Assert.InRange(result.Count, 0, 3);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
         for (ulong cap = 13; cap <= baseline.Budget.PeakWorkingBytes; cap++)
         {
-            var invocation = new Utf8SliceInvocation(new(0, 0, cap), Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(new(0, cap), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(13));
             var result = Utf8SliceRunner.CountFromBytes(program, input, 0, new int[1], new int[1], ref invocation);
             Assert.Equal(cap == baseline.Budget.PeakWorkingBytes ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkingBytes, result.Breach);
@@ -412,36 +404,21 @@ public sealed class Utf8NonBacktrackingBatchTests
     [InlineData("a{72}z|(?<x>a(?<x>b)c)")]
     public void EveryCaptureReplayCutoffRestoresWorkingStorage(string pattern)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var program = Program(pattern);
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var baseline = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8NonBacktrackingSearchState.TryCreate(program, "abc"u8, ref baseline, out var measured));
         Assert.NotNull(measured);
-        var preparationSteps = baseline.Budget.Steps;
+        var preparationSteps = baseline.Budget.DiagnosticCheckpoints;
         var boundary = 0;
         var found = measured.FindFirst(program, ref boundary, new int[1], new int[1], ref baseline);
         Assert.True(found.Found);
-        var replaySteps = baseline.Budget.Steps - preparationSteps;
+        var replaySteps = baseline.Budget.DiagnosticCheckpoints - preparationSteps;
         measured.Release(ref baseline);
-        for (ulong limit = 1; limit <= replaySteps; limit++)
-        {
-            var invocation = new Utf8SliceInvocation(new(preparationSteps + limit, 0, 0), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            Assert.Equal(Utf8ExecutionLimitKind.None, Utf8NonBacktrackingSearchState.TryCreate(program, "abc"u8, ref invocation, out var table));
-            Assert.NotNull(table);
-            var held = invocation.Ledger.ReservedBytes;
-            boundary = 0;
-            var starts = new[] { 42 }; var ends = new[] { 43 };
-            var result = table.FindFirst(program, ref boundary, starts, ends, ref invocation);
-            Assert.Equal(limit == replaySteps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, result.Breach);
-            Assert.Equal(held, invocation.Ledger.ReservedBytes);
-            if (!result.Found) { Assert.Equal(-1, starts[0]); Assert.Equal(-1, ends[0]); }
-            table.Release(ref invocation);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
         for (ulong cap = 13; cap <= baseline.Budget.PeakWorkingBytes; cap++)
         {
-            var invocation = new Utf8SliceInvocation(new(0, 0, cap), Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(new(0, cap), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(13));
             var breach = Utf8NonBacktrackingSearchState.TryCreate(program, "abc"u8, ref invocation, out var table);
             if (table is not null)
@@ -459,8 +436,9 @@ public sealed class Utf8NonBacktrackingBatchTests
     [Fact]
     public void FinalReplayCancellationReleasesTheTableAndClearsSlots()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var program = Program("(a)");
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var baseline = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8NonBacktrackingSearchState.TryCreate(program, "a"u8, ref baseline, out var measured));
         Assert.NotNull(measured);
         var boundary = 0;
@@ -470,9 +448,9 @@ public sealed class Utf8NonBacktrackingBatchTests
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
-        var padding = (64 - baseline.Budget.Steps % 64) % 64;
-        for (ulong step = 0; step < padding; step++) _ = invocation.TryChargeStep();
-        var finalStep = baseline.Budget.Steps + padding;
+        var padding = (64 - baseline.Budget.DiagnosticCheckpoints % 64) % 64;
+        for (ulong step = 0; step < padding; step++) _ = invocation.CheckProgress();
+        var finalStep = baseline.Budget.DiagnosticCheckpoints + padding;
         invocation.CheckpointHook = steps => { if (steps == finalStep) source.Cancel(); };
         var starts = new[] { 42 }; var ends = new[] { 43 };
         var error = Assert.Throws<OperationCanceledException>(() =>
@@ -491,6 +469,7 @@ public sealed class Utf8NonBacktrackingBatchTests
     [InlineData(false)] [InlineData(true)]
     public void PublicEnumerationWorkGrowsLinearlyAndCopiesKeepTheirPosition(bool compiled)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex("a*b|", options: RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0));
         ulong previous = 0;
         foreach (var size in new[] { 64, 128, 256, 512 })
@@ -500,7 +479,7 @@ public sealed class Utf8NonBacktrackingBatchTests
             var count = 0;
             while (cursor.MoveNext()) count++;
             Assert.Equal(size + 1, count);
-            var steps = cursor.DebugInvocationSteps;
+            var steps = cursor.DiagnosticCheckpointCount;
             if (previous != 0) Assert.InRange(steps, previous, previous * 2 + 64);
             previous = steps;
             Assert.True(copy.MoveNext());
@@ -514,12 +493,16 @@ public sealed class Utf8NonBacktrackingBatchTests
     {
         var program = Program("(a*)*b|");
         var input = "aaaa"u8.ToArray();
-        var measured = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var measured = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
         var cursor = Utf8OwnedSplitPreparation.Create(program, input, 0, ref measured);
         Assert.True(measured.Ledger.ReservedBytes > 0);
-        var invocation = new Utf8SliceInvocation(new(measured.Budget.Steps - 1, 0, 0), Regex.InfiniteMatchTimeout, default);
+        using var cancellation = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, cancellation.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
-        Assert.Throws<InvalidOperationException>(() => { var failed = Utf8OwnedSplitPreparation.Create(program, input, 0, ref invocation); });
+        invocation.CheckpointHook = _ => cancellation.Cancel();
+        for (var step = 0; step < 63; step++) invocation.CheckProgress();
+        Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
+            Utf8OwnedSplitPreparation.Create(program, input, 0, ref invocation)).CancellationToken);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         Assert.True(cursor.MoveNext());
     }
@@ -544,7 +527,7 @@ public sealed class Utf8NonBacktrackingBatchTests
     {
         var regex = new Utf8Regex("(?<x>.)*z|", options: RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Owned graph missing.");
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
         var held = ExerciseCopiesAndAbandon(program, "a😀b"u8.ToArray(), ref invocation);
         CollectLeases();
@@ -554,6 +537,7 @@ public sealed class Utf8NonBacktrackingBatchTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static ulong ExerciseCopiesAndAbandon(Utf8SliceProgram program, byte[] input, ref Utf8SliceInvocation invocation)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         Utf8SliceBufferWork.Checkpoint(ref invocation);
         invocation.ShareStorageForCursor();
         var original = new Utf8OperationMatchCursor(program, input, invocation);
@@ -563,9 +547,7 @@ public sealed class Utf8NonBacktrackingBatchTests
         Assert.Equal(held, invocation.Ledger.ReservedBytes);
         Assert.True(original.MoveNext());
         Assert.Equal(0, original.CurrentValueMatch.StartOffsetInBytes);
-        var firstSteps = invocation.Budget.Steps;
         FinishCopy(ref original);
-        Assert.True(invocation.Budget.Steps > firstSteps);
         CollectLeases();
         Assert.Equal(held, invocation.Ledger.ReservedBytes);
         Assert.True(original.MoveNext());

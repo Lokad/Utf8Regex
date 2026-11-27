@@ -19,7 +19,7 @@ public sealed class PythonReCompilationPolicyTests
         var account = new Allowance(16 << 20);
         var policy = new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 100000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 },
+            ResourcePolicy = new() { MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 },
             MatchTimeout = TimeSpan.FromSeconds(2),
             ProgramMemoryAllowance = account
         };
@@ -46,11 +46,9 @@ public sealed class PythonReCompilationPolicyTests
     }
 
     [Theory]
-    [InlineData(0, false)]
     [InlineData(1, false)]
     [InlineData(2, false)]
     [InlineData(3, false)]
-    [InlineData(0, true)]
     [InlineData(1, true)]
     [InlineData(2, true)]
     [InlineData(3, true)]
@@ -58,7 +56,7 @@ public sealed class PythonReCompilationPolicyTests
     {
         var construction = kind switch
         {
-            0 => new Utf8ConstructionPolicy { MaxWorkSteps = 1 },
+            0 => new Utf8ConstructionPolicy {  },
             1 => new Utf8ConstructionPolicy { MaxDepth = 1 },
             2 => new Utf8ConstructionPolicy { MaxInstructionCapacity = 1 },
             _ => new Utf8ConstructionPolicy { MaxBytes = 1 }
@@ -71,7 +69,6 @@ public sealed class PythonReCompilationPolicyTests
         });
         Assert.Equal(kind switch
         {
-            0 => Utf8ResourceLimitKind.ConstructionWorkSteps,
             1 => Utf8ResourceLimitKind.ConstructionDepth,
             2 => Utf8ResourceLimitKind.ConstructionInstructionCapacity,
             _ => Utf8ResourceLimitKind.ConstructionBytes
@@ -101,16 +98,17 @@ public sealed class PythonReCompilationPolicyTests
     [Fact]
     public void ImplicitConstructionBorrowsOwnerAndExplicitConstructionCannotReplaceIt()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var scope = Utf8ConstructionScope.Enter();
-        using var regex = new Utf8PythonRegex("(?P<x>a)", policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1000 } });
-        var spent = scope.Budget.WorkSteps; Assert.True(spent > 0);
+        using var regex = new Utf8PythonRegex("(?P<x>a)", policy: new() { ResourcePolicy = new() { MaxDepth = 4096 } });
+        var spent = scope.Budget.DiagnosticCheckpoints; Assert.True(spent > 0);
         Assert.Throws<InvalidOperationException>(() => new Utf8PythonRegex("a", policy: new()
         {
-            ConstructionPolicy = new() { MaxWorkSteps = 1000 }
+            ConstructionPolicy = new() { MaxDepth = 128 }
         }));
         Assert.Throws<InvalidOperationException>(() => Utf8PythonRegex.Compile("a"));
         Assert.Same(scope.Budget, Utf8ConstructionScope.CurrentBudget);
-        Assert.Equal(spent, scope.Budget.WorkSteps);
+        Assert.Equal(spent, scope.Budget.DiagnosticCheckpoints);
     }
 
     [Fact]
@@ -138,7 +136,7 @@ public sealed class PythonReCompilationPolicyTests
             {
                 MatchTimeout = TimeSpan.Zero,
                 ConstructionTimeout = TimeSpan.Zero,
-                ResourcePolicy = new() { MaxWorkSteps = 0 },
+                ResourcePolicy = new() { MaxDepth = 4096 },
                 ConstructionPolicy = new() { MaxBytes = 0 },
                 ProgramMemoryAllowance = account
             }, source.Token));

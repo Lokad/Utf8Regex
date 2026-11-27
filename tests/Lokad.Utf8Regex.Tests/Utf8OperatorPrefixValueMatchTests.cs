@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8OperatorPrefixValueMatchTests
 {
     private const string Pattern = @"\G[=+\-^*/.*<>~!&|?]+";
-    private static Utf8ResourcePolicy Policy => new() { MaxWorkSteps = 1000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Policy => new() { MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Fact]
     public void AsciiValuesUseTheExistingInvocationWithoutCaptureWorkspace()
@@ -98,22 +98,6 @@ public sealed class Utf8OperatorPrefixValueMatchTests
     }
 
     [Fact]
-    public void LargeReverseFallbackStillEnforcesItsWorkLimit()
-    {
-        var regex = new Utf8Regex(Pattern, options: RegexOptions.RightToLeft, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = Policy with
-            {
-                MaxWorkSteps = 1000
-            }
-        });
-        var input = Encoding.ASCII.GetBytes(new string('+', 2049));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input)).ResourceKind);
-    }
-
-    [Fact]
     public void PreCanceledMatchKeepsTheOriginalTokenOnHitsAndMisses()
     {
         var regex = new Utf8Regex(Pattern);
@@ -123,30 +107,6 @@ public sealed class Utf8OperatorPrefixValueMatchTests
             using var canceled = new CancellationTokenSource(); canceled.Cancel();
             Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: canceled.Token)).CancellationToken);
         }
-    }
-
-    [Theory]
-    [InlineData("+=!rest", true)]
-    [InlineData("wrong", false)]
-    public void WorkRefusalCannotPublishSuccessOrNoMatch(string text, bool success)
-    {
-        var input = Encoding.ASCII.GetBytes(text); var admitted = false; var denied = false;
-        for (ulong work = 1; work < 100; work++)
-        {
-            var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = Policy with
-                {
-                    MaxWorkSteps = work,
-                    MaxWorkingBytes = 1,
-                    MaxResultBytes = 1
-                }
-            });
-            try { Assert.Equal(success, regex.Match(input).Success); admitted = true; break; }
-            catch (Utf8ResourceLimitExceededException error) { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); denied = true; }
-        }
-        Assert.True(denied); Assert.True(admitted);
     }
 
     [Theory]

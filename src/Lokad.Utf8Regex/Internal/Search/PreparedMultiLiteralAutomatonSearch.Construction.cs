@@ -18,7 +18,7 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
             var columns = CreateColumns(literals, budget, out var stride);
             using var states = Utf8ConstructionBuffer<ConstructionState>.Create(budget);
             using var transitions = Utf8ConstructionBuffer<int>.Create(budget);
-            budget.ChargeWork((ulong)stride);
+            budget.Checkpoint();
             Span<int> emptyRow = stackalloc int[stride];
             emptyRow.Clear();
             var (shortestLength, longestLength) = trie.StateCount == 0
@@ -31,7 +31,7 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
             try
             {
                 var head = 0; var tail = 0;
-                budget.ChargeWork((ulong)stride);
+                budget.Checkpoint();
                 for (var column = 0; column < stride; column++)
                 {
                     var next = transitions[column];
@@ -39,14 +39,14 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
                 }
                 while (head < tail)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     var state = queue[head++];
                     var current = states[state];
                     var row = state * stride;
                     // The failure state is a shorter suffix. Breadth-first
                     // completion has already filled its entire row.
                     var failureRow = current.Failure * stride;
-                    budget.ChargeWork((ulong)stride);
+                    budget.Checkpoint();
                     for (var column = 0; column < stride; column++)
                     {
                         var index = row + column;
@@ -57,7 +57,7 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
                             transitions[index] = failureTarget;
                             continue;
                         }
-                        budget.ChargeWork(1);
+                        budget.Checkpoint();
                         var failure = states[failureTarget];
                         var output = states[next] with { Failure = failureTarget };
                         if (failure.BestOutputOrder >= 0 && (output.BestOutputLength == 0 ||
@@ -75,7 +75,7 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
             var bestOrders = budget.AllocateArray<int>(states.Count, false);
             var bestLengths = budget.AllocateArray<int>(states.Count, false);
             var shortestLengths = budget.AllocateArray<int>(states.Count, false);
-            budget.ChargeWork((ulong)states.Count);
+            budget.Checkpoint();
             for (var index = 0; index < states.Count; index++)
             {
                 var state = states[index];
@@ -101,14 +101,14 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
         var longestLength = 0;
         for (var order = 0; order < literals.Length; order++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var literal = literals[order];
             shortestLength = Math.Min(shortestLength, literal.Length);
             longestLength = Math.Max(longestLength, literal.Length);
             var state = 0;
             foreach (var key in literal)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var index = state * emptyRow.Length + columns[key];
                 var next = transitions[index];
                 // Direct trie edges always point to non-root states.
@@ -121,7 +121,7 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
                 }
                 state = next;
             }
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var output = states[state];
             if (output.BestOutputLength == 0 || literal.Length > output.BestOutputLength ||
                 literal.Length == output.BestOutputLength && (output.BestOutputOrder < 0 || order < output.BestOutputOrder))
@@ -140,7 +140,7 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
         var longestLength = 0;
         foreach (ref readonly var node in nodes)
         {
-            budget.ChargeWork(1 + (ulong)node.Keys.Length);
+            budget.Checkpoint();
             longestLength = Math.Max(longestLength, node.TerminalLength);
             var shortestOutput = node.TerminalOrder >= 0 ? node.TerminalLength : int.MaxValue;
             states.Add(new(0, node.TerminalOrder, node.TerminalLength, shortestOutput));
@@ -158,10 +158,10 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
         var distinct = 0;
         foreach (var literal in literals)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             foreach (var value in literal)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (columns[value] != 0) continue;
                 columns[value] = 1;
                 distinct++;
@@ -173,7 +173,7 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
         // can find a row by shifting the state. A full alphabet fits as is.
         var required = Math.Min(columns.Length, distinct + 1);
         stride = (int)BitOperations.RoundUpToPowerOf2((uint)required);
-        budget.ChargeWork((ulong)columns.Length);
+        budget.Checkpoint();
         var next = 0;
         for (var value = 0; value < columns.Length; value++)
             columns[value] = columns[value] != 0 ? (byte)next++ : checked((byte)distinct);

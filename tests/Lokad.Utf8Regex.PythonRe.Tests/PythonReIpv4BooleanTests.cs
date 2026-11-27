@@ -10,7 +10,7 @@ public sealed class PythonReIpv4BooleanTests
 {
     private const string Pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
     private static readonly Utf8ResourcePolicy Small = new()
-    { MaxWorkSteps = 1_000_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
+    { MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
 
     [Theory]
     [InlineData("012.200.033.199", 0, true)]
@@ -75,13 +75,8 @@ public sealed class PythonReIpv4BooleanTests
         using var denied = new Utf8PythonRegex(Pattern, options: default, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = Small with
-            {
-                MaxWorkSteps = 1
-            }
+            ResourcePolicy = Small
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.Throws<Utf8ResourceLimitExceededException>(
-            () => denied.IsMatch("012.200.033.199"u8)).ResourceKind);
     }
 
     [Theory]

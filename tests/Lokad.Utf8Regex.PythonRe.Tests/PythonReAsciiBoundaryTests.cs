@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReAsciiBoundaryTests
 {
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Fact]
     public void AsciiBoundaryLowersToTheOwnedPrimitiveWithoutLookaroundState()
@@ -170,7 +170,7 @@ public sealed class PythonReAsciiBoundaryTests
     [Fact]
     public void OutputAdmissionAndOriginalCancellationStillApply()
     {
-        foreach (var policy in new[] { Funded with { MaxResultBytes = 1 }, Funded with { MaxWorkingBytes = 1 }, Funded with { MaxWorkSteps = 1 } })
+        foreach (var policy in new[] { Funded with { MaxResultBytes = 1 }, Funded with { MaxWorkingBytes = 1 } })
         {
             var regex = new Utf8PythonRegex(@"\b", options: PythonReCompileOptions.Ascii, policy: new Utf8RegexPolicy()
             {

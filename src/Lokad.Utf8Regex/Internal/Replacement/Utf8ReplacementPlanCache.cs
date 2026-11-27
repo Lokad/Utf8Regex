@@ -56,7 +56,7 @@ internal sealed class Utf8ReplacementKeyComparer : IEqualityComparer<byte[]>
         for (var offset = 0; offset < left.Length;)
         {
             var count = Math.Min(2048, left.Length - offset);
-            Utf8ConstructionScope.ChargeWork((ulong)count);
+            Utf8ConstructionScope.Checkpoint();
             if (!left.AsSpan(offset, count).SequenceEqual(right.AsSpan(offset, count))) return false;
             offset += count;
         }
@@ -68,7 +68,7 @@ internal sealed class Utf8ReplacementKeyComparer : IEqualityComparer<byte[]>
         for (var offset = 0; offset < bytes.Length;)
         {
             var count = Math.Min(2048, bytes.Length - offset);
-            Utf8ConstructionScope.ChargeWork((ulong)count);
+            Utf8ConstructionScope.Checkpoint();
             hash.AddBytes(bytes.AsSpan(offset, count)); offset += count;
         }
         return hash.ToHashCode();

@@ -144,25 +144,16 @@ public sealed class Utf8NativeLiteralValueInvocationTests
     [InlineData(true, true)]
     public void CountCutoffsLeaveNoPartialTotal(bool reverse, bool folded)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex("target", options: RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
         var plan = Prepared(regex).SearchPlan;
         var input = Encoding.UTF8.GetBytes("é target 中 TARGET 😀 target " + new string('x', 10000));
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        var baseline = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
         Utf8SliceBufferWork.Checkpoint(ref baseline);
-        var entrySteps = baseline.Budget.Steps;
+        var entrySteps = baseline.Budget.DiagnosticCheckpoints;
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan,
             input, reverse, ref baseline, out var count));
         Assert.Equal(folded ? 3 : 2, count);
-        for (var cap = entrySteps; cap < baseline.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            Utf8SliceBufferWork.Checkpoint(ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan,
-                input, reverse, ref invocation, out var denied));
-            Assert.Equal(0, denied);
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]

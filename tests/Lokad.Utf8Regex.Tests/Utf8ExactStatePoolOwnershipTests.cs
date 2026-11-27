@@ -44,7 +44,7 @@ public sealed class Utf8ExactStatePoolOwnershipTests
     [Fact]
     public void HeaderDenialPrecedesWorkingBufferAcquisition()
     {
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 128), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 128), Regex.InfiniteMatchTimeout, CancellationToken.None);
         var buffer = new Utf8InvocationStateBuffer<long>();
         try
         {
@@ -82,7 +82,7 @@ public sealed class Utf8ExactStatePoolOwnershipTests
             Assert.Equal(0UL, ordinary.Ledger.ReservedBytes);
             Assert.Equal(leafBytes, Utf8ExactStatePool<Utf8SliceFrame>.RetainedBytes);
 
-            var denied = Utf8SliceInvocation.CreateExclusive(new(0, 0, bytes - 1), Regex.InfiniteMatchTimeout, default);
+            var denied = Utf8SliceInvocation.CreateExclusive(new(0, bytes - 1), Regex.InfiniteMatchTimeout, default);
             try
             {
                 Assert.False(stacks.PushFrame(default, ref denied));
@@ -92,7 +92,7 @@ public sealed class Utf8ExactStatePoolOwnershipTests
             finally { stacks.ReleaseAll(ref denied); }
             Assert.Equal(leafBytes, Utf8ExactStatePool<Utf8SliceFrame>.RetainedBytes);
 
-            var finite = Utf8SliceInvocation.CreateExclusive(new(0, 0, bytes), Regex.InfiniteMatchTimeout, default);
+            var finite = Utf8SliceInvocation.CreateExclusive(new(0, bytes), Regex.InfiniteMatchTimeout, default);
             try
             {
                 Assert.True(stacks.PushFrame(default, ref finite));

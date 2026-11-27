@@ -512,7 +512,7 @@ internal static class Pcre2BacktrackingRunner
                 var consumed = false;
                 while (!rewind.IsEmpty)
                 {
-                    if (meterDelimiter && (rewindSteps++ & 63) == 0) budget.ChargeWorkspaceStep();
+                    if (meterDelimiter && (rewindSteps++ & 63) == 0) budget.CheckWorkspace();
                     if (Rune.DecodeLastFromUtf8(rewind, out var scalar, out var width) != OperationStatus.Done ||
                         !(token.Kind == Pcre2CharacterTokenKind.Literal ? scalar == token.Literal :
                             token.CharacterClass.Matches(scalar, ucp: false, Pcre2CharacterOptions.None))) break;
@@ -597,7 +597,7 @@ internal static class Pcre2BacktrackingRunner
         {
             if (offset >= admittedEnd)
             {
-                budget.ChargeWorkspaceStep();
+                budget.CheckWorkspace();
                 admittedEnd = offset + Math.Min(2048, input.Length - offset);
             }
             var blockEnd = Math.Min(end, admittedEnd);
@@ -961,7 +961,7 @@ internal static class Pcre2BacktrackingRunner
                                 : null;
                         while (runCount < instruction.Maximum)
                         {
-                            if (meterRun) budget.ChargeWorkspaceStep();
+                            if (meterRun) budget.CheckWorkspace();
                             if (asciiByteSet is not null && inputIndex < input.Length)
                             {
                                 var remainingMaximum = instruction.Maximum - runCount;
@@ -1234,7 +1234,7 @@ internal static class Pcre2BacktrackingRunner
                         {
                             // The call's instruction step admits the first
                             // block. Even unused repeat slots cost scan work.
-                            if (resetStart != 0) budget.ChargeWorkspaceStep();
+                            if (resetStart != 0) budget.CheckWorkspace();
                             var block = counts.Slice(resetStart, Math.Min(64, counts.Length - resetStart));
                             var firstUsed = block.IndexOfAnyExcept(-1);
                             for (var offset = firstUsed; offset >= 0 && offset < block.Length; offset++)
@@ -1655,7 +1655,7 @@ internal static class Pcre2BacktrackingRunner
         for (var scalarCount = 0; scalarCount < maximumLength && earliest != 0; scalarCount++)
         {
             // The assertion step admits the first group of scalar retreats.
-            if (scalarCount != 0 && (scalarCount & 63) == 0) budget.ChargeWorkspaceStep();
+            if (scalarCount != 0 && (scalarCount & 63) == 0) budget.CheckWorkspace();
             if (!TryRetreatScalar(input, earliest, out earliest)) break;
             if (scalarCount + 1 == minimumLength) latest = earliest;
         }
@@ -1775,7 +1775,7 @@ internal static class Pcre2BacktrackingRunner
         // compare only the first participating capture in declaration order.
         for (var offset = 0; offset < slots.Length;)
         {
-            if (offset != 0) budget.ChargeWorkspaceStep();
+            if (offset != 0) budget.CheckWorkspace();
             var block = slots.Slice(offset, Math.Min(64, slots.Length - offset));
             foreach (var slot in block)
             {
@@ -1801,7 +1801,7 @@ internal static class Pcre2BacktrackingRunner
     {
         for (var slot = 1; slot < assertionCaptures.Length; slot++)
         {
-            if ((slot & 63) == 0) budget.ChargeWorkspaceStep();
+            if ((slot & 63) == 0) budget.CheckWorkspace();
             var capture = assertionCaptures[slot];
             if (!capture.Success)
             {
@@ -1860,7 +1860,7 @@ internal static class Pcre2BacktrackingRunner
         var end = onlyCaptureSlot == 0 ? captureState.Length : onlyCaptureSlot + 1;
         for (var firstInBlock = first; firstInBlock < end;)
         {
-            if (firstInBlock != first) budget.ChargeWorkspaceStep();
+            if (firstInBlock != first) budget.CheckWorkspace();
             var blockEnd = firstInBlock + Math.Min(64, end - firstInBlock);
             for (var slot = firstInBlock; slot < blockEnd; slot++)
             {
@@ -1932,7 +1932,7 @@ internal static class Pcre2BacktrackingRunner
         var scannedFrames = 0;
         while (frames.Count != 0)
         {
-            if ((++scannedFrames & 63) == 0) budget.ChargeWorkspaceStep();
+            if ((++scannedFrames & 63) == 0) budget.CheckWorkspace();
             var frame = frames.Pop();
             RollbackRepeats(frame.RepeatCheckpoint, ref repeatMutations, counts, positions, ref budget);
             RollbackCaptures(
@@ -1966,7 +1966,7 @@ internal static class Pcre2BacktrackingRunner
             }
             else if (frame.ResumeAction == Pcre2BacktrackingResumeAction.RetreatClassRepeat)
             {
-                budget.ChargeWorkspaceStep();
+                budget.CheckWorkspace();
                 if (!TryRetreatScalar(input, resumeOffset, out resumeOffset))
                     throw new InvalidOperationException("A PCRE2 class-repeat endpoint must follow a consumed scalar.");
 
@@ -1999,7 +1999,7 @@ internal static class Pcre2BacktrackingRunner
                 var lastFrame = frames.Count - 1;
                 for (var index = lastFrame; index >= 0; index--)
                 {
-                    if (((lastFrame - index) & 63) == 63) budget.ChargeWorkspaceStep();
+                    if (((lastFrame - index) & 63) == 63) budget.CheckWorkspace();
                     if (frames[index].Instruction == frame.Instruction &&
                         frames[index].ResumeAction == Pcre2BacktrackingResumeAction.None)
                     {
@@ -2089,7 +2089,7 @@ internal static class Pcre2BacktrackingRunner
         var repeatMutationCount = repeatMutations.Count;
         for (var index = call.RepeatCheckpoint; index < repeatMutationCount; index++)
         {
-            if (((index - call.RepeatCheckpoint) & 63) == 63) budget.ChargeWorkspaceStep();
+            if (((index - call.RepeatCheckpoint) & 63) == 63) budget.CheckWorkspace();
             var mutation = repeatMutations[index];
             var repeatId = mutation.RepeatId;
             if (repeatRestoreGenerations[repeatId] == generation)
@@ -2117,7 +2117,7 @@ internal static class Pcre2BacktrackingRunner
 
         for (var index = call.CaptureCheckpoint; index < captureMutationCount; index++)
         {
-            if (((index - call.CaptureCheckpoint) & 63) == 63) budget.ChargeWorkspaceStep();
+            if (((index - call.CaptureCheckpoint) & 63) == 63) budget.CheckWorkspace();
             var mutation = captureMutations[index];
             if (tracksMultipleCaptures)
             {
@@ -2186,7 +2186,7 @@ internal static class Pcre2BacktrackingRunner
     {
         for (var remaining = mutations.Count - mutationCheckpoint; remaining > 0; remaining--)
         {
-            if ((remaining & 63) == 0) budget.ChargeWorkspaceStep();
+            if ((remaining & 63) == 0) budget.CheckWorkspace();
             var mutation = mutations.Pop();
             currentMarkId = mutation.PreviousMarkId;
             currentMarkPosition = mutation.PreviousPosition;
@@ -2203,7 +2203,7 @@ internal static class Pcre2BacktrackingRunner
         var last = trail.Count - 1;
         for (var index = last; index >= 0; index--)
         {
-            if (((last - index) & 63) == 63) budget.ChargeWorkspaceStep();
+            if (((last - index) & 63) == 63) budget.CheckWorkspace();
             var mark = trail[index];
             if (mark.MarkId == markId)
             {
@@ -2244,7 +2244,7 @@ internal static class Pcre2BacktrackingRunner
     {
         for (var remaining = mutations.Count - checkpoint; remaining > 0; remaining--)
         {
-            if ((remaining & 63) == 0) budget.ChargeWorkspaceStep();
+            if ((remaining & 63) == 0) budget.CheckWorkspace();
             var mutation = mutations.Pop();
             counts[mutation.RepeatId] = mutation.PreviousCount;
             positions[mutation.RepeatId] = mutation.PreviousPosition;
@@ -2291,7 +2291,7 @@ internal static class Pcre2BacktrackingRunner
     {
         for (var remaining = mutations.Count - checkpoint; remaining > 0; remaining--)
         {
-            if ((remaining & 63) == 0) budget.ChargeWorkspaceStep();
+            if ((remaining & 63) == 0) budget.CheckWorkspace();
             var mutation = mutations.Pop();
             captureState[mutation.Slot] = mutation.Previous;
         }
@@ -2341,7 +2341,7 @@ internal static class Pcre2BacktrackingRunner
                 // The backreference instruction admits the first block.
                 for (var offset = 0; offset < capture.Length;)
                 {
-                    if (offset != 0) budget.ChargeWorkspaceStep();
+                    if (offset != 0) budget.CheckWorkspace();
                     var length = Math.Min(blockBytes, capture.Length - offset);
                     if (!subject.Slice(offset, length).SequenceEqual(capture.Slice(offset, length))) return false;
                     offset += length;
@@ -2356,7 +2356,7 @@ internal static class Pcre2BacktrackingRunner
         var subjectIndex = subjectStart;
         while (captureIndex < captureEnd)
         {
-            if (captureIndex != captureStart) budget.ChargeWorkspaceStep();
+            if (captureIndex != captureStart) budget.CheckWorkspace();
             if (captureEnd - captureIndex >= blockScalars && input.Length - subjectIndex >= blockScalars &&
                 Ascii.EqualsIgnoreCase(input.Slice(captureIndex, blockScalars), input.Slice(subjectIndex, blockScalars)))
             {
@@ -2391,12 +2391,12 @@ internal static class Pcre2BacktrackingRunner
         Pcre2CaptureByteRange[]? captures = null;
         try
         {
-            budget.ChargeWorkspaceStep();
+            budget.CheckWorkspace();
             captures = Utf8ExactStatePool<Pcre2CaptureByteRange>.Rent(captureSlotCount, budget.CanRetainWorkspace);
             captures[0] = new Pcre2CaptureByteRange(true, matchStart, matchEnd);
             for (var slot = 1; slot < captureSlotCount; slot++)
             {
-                if ((slot & 63) == 0) budget.ChargeWorkspaceStep();
+                if ((slot & 63) == 0) budget.CheckWorkspace();
                 var start = captureState[slot].Start;
                 var end = captureState[slot].End;
                 captures[slot] = start >= 0 && end >= start
@@ -2463,7 +2463,7 @@ internal static class Pcre2BacktrackingRunner
         control.ReserveWorking(bytes);
         try
         {
-            control.ChargeWorkspaceStep();
+            control.CheckWorkspace();
             var groups = new Utf8Pcre2CaptureRange[count];
             WriteByteGroups(groups, matchStart, matchEnd, captureRanges, input, ref budget, scalarRanges);
             return groups;
@@ -2480,7 +2480,7 @@ internal static class Pcre2BacktrackingRunner
         var control = new Pcre2ResultControl(ref budget);
         for (var slot = 0; slot < destination.Length; slot++)
         {
-            if ((slot & 63) == 0) control.ChargeWorkspaceStep();
+            if ((slot & 63) == 0) control.CheckWorkspace();
             var success = captureRanges.TryGetEdges(slot, matchStart, matchEnd, scalarRanges, out var start, out var end);
             var wellFormed = success && Pcre2CaptureRanges.IsWellFormed(input, start, end, scalarRanges);
             destination[slot] = new(slot, success, success ? start : 0, success ? end : 0, wellFormed);

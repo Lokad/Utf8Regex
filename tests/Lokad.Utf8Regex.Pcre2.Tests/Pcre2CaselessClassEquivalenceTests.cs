@@ -46,7 +46,7 @@ public sealed class Pcre2CaselessClassEquivalenceTests
         using var token = new CancellationTokenSource();
         foreach (var limits in new[] { default(Utf8Pcre2ExecutionLimits), new Utf8Pcre2ExecutionLimits
         {
-            MatchLimit = 1000000, DepthLimit = 256,
+            DepthLimit = 256,
             HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20
         } })
         {
@@ -54,7 +54,6 @@ public sealed class Pcre2CaselessClassEquivalenceTests
             {
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                     MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                     MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                     MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes

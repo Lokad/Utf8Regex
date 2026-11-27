@@ -168,7 +168,7 @@ public sealed partial class Utf8PythonRegex
                     throw invocation.Budget.CreateResourceFailure();
                 count = result.Count;
             }
-            if (invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
+            if (invocation.CheckInput() != Utf8ExecutionLimitKind.None)
                 throw invocation.Budget.CreateResourceFailure();
             invocation.Budget.ThrowIfCancellationRequested();
             return count;

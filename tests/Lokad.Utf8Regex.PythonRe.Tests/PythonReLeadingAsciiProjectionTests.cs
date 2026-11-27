@@ -20,7 +20,6 @@ public sealed class PythonReLeadingAsciiProjectionTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 200,
                 MaxWorkingBytes = 65536,
                 MaxResultBytes = 65536
             }
@@ -121,11 +120,9 @@ public sealed class PythonReLeadingAsciiProjectionTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.Throws<Utf8ResourceLimitExceededException>(
-            () => work.Match("1"u8, mode: Utf8PythonMatchMode.Search)).ResourceKind);
         using var working = new Utf8PythonRegex(@"(?P<n>\d+)", policy: new Utf8RegexPolicy()
         {
             ResourcePolicy = new()

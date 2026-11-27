@@ -63,19 +63,18 @@ public sealed class PosixParserTests
     [Theory]
     [InlineData(Utf8ResourceLimitKind.ConstructionDepth)]
     [InlineData(Utf8ResourceLimitKind.ConstructionBytes)]
-    [InlineData(Utf8ResourceLimitKind.ConstructionWorkSteps)]
     public void FailureRestoresParentCapacityAndDepthWithoutRefundingWork(Utf8ResourceLimitKind kind)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var scope = new Utf8ConstructionScope(1024,
             kind == Utf8ResourceLimitKind.ConstructionBytes ? 128UL : 1UL << 20,
-            kind == Utf8ResourceLimitKind.ConstructionWorkSteps ? 3UL : 1UL << 20,
             kind == Utf8ResourceLimitKind.ConstructionDepth ? 2UL : 100);
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => PosixParser.Parse("(((abcdef)))", default, out _));
         Assert.Equal(kind, error.ResourceKind);
         Assert.Equal(0UL, scope.Budget.Depth);
         Assert.Equal(0UL, scope.Budget.ReservedBytes);
         Assert.Equal(0UL, scope.Budget.Reserved);
-        if (kind != Utf8ResourceLimitKind.ConstructionBytes) Assert.True(scope.Budget.WorkSteps > 0);
+        if (kind != Utf8ResourceLimitKind.ConstructionBytes) Assert.True(scope.Budget.DiagnosticCheckpoints > 0);
     }
 
     [Fact]
@@ -83,7 +82,8 @@ public sealed class PosixParserTests
     {
         using var canceled = new CancellationTokenSource();
         using var scope = Utf8ConstructionScope.Enter(default, Timeout.InfiniteTimeSpan, canceled.Token);
-        scope.Budget.CheckpointHook = steps => { if (steps >= 32) canceled.Cancel(); };
+        var checkpoints = 0;
+        scope.Budget.CheckpointHook = () => { if (checkpoints++ >= 32) canceled.Cancel(); };
         var error = Assert.Throws<OperationCanceledException>(() => PosixParser.Parse(new string('a', 2048), default, out _));
         Assert.Equal(canceled.Token, error.CancellationToken);
         Assert.Equal(0UL, scope.Budget.Depth);

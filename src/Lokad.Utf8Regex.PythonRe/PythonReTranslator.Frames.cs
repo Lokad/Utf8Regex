@@ -35,7 +35,7 @@ internal static partial class PythonReTranslator
         using var frames = Utf8ConstructionFrames<InspectionFrame>.Create(budget, new(node));
         while (frames.Count != 0)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var index = frames.Count - 1;
             var frame = frames[index];
             var current = frame.Node;
@@ -68,7 +68,7 @@ internal static partial class PythonReTranslator
                     if (current is PythonReCharacterClassNode characterClass)
                         for (var classIndex = 0; classIndex < characterClass.Items.Count; classIndex++)
                         {
-                            budget.ChargeWork(1);
+                            budget.Checkpoint();
                             if (characterClass.Items[classIndex] is PythonReCharacterClassPredefinedItem predefined
                                 && PythonReParser.IsUnicodePredefinedFragment(predefined.RegexClassFragment)) return default;
                         }
@@ -91,11 +91,11 @@ internal static partial class PythonReTranslator
             switch (current)
             {
                 case PythonReAlternationNode alternation when frame.Index < alternation.Branches.Count:
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     child = alternation.Branches[frame.Index++];
                     break;
                 case PythonReSequenceNode sequence when frame.Index < sequence.Elements.Count:
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     child = sequence.Elements[frame.Index++];
                     break;
                 case PythonReQuantifierNode repeat when frame.Index++ == 0:
@@ -135,7 +135,7 @@ internal static partial class PythonReTranslator
         using var frames = Utf8ConstructionFrames<WidthFrame>.Create(budget, new(node));
         while (frames.Count != 0)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var index = frames.Count - 1;
             var frame = frames[index];
             if (frame.Index == 0 && widths.ContainsKey(frame.Node)) { frames.Pop(); continue; }
@@ -157,7 +157,7 @@ internal static partial class PythonReTranslator
             }
             if (TryGetWidthChild(frame.Node, frame.Index, parseResult, out var child))
             {
-                if (frame.Node is PythonReSequenceNode or PythonReAlternationNode) budget.ChargeWork(1);
+                if (frame.Node is PythonReSequenceNode or PythonReAlternationNode) budget.Checkpoint();
                 frame.Index++;
                 frame.Pending = child;
                 frames[index] = frame;
@@ -227,7 +227,7 @@ internal static partial class PythonReTranslator
         using var frames = Utf8ConstructionFrames<RenderFrame>.Create(budget, new(node) { Verbose = verbose });
         while (frames.Count != 0)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var index = frames.Count - 1;
             var frame = frames[index];
             var complete = ResumeRender(ref frame, builder, pythonGroupNumbers, coreNumbersByPython, out var child);
@@ -326,13 +326,13 @@ internal static partial class PythonReTranslator
         {
             case PythonReAlternationNode alternation:
                 if (frame.Stage == alternation.Branches.Count) return true;
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (frame.Stage != 0) builder.Append('|');
                 child = new(alternation.Branches[frame.Stage++]);
                 return false;
             case PythonReSequenceNode sequence:
                 if (frame.Stage == sequence.Elements.Count) return true;
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 child = new(sequence.Elements[frame.Stage++]);
                 return false;
             case PythonReLiteralNode literal:
@@ -343,7 +343,7 @@ internal static partial class PythonReTranslator
                 AppendCharacterClass(characterClass, builder);
                 return true;
             case PythonReRawNode raw:
-                Utf8ConstructionScope.ChargeWork((ulong)raw.Text.Length);
+                Utf8ConstructionScope.Checkpoint();
                 if (raw.Text == @"\ " && !frame.Verbose) builder.Append(' ');
                 else builder.Append(raw.Text);
                 return true;

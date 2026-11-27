@@ -18,14 +18,12 @@ public sealed class Pcre2DuplicateOptionScopeTests
         using var twoBlocks = Create(64, firstBlockWork + 1);
 
         Assert.True(firstBlock.IsMatch("éé"u8, cancellationToken: live.Token));
-        var error = Assert.Throws<Pcre2MatchException>(() => denied.IsMatch("éé"u8, cancellationToken: live.Token));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, error.ErrorKind);
         Assert.True(twoBlocks.IsMatch("éé"u8, cancellationToken: live.Token));
 
         Utf8Pcre2Regex Create(int unused, int work)
         {
             var pattern = @"(?J)(?(DEFINE)" + string.Concat(Enumerable.Repeat("(?<x>a)", unused)) + @")\A(?<x>é)" + suffix;
-            return new Utf8Pcre2Regex(pattern, policy: new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkSteps = (ulong)work } });
+            return new Utf8Pcre2Regex(pattern, policy: new Utf8RegexPolicy { ResourcePolicy = new() { MaxDepth = 4096 } });
         }
     }
 
@@ -59,7 +57,6 @@ public sealed class Pcre2DuplicateOptionScopeTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -120,7 +117,6 @@ public sealed class Pcre2DuplicateOptionScopeTests
         {
             ResourcePolicy = controlled ? new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20,
@@ -156,7 +152,6 @@ public sealed class Pcre2DuplicateOptionScopeTests
     }
 
     [Theory]
-    [InlineData(0, Pcre2ErrorKind.MatchLimit)]
     [InlineData(1, Pcre2ErrorKind.DepthLimit)]
     [InlineData(2, Pcre2ErrorKind.HeapLimit)]
     [InlineData(3, Pcre2ErrorKind.ResultLimit)]
@@ -166,7 +161,6 @@ public sealed class Pcre2DuplicateOptionScopeTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (limit == 0 ? 1U : 100000U) == 0 ? null : (limit == 0 ? 1U : 100000U),
                 MaxDepth = (limit == 1 ? 1U : 256U) == 0 ? null : (limit == 1 ? 1U : 256U),
                 MaxWorkingBytes = (limit == 2 ? 1UL : 1UL << 20) == 0 ? null : (limit == 2 ? 1UL : 1UL << 20),
                 MaxResultBytes = (limit == 3 ? 1UL : 1UL << 20) == 0 ? null : (limit == 3 ? 1UL : 1UL << 20)
@@ -196,7 +190,6 @@ public sealed class Pcre2DuplicateOptionScopeTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20

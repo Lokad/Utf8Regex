@@ -18,7 +18,7 @@ public sealed class PythonUnicodeVersionTests
         var small = Encoding.UTF8.GetBytes(char.ConvertFromUtf32(lower));
         using var source = new CancellationTokenSource();
         foreach (var policy in new[] { Utf8ResourcePolicy.Unlimited,
-            new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
+            new Utf8ResourcePolicy { MaxDepth = 128,
                 MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 } })
         {
             foreach (var pattern in new[] { capital, "[" + capital + "]" })
@@ -64,7 +64,7 @@ public sealed class PythonUnicodeVersionTests
         foreach (var policy in new[]
         {
             Utf8ResourcePolicy.Unlimited,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1024,
+            new Utf8ResourcePolicy { MaxDepth = 1024,
                 MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 },
         })
             foreach (var options in new[] { PythonReCompileOptions.None,
@@ -125,7 +125,6 @@ public sealed class PythonUnicodeVersionTests
         using var token = new CancellationTokenSource();
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000,
             MaxDepth = 1024,
             MaxWorkingBytes = 1_048_576,
             MaxResultBytes = 1_048_576
@@ -151,11 +150,11 @@ public sealed class PythonUnicodeVersionTests
     [Fact]
     public void PinnedClassesRetainAllFourFiniteDenials()
     {
-        foreach (var kind in new[] { 0, 1, 2, 3 })
+        foreach (var kind in new[] { 1, 2, 3 })
         {
             var policy = kind switch
             {
-                0 => new Utf8ResourcePolicy { MaxWorkSteps = 1 },
+                0 => new Utf8ResourcePolicy { MaxDepth = 4096 },
                 1 => new Utf8ResourcePolicy { MaxDepth = 1 },
                 2 => new Utf8ResourcePolicy { MaxWorkingBytes = 1 },
                 _ => new Utf8ResourcePolicy { MaxResultBytes = 1 },
@@ -177,7 +176,6 @@ public sealed class PythonUnicodeVersionTests
             });
             Assert.Equal(kind switch
             {
-                0 => Utf8ResourceLimitKind.ExecutionWorkSteps,
                 1 => Utf8ResourceLimitKind.ExecutionDepth,
                 2 => Utf8ResourceLimitKind.ExecutionWorkingBytes,
                 _ => Utf8ResourceLimitKind.ExecutionResultBytes

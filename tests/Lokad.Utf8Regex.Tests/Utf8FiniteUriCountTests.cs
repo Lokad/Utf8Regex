@@ -6,13 +6,12 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8FiniteUriCountTests
 {
     private const string Pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
-    private static Utf8Regex Create(RegexOptions options, ulong work)
+    private static Utf8Regex Create(RegexOptions options)
         => new(Pattern, options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = work,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 8 << 20,
                 MaxResultBytes = 1
@@ -50,7 +49,7 @@ public sealed class Utf8FiniteUriCountTests
         using var cancellation = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = Create(options, 100000);
+            var regex = Create(options);
             Assert.Equal(expected, regex.Count(input.AsSpan(3, length)));
             Assert.Equal(expected, regex.Count(input.AsSpan(3, length), cancellation.Token));
             Assert.Equal(expected != 0, regex.IsMatch(input.AsSpan(3, length)));
@@ -65,8 +64,8 @@ public sealed class Utf8FiniteUriCountTests
         var input = Encoding.UTF8.GetBytes(new string('x', schemeLength) + "://ab?q#f");
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            Assert.Equal(1, Create(options, 100000).Count(input));
-            Assert.True(Create(options, 100000).IsMatch(input));
+            Assert.Equal(1, Create(options).Count(input));
+            Assert.True(Create(options).IsMatch(input));
         }
     }
 
@@ -83,7 +82,7 @@ public sealed class Utf8FiniteUriCountTests
     {
         var first = "x://a" + new string('b', asciiRun) + "😀tail?q=é#片";
         var input = Encoding.UTF8.GetBytes(first + separator + "y://cd");
-        using var regex = Create(RegexOptions.Compiled, 100000);
+        using var regex = Create(RegexOptions.Compiled);
         using var cancellation = new CancellationTokenSource();
         var match = regex.Match(input, cancellationToken: cancellation.Token);
         Assert.True(match.Success);
@@ -93,22 +92,13 @@ public sealed class Utf8FiniteUriCountTests
     }
 
     [Fact]
-    public void InsufficientWorkStillDeniesCount()
-    {
-        var tiny = Create(RegexOptions.None, 1);
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => tiny.Count(Encoding.UTF8.GetBytes(new string('x', 8192)))).ResourceKind);
-        Assert.Equal(1, Create(RegexOptions.None, 100000).Count("x://ab"u8));
-    }
-
-    [Fact]
     public void LongSchemeCountNeedsOnlyTheScalarBesideTheDelimiter()
     {
         const string rejected = "a/://ab ";
         var input = Encoding.UTF8.GetBytes(rejected + new string('w', 32768) + "𐐀://ab");
         using var source = new CancellationTokenSource();
-        using var count = Create(RegexOptions.Compiled, 64);
-        using var ranges = Create(RegexOptions.Compiled, 100000);
+        using var count = Create(RegexOptions.Compiled);
+        using var ranges = Create(RegexOptions.Compiled);
 
         Assert.Equal(1, count.Count(input, source.Token));
         var match = ranges.Match(input, cancellationToken: source.Token);
@@ -123,7 +113,7 @@ public sealed class Utf8FiniteUriCountTests
         const string rejected = "x:///ef x://#é x:// 😀 x:// a ";
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(rejected, 192)) + " x://ab");
         using var source = new CancellationTokenSource();
-        using var regex = Create(RegexOptions.Compiled, 2_500);
+        using var regex = Create(RegexOptions.Compiled);
 
         Assert.Equal(1, regex.Count(input, source.Token));
     }
@@ -136,7 +126,7 @@ public sealed class Utf8FiniteUriCountTests
         var oracle = new Regex(Pattern);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = Create(options, 100000);
+            var regex = Create(options);
             for (var sample = 0; sample < 400; sample++)
             {
                 var chars = new char[random.Next(128)];
@@ -159,7 +149,6 @@ public sealed class Utf8FiniteUriCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000

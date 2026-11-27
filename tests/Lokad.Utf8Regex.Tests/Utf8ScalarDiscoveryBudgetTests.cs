@@ -54,7 +54,7 @@ public sealed class Utf8ScalarDiscoveryBudgetTests
     [Theory]
     [InlineData(false, false)] [InlineData(true, false)]
     [InlineData(false, true)] [InlineData(true, true)]
-    public void EveryWorkAndScratchCutoffPreservesBorrowedStorage(bool reverse, bool histories)
+    public void ScratchCutoffsPreserveBorrowedStorage(bool reverse, bool histories)
     {
         var regex = new Utf8Regex("(.)b", options: RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Scalar program missing.");
@@ -74,21 +74,13 @@ public sealed class Utf8ScalarDiscoveryBudgetTests
     private static void AssertCutoffs(Utf8SliceProgram program, byte[] input, bool histories,
         int start, int end, int[] captureStarts, int[] captureLengths)
     {
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var baseline = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         Assert.Equal(Utf8ExecutionLimitKind.None, Find(program, input, histories, start, end, captureStarts, captureLengths, ref baseline));
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
-        for (ulong steps = 1; steps <= baseline.Budget.Steps; steps++)
-        {
-            var invocation = new Utf8SliceInvocation(new(steps, 0, 0), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            Assert.Equal(steps == baseline.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps,
-                Find(program, input, histories, start, end, captureStarts, captureLengths, ref invocation));
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
         for (ulong cap = 13; cap <= baseline.Budget.PeakWorkingBytes; cap++)
         {
-            var invocation = new Utf8SliceInvocation(new(0, 0, cap), Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(new(0, cap), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(13));
             Assert.Equal(cap == baseline.Budget.PeakWorkingBytes ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkingBytes,
                 Find(program, input, histories, start, end, captureStarts, captureLengths, ref invocation));

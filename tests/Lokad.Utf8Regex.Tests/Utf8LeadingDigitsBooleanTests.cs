@@ -51,7 +51,6 @@ public sealed class Utf8LeadingDigitsBooleanTests
                 MatchTimeout = Timeout.InfiniteTimeSpan,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1000000,
                     MaxDepth = 8192,
                     MaxWorkingBytes = 8 << 20,
                     MaxResultBytes = 1
@@ -128,7 +127,6 @@ public sealed class Utf8LeadingDigitsBooleanTests
                 MatchTimeout = timeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 10000000,
                     MaxDepth = 8192,
                     MaxWorkingBytes = 8 << 20,
                     MaxResultBytes = 1
@@ -191,7 +189,6 @@ public sealed class Utf8LeadingDigitsBooleanTests
             MatchTimeout = TimeSpan.FromSeconds(1),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 8 << 20,
                 MaxResultBytes = 1

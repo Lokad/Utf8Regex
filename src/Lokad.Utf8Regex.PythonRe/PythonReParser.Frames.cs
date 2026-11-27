@@ -38,7 +38,7 @@ internal sealed partial class PythonReParser
             rootDepthHeld = false;
             while (frames.Count != 0)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var index = frames.Count - 1;
                 var frame = frames[index];
                 ParseFrame child;
@@ -95,7 +95,7 @@ internal sealed partial class PythonReParser
         branches.Add(_parsedNode);
         if (TryConsume('|'))
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             child = new(ParseFrameKind.Sequence, frame.Options);
             return false;
         }
@@ -116,7 +116,7 @@ internal sealed partial class PythonReParser
         }
         while (true)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             SkipIgnoredPatternTrivia(frame.Options);
             if (IsAtEnd || Current == ')' || Current == '|') break;
             if (TryConsume('('))

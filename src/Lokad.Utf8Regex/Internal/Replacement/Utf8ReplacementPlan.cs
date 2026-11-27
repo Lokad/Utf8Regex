@@ -14,7 +14,7 @@ internal sealed class Utf8ReplacementPlan
     internal static Utf8ReplacementPlan Create(Utf8ConstructionSession storage, ReadOnlySpan<Utf8ReplacementInstruction> instructions)
     {
         var copied = storage.Allocate<Utf8ReplacementInstruction>(instructions.Length, true);
-        storage.Budget.ChargeWork((ulong)instructions.Length);
+        storage.Budget.Checkpoint();
         instructions.CopyTo(copied);
         return storage.Budget.AllocateObject(copied, static value => new Utf8ReplacementPlan(value));
     }

@@ -22,20 +22,19 @@ public sealed class Utf8FiniteLiteralCountTests
             var input = Encoding.UTF8.GetBytes(text);
             byte[] storage = [0xff, .. input, 0xff];
             var ordinary = new Utf8Regex(literal, options: mode);
-            var finite = Create(literal, 1000000, mode);
+            var finite = Create(literal, mode);
             Assert.Equal(2, ordinary.Count(storage.AsSpan(1, input.Length)));
             Assert.Equal(2, finite.Count(storage.AsSpan(1, input.Length), token.Token));
             Assert.True(finite.IsMatch(input, token.Token));
         }
     }
 
-    private static Utf8Regex Create(string pattern, ulong work, RegexOptions options)
+    private static Utf8Regex Create(string pattern, RegexOptions options)
         => new(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = work,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -56,42 +55,9 @@ public sealed class Utf8FiniteLiteralCountTests
         var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = Create(pattern, 100000, mode);
+            var regex = Create(pattern, mode);
             Assert.Equal(expected, regex.Count(storage.AsSpan(7, Encoding.UTF8.GetByteCount(text))));
         }
-    }
-
-    [Theory]
-    [InlineData("aa|a", "aaa")]
-    [InlineData("😀😀|😀|中", "😀😀😀中")]
-    [InlineData("中文語|夏洛克|约翰华", "中文語 夏洛克 约翰华")]
-    [InlineData("Tom|Sawyer|Huckleberry|Finn", "Tom 😀Finn Sawyer Huckleberry")]
-    [InlineData("aa|bb|cc|dd|ee", "aa😀bb cc ee dd")]
-    [InlineData(@"\b(?:aa|bb|cc)\b", "xaa aa bb ccé cc")]
-    public void SmallFamilyWorkDenialIsCumulativeAndNeverPublishesPartialCount(string pattern, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var expected = new Utf8Regex(pattern).Count(input);
-        ulong low = 1, high = 100000;
-        while (low < high)
-        {
-            var cap = low + (high - low) / 2;
-            try { Assert.Equal(expected, Create(pattern, cap, RegexOptions.Compiled).Count(input)); high = cap; }
-            catch (Utf8ResourceLimitExceededException failure)
-            {
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-                Assert.Equal(cap + 1, failure.Requested);
-                low = cap + 1;
-            }
-        }
-        for (ulong cap = 1; cap < low; cap++)
-        {
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                Create(pattern, cap, RegexOptions.Compiled).Count(input));
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-            Assert.Equal(cap + 1, failure.Requested);
-        }
-        Assert.Equal(expected, Create(pattern, low, RegexOptions.Compiled).Count(input));
     }
 
     [Theory]
@@ -107,7 +73,7 @@ public sealed class Utf8FiniteLiteralCountTests
             var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
             var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(text));
             var baseline = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant);
-            var limited = Create(pattern, 1_000_000, options);
+            var limited = Create(pattern, options);
             Assert.Equal(expected, baseline.Count(input));
             Assert.Equal(expected, limited.Count(input));
             using var source = new CancellationTokenSource();
@@ -145,7 +111,7 @@ public sealed class Utf8FiniteLiteralCountTests
     public void BoundedLiteralCountPreservesFalseCandidatesChunkEdgesAndBorrowedSlices(int length)
     {
         var literal = new string('a', length - 1) + "b";
-        var regex = Create(literal, 1000000, RegexOptions.Compiled);
+        var regex = Create(literal, RegexOptions.Compiled);
         foreach (var fill in length == 1 ? new[] { 'a' } : new[] { 'a', 'b' })
         foreach (var prefix in new[] { 0, 2032, 2033, 2034, 2047, 2048, 2049 })
         {
@@ -173,39 +139,11 @@ public sealed class Utf8FiniteLiteralCountTests
         using var source = new CancellationTokenSource();
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = Create(pattern, 100000, mode);
+            var regex = Create(pattern, mode);
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected, regex.Count(input, source.Token));
             Assert.Equal(expected, regex.Count(input));
         }
-    }
-
-    [Theory]
-    [InlineData("(a)(b)")]
-    [InlineData("😀é")]
-    public void WorkAccumulatesAcrossValidationEveryHitAndTerminalMiss(string pattern)
-    {
-        var text = pattern.Contains("😀", StringComparison.Ordinal) ? "😀é 😀é 😀é" : "ab ab ab";
-        var input = Encoding.UTF8.GetBytes(text);
-        ulong low = 1, high = 100000;
-        while (low < high)
-        {
-            var cap = low + (high - low) / 2;
-            try { Assert.Equal(3, Create(pattern, cap, RegexOptions.Compiled).Count(input)); high = cap; }
-            catch (Utf8ResourceLimitExceededException failure)
-            {
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-                Assert.Equal(cap, failure.Limit); Assert.Equal(cap + 1, failure.Requested); low = cap + 1;
-            }
-        }
-        for (ulong cap = 1; cap < low; cap++)
-        {
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(pattern, cap, RegexOptions.Compiled).Count(input));
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-            Assert.Equal(cap, failure.Limit); Assert.Equal(cap + 1, failure.Requested);
-        }
-        var admitted = Create(pattern, low, RegexOptions.Compiled);
-        Assert.Equal(3, admitted.Count(input)); Assert.Equal(3, admitted.Count(input));
     }
 
     [Theory]
@@ -220,7 +158,6 @@ public sealed class Utf8FiniteLiteralCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1_048_576,
                 MaxResultBytes = 1_048_576
@@ -235,7 +172,6 @@ public sealed class Utf8FiniteLiteralCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1_048_576
@@ -261,7 +197,7 @@ public sealed class Utf8FiniteLiteralCountTests
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
         var input = new byte[320000]; Array.Fill(input, (byte)'x');
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
         var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled, policy: new Utf8RegexPolicy
         {
             MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
@@ -314,7 +250,6 @@ public sealed class Utf8FiniteLiteralCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1_048_576,
                 MaxResultBytes = 1_048_576

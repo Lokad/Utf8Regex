@@ -86,25 +86,6 @@ public sealed class PythonReByteOffsetCollectionTests
             });
             Assert.Equal(canceled.Token, failure.CancellationToken);
         }
-        var limited = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-        {
-            ReadOnlyMemory<byte> snapshots7Input = ("😀 foo"u8).ToArray();
-            var snapshots7 = new List<Utf8PythonRangeMatch>();
-            using (var snapshots7Cursor = limited.CreateMatchCursor(snapshots7Input, 4, default))
-            {
-                while (snapshots7Cursor.MoveNext(out var snapshots7Match))
-                    snapshots7.Add(snapshots7Match);
-            }
-            return snapshots7;
-        });
     }
 
     [Theory]
@@ -165,7 +146,6 @@ public sealed class PythonReByteOffsetCollectionTests
         MatchTimeout = Timeout.InfiniteTimeSpan,
         ResourcePolicy = finite ? new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 1_000_000,
             MaxDepth = 1024,
             MaxWorkingBytes = 16 << 20,
             MaxResultBytes = 16 << 20

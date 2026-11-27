@@ -12,7 +12,6 @@ public sealed class PosixTextInputContractTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 64,
                 MaxWorkingBytes = 1 << 20
             }
         });
@@ -33,7 +32,6 @@ public sealed class PosixTextInputContractTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 512,
                 MaxDepth = 64,
                 MaxWorkingBytes = 1 << 16,
                 MaxResultBytes = 1

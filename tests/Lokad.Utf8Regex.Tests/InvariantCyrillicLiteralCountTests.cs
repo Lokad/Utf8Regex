@@ -114,7 +114,6 @@ public sealed class InvariantCyrillicLiteralCountTests
             MatchTimeout = TimeSpan.FromSeconds(5),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1_048_576,
                 MaxResultBytes = 1_048_576
@@ -127,11 +126,9 @@ public sealed class InvariantCyrillicLiteralCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             }
         });
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
         cancellation.Cancel();
         var canceled = Assert.Throws<OperationCanceledException>(() => denied.Count(input, cancellation.Token));
         Assert.Equal(cancellation.Token, canceled.CancellationToken);
@@ -154,7 +151,6 @@ public sealed class InvariantCyrillicLiteralCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 50_000_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 64 * 1_048_576,
                 MaxResultBytes = 128 * 1_048_576
@@ -167,12 +163,10 @@ public sealed class InvariantCyrillicLiteralCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             }
         });
         Assert.True(denied.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input)).ResourceKind);
 
         using var cancellation = new CancellationTokenSource();
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ => cancellation.Cancel());

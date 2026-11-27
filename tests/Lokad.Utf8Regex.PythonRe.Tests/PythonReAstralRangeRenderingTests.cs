@@ -22,14 +22,13 @@ public sealed class PythonReAstralRangeRenderingTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
             },
             ConstructionPolicy = new()
             {
-                MaxWorkSteps = 20000
+
             },
             ConstructionTimeout = Timeout.InfiniteTimeSpan
         }, cancellationToken: CancellationToken.None);
@@ -116,12 +115,5 @@ public sealed class PythonReAstralRangeRenderingTests
         var managed = new Regex(PythonReDotNetReference.Render(regex), RegexOptions.CultureInvariant).Match("😀X");
         Assert.True(managed.Success);
         Assert.Equal("😀", managed.Groups[1].Value);
-    }
-
-    [Fact]
-    public void LargeFoldedPartialRangesRetainTheirExpansionBackstop()
-    {
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Compile(@"(?i)[\U00010001-\U0010fffe]"));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
     }
 }

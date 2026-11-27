@@ -39,7 +39,6 @@ public sealed class PythonRePrefixDiscoveryTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576
@@ -150,6 +149,7 @@ public sealed class PythonRePrefixDiscoveryTests
     [Fact]
     public void GuidedDiscoveryReducesImpossibleAttemptsWithEveryWorkCutoffPreserved()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8PythonRegex("(ab|cd)+");
         var program = Field<Utf8SliceProgram>(regex, "_scalarProgram");
 
@@ -157,40 +157,16 @@ public sealed class PythonRePrefixDiscoveryTests
         // b falls inside the conservative a..c union, but starts neither ab nor cd.
         var input = Encoding.UTF8.GetBytes(new string('b', 4097) + "abcd xx cd");
         var plain = new PythonReScalarMatchCursor(input, program, 0, Regex.InfiniteMatchTimeout,
-            null, "(ab|cd)+", new(new(ulong.MaxValue, 0, 1048576), Regex.InfiniteMatchTimeout, default));
+            null, "(ab|cd)+", new(new(0, 1048576), Regex.InfiniteMatchTimeout, default));
         ulong originalWork;
-        try { var count = 0; while (plain.MoveNext()) count++; Assert.Equal(2, count); originalWork = plain.WorkingInvocation.Budget.Steps; }
+        try { var count = 0; while (plain.MoveNext()) count++; Assert.Equal(2, count); originalWork = plain.WorkingInvocation.Budget.DiagnosticCheckpoints; }
         finally { plain.Dispose(); }
         var guided = new PythonReScalarMatchCursor(input, program, 0, Regex.InfiniteMatchTimeout,
-            candidate, "(ab|cd)+", new(new(ulong.MaxValue, 0, 1048576), Regex.InfiniteMatchTimeout, default));
+            candidate, "(ab|cd)+", new(new(0, 1048576), Regex.InfiniteMatchTimeout, default));
         ulong work;
-        try { var count = 0; while (guided.MoveNext()) count++; Assert.Equal(2, count); work = guided.WorkingInvocation.Budget.Steps; }
+        try { var count = 0; while (guided.MoveNext()) count++; Assert.Equal(2, count); work = guided.WorkingInvocation.Budget.DiagnosticCheckpoints; }
         finally { guided.Dispose(); }
         Assert.True(work < originalWork / 4);
-        for (ulong cap = 1; cap <= work; cap++)
-        {
-            PythonReScalarMatchCursor cursor = default;
-            var constructed = false;
-            try
-            {
-                cursor = new(input, program, 0, Regex.InfiniteMatchTimeout, candidate, "(ab|cd)+",
-                    new(new(cap, 0, 1048576), Regex.InfiniteMatchTimeout, default));
-                constructed = true;
-                Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
-                var count = 0;
-                while (cursor.MoveNext()) count++;
-                Assert.Equal(work, cap); Assert.Equal(2, count);
-            }
-            catch (Utf8ResourceLimitExceededException error)
-            {
-                Assert.True(cap < work);
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-            }
-            finally
-            {
-                if (constructed) { cursor.Dispose(); Assert.Equal(13UL, cursor.ReservedBytes); }
-            }
-        }
     }
 
     [Theory]
@@ -223,6 +199,7 @@ public sealed class PythonRePrefixDiscoveryTests
     [Fact]
     public void ExhaustedCandidateSearchDoesNotPublishAfterCancellation()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8PythonRegex("(ab|cd)+");
         var input = Encoding.UTF8.GetBytes(new string('x', 4097));
         ulong work;
@@ -230,16 +207,16 @@ public sealed class PythonRePrefixDiscoveryTests
         {
             measured.WorkingInvocation.ShareStorageForCursor();
             var observer = measured.WorkingInvocation;
-            var before = measured.WorkingInvocation.Budget.Steps;
+            var before = measured.WorkingInvocation.Budget.DiagnosticCheckpoints;
             measured.WorkingInvocation.CheckpointHook = _ => { };
             Assert.False(measured.MoveNext(out _));
-            work = observer.Budget.Steps - before;
+            work = observer.Budget.DiagnosticCheckpoints - before;
         }
         using var token = new CancellationTokenSource();
         using var cursor = regex.CreateMatchCursor(input, 0, token.Token);
-        while ((cursor.WorkingInvocation.Budget.Steps + work) % 64 != 0)
-            Assert.Equal(Utf8ExecutionLimitKind.None, cursor.WorkingInvocation.TryChargeInputStep());
-        var terminal = cursor.WorkingInvocation.Budget.Steps + work;
+        while ((cursor.WorkingInvocation.Budget.DiagnosticCheckpoints + work) % 64 != 0)
+            Assert.Equal(Utf8ExecutionLimitKind.None, cursor.WorkingInvocation.CheckInput());
+        var terminal = cursor.WorkingInvocation.Budget.DiagnosticCheckpoints + work;
         var entered = false;
         cursor.WorkingInvocation.CheckpointHook = steps =>
         {

@@ -30,7 +30,6 @@ public sealed class PythonReDetailedPublicationContractTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576
@@ -81,7 +80,6 @@ public sealed class PythonReDetailedPublicationContractTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10000,
                 MaxWorkingBytes = 4096,
                 MaxResultBytes = 4096
             }
@@ -112,51 +110,21 @@ public sealed class PythonReDetailedPublicationContractTests
     [Fact]
     public void EveryDetailedWorkCutoffPreservesDenialAndCallerStorage()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(😀)(é?)");
         var program = core.Inspection.AvailableOwnedSliceProgram;
         var input = "😀é"u8.ToArray();
         PythonReScalarMatchState.Initialize(out var measured, input, program, 0,
             Regex.InfiniteMatchTimeout,
-            "(😀)(é?)", new(new(0, 0, 0, 1048576), Regex.InfiniteMatchTimeout, default), null);
+            "(😀)(é?)", new(new(0, 0, 1048576), Regex.InfiniteMatchTimeout, default), null);
         ulong work, extent;
         try
         {
             Assert.True(measured.MoveNext(input));
             _ = measured.SnapshotRanges(input);
-            work = measured.WorkingInvocation.Budget.Steps;
+            work = measured.WorkingInvocation.Budget.DiagnosticCheckpoints;
             extent = measured.WorkingInvocation.Budget.ResultBytes;
         }
         finally { measured.Dispose(); }
-        for (ulong cap = 1; cap <= work; cap++)
-        {
-            PythonReScalarMatchState cursor = default;
-            var constructed = false;
-            var reserved = false;
-            try
-            {
-                PythonReScalarMatchState.Initialize(out cursor, input, program, 0, Regex.InfiniteMatchTimeout,
-                    "(😀)(é?)", new(new(cap, 0, 0, 1048576), Regex.InfiniteMatchTimeout, default), null);
-                constructed = true;
-                Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
-                reserved = true;
-                Assert.True(cursor.MoveNext(input));
-                var snapshot = cursor.SnapshotRanges(input);
-                Assert.Equal(work, cap);
-                Assert.Equal(extent, cursor.WorkingInvocation.Budget.ResultBytes);
-                Assert.Equal("😀é", Encoding.UTF8.GetString(input.AsSpan(snapshot.Groups[0].StartOffsetInBytes, snapshot.Groups[0].EndOffsetInBytes - snapshot.Groups[0].StartOffsetInBytes)));
-            }
-            catch (InvalidOperationException error)
-            {
-                Assert.True(cap < work);
-                if (error is Utf8ResourceLimitExceededException resource)
-                    Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, resource.ResourceKind);
-                else Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, cursor.WorkingInvocation.Budget.LimitBreach);
-            }
-            finally
-            {
-                if (constructed) cursor.Dispose();
-                if (reserved) Assert.Equal(13UL, cursor.ReservedBytes);
-            }
-        }
     }
 }

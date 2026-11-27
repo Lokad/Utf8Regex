@@ -79,7 +79,6 @@ public sealed class PythonReOneShotProjectionTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 4096,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -121,7 +120,6 @@ public sealed class PythonReOneShotProjectionTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 5000,
                 MaxDepth = 4096,
                 MaxWorkingBytes = 65536,
                 MaxResultBytes = 65536
@@ -207,7 +205,7 @@ public sealed class PythonReOneShotProjectionTests
         Assert.NotNull(program);
         var cursor = new PythonReScalarMatchCursor("é😀z"u8, program, 0,
             Regex.InfiniteMatchTimeout,
-            null, "(?<=é)(.)", new(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
+            null, "(?<=é)(.)", new(new(0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         PythonReGroupData value;
         try

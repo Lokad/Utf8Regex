@@ -36,14 +36,14 @@ internal static class Utf8OwnedPrefixFamilies
             var unionRoot = root;
             while (Transparent(unionRoot) && unionRoot.ChildCount == 1)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 unionRoot = unionRoot.Child(0);
             }
             var result = empty;
             var haveResult = false;
             while (frames.Count != 0)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 var index = frames.Count - 1;
                 var frame = frames[index];
                 var node = frame.Node;
@@ -51,7 +51,7 @@ internal static class Utf8OwnedPrefixFamilies
                 {
                     while (Transparent(node) && node.ChildCount == 1)
                     {
-                        scope.Budget.ChargeWork(1);
+                        scope.Budget.Checkpoint();
                         node = node.Child(0);
                     }
                     frame = frame with { Node = node };
@@ -110,13 +110,13 @@ internal static class Utf8OwnedPrefixFamilies
             var minimum = unionRoot.Kind == Utf8TreeNodeKind.Alternate ? 1 : 2;
             for (var index = 0; index < result.Count; index++)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 if (parts[families[result.Start + index]].ScalarLength < minimum) return null;
             }
             var output = scope.Budget.AllocateArray<byte[]>(result.Count, false);
             for (var index = 0; index < result.Count; index++)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 output[index] = Render(families[result.Start + index]);
             }
             scope.Complete();
@@ -134,7 +134,7 @@ internal static class Utf8OwnedPrefixFamilies
             var members = frame.UnionMembers ?? throw new InvalidOperationException("Union scratch is missing.");
             for (var index = 0; index < right.Count; index++)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 members.Add(families[right.Start + index]);
             }
             return new(0, members.Count, frame.Accumulated.Complete && right.Complete);
@@ -146,7 +146,7 @@ internal static class Utf8OwnedPrefixFamilies
             var start = families.Count;
             for (var index = 0; index < members.Count; index++)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 families.Add(members[index]);
             }
             members.Dispose();
@@ -155,7 +155,7 @@ internal static class Utf8OwnedPrefixFamilies
 
         Family One(int part)
         {
-            scope.Budget.ChargeWork(1);
+            scope.Budget.Checkpoint();
             var start = families.Count;
             families.Add(part);
             return new(start, 1, true);
@@ -163,7 +163,7 @@ internal static class Utf8OwnedPrefixFamilies
 
         int ScalarPart(int scalar)
         {
-            scope.Budget.ChargeWork(1);
+            scope.Budget.Checkpoint();
             var result = parts.Count;
             parts.Add(new(0, 0, null, scalar, new Rune(scalar).Utf8SequenceLength, 1));
             return result;
@@ -171,7 +171,7 @@ internal static class Utf8OwnedPrefixFamilies
 
         int SourcePart(object source, int sourceLength, int scalarLength, int byteLength)
         {
-            scope.Budget.ChargeWork(1);
+            scope.Budget.Checkpoint();
             var result = parts.Count;
             parts.Add(new(0, 0, source, 0, byteLength, scalarLength, sourceLength));
             return result;
@@ -179,7 +179,7 @@ internal static class Utf8OwnedPrefixFamilies
 
         int Join(int left, int right)
         {
-            scope.Budget.ChargeWork(1);
+            scope.Budget.Checkpoint();
             if (left == 0) return right;
             if (right == 0) return left;
             var scalarLength = (long)parts[left].ScalarLength + parts[right].ScalarLength;
@@ -193,13 +193,13 @@ internal static class Utf8OwnedPrefixFamilies
 
         Family Product(Family left, Family right)
         {
-            scope.Budget.ChargeWork(1);
+            scope.Budget.Checkpoint();
             if ((long)left.Count * right.Count > MaxProductMembers) return left with { Complete = false };
             var start = families.Count;
             for (var r = 0; r < right.Count; r++)
             for (var l = 0; l < left.Count; l++)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 families.Add(Join(families[left.Start + l], families[right.Start + r]));
             }
             return new(start, left.Count * right.Count, left.Complete && right.Complete);
@@ -207,17 +207,17 @@ internal static class Utf8OwnedPrefixFamilies
 
         Family Union(Family left, Family right)
         {
-            scope.Budget.ChargeWork(1);
+            scope.Budget.Checkpoint();
             if (left.Count == 0) return right;
             var start = families.Count;
             for (var index = 0; index < left.Count; index++)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 families.Add(families[left.Start + index]);
             }
             for (var index = 0; index < right.Count; index++)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 families.Add(families[right.Start + index]);
             }
             return new(start, left.Count + right.Count, left.Complete && right.Complete);
@@ -228,7 +228,7 @@ internal static class Utf8OwnedPrefixFamilies
             var maximum = 0;
             for (var index = 0; index < family.Count; index++)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 maximum = Math.Max(maximum, parts[families[family.Start + index]].ScalarLength);
             }
             return maximum;
@@ -240,10 +240,10 @@ internal static class Utf8OwnedPrefixFamilies
             var last = (lexicalOptions & RegexOptions.CultureInvariant) != 0 ? 0 : 2;
             for (var behavior = 0; behavior <= last; behavior++)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents((char)value, (Utf8ScalarCaseBehavior)behavior))
                 {
-                    scope.Budget.ChargeWork(1);
+                    scope.Budget.Checkpoint();
                     if (equivalent >= 128) return false;
                 }
             }
@@ -268,7 +268,7 @@ internal static class Utf8OwnedPrefixFamilies
             var count = 0;
             for (var index = 3; index < data.Length; index += 2)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 var low = data[index]; var high = data[index + 1];
                 if (low < 0 || high > 0x110000 || low >= high) return empty with { Complete = false };
                 var valid = high - low - Math.Max(0, Math.Min(high, 0xe000) - Math.Max(low, 0xd800));
@@ -286,7 +286,7 @@ internal static class Utf8OwnedPrefixFamilies
             for (var index = 3; index < data.Length; index += 2)
             for (var value = data[index]; value < data[index + 1]; value++)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 if (value is >= 0xd800 and < 0xe000) { value = Math.Min(data[index + 1], 0xe000) - 1; continue; }
                 var member = topFold ? AsciiSearch.FoldCase((byte)value) : value;
                 AddMember(member);
@@ -322,7 +322,7 @@ internal static class Utf8OwnedPrefixFamilies
             var bytes = 0;
             for (var offset = 0; offset < length; scalars++)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 Rune scalar; int consumed;
                 var status = native is not null
                     ? Rune.DecodeFromUtf8(native.AsSpan(offset), out scalar, out consumed)
@@ -338,7 +338,7 @@ internal static class Utf8OwnedPrefixFamilies
             // Fiber admission above proved every folded source scalar ASCII.
             for (var offset = 0; offset < length; offset++)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 result = Product(result, Literal(native is not null ? native[offset] : text![offset], true, node.Options));
                 if (!result.Complete) break;
             }
@@ -352,7 +352,7 @@ internal static class Utf8OwnedPrefixFamilies
             var result = 0;
             while (pending.Count != 0 && maximum > 0)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 var id = pending[pending.Count - 1];
                 pending.Pop();
                 var part = parts[id];
@@ -366,7 +366,7 @@ internal static class Utf8OwnedPrefixFamilies
                     var bytes = 0;
                     for (var index = 0; index < maximum; index++)
                     {
-                        scope.Budget.ChargeWork(1);
+                        scope.Budget.Checkpoint();
                         Rune scalar; int consumed;
                         if (source is byte[] native) _ = Rune.DecodeFromUtf8(native.AsSpan(offset), out scalar, out consumed);
                         else _ = Rune.DecodeFromUtf16(((string)source).AsSpan(offset), out scalar, out consumed);
@@ -392,13 +392,13 @@ internal static class Utf8OwnedPrefixFamilies
             var complete = true;
             for (var repeat = 0; repeat < minimum; repeat++)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 var room = Math.Max(0, 8 - Math.Min(8, preceding) - MaximumLength(result));
                 if (room == 0) return result with { Complete = false };
                 var start = families.Count;
                 for (var index = 0; index < factor.Count; index++)
                 {
-                    scope.Budget.ChargeWork(1);
+                    scope.Budget.Checkpoint();
                     var id = families[factor.Start + index];
                     complete &= parts[id].ScalarLength <= room;
                     families.Add(Clip(id, room));
@@ -431,14 +431,14 @@ internal static class Utf8OwnedPrefixFamilies
             var offset = 0;
             while (pending.Count != 0)
             {
-                scope.Budget.ChargeWork(1);
+                scope.Budget.Checkpoint();
                 var part = parts[pending[pending.Count - 1]];
                 pending.Pop();
                 if (part.Left != 0 || part.Right != 0)
                 {
                     pending.Push(part.Right); pending.Push(part.Left); continue;
                 }
-                scope.Budget.ChargeWork((ulong)part.ByteLength);
+                scope.Budget.Checkpoint();
                 if (part.Source is byte[] native) native.AsSpan(0, part.SourceLength).CopyTo(bytes.AsSpan(offset));
                 else if (part.Source is string text) _ = Encoding.UTF8.GetBytes(text.AsSpan(0, part.SourceLength), bytes.AsSpan(offset));
                 else if (part.ScalarLength != 0) _ = new Rune(part.Scalar).EncodeToUtf8(bytes.AsSpan(offset));

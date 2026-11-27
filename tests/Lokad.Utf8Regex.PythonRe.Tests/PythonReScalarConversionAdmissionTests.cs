@@ -37,36 +37,33 @@ public sealed class PythonReScalarConversionAdmissionTests
     [InlineData(6)] [InlineData(7)] [InlineData(8)] [InlineData(9)] [InlineData(10)]
     public void DirectIrFactoryByteAndWorkDenialAcquireNoObject(int kind)
     {
-        foreach (var work in new[] { false, true })
+        foreach (var work in new[] { false})
         {
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, work ? ulong.MaxValue : 48,
-                work ? 1ul : ulong.MaxValue, ulong.MaxValue);
+                ulong.MaxValue);
             var parent = owner.Budget.AllocateArray<byte>(1, false);
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(kind));
-            Assert.Equal(work ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
+            Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
             Assert.Equal(48ul, owner.Budget.ReservedBytes);
             Assert.Equal(48ul, owner.Budget.PeakBytes);
-            Assert.Equal(1ul, owner.Budget.WorkSteps);
 
             owner.Budget.ReleaseArray(parent, false);
         }
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(1)]
     public void RootAdmissionPrecedesArenaMapAndLeafAcquisition(int denial)
     {
         var parse = new PythonReParser("(?P<x>.)").Parse(PythonReCompileOptions.None);
         _ = PythonReTranslator.Translate(parse, false);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, denial == 0 ? 48ul : ulong.MaxValue,
-            denial == 2 ? 1ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
+            denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReScalarCompiler.Compile(parse));
-        Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, 1 => Utf8ResourceLimitKind.ConstructionDepth,
-            _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, failure.ResourceKind);
+        Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, 1 => Utf8ResourceLimitKind.ConstructionDepth}, failure.ResourceKind);
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(48ul, owner.Budget.PeakBytes);
-        Assert.Equal(1ul, owner.Budget.WorkSteps);
         Assert.Equal(0ul, owner.Budget.Depth);
 
         owner.Budget.ReleaseArray(parent, false);
@@ -89,7 +86,7 @@ public sealed class PythonReScalarConversionAdmissionTests
         }
         foreach (var allowance in new[] { 0ul, 128ul, peak / 2, peak - 1, peak })
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 128, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 128, ulong.MaxValue);
             var parent = PythonReAstFactory.Literal('p');
             var checkpoint = owner.Budget.ReservedBytes;
             Utf8SliceProgram? program = null;
@@ -115,6 +112,7 @@ public sealed class PythonReScalarConversionAdmissionTests
     [Fact]
     public void InvalidInternalAtomRollsBackItsObjectsAndRetainsSpentWork()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var parse = new PythonReParser("").Parse(PythonReCompileOptions.None)
             with { Root = new PythonReRawNode(@"\C", PythonReRawKind.Escape) };
         _ = PythonReTranslator.Translate(parse, false);
@@ -127,7 +125,7 @@ public sealed class PythonReScalarConversionAdmissionTests
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal((int)'p', parent.Value);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.True(owner.Budget.WorkSteps > 2);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > 2);
         var recovery = new PythonReParser("(?P<x>.)").Parse(PythonReCompileOptions.None);
         Assert.NotNull(PythonReScalarCompiler.Compile(recovery));
     }

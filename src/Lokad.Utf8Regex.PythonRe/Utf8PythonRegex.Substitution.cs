@@ -35,7 +35,7 @@ public sealed partial class Utf8PythonRegex
         {
             var parentHook = previousCheckpoint;
             var currentControl = control;
-            budget.CheckpointHook = steps => { parentHook?.Invoke(steps); currentControl.Check(); };
+            budget.CheckpointHook = () => { parentHook?.Invoke(); currentControl.Check(); };
         }
         try
         {
@@ -60,12 +60,6 @@ public sealed partial class Utf8PythonRegex
         ulong keyCharge = 0;
         try
         {
-            // Admit source-length work on warm hits too. The comparison borrows
-            // the caller's span; only misses acquire an immutable key.
-            var bufferControl = new Utf8InvocationBufferControl(ref invocation);
-            for (var offset = 0; offset < query.Length; offset += Math.Min(2048, query.Length - offset))
-                if (bufferControl.TryChargeWorkspaceStep() != Utf8ExecutionLimitKind.None)
-                    throw invocation.Budget.CreateResourceFailure();
             try
             {
                 if (_replacementPlanCache.TryGet(query, control,
@@ -132,7 +126,7 @@ public sealed partial class Utf8PythonRegex
         var bufferControl = new Utf8InvocationBufferControl(ref invocation);
         for (var offset = 0; offset < query.Length;)
         {
-            if (bufferControl.TryChargeWorkspaceStep() != Utf8ExecutionLimitKind.None)
+            if (bufferControl.CheckWorkspace() != Utf8ExecutionLimitKind.None)
                 throw invocation.Budget.CreateResourceFailure();
             var length = Math.Min(2048, query.Length - offset);
             query.Slice(offset, length).CopyTo(key.AsSpan(offset, length));

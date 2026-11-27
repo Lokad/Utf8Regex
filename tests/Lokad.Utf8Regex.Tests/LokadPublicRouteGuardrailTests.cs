@@ -262,7 +262,7 @@ public sealed class LokadPublicRouteGuardrailTests
     {
         const string pattern = @"\b(\d{1,2})/\d{1,2}/\d{2,4}\b";
         using var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled,
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 512, MaxWorkingBytes = 1 << 20 } });
+            policy: new() { ResourcePolicy = new() { MaxWorkingBytes = 1 << 20 } });
         using var source = new CancellationTokenSource();
         ReadOnlySpan<byte> input = "x11/18/201A | é1/2/2026 | 𝟙/٢/٢٠٢٦ | 11/20/2026"u8;
         var wideDate = "𝟙/٢/٢٠٢٦"u8;
@@ -294,11 +294,11 @@ public sealed class LokadPublicRouteGuardrailTests
         using var cancellation = new CancellationTokenSource();
         using var limited = new Utf8Regex(pattern, options: options, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 64, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         Assert.True(limited.IsMatch("A01ZZ"u8, cancellation.Token));
         Assert.Equal(new Utf8CaptureRange(0, 5), limited.Match("A01ZZ"u8, cancellationToken: cancellation.Token));
-        var proofPolicy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkSteps = 8, MaxWorkingBytes = 1 } };
+        var proofPolicy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkingBytes = 1 } };
         using var proof = new Utf8Regex(pattern, options: options, policy: proofPolicy);
         using var strict = new Utf8Regex(pattern[..^1] + @"\z", options: options, policy: proofPolicy);
         Assert.True(strict.IsMatch("SW1 1ZZ"u8, cancellation.Token));
@@ -397,7 +397,7 @@ public sealed class LokadPublicRouteGuardrailTests
         using var regex = new Utf8Regex(pattern, options: options);
         using var limited = new Utf8Regex(pattern, options: options, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 64, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         using var cancellation = new CancellationTokenSource();
 

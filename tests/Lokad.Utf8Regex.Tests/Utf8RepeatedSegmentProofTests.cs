@@ -20,7 +20,7 @@ public sealed class Utf8RepeatedSegmentProofTests
         const string pattern = @"\A(?<label>[a-z]+\.)+[a-z]{2,12}$";
         using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxDepth = 8, MaxWorkSteps = 1_000, MaxWorkingBytes = 800 }
+            ResourcePolicy = new() { MaxDepth = 8, MaxWorkingBytes = 800 }
         });
         Assert.True(regex.IsMatch("northwind.control.net"u8));
         Assert.True(regex.IsMatch("northwind.control.net\n"u8));
@@ -34,7 +34,7 @@ public sealed class Utf8RepeatedSegmentProofTests
     {
         using var regex = new Utf8Regex(@"\A(?<label>[a-z]+\.)+[a-z]{2,12}$", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 100, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(subject)));
     }
@@ -74,7 +74,7 @@ public sealed class Utf8RepeatedSegmentProofTests
         using var ordinary = new Utf8Regex(pattern, options);
         using var funded = new Utf8Regex(pattern, options, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1024, MaxDepth = 128, MaxWorkingBytes = 8192 }
+            ResourcePolicy = new() { MaxDepth = 128, MaxWorkingBytes = 8192 }
         });
         using var source = new CancellationTokenSource();
         foreach (var (regex, token) in new[] { (ordinary, CancellationToken.None), (funded, source.Token) })
@@ -92,7 +92,7 @@ public sealed class Utf8RepeatedSegmentProofTests
         var input = "abab"u8.ToArray();
         using var source = new CancellationTokenSource();
         using var limited = new Utf8Regex(pattern, RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 256, MaxWorkingBytes = 640 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 640 } });
         Assert.Equal(new Utf8CaptureRange(0, 4), limited.Match(input, cancellationToken: source.Token));
 
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
@@ -154,7 +154,6 @@ public sealed class Utf8RepeatedSegmentProofTests
                     MatchTimeout = Timeout.InfiniteTimeSpan,
                     ResourcePolicy = new Utf8ResourcePolicy
                     {
-                        MaxWorkSteps = 100000,
                         MaxDepth = 256,
                         MaxWorkingBytes = 1 << 20,
                         MaxResultBytes = 1 << 20

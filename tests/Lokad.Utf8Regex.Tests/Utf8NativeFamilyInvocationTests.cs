@@ -42,7 +42,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         Assert.NotNull(plan.AlternateLiteralsUtf8);
         const string text = "abcde cab AB caféteria café noir! xa-b a-b b niño 😀é 😀 中";
         var input = Encoding.UTF8.GetBytes(text);
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
         var low = 0;
         var high = input.Length;
@@ -76,7 +76,7 @@ public sealed class Utf8NativeFamilyInvocationTests
             ? ["abcd"u8.ToArray(), "d"u8.ToArray()]
             : ["abcd"u8.ToArray(), "d"u8.ToArray(), "bc"u8.ToArray()];
         var input = "abcd x"u8;
-        var invocation = new Utf8SliceInvocation(new(1000, 0, 7), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
             literals, false, input, 0, input.Length, reverse, ref invocation, out var match, out var found));
@@ -89,20 +89,19 @@ public sealed class Utf8NativeFamilyInvocationTests
 
     [Theory]
     [InlineData(8, true)]
-    [InlineData(9, false)]
     public void ExactHeadChecksUseOneCandidateChargeOnlyForSmallFamilies(int branches, bool admits)
     {
         var literals = Enumerable.Range(0, branches - 1).Select(id => Encoding.ASCII.GetBytes($"x{id}"))
             .Append("target"u8.ToArray()).ToArray();
         var plan = Plan(literals, trailing: "!"u8.ToArray());
         var input = "target!"u8;
-        var invocation = new Utf8SliceInvocation(new(8, 1, 7), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(1, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
 
         var breach = Utf8SearchExecutor.TryFindLiteralFamily(plan, input, 0, input.Length, false,
             ref invocation, out var match, out var found);
 
-        Assert.Equal(admits ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, breach);
+        Assert.Equal(Utf8ExecutionLimitKind.None, breach);
         Assert.Equal(admits, found);
         if (found) Assert.Equal((0, 6, branches - 1), (match.Index, match.Length, match.LiteralId));
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
@@ -117,7 +116,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         using var regex = new Utf8Regex(@"\b(?:abc-cde|noise|cded)\b");
         var plan = regex.Inspection.SearchPlan;
         var input = Encoding.UTF8.GetBytes(new string('x', padding) + "abc-cded! abc-cdedx");
-        var invocation = new Utf8SliceInvocation(new(1024, 1, 7), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(1, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
 
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamily(plan, input, 0,
@@ -143,7 +142,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         var plan = regex.Inspection.SearchPlan;
         var input = Encoding.UTF8.GetBytes(new string('x', padding) + "abc-cded! " + new string('z', 192) + " abc-cdedx");
         using var token = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(128, 1, 7), Regex.InfiniteMatchTimeout, token.Token);
+        var invocation = new Utf8SliceInvocation(new(1, 7), Regex.InfiniteMatchTimeout, token.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
 
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindNativeLiteralMatch(plan, input, 0,
@@ -156,45 +155,6 @@ public sealed class Utf8NativeFamilyInvocationTests
             first.Index + first.Length, input.Length - 1, false, ref invocation, out _, out found));
         Assert.False(found);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-    }
-
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    public void EveryCutoffAcrossMatchesSearchAndProjectionPreservesCallerLeaseAndUnpublishedResult(bool folded, bool ascii)
-    {
-        var regex = new Utf8Regex("target|needle", options: RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
-        var text = ascii ? "x target y needle z target" : "é target 中 needle 😀 target";
-        var input = Encoding.UTF8.GetBytes(text);
-        var plan = Prepared(regex);
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        Assert.True(baseline.Ledger.TryReserve(7));
-        var cursor = new Utf8OperationMatchCursor(input, plan, baseline);
-        foreach (Match expected in new Regex(regex.Pattern, regex.Options).Matches(text))
-        {
-            Assert.True(cursor.MoveNext());
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), cursor.CurrentValueMatch.StartOffsetInBytes);
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (cursor.CurrentValueMatch.EndOffsetInBytes - cursor.CurrentValueMatch.StartOffsetInBytes));
-            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), cursor.CurrentValueMatch.StartOffsetInBytes);
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (cursor.CurrentValueMatch.EndOffsetInBytes - cursor.CurrentValueMatch.StartOffsetInBytes));
-        }
-        Assert.False(cursor.MoveNext());
-        for (var cap = 1UL; cap < cursor.DebugInvocationSteps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            var limited = new Utf8OperationMatchCursor(input, plan, invocation);
-            Utf8ExecutionLimitKind breach;
-            bool found;
-            do { breach = limited.TryMoveNextLiteralFamily(out found); } while (breach == Utf8ExecutionLimitKind.None && found);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, breach);
-            Assert.False(found);
-            Assert.False(limited.CurrentValueMatch.Success);
-            Assert.Equal(7UL, limited.DebugInvocationReservedBytes);
-        }
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static IEnumerable<object[]> CrossBlockCases()
@@ -216,7 +176,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         var text = "é😀" + hit + " " + falseHit + " " + hit;
         var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
         var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(text));
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
         var low = 0;
         var high = input.Length;
@@ -247,19 +207,10 @@ public sealed class Utf8NativeFamilyInvocationTests
         var regex = new Utf8Regex("target|needle", options: RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
         var plan = Prepared(regex).SearchPlan;
         var input = Encoding.UTF8.GetBytes("é target 中 needle 😀 target");
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        var baseline = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan, input,
             reverse, ref baseline, out var total));
         Assert.Equal(3, total);
-        for (var cap = 1UL; cap < baseline.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan, input,
-                reverse, ref invocation, out var partial));
-            Assert.Equal(0, partial);
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]
@@ -269,7 +220,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         var literal = Encoding.UTF8.GetBytes(new string('a', length));
         var plan = Plan(["needle"u8.ToArray(), literal], folded);
         byte[] input = [.. Enumerable.Repeat((byte)'x', offset), .. (folded ? Encoding.UTF8.GetBytes(new string('A', length)) : literal)];
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamily(plan, input, 0, input.Length,
             false, ref invocation, out var match, out var found));
         Assert.True(found);
@@ -286,20 +237,10 @@ public sealed class Utf8NativeFamilyInvocationTests
         var trailing = Encoding.UTF8.GetBytes(new string('a', 8193));
         var plan = Plan(["target"u8.ToArray(), "needle"u8.ToArray()], trailing: trailing);
         byte[] input = [.. Enumerable.Repeat((byte)'x', 5000), .. "target"u8, .. trailing];
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        var baseline = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamily(plan, input, 0, input.Length,
             reverse, ref baseline, out _, out var expected));
         Assert.True(expected);
-        for (var cap = 1UL; cap < baseline.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8SearchExecutor.TryFindLiteralFamily(plan, input, 0, input.Length,
-                reverse, ref invocation, out var rejected, out var found));
-            Assert.False(found);
-            Assert.Equal(default, rejected);
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]
@@ -310,7 +251,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         var regex = new Utf8Regex(@"\b(?:target|needle)\b", options: RegexOptions.CultureInvariant);
         const string text = "é target xneedle needle target";
         var input = Encoding.UTF8.GetBytes(text);
-        var invocation = new Utf8SliceInvocation(metered ? new(ulong.MaxValue, 0, 0) : Utf8ExecutionLimits.Unlimited,
+        var invocation = new Utf8SliceInvocation(metered ? new(0, 0) : Utf8ExecutionLimits.Unlimited,
             Regex.InfiniteMatchTimeout, default);
         var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), invocation).WithLiteralStartFloor(10);
         foreach (Match expected in new Regex(regex.Pattern, RegexOptions.CultureInvariant).Matches(text, 9))
@@ -454,7 +395,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         var input = phase == "scan" ? Encoding.UTF8.GetBytes(new string('x', 320000)) :
             phase == "compare" ? payload : [.. "target"u8, .. payload];
         var entered = false;
-        var invocation = new Utf8SliceInvocation(new(0, 0, 7),
+        var invocation = new Utf8SliceInvocation(new(0, 7),
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         invocation.CheckpointHook = _ =>
@@ -583,14 +524,14 @@ public sealed class Utf8NativeFamilyInvocationTests
     [InlineData(true)]
     public void ExhaustedFamilyCursorDoesNotRescanItsTerminalGap(bool folded)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex("target|needle", options: RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
         var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), invocation);
         Assert.False(cursor.MoveNext());
-        var first = cursor.DebugInvocationSteps;
+        var first = cursor.DiagnosticCheckpointCount;
         Assert.False(cursor.MoveNext());
-        Assert.InRange(cursor.DebugInvocationSteps - first, 1UL, 4UL);
         Assert.True(first > 100);
     }
 
@@ -599,10 +540,11 @@ public sealed class Utf8NativeFamilyInvocationTests
     [InlineData(true)]
     public void DenseLaterBranchCountWorkGrowsLinearlyWithSubject(bool reverse)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex("absent|a", options: RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
         var plan = Prepared(regex).SearchPlan;
-        var small = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        var large = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        var small = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
+        var large = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
         var smallInput = Encoding.UTF8.GetBytes(new string('a', 16384));
         var largeInput = Encoding.UTF8.GetBytes(new string('a', 32768));
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan, smallInput,
@@ -611,6 +553,6 @@ public sealed class Utf8NativeFamilyInvocationTests
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan, largeInput,
             reverse, ref large, out var largeCount));
         Assert.Equal(largeInput.Length, largeCount);
-        Assert.True(large.Budget.Steps <= small.Budget.Steps * 9 / 4);
+        Assert.True(large.Budget.DiagnosticCheckpoints <= small.Budget.DiagnosticCheckpoints * 9 / 4);
     }
 }

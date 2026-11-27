@@ -23,7 +23,7 @@ public sealed class Pcre2RepeatJournalScopeTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000
+                MaxDepth = 4096
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
@@ -72,12 +72,11 @@ public sealed class Pcre2RepeatJournalScopeTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+[InlineData(1)] [InlineData(2)]
     public void StickyDenialLeavesTheBorrowedParentCapacityIntact(int limit)
     {
         var regex = Create("(?i)(a+)(b)", new()
         {
-            MatchLimit = limit == 0 ? 40U : 1000000U,
             DepthLimit = limit == 1 ? 1U : 1024U,
             HeapLimitInBytes = limit == 2 ? 256UL : 1048576UL,
             ResultLimitInBytes = 1
@@ -97,7 +96,7 @@ public sealed class Pcre2RepeatJournalScopeTests
                 catch (Exception error) { failure = error; }
                 Assert.Equal(limit switch
                 {
-                    0 => Pcre2ErrorKind.MatchLimit, 1 => Pcre2ErrorKind.DepthLimit, _ => Pcre2ErrorKind.HeapLimit,
+1 => Pcre2ErrorKind.DepthLimit, _ => Pcre2ErrorKind.HeapLimit,
                 }, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
                 Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
             }
@@ -132,80 +131,13 @@ public sealed class Pcre2RepeatJournalScopeTests
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 
-    private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits? limits = null) =>
-        new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits? limits = null)
+    {
+        var selected = limits ?? new() { DepthLimit = 1024, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 };
+        return new(pattern, Pcre2CompileOptions.None, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 1024,
-                    HeapLimitInBytes = 1048576,
-                    ResultLimitInBytes = 1
-                }
-
-                )).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 1024,
-                    HeapLimitInBytes = 1048576,
-                    ResultLimitInBytes = 1
-                }
-
-                )).MatchLimit,
-                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 1024,
-                    HeapLimitInBytes = 1048576,
-                    ResultLimitInBytes = 1
-                }
-
-                )).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 1024,
-                    HeapLimitInBytes = 1048576,
-                    ResultLimitInBytes = 1
-                }
-
-                )).DepthLimit,
-                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 1024,
-                    HeapLimitInBytes = 1048576,
-                    ResultLimitInBytes = 1
-                }
-
-                )).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 1024,
-                    HeapLimitInBytes = 1048576,
-                    ResultLimitInBytes = 1
-                }
-
-                )).HeapLimitInBytes,
-                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 1024,
-                    HeapLimitInBytes = 1048576,
-                    ResultLimitInBytes = 1
-                }
-
-                )).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 1024,
-                    HeapLimitInBytes = 1048576,
-                    ResultLimitInBytes = 1
-                }
-
-                )).ResultLimitInBytes
-            },
+            ResourcePolicy = selected.ToSliceLimits().ToResourcePolicy(),
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
+    }
 }

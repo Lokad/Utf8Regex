@@ -24,9 +24,7 @@ public sealed class Utf8LiteralRuntimeAdmissionTests
     public static IEnumerable<object[]> Shapes() => from pattern in Patterns
                                                     from reverse in new[] { false, true }
                                                     select new object[] { pattern, reverse };
-    public static IEnumerable<object[]> Cutoffs() => from pattern in new[] { "abc", "foo|bar", "中|日", "foo(?=bar)" }
-                                                     from bytes in new[] { false, true }
-                                                     select new object[] { pattern, bytes };
+    public static IEnumerable<object[]> Cutoffs() => from pattern in new[] { "abc", "foo|bar", "中|日", "foo(?=bar)" } select new object[] { pattern };
     public static IEnumerable<object[]> Depths() => from pattern in new[] { "abc", "foo|bar", "中文|日本", "foo(?=bar)" }
                                                     from depth in Enumerable.Range(0, 9)
                                                     select new object[] { pattern, depth };
@@ -52,7 +50,7 @@ public sealed class Utf8LiteralRuntimeAdmissionTests
     public void SortedFirstByteStateBorrowsOnlyEligiblePayloadsAndDeclinesBeforeAcquisition(string pattern, bool reverse)
     {
         var plan = Plan(pattern);
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var runtime = Create(plan, reverse);
         var candidates = plan.SearchPlan.AlternateLiteralsUtf8;
         var eligible = !reverse && plan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
@@ -78,40 +76,38 @@ public sealed class Utf8LiteralRuntimeAdmissionTests
 
     [Theory]
     [MemberData(nameof(Cutoffs))]
-    public void EveryCutoffPreservesBorrowedParentsAndSpentWork(string pattern, bool bytes)
+    public void ByteCutoffsPreserveFundedParents(string pattern)
     {
-        var plan = Plan(pattern);         ulong peak, work, loan, slots;
+        var plan = Plan(pattern);         ulong peak, loan, slots;
         // Emitted IL now shares the owner. Leave that axis funded while sweeping
-        // every byte/work cutoff; separate emission tests sweep instruction slots.
-        using (var funded = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        // every byte cutoff; separate emission tests sweep instruction slots.
+        using (var funded = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
             _ = funded.Budget.AllocateObject(17, static value => new Box(value)); _ = Create(plan, false);
-            peak = funded.Budget.PeakBytes - 128; work = funded.Budget.WorkSteps - 2; loan = funded.Budget.ReservedBytes;
+            peak = funded.Budget.PeakBytes - 128; loan = funded.Budget.ReservedBytes;
             slots = funded.Budget.Reserved;
         }
         var successes = 0;
-        for (var allowance = 0ul; allowance <= (bytes ? peak : work); allowance++)
+        for (var allowance = 0ul; allowance <= peak; allowance++)
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, bytes ? 128 + allowance : ulong.MaxValue,
-                bytes ? ulong.MaxValue : 2 + allowance, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 128 + allowance,
+                ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
             var error = Record.Exception(() => _ = Create(plan, false));
             if (error is null) { successes++; Assert.Equal(loan, owner.Budget.ReservedBytes); }
             else
             {
-                Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
+                Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes,
                     Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
                 Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 Assert.Equal(0ul, owner.Budget.Reserved);
             }
             Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
             if (error is null) Assert.Equal(slots, owner.Budget.Reserved);
-            Assert.InRange(owner.Budget.WorkSteps, 2ul, bytes ? ulong.MaxValue : 2 + allowance);
         }
         // Tighter byte capacity may select smaller growth extents while still
-        // retaining exactly the same output. Work cutoffs have one exact success.
-        if (bytes) Assert.True(successes >= 1);
-        else Assert.Equal(1, successes);
+        // retaining exactly the same output.
+        Assert.True(successes >= 1);
     }
 
     [Theory]
@@ -119,9 +115,9 @@ public sealed class Utf8LiteralRuntimeAdmissionTests
     public void RootDepthDenialAndNestedFailureRestoreAllChildLoans(string pattern, int depth)
     {
         var plan = Plan(pattern); ulong required;
-        using (var funded = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        using (var funded = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         { _ = Create(plan, false); required = funded.Budget.PeakDepth; }
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, (ulong)depth);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Record.Exception(() => _ = Create(plan, false));
         if ((ulong)depth < required)
@@ -130,7 +126,7 @@ public sealed class Utf8LiteralRuntimeAdmissionTests
             Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         }
         else Assert.Null(error);
-        if (depth == 0) { Assert.Equal(128ul, owner.Budget.PeakBytes); Assert.Equal(2ul, owner.Budget.WorkSteps); }
+        if (depth == 0) { Assert.Equal(128ul, owner.Budget.PeakBytes); }
         Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
     }
 

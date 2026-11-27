@@ -9,8 +9,7 @@ public sealed class Utf8CaptureProducerAdmissionTests
     public static IEnumerable<object[]> Limits()
     {
         foreach (var (pattern, options) in Patterns)
-            foreach (var kind in new[] { Utf8ResourceLimitKind.ConstructionBytes,
-                Utf8ResourceLimitKind.ConstructionWorkSteps, Utf8ResourceLimitKind.ConstructionDepth })
+            foreach (var kind in new[] { Utf8ResourceLimitKind.ConstructionBytes, Utf8ResourceLimitKind.ConstructionDepth })
                 yield return [pattern, options, kind];
     }
 
@@ -34,7 +33,7 @@ public sealed class Utf8CaptureProducerAdmissionTests
     [MemberData(nameof(Limits))]
     public void ProducerCutoffsRestoreEveryParentLoanAndRetainFundedCatalogs(string pattern, RegexOptions options, Utf8ResourceLimitKind kind)
     {
-        ulong bytes, work, depth, retained;
+        ulong bytes, depth, retained;
         int[] expectedNumbers;
         string[] expectedNames;
         using (var funded = Utf8ConstructionScope.Enter())
@@ -44,7 +43,6 @@ public sealed class Utf8CaptureProducerAdmissionTests
             Assert.NotNull(tree);
             Assert.NotNull(tree.CaptureCatalog);
             bytes = funded.Budget.PeakBytes - 128;
-            work = funded.Budget.WorkSteps - 2;
             depth = funded.Budget.PeakDepth;
             retained = funded.Budget.ReservedBytes - 128;
             expectedNumbers = tree.CaptureCatalog.GroupNumbers;
@@ -52,8 +50,8 @@ public sealed class Utf8CaptureProducerAdmissionTests
             Assert.Equal(0ul, funded.Budget.Depth);
         }
         var maximum = kind == Utf8ResourceLimitKind.ConstructionBytes ? bytes
-            : kind == Utf8ResourceLimitKind.ConstructionWorkSteps ? work : depth;
-        // Exhaust the smaller work/depth spaces and sample array-growth boundaries.
+            : depth;
+        // Exhaust the smaller depth space and sample array-growth boundaries.
         var cutoffs = kind == Utf8ResourceLimitKind.ConstructionBytes
             ? new[] { 0ul, 1ul, maximum / 4, maximum / 2, maximum - 1, maximum, maximum + 1 }.Distinct()
             : Enumerable.Range(0, checked((int)maximum + 1)).Select(static value => (ulong)value);
@@ -62,7 +60,6 @@ public sealed class Utf8CaptureProducerAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity,
                 kind == Utf8ResourceLimitKind.ConstructionBytes ? 128 + cutoff : Utf8ConstructionScope.DefaultBufferBytes,
-                kind == Utf8ResourceLimitKind.ConstructionWorkSteps ? 2 + cutoff : Utf8ConstructionScope.DefaultWorkSteps,
                 kind == Utf8ResourceLimitKind.ConstructionDepth ? cutoff : Utf8ConstructionScope.DefaultDepth);
             var budget = owner.Budget;
             var parent = budget.AllocateObject(17, static value => new Parent(value));
@@ -71,7 +68,6 @@ public sealed class Utf8CaptureProducerAdmissionTests
             var failure = Record.Exception(() => tree = Utf8OwnedTreeParser.TryParse(pattern, options));
             Assert.Equal(0ul, budget.Depth);
             Assert.Equal(0ul, budget.Reserved);
-            Assert.True(budget.WorkSteps <= budget.MaximumWorkSteps);
             Assert.True(budget.PeakBytes <= budget.MaximumBytes);
             if (failure is null)
             {
@@ -91,8 +87,6 @@ public sealed class Utf8CaptureProducerAdmissionTests
                 rejected++;
             }
             if (cutoff >= maximum) Assert.Null(failure);
-            if (kind == Utf8ResourceLimitKind.ConstructionDepth && cutoff == 0)
-                Assert.Equal(2ul, budget.WorkSteps);
         }
         Assert.True(rejected > 0);
     }
@@ -135,6 +129,7 @@ public sealed class Utf8CaptureProducerAdmissionTests
     [InlineData("(?<01>a)")]
     public void UnboundFixupsAndAliasesReleaseTheirScratchWithoutRefundingWork(string pattern)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var owner = Utf8ConstructionScope.Enter();
         var parent = owner.Budget.AllocateObject(17, static value => new Parent(value));
         var checkpoint = owner.Budget.ReservedBytes;
@@ -143,7 +138,7 @@ public sealed class Utf8CaptureProducerAdmissionTests
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.NotNull(parent);
-        Assert.True(owner.Budget.WorkSteps > 2);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > 2);
         Assert.NotNull(Utf8OwnedTreeParser.TryParse("(?<x>😀)\\k<x>", RegexOptions.None));
     }
 

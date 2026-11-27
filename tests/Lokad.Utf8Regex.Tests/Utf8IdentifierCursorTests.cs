@@ -24,7 +24,7 @@ public sealed class Utf8IdentifierCursorTests
         {
             var policy = finite ? new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000, MaxDepth = 8192,
+                MaxDepth = 8192,
                 MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20,
             } : Utf8ResourcePolicy.Unlimited;
             var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
@@ -285,19 +285,19 @@ public sealed class Utf8IdentifierCursorTests
     [MemberData(nameof(TerminalCases))]
     public void TerminalCursorReplayUsesConstantWorkAndChecksOriginalTokenAndDeadline(bool compiled, bool matches, bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var clock = Utf8DeadlineTestClock.Start();
         var regex = new Utf8Regex(Patterns[0], options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var input = Encoding.UTF8.GetBytes(matches ? "getAlpha setBeta" : new string('x', 32000));
         using var source = new CancellationTokenSource();
         var deadline = expire ? Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(200)) : Utf8ExecutionDeadline.Infinite;
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 1 << 20), deadline, source.Token);
+        var invocation = new Utf8SliceInvocation(new(0, 1 << 20), deadline, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         var cursor = new Utf8OperationMatchCursor(regex.Inspection.AvailableOwnedSliceProgram, input, invocation);
         while (cursor.MoveNext()) { }
         var previous = cursor.CurrentValueMatch;
-        var terminal = cursor.DebugInvocationSteps;
+        var terminal = cursor.DiagnosticCheckpointCount;
         for (var i = 0; i < 3; i++) Assert.False(cursor.MoveNext());
-        Assert.InRange(cursor.DebugInvocationSteps - terminal, 3UL, 6UL);
         if (expire) clock.Advance(250); else source.Cancel();
         Exception? observed = null;
         try { _ = cursor.MoveNext(); } catch (Exception exception) { observed = exception; }

@@ -82,50 +82,25 @@ public sealed class PythonRePersistentCursorTests
         Assert.True(allocated < 65536, $"Unexpected eager collection: {allocated} bytes.");
     }
 
-    [Fact]
-    public void WorkLimitIsCumulativeAcrossAdvancesAndFailureCleansUp()
-    {
-        Utf8PythonRangeMatch cursorRange_limited = default;
-        var input = "aa"u8.ToArray();
-        var probe = Invocation();
-        ulong firstSteps, secondSteps;
-        using (var cursor = InternalCursor(input, "(a)", probe))
-        {
-            Assert.True(cursor.MoveNext(out _)); firstSteps = probe.Budget.Steps;
-            Assert.True(cursor.MoveNext(out _)); secondSteps = probe.Budget.Steps;
-        }
-        Assert.True(secondSteps > firstSteps + 1);
-        var invocation = new Utf8SliceInvocation(new(secondSteps - 1, 0, 1UL << 20), Regex.InfiniteMatchTimeout, default);
-        Assert.True(invocation.Ledger.TryReserve(13));
-        using var limited = InternalCursor(input, "(a)", invocation);
-        Assert.True(limited.MoveNext(out cursorRange_limited)); var retained = cursorRange_limited;
-        var denial = Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.MoveNext(out _));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, denial.ResourceKind);
-        Assert.Equal(secondSteps - 1, denial.Limit);
-        Assert.Equal(secondSteps, denial.Requested);
-        Assert.Throws<InvalidOperationException>(() => limited.MoveNext(out _));
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void InFlightFailureUsesOriginalTokenOrDeadlineAndReleasesLoans(bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         Utf8PythonRangeMatch cursorRange = default;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var timeout = expire ? TimeSpan.FromMilliseconds(100) : Regex.InfiniteMatchTimeout;
-        var invocation = new Utf8SliceInvocation(new(1000000, 0, 4UL << 20), timeout, token.Token);
+        var invocation = new Utf8SliceInvocation(new(0, 4UL << 20), timeout, token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         // Candidate filtering meters 2048-byte windows, so this suffix still
         // crosses the diagnostic hook's 64-step interval after the first hit.
         var input = Encoding.UTF8.GetBytes("z" + new string('a', 262144));
         using var cursor = InternalCursor(input, "(z)", invocation, timeout);
         Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
-        var seed = invocation.Budget.Steps;
+        var seed = invocation.Budget.DiagnosticCheckpoints;
         var entered = false;
         cursor.WorkingInvocation.CheckpointHook = steps =>
         {
@@ -236,7 +211,7 @@ public sealed class PythonRePersistentCursorTests
     }
 
     private static Utf8SliceInvocation Invocation()
-        => new(new(1000000, 0, 4UL << 20), Regex.InfiniteMatchTimeout, default);
+        => new(new(0, 4UL << 20), Regex.InfiniteMatchTimeout, default);
 
     private static Utf8PythonMatchCursor InternalCursor(ReadOnlyMemory<byte> input, string pattern,
         Utf8SliceInvocation invocation, TimeSpan? timeout = null)

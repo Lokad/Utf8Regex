@@ -14,7 +14,7 @@ public sealed class Pcre2SliceScanWorkspaceTests
     [InlineData(17)]
     public void FailedCandidatesResetCapturesAndEachAdvanceRestoresParent(int offset)
     {
-        var regex = Create(new() { MatchLimit = 100000, DepthLimit = 256,
+        var regex = Create(new() { DepthLimit = 256,
             HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 });
         var compiled = regex.DebugCompiledProgram;
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(compiled.Operations.Count);
@@ -59,7 +59,6 @@ public sealed class Pcre2SliceScanWorkspaceTests
     }
 
     [Theory]
-    [InlineData(0)] // Work denial after candidate scanning has started.
     [InlineData(1)] // Heap denial during scratch acquisition.
     [InlineData(2)] // Cancellation from an in-scan checkpoint.
     [InlineData(3)] // Original deadline expires at an in-scan checkpoint.
@@ -70,8 +69,7 @@ public sealed class Pcre2SliceScanWorkspaceTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(
             () => expired ? long.MaxValue / 2 : 0);
         const ulong parentBytes = 7;
-        var regex = Create(new() { MatchLimit = failure == 0 ? 64U : 100000U,
-            DepthLimit = 256, HeapLimitInBytes = failure == 1 ? parentBytes : 1UL << 20 },
+        var regex = Create(new() { DepthLimit = 256, HeapLimitInBytes = failure == 1 ? parentBytes : 1UL << 20 },
             failure == 3 ? TimeSpan.FromMilliseconds(1) : Timeout.InfiniteTimeSpan,
             failure == 1 ? @"([a-z]+)\1" : "(a+)(b+)");
         var compiled = regex.DebugCompiledProgram;
@@ -93,8 +91,7 @@ public sealed class Pcre2SliceScanWorkspaceTests
         if (failure == 2)
             Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
         else
-            Assert.Equal(failure == 0 ? Pcre2ErrorKind.MatchLimit :
-                failure == 1 ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.Timeout,
+            Assert.Equal(failure == 1 ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.Timeout,
                 Assert.IsType<Pcre2MatchException>(error).ErrorKind);
         expired = false;
         Assert.Equal(1, new Utf8Pcre2Regex("(a+)(b+)").Count(bytes));
@@ -119,7 +116,7 @@ public sealed class Pcre2SliceScanWorkspaceTests
     {
         using var regex = new Utf8Pcre2Regex(@"[a-z]+@(?<tail>[a-z]+)", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 512, MaxWorkingBytes = 64 * 1024 },
+            ResourcePolicy = new() { MaxWorkingBytes = 64 * 1024 },
         });
         using var source = new CancellationTokenSource();
         var prefix = "😀" + new string('a', 2048) + "@!𐐨";
@@ -165,7 +162,6 @@ public sealed class Pcre2SliceScanWorkspaceTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -188,7 +184,6 @@ public sealed class Pcre2SliceScanWorkspaceTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                 MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                 MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                 MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes

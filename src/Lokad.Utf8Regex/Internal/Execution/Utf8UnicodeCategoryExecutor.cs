@@ -28,7 +28,7 @@ internal static class Utf8UnicodeCategoryExecutor
 
         for (var offset = 0; offset < input.Length;)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var length = Utf8SliceBufferWork.Utf8BlockLength(input[offset..]);
@@ -36,7 +36,7 @@ internal static class Utf8UnicodeCategoryExecutor
             count += mathSymbols ? CountMathSymbols(block) : CountCategories(block, categories, asciiLow, asciiHigh);
             offset += length;
         }
-        var publication = invocation.TryChargeInputStep();
+        var publication = invocation.CheckInput();
         invocation.Budget.ThrowIfCancellationRequested();
         return publication;
     }

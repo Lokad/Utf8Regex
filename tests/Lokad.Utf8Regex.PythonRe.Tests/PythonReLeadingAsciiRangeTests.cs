@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReLeadingAsciiRangeTests
 {
     private const string Pattern = "(?P<word>[a-z]+)";
-    private static readonly Utf8ExecutionLimits Limits = new(ulong.MaxValue, 32, 1 << 20, 1 << 20);
+    private static readonly Utf8ExecutionLimits Limits = new(32, 1 << 20, 1 << 20);
 
     private static Utf8SliceProgram Compile(string pattern)
     {
@@ -148,7 +148,7 @@ public sealed class PythonReLeadingAsciiRangeTests
     {
         using var regex = new Utf8PythonRegex(@"(?P<part>[\d\s]+)!", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 160, MaxWorkingBytes = 16 << 10 }
+            ResourcePolicy = new() { MaxWorkingBytes = 16 << 10 }
         });
         const int prefixLength = 8192;
         var input = Encoding.UTF8.GetBytes(new string('x', prefixLength) + "😀\u001c١2!");
@@ -210,7 +210,6 @@ public sealed class PythonReLeadingAsciiRangeTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 2000,
                 MaxDepth = 32,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -365,7 +364,6 @@ public sealed class PythonReLeadingAsciiRangeTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 32,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -506,7 +504,6 @@ public sealed class PythonReLeadingAsciiRangeTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 32,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -553,6 +550,7 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData(3)]
     public void WorkDenialInCandidateSearchKeepsItsAuthorityAndReleasesStorage(int kind)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var pattern = kind switch
         {
             1 => @"\b(?P<digits>\d+)\b",
@@ -565,10 +563,10 @@ public sealed class PythonReLeadingAsciiRangeTests
             (kind == 1 ? " 123" : kind == 2 ? ",;" : kind == 3 ? "aaa" : "alpha"));
         var probe = new PythonReScalarMatchCursor(input, program, 0, Timeout.InfiniteTimeSpan,
             null, pattern, new(Limits, Timeout.InfiniteTimeSpan, default));
-        var constructionWork = probe.WorkingInvocation.Budget.Steps;
+        var constructionWork = probe.WorkingInvocation.Budget.DiagnosticCheckpoints;
         probe.Dispose();
         var cursor = new PythonReScalarMatchCursor(input, program, 0, Timeout.InfiniteTimeSpan,
-            null, pattern, new(new(constructionWork + 1, 32, 1 << 20, 1 << 20), Timeout.InfiniteTimeSpan, default));
+            null, pattern, new(new(32, 1 << 20, 1 << 20), Timeout.InfiniteTimeSpan, default));
         Exception? error = null;
         try
         {
@@ -582,7 +580,6 @@ public sealed class PythonReLeadingAsciiRangeTests
         {
             cursor.Dispose();
         }
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
         Assert.Equal(0UL, cursor.ReservedBytes);
     }
 
@@ -601,6 +598,7 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData(true, 5)]
     public void CandidateBlocksObserveOriginalTokenAndDeadlineAndKeepParentLoans(bool expire, int kind)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
@@ -622,8 +620,8 @@ public sealed class PythonReLeadingAsciiRangeTests
         cursor.WorkingInvocation.ShareStorageForCursor();
         var observer = cursor.WorkingInvocation;
         var initialBytes = cursor.ReservedBytes;
-        while ((cursor.WorkingInvocation.Budget.Steps & 63) != 62)
-            Assert.Equal(Utf8ExecutionLimitKind.None, cursor.WorkingInvocation.Budget.TryChargeStep());
+        while ((cursor.WorkingInvocation.Budget.DiagnosticCheckpoints & 63) != 62)
+            Assert.Equal(Utf8ExecutionLimitKind.None, cursor.WorkingInvocation.Budget.CheckProgress());
         var entered = false;
         cursor.WorkingInvocation.CheckpointHook = _ =>
         {

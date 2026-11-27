@@ -41,11 +41,9 @@ public sealed class Utf8CountSubjectTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1
+                    MaxDepth = 4096
                 }
             });
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input)).ResourceKind);
             long ticks = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
             using var source = new CancellationTokenSource();
@@ -85,7 +83,6 @@ public sealed class Utf8CountSubjectTests
                 MatchTimeout = Timeout.InfiniteTimeSpan,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 10000,
                     MaxWorkingBytes = 1 << 24,
                     MaxResultBytes = 1 << 24
@@ -109,7 +106,6 @@ public sealed class Utf8CountSubjectTests
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxWorkingBytes = 1 << 20
             }
         });
@@ -135,11 +131,8 @@ public sealed class Utf8CountSubjectTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1,
                 MaxWorkingBytes = 1 << 20
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input)).ResourceKind);
     }
 }

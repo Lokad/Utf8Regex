@@ -26,7 +26,7 @@ public sealed class PythonReFiniteDepthPolicyTests
     }
     public static IEnumerable<object[]> Operations()
     {
-        foreach (var operation in PythonReFiniteWorkPolicyTests.OperationIds())
+        foreach (var operation in PythonReOperationTests.OperationIds())
             foreach (var bytes in new[] { false, true }) yield return [operation, bytes];
     }
     [Theory]
@@ -35,18 +35,18 @@ public sealed class PythonReFiniteDepthPolicyTests
     {
         // A two-scalar body retains distinct retries even when Count does not read its captures.
         const string pattern = "(?P<x>😀a)+(?P<y>😀aab)"; var input = "😀a😀a😀aab"u8.ToArray();
-        var expected = PythonReFiniteWorkPolicyTests.Run(new(pattern), input, operation);
-        Assert.Equal(expected, PythonReFiniteWorkPolicyTests.Run(Create(pattern, uint.MaxValue, bytes), input, operation));
-        Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFiniteWorkPolicyTests.Run(Create(pattern, 1, bytes), input, operation)), 1);
+        var expected = PythonReOperationTests.Run(new(pattern), input, operation);
+        Assert.Equal(expected, PythonReOperationTests.Run(Create(pattern, uint.MaxValue, bytes), input, operation));
+        Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReOperationTests.Run(Create(pattern, 1, bytes), input, operation)), 1);
         uint low = 1, high = 256;
         while (high - low > 1)
         {
             var middle = (low + high) / 2;
-            try { Assert.Equal(expected, PythonReFiniteWorkPolicyTests.Run(Create(pattern, middle, bytes), input, operation)); high = middle; }
+            try { Assert.Equal(expected, PythonReOperationTests.Run(Create(pattern, middle, bytes), input, operation)); high = middle; }
             catch (Utf8ResourceLimitExceededException error) { Denied(error, middle); low = middle; }
         }
-        Assert.Equal(expected, PythonReFiniteWorkPolicyTests.Run(Create(pattern, high, bytes), input, operation));
-        Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFiniteWorkPolicyTests.Run(Create(pattern, high - 1, bytes), input, operation)), high - 1);
+        Assert.Equal(expected, PythonReOperationTests.Run(Create(pattern, high, bytes), input, operation));
+        Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReOperationTests.Run(Create(pattern, high - 1, bytes), input, operation)), high - 1);
     }
     [Theory]
     [InlineData("cat", "cat")]
@@ -56,9 +56,9 @@ public sealed class PythonReFiniteDepthPolicyTests
     public void ScalarLookbehindCapturesReferencesAndEmptyProgressRemainExact(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        foreach (var operation in PythonReFiniteWorkPolicyTests.OperationIds())
-            Assert.Equal(PythonReFiniteWorkPolicyTests.Run(new(pattern), input, operation),
-                PythonReFiniteWorkPolicyTests.Run(Create(pattern, 4096, false), input, operation));
+        foreach (var operation in PythonReOperationTests.OperationIds())
+            Assert.Equal(PythonReOperationTests.Run(new(pattern), input, operation),
+                PythonReOperationTests.Run(Create(pattern, 4096, false), input, operation));
     }
     [Fact]
     public void ExplicitCursorOwnerPreservesSnapshotsOnDepthFailureAndDisposal()
@@ -73,14 +73,12 @@ public sealed class PythonReFiniteDepthPolicyTests
     }
 
     [Theory]
-    [InlineData(Utf8ResourceLimitKind.ExecutionWorkSteps)]
     [InlineData(Utf8ResourceLimitKind.ExecutionResultBytes)]
     [InlineData(Utf8ResourceLimitKind.ExecutionDepth)]
     public void CombinedPoliciesKeepEachPublicFailureKind(Utf8ResourceLimitKind kind)
     {
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = kind == Utf8ResourceLimitKind.ExecutionWorkSteps ? 1 : ulong.MaxValue,
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue,
             MaxDepth = kind == Utf8ResourceLimitKind.ExecutionDepth ? 1 : uint.MaxValue
         };

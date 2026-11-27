@@ -87,7 +87,7 @@ internal static class Utf8SliceScalarClasses
             // directly for further blocks, like other bounded buffer scans.
             if (index != 0 && (index & 31) == 0)
             {
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return false;
             }
             var member = members[index];

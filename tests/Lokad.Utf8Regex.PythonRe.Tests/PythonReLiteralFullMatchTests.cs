@@ -29,7 +29,6 @@ public sealed class PythonReLiteralFullMatchTests
                 MatchTimeout = Timeout.InfiniteTimeSpan,
                 ResourcePolicy = controlled ? new()
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 128,
                     MaxWorkingBytes = 1000000,
                     MaxResultBytes = 1000000
@@ -60,17 +59,15 @@ public sealed class PythonReLiteralFullMatchTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
             }
         });
-        using var deniedPreparation = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var deniedPreparation = new Utf8ConstructionScope(0, 0, 0);
         var input = Encoding.UTF8.GetBytes(pattern);
         using var live = new CancellationTokenSource();
         Assert.True(regex.Match(input, 0, cancellationToken: live.Token, mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.Equal(0ul, deniedPreparation.Budget.WorkSteps);
         Assert.Equal(0ul, deniedPreparation.Budget.ReservedBytes);
     }
 
@@ -127,59 +124,12 @@ public sealed class PythonReLiteralFullMatchTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             }
         });
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match("dog"u8.ToArray(), 0, cancellationToken: default, mode: Utf8PythonMatchMode.FullMatch));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-        Assert.Equal(1ul, error.Limit);
         using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
         var canceled = Assert.Throws<OperationCanceledException>(() => regex.Match([0xff], 0, cancellationToken: cancellation.Token, mode: Utf8PythonMatchMode.FullMatch));
         Assert.Equal(cancellation.Token, canceled.CancellationToken);
-    }
-
-    [Theory]
-    [InlineData(3)]
-    [InlineData(17)]
-    [InlineData(256)]
-    public void BoundedFixedStartComparisonChargesEveryWorkCutoff(int length)
-    {
-        var pattern = new string('x', length);
-        var input = Encoding.UTF8.GetBytes(pattern);
-        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 100000,
-                MaxDepth = 1,
-                MaxWorkingBytes = 1,
-                MaxResultBytes = 1
-            }
-        });
-        ulong steps = 0;
-        for (ulong limit = 1; limit <= 64; limit++)
-        {
-            var limited = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = new()
-                {
-                    MaxWorkSteps = limit,
-                    MaxDepth = 1,
-                    MaxWorkingBytes = 1,
-                    MaxResultBytes = 1
-                }
-            });
-            try { Assert.True(limited.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success); steps = limit; break; }
-            catch (Utf8ResourceLimitExceededException failure)
-            { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind); Assert.Equal(limit, failure.Limit); }
-        }
-        Assert.InRange(steps, 2UL, 64UL);
-        using var token = new CancellationTokenSource();
-        Assert.True(regex.Match(input, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.FullMatch).Success);
-
-        Assert.False(regex.Match([.. input, (byte)'!'], mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -199,7 +149,6 @@ public sealed class PythonReLiteralFullMatchTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000

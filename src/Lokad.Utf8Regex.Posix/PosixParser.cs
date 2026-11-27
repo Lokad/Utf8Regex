@@ -48,7 +48,7 @@ internal sealed class PosixParser
         {
             while (_position < _pattern.Length)
             {
-                _budget.ChargeWork(1);
+                _budget.Checkpoint();
                 var next = _pattern[_position];
                 if (next == ')')
                 {
@@ -146,7 +146,7 @@ internal sealed class PosixParser
 
     private void Reduce(Utf8ConstructionBuffer<Utf8SliceNode> nodes, Pending operation)
     {
-        _budget.ChargeWork(1);
+        _budget.Checkpoint();
         var right = nodes.Pop(); var left = nodes.Pop();
         if (operation.Kind == Operator.Concat)
         {
@@ -178,7 +178,7 @@ internal sealed class PosixParser
         var value = 0;
         while (_position < _pattern.Length && char.IsAsciiDigit(_pattern[_position]))
         {
-            _budget.ChargeWork(1);
+            _budget.Checkpoint();
             value = value * 10 + _pattern[_position++] - '0';
             if (value > 255) throw Error("An interval number exceeds 255");
         }
@@ -193,7 +193,7 @@ internal sealed class PosixParser
         var first = true;
         while (_position < _pattern.Length && (_pattern[_position] != ']' || first))
         {
-            _budget.ChargeWork(1);
+            _budget.Checkpoint();
             var isFirst = first;
             first = false;
             if (_pattern[_position] == '-' && !isFirst &&
@@ -228,7 +228,7 @@ internal sealed class PosixParser
         using var merged = Utf8ConstructionBuffer<int>.Create(_budget);
         foreach (var range in ranges.Span)
         {
-            _budget.ChargeWork(1);
+            _budget.Checkpoint();
             if (merged.Count != 0 && range.Start <= merged[merged.Count - 1])
                 merged[merged.Count - 1] = Math.Max(merged[merged.Count - 1], range.End);
             else { merged.Add(range.Start); merged.Add(range.End); }
@@ -238,7 +238,7 @@ internal sealed class PosixParser
         var fold = false;
         for (var index = 0; index < merged.Count; index += 2)
         {
-            _budget.ChargeWork(1);
+            _budget.Checkpoint();
             var start = merged[index]; var end = merged[index + 1];
             // Invariant folding changes only ASCII letters in an ASCII-only
             // bracket. Wider ranges retain their scalar case comparison.
@@ -246,7 +246,7 @@ internal sealed class PosixParser
                 fold = end > 128 || start <= 'Z' && end > 'A' || start <= 'z' && end > 'a';
             for (var value = start; value < Math.Min(end, 128); value++)
             {
-                _budget.ChargeWork(1);
+                _budget.Checkpoint();
                 mask[value >> 3] |= (byte)(1 << (value & 7));
             }
             if (end > 128)
@@ -273,7 +273,7 @@ internal sealed class PosixParser
     {
         _position += 2;
         var start = _position;
-        while (_position < _pattern.Length && _pattern[_position] != ':') { _budget.ChargeWork(1); _position++; }
+        while (_position < _pattern.Length && _pattern[_position] != ':') { _budget.Checkpoint(); _position++; }
         var name = _pattern.AsSpan(start, _position - start);
         if (!Take(':') || !Take(']')) throw Error("Unclosed named class");
         if (!(name is "alnum" or "alpha" or "blank" or "cntrl" or "digit" or "graph" or "lower" or
@@ -281,7 +281,7 @@ internal sealed class PosixParser
         var run = -1;
         for (var value = 0; value <= 128; value++)
         {
-            _budget.ChargeWork(1);
+            _budget.Checkpoint();
             var hit = value < 128 && NamedClassContains(name, value);
             if (hit && run < 0) run = value;
             if (!hit && run >= 0) { ranges.Add((run, value)); run = -1; }
@@ -306,7 +306,7 @@ internal sealed class PosixParser
 
     private int ReadScalar()
     {
-        _budget.ChargeWork(1);
+        _budget.Checkpoint();
         if (_position >= _pattern.Length || Rune.DecodeFromUtf16(_pattern.AsSpan(_position), out var scalar, out var width) != OperationStatus.Done)
             throw Error("Expected a well-formed Unicode scalar");
         _position += width;

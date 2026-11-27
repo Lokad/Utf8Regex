@@ -9,7 +9,6 @@ public sealed class Utf8TerminalClassCountTests
 {
     private static Utf8ResourcePolicy Funded => new()
     {
-        MaxWorkSteps = 1_000_000,
         MaxDepth = 128,
         MaxWorkingBytes = 1_000_000,
         MaxResultBytes = 1_000_000
@@ -29,7 +28,7 @@ public sealed class Utf8TerminalClassCountTests
             foreach (var floor in new[] { 0, gap, gap + 2 })
             {
                 var expected = Regex.Count(Encoding.UTF8.GetString(input.AsSpan(floor)), pattern);
-                var invocation = new Utf8SliceInvocation(new(1_000_000, 128, 1_000_000, 1), Timeout.InfiniteTimeSpan, default);
+                var invocation = new Utf8SliceInvocation(new(128, 1_000_000, 1), Timeout.InfiniteTimeSpan, default);
                 var outcome = Utf8SliceRunner.CountFromBytes(program, input, floor, [], [], ref invocation);
                 Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
                 Assert.Equal(expected, outcome.Count);
@@ -45,20 +44,11 @@ public sealed class Utf8TerminalClassCountTests
     {
         var program = new Utf8Regex(pattern).Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.UTF8.GetBytes(new string('x', 8192) + "123456789😀12");
-        var baseline = new Utf8SliceInvocation(new(100_000, 1, 13, 1), Timeout.InfiniteTimeSpan, default);
+        var baseline = new Utf8SliceInvocation(new(1, 13, 1), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         var complete = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref baseline);
         Assert.Equal(Utf8ExecutionLimitKind.None, complete.Breach);
         Assert.Equal(3, complete.Count);
-        for (ulong cap = 1; cap <= baseline.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 1, 13, 1), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var result = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation);
-            Assert.Equal(cap == baseline.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, result.Breach);
-            if (result.Breach == Utf8ExecutionLimitKind.None) Assert.Equal(3, result.Count);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Fact]
@@ -70,7 +60,7 @@ public sealed class Utf8TerminalClassCountTests
         var session = Utf8SearchDiagnosticsSession.Start(_ => cancellation.Cancel());
         try
         {
-            var invocation = new Utf8SliceInvocation(new(100_000, 1, 1, 1), Timeout.InfiniteTimeSpan, cancellation.Token);
+            var invocation = new Utf8SliceInvocation(new(1, 1, 1), Timeout.InfiniteTimeSpan, cancellation.Token);
             var error = Assert.Throws<OperationCanceledException>(() =>
                 Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation));
             Assert.Equal(cancellation.Token, error.CancellationToken);
@@ -82,7 +72,7 @@ public sealed class Utf8TerminalClassCountTests
         session = Utf8SearchDiagnosticsSession.Start(_ => expired = true);
         try
         {
-            var invocation = new Utf8SliceInvocation(new(100_000, 1, 1, 1), TimeSpan.FromSeconds(20), default);
+            var invocation = new Utf8SliceInvocation(new(1, 1, 1), TimeSpan.FromSeconds(20), default);
             Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
                 Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation));
         }
@@ -153,7 +143,7 @@ public sealed class Utf8TerminalClassCountTests
         var input = "ééé x éé"u8;
         Assert.Equal(expected, regex.Count(input[floor..]));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
-        var invocation = new Utf8SliceInvocation(new(100_000, 1, 1, 1), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(1, 1, 1), Regex.InfiniteMatchTimeout, default);
         var outcome = Utf8SliceRunner.CountFromBytes(program, input, floor, [], [], ref invocation);
         Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
         Assert.Equal(expected, outcome.Count);
@@ -186,7 +176,6 @@ public sealed class Utf8TerminalClassCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100_000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -223,12 +212,11 @@ public sealed class Utf8TerminalClassCountTests
         var session = Utf8SearchDiagnosticsSession.Start(_ => cancellation.Cancel());
         try
         {
-            var invocation = new Utf8SliceInvocation(new(100_000, 1, 1, 1),
+            var invocation = new Utf8SliceInvocation(new(1, 1, 1),
                 Regex.InfiniteMatchTimeout, cancellation.Token);
             var error = Assert.Throws<OperationCanceledException>(() =>
                 Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation));
             Assert.Equal(cancellation.Token, error.CancellationToken);
-            Assert.Equal(64UL, invocation.Budget.Steps);
             Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         }
         finally { session.Complete(); }
@@ -241,14 +229,8 @@ public sealed class Utf8TerminalClassCountTests
         var limited = new Utf8Regex(@"\p{L}{2,4}", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Funded with
-            {
-                MaxWorkSteps = 32
-            }
+            ResourcePolicy = Funded
         });
-        var work = Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, work.ResourceKind);
-        Assert.Equal(33UL, work.Requested);
 
         var regex = new Utf8Regex(@"\p{L}{2,4}", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
         {

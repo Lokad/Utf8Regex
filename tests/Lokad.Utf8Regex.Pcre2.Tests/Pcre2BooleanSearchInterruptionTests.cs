@@ -45,7 +45,6 @@ public sealed class Pcre2BooleanSearchInterruptionTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 5_000_000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 16 << 20,
                 MaxResultBytes = 16 << 20

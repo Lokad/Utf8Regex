@@ -35,7 +35,6 @@ public sealed class Utf8LazyDisjointRepeatTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 10000,
                     MaxWorkingBytes = 1 << 24,
                     MaxResultBytes = 1 << 24

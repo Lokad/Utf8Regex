@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ScalarResultCapacityTests
 {
     private static ulong ArrayBytes<T>(int count) => count == 0 ? 0 : 32UL + (((ulong)Unsafe.SizeOf<T>() * (ulong)count + 15) & ~15UL);
-    private static Utf8SliceInvocation Create(ulong cap) => new(new(0, 0, 0, cap), Regex.InfiniteMatchTimeout, default);
+    private static Utf8SliceInvocation Create(ulong cap) => new(new(0, 0, cap), Regex.InfiniteMatchTimeout, default);
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(17)] [InlineData(257)]
@@ -108,21 +108,11 @@ public sealed class Utf8ScalarResultCapacityTests
         finally { staging.Release(ref invocation); results.Release(ref invocation); }
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void FullResultInterruptionAfterTransferKeepsItsLoanFundedUntilCleanup(bool cancel)
+    [Fact]
+    public void FullResultCancellationAfterTransferKeepsItsLoanFundedUntilCleanup()
     {
-        var seed = new Utf8SliceInvocation(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, default);
-        Utf8InvocationResultBuffer<byte[]> preparation = default;
-        ulong steps;
-        try
-        {
-            for (var index = 0; index < 16; index++) preparation.Add([], ref seed);
-            steps = seed.Budget.Steps;
-        }
-        finally { preparation.Release(ref seed); }
         using var token = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(cancel ? 0UL : steps, 0, 1UL << 20),
+        var invocation = new Utf8SliceInvocation(new(0, 1UL << 20),
             Regex.InfiniteMatchTimeout, token.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         Utf8InvocationResultBuffer<byte[]> staging = default;
@@ -131,12 +121,9 @@ public sealed class Utf8ScalarResultCapacityTests
         try
         {
             for (var index = 0; index < 16; index++) staging.Add(child, ref invocation);
-            if (cancel) token.Cancel();
-            if (cancel)
-                Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(
-                    () => staging.ToArray(ref results, ref invocation)).CancellationToken);
-            else
-                Assert.Throws<InvalidOperationException>(() => staging.ToArray(ref results, ref invocation));
+            token.Cancel();
+            Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(
+                () => staging.ToArray(ref results, ref invocation)).CancellationToken);
             Assert.Equal(7 + ArrayBytes<byte[]>(16), invocation.Ledger.ReservedBytes);
             Assert.Equal(ArrayBytes<byte[]>(16), results.ReservedBytes);
         }
@@ -277,7 +264,7 @@ public sealed class Utf8ScalarResultCapacityTests
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(0, 0, 0, 1),
+        var invocation = new Utf8SliceInvocation(new(0, 0, 1),
             deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         if (deadline) clock.Advance(250); else source.Cancel();

@@ -93,7 +93,7 @@ public sealed class Utf8ScalarRepeatAndStateLifetimeTests
     [Fact]
     public void ReferenceLoansHaveExactAdmissionBoundedRetentionAndClearGraphSlots()
     {
-        var limits = new Utf8ExecutionLimits(0, 0, 1);
+        var limits = new Utf8ExecutionLimits(0, 1);
         var buffer = new Utf8InvocationStateBuffer<ReferenceState>();
         var value = new ReferenceState(new object(), 1);
         // Initialize the closed generic denial path outside the allocation sample.
@@ -109,7 +109,7 @@ public sealed class Utf8ScalarRepeatAndStateLifetimeTests
         Assert.Equal(0, buffer.Count);
         Assert.Equal(0UL, denied.Ledger.ReservedBytes);
         var retained = Utf8ExactStatePool<ReferenceState>.RetainedBytes;
-        var finite = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 4096), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var finite = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 4096), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.None, buffer.TryPush(value, ref finite));
         Assert.Equal(Utf8ConstructionBudget.ArrayBytes<ReferenceState>(16), finite.Ledger.ReservedBytes);
         buffer.Pop();

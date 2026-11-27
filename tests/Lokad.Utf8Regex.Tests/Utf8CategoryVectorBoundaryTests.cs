@@ -45,7 +45,6 @@ public sealed class Utf8CategoryVectorBoundaryTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576

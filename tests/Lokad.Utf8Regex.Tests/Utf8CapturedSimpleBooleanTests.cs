@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8CapturedSimpleBooleanTests
 {
     private const string Pattern = @"(\d{4}[- ]){3}\d{3,4}";
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     private static bool Scalar(Utf8Regex regex, byte[] input)
     {
@@ -126,31 +126,6 @@ public sealed class Utf8CapturedSimpleBooleanTests
         Assert.True(regex.Match(input, 0, captures).Success);
         foreach (var capture in captures.AsSpan(1))
             Assert.Equal((true, 0, 2), (capture.Success, capture.StartOffsetInBytes, capture.EndOffsetInBytes));
-    }
-
-    [Fact]
-    public void FiniteWorkingAdmissionBoundsMatchingAndPublication()
-    {
-        var input = "1234-5678-1234-456"u8.ToArray();
-        ulong required = 0;
-        for (ulong work = 1; work <= 256; work++)
-        {
-            var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = Funded with
-                {
-                    MaxWorkSteps = work,
-                    MaxDepth = 4096,
-                    MaxWorkingBytes = 1 << 20,
-                    MaxResultBytes = 1
-                }
-            });
-            try { Assert.True(regex.IsMatch(input)); required = work; break; }
-            catch (Utf8ResourceLimitExceededException error)
-            { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
-        }
-        Assert.InRange(required, 2UL, 256UL);
     }
 
     [Theory]

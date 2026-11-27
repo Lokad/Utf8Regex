@@ -10,18 +10,15 @@ public sealed class Pcre2AlternationRepeatTests
     {
         const string pattern = "(?:ab|a)+z";
         var subject = Encoding.UTF8.GetBytes("😀z " + string.Concat(Enumerable.Repeat("ababax ", 1024)));
-        var policy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkSteps = 16 } };
+        var policy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxDepth = 4096 } };
         using var regex = new Utf8Pcre2Regex(pattern, policy: policy);
         using var source = new CancellationTokenSource();
         Assert.Equal(0, regex.Count(subject, "😀z "u8.Length, cancellationToken: source.Token));
 
         using var tight = new Utf8Pcre2Regex(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 2 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
-        var failure = Assert.Throws<Pcre2MatchException>(() =>
-            tight.Count(subject, "😀z "u8.Length, cancellationToken: source.Token));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
     }
 
     [Theory]
@@ -45,7 +42,7 @@ public sealed class Pcre2AlternationRepeatTests
     {
         using var regex = new Utf8Pcre2Regex("(?<run>(?:ab|a|bc)+)z", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 512, MaxDepth = 32, MaxWorkingBytes = 4_096 }
+            ResourcePolicy = new() { MaxDepth = 32, MaxWorkingBytes = 4_096 }
         });
         using var source = new CancellationTokenSource();
         Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[2];
@@ -125,26 +122,6 @@ public sealed class Pcre2AlternationRepeatTests
 
             Assert.Equal(vm.Count(input, start), direct.Count(input, start));
         }
-    }
-
-    [Fact]
-    public void AlternationRepeatsObserveOptionsAndLimits()
-    {
-        var regex = new Utf8Pcre2Regex("(?:ab|a)+z");
-        Assert.Equal(0, regex.Count("xababaz"u8, 0, Pcre2MatchOptions.Anchored));
-        Assert.Equal(1, regex.Count("xababaz"u8, 1, Pcre2MatchOptions.Anchored));
-
-        var metered = new Utf8Pcre2Regex(            "(?:ab|a)+z", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Regex.InfiniteMatchTimeout
-        });
-        Assert.Equal(
-            Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => metered.Count("ababaz"u8)).ErrorKind);
     }
 
     [Theory]

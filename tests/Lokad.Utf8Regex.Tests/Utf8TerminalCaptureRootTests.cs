@@ -81,31 +81,23 @@ public sealed class Utf8TerminalCaptureRootTests
     [InlineData("item-([0-9]+)")] [InlineData("([a-z]+)-([0-9]+)")] [InlineData("([,;])")]
     public void EveryWorkCutoffClearsRefusedCapturesAndPreservesCallerReservation(string pattern)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var program = new Utf8Regex(pattern).Inspection.AvailableOwnedSliceProgram;
         var bytes = program.RepeatCount == 0 ? ";"u8.ToArray() :
             Encoding.ASCII.GetBytes((program.GroupCount == 1 ? "item" : new string('a', 8193)) + "-" + new string('1', 8193));
         var expected = Run(program, bytes, 0, true);
         var working = program.GroupCount == 1 ? 17UL : 1UL << 20;
-        var reference = new Utf8SliceInvocation(new(ulong.MaxValue, 1, working), Timeout.InfiniteTimeSpan, default);
+        var reference = new Utf8SliceInvocation(new(1, working), Timeout.InfiniteTimeSpan, default);
         Assert.True(reference.Ledger.TryReserve(17));
         var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
         var result = Utf8SliceRunner.TryMatchAt(program, bytes, 0, starts, ends, true, ref reference);
         Assert.True(result.IsMatch); Assert.Equal(expected.Starts, starts); Assert.Equal(expected.Ends, ends);
-        for (var cap = 1UL; cap < reference.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 1, working), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(17)); Array.Fill(starts, 99); Array.Fill(ends, 99);
-            var refused = Utf8SliceRunner.TryMatchAt(program, bytes, 0, starts, ends, true, ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, refused.Breach);
-            Assert.False(refused.IsMatch); Assert.All(starts, value => Assert.Equal(-1, value)); Assert.All(ends, value => Assert.Equal(-1, value));
-            Assert.Equal(17UL, invocation.Ledger.ReservedBytes);
-        }
         Assert.Equal(17UL, reference.Ledger.ReservedBytes);
     }
 
     private static (bool Found, int End, int[] Starts, int[] Ends) Run(Utf8SliceProgram program, ReadOnlySpan<byte> input, int start, bool history)
     {
-        var invocation = new Utf8SliceInvocation(new(1000000, 1000, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var invocation = new Utf8SliceInvocation(new(1000, 1 << 20), Timeout.InfiniteTimeSpan, default);
         var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
         var result = Utf8SliceRunner.TryMatchAt(program, input, start, starts, ends, true, ref invocation,
             collectHistory: history);

@@ -13,7 +13,6 @@ public sealed class Pcre2SliceCursorProjectionTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = policy is 1 or 5 ? 1_000_000UL : null,
                 MaxDepth = policy is 2 or 5 ? 1024U : null,
                 MaxWorkingBytes = policy is 3 or 5 ? 1_048_576UL : null,
                 MaxResultBytes = policy is 4 or 5 ? 1_048_576UL : null
@@ -75,19 +74,20 @@ public sealed class Pcre2SliceCursorProjectionTests
     [Fact]
     public void BytePublicationDoesNotSpendWorkOnTheUnicodePrefix()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = Create(policy: 5);
         var program = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Enumerate);
         ReadOnlySpan<byte> input = Encoding.UTF8.GetBytes(new string('é', 4096) + "ab cd");
         var cursor = new Pcre2SliceGlobalMatchCursor(program.SliceProgram, input, new(0),
             regex.DebugCompiledProgram.Request, CancellationToken.None);
         Assert.True(cursor.MoveNext());
-        var steps = cursor.WorkingInvocation.Budget.Steps;
+        var steps = cursor.WorkingInvocation.Budget.DiagnosticCheckpoints;
         var first = cursor.ProjectCurrent();
-        var firstProjectionWork = cursor.WorkingInvocation.Budget.Steps - steps;
+        var firstProjectionWork = cursor.WorkingInvocation.Budget.DiagnosticCheckpoints - steps;
         Assert.True(cursor.MoveNext());
-        steps = cursor.WorkingInvocation.Budget.Steps;
+        steps = cursor.WorkingInvocation.Budget.DiagnosticCheckpoints;
         var second = cursor.ProjectCurrent();
-        var nextProjectionWork = cursor.WorkingInvocation.Budget.Steps - steps;
+        var nextProjectionWork = cursor.WorkingInvocation.Budget.DiagnosticCheckpoints - steps;
         Assert.Equal(firstProjectionWork, nextProjectionWork);
         Assert.Equal((8192, 8194), (first.StartOffsetInBytes, first.EndOffsetInBytes));
         Assert.Equal((8195, 8197), (second.StartOffsetInBytes, second.EndOffsetInBytes));

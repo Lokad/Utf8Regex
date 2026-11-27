@@ -100,9 +100,8 @@ internal sealed class Utf8ExecutionDeadline
         }
     }
 
-    // Buffer work charges one step per bounded block instead of one per VM
-    // instruction. Check its deadline directly so polling cannot be diluted
-    // by multiplying the VM cadence by the block size.
+    // Check the deadline directly for bounded buffer blocks. The VM instruction
+    // cadence would check too infrequently across whole blocks.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void CheckNow()
     {

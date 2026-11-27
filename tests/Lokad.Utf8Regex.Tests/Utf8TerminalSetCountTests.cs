@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8TerminalSetCountTests
 {
     private static readonly Utf8ResourcePolicy Policy = new()
-    { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
+    { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
 
     [Theory]
     [InlineData("[A-Za-z]{2,3}", "ab abcd abcdefg 😀é a", 4)]
@@ -86,18 +86,10 @@ public sealed class Utf8TerminalSetCountTests
         var regex = new Utf8Regex("[^x]{2,3}");
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var input = "😀éxabc😀xax😀😀😀😀"u8.ToArray();
-        var baseline = new Utf8SliceInvocation(new(100000, 1, 1000, 1), Timeout.InfiniteTimeSpan, default);
+        var baseline = new Utf8SliceInvocation(new(1, 1000, 1), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         Assert.Equal(3, Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref baseline).Count);
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
-        for (ulong work = 1; work < baseline.Budget.Steps; work++)
-        {
-            var invocation = new Utf8SliceInvocation(new(work, 1, 1000, 1), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps,
-                Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation).Breach);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
         Assert.Equal(1, regex.Count("😀éxabc😀"u8[4..]));
     }
 
@@ -116,11 +108,11 @@ public sealed class Utf8TerminalSetCountTests
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ => { if (expire) ticks = 100; else live.Cancel(); });
         try
         {
-            var invocation = new Utf8SliceInvocation(new(100000, 1, 1, 1), regex.MatchTimeout, live.Token);
+            var invocation = new Utf8SliceInvocation(new(1, 1, 1), regex.MatchTimeout, live.Token);
             var input = Encoding.ASCII.GetBytes(new string('a', 62));
             if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation));
             else Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation)).CancellationToken);
-            Assert.Equal(64UL, invocation.Budget.Steps); Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         }
         finally { diagnostics.Complete(); }
     }

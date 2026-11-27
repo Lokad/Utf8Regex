@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8UntilByteStarCountTests
 {
     private static readonly Utf8ResourcePolicy Policy = new()
-    { MaxWorkSteps = 1_000_000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 };
+    { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 };
 
     [Theory]
     [InlineData(RegexOptions.None)] [InlineData(RegexOptions.Compiled)]
@@ -93,28 +93,6 @@ public sealed class Utf8UntilByteStarCountTests
         Assert.Equal(4, ((match.TryGetGroup(1, out var range1) ? range1.EndOffsetInBytes : default) - (match.TryGetGroup(1, out var range2) ? range2.StartOffsetInBytes : default)));
         Assert.Equal(5, regex.Count(input));
         Assert.Equal(4, ((match.TryGetGroup(1, out var range3) ? range3.EndOffsetInBytes : default) - (match.TryGetGroup(1, out var range4) ? range4.StartOffsetInBytes : default)));
-    }
-
-    [Theory]
-    [InlineData("")] [InlineData("abc")] [InlineData("\n\n")]
-    public void FiniteWorkRefusalCannotPublishPartialCount(string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text); var denied = false; var admitted = false;
-        for (ulong work = 1; work < 100; work++)
-        {
-            var regex = new Utf8Regex(@"[^\n]*", options: RegexOptions.None, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = Policy with
-                {
-                    MaxWorkSteps = work
-                }
-            });
-            try { Assert.Equal(Regex.Count(text, @"[^\n]*"), regex.Count(input)); admitted = true; break; }
-            catch (Utf8ResourceLimitExceededException error)
-            { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); denied = true; }
-        }
-        Assert.True(denied); Assert.True(admitted);
     }
 
     [Fact]

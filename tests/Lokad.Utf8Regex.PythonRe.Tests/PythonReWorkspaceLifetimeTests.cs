@@ -13,7 +13,7 @@ public sealed class PythonReWorkspaceLifetimeTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ab ", 1000)));
         var program = new global::Lokad.Utf8Regex.Utf8Regex("(a)(b)").Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
-        var invocation = new Utf8SliceInvocation(new(1000000, 1024, 1UL << 20), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(1024, 1UL << 20), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
         using var cursor = new Utf8PythonMatchCursor(input, program, 0,
             Regex.InfiniteMatchTimeout, "(a)(b)", invocation, null);
@@ -42,7 +42,7 @@ public sealed class PythonReWorkspaceLifetimeTests
     public void FailedCandidatesAssertionsAndDifferentGroupsCannotLeakIntoTheNextSnapshot()
     {
         Utf8PythonRangeMatch cursorRange = default;
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1UL << 20, MaxResultBytes = 1UL << 20 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1024, MaxWorkingBytes = 1UL << 20, MaxResultBytes = 1UL << 20 };
         var regex = new Utf8PythonRegex("(?:(?P<x>a+)(?=b)b|(?P<y>c+))", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
@@ -69,7 +69,7 @@ public sealed class PythonReWorkspaceLifetimeTests
         Assert.NotNull(program);
         var limit = 13 + Utf8ConstructionBudget.ArrayBytes<int>(2 * program.GroupCount)
             + Utf8ConstructionBudget.ArrayBytes<int>(program.GroupCount);
-        var invocation = new Utf8SliceInvocation(new(1000000, 1024, limit), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(1024, limit), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
         using var cursor = new Utf8PythonMatchCursor("ab"u8.ToArray(), program, 0,
             Regex.InfiniteMatchTimeout, "(a)(b)", invocation, null);

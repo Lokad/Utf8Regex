@@ -45,7 +45,7 @@ internal sealed class Utf8CaptureCatalog
                 var names = budget.AllocateArray<string>(numbers.Length, false);
                 for (var slot = 0; slot < numbers.Length; slot++)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     numbers[slot] = slot;
                     names[slot] = NumberName(slot, budget);
                 }
@@ -61,7 +61,7 @@ internal sealed class Utf8CaptureCatalog
             var explicitNumbers = false;
             for (var index = 0; index < definitions.Length; index++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var definition = definitions[index];
                 if (definition.IsAutomatic) automaticCount++;
                 else
@@ -77,35 +77,35 @@ internal sealed class Utf8CaptureCatalog
             var count = 1;
             for (var slot = 1; slot <= unnamedCount; slot++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 candidates[count++] = slot;
             }
             foreach (var number in definitionNumbers)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (number > 0) candidates[count++] = number;
             }
             Utf8ConstructionSort.Sort(candidates.AsSpan(0, count), static (left, right) => left.CompareTo(right), budget);
             var unique = 1;
             for (var index = 1; index < count; index++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (candidates[index] != candidates[index - 1]) candidates[unique++] = candidates[index];
             }
             var groupNumbers = arena.Allocate<int>(unique, true);
-            budget.ChargeWork((ulong)unique);
+            budget.Checkpoint();
             candidates.AsSpan(0, unique).CopyTo(groupNumbers);
             var groupNames = arena.Allocate<string>(unique, true);
             for (var index = 0; index < definitions.Length; index++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (definitions[index].IsAutomatic)
                     groupNames[FindOrdinal(groupNumbers, definitionNumbers[index], budget)] = definitions[index].Name;
             }
             var hasUnnamedGroups = false;
             for (var ordinal = 0; ordinal < unique; ordinal++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (groupNames[ordinal] is not null) continue;
                 groupNames[ordinal] = NumberName(groupNumbers[ordinal], budget);
                 hasUnnamedGroups |= ordinal != 0;
@@ -117,7 +117,7 @@ internal sealed class Utf8CaptureCatalog
                 using var sparse = Utf8ConstructionMap<int, int>.Create(budget, EqualityComparer<int>.Default);
                 for (var ordinal = 0; ordinal < unique; ordinal++)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     sparse[groupNumbers[ordinal]] = ordinal;
                 }
                 sparseMapping = sparse.Freeze(arena);
@@ -130,17 +130,17 @@ internal sealed class Utf8CaptureCatalog
                 if (automaticCount == 0 && sparseMapping is not null)
                     for (var ordinal = 0; ordinal < unique; ordinal++)
                     {
-                        budget.ChargeWork(1);
+                        budget.Checkpoint();
                         names[groupNames[ordinal]] = groupNumbers[ordinal];
                     }
                 for (var slot = 1; slot <= unnamedCount; slot++)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     names[groupNames[slot]] = slot;
                 }
                 for (var index = 0; index < definitions.Length; index++)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     var definition = definitions[index];
                     var name = definition.IsAutomatic ? definition.Name
                         : groupNames[FindOrdinal(groupNumbers, definition.DeclaredNumber, budget)];
@@ -158,7 +158,7 @@ internal sealed class Utf8CaptureCatalog
                 var index = 0;
                 foreach (var entry in nameToNumber)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     utf8Names[index++] = new(budget.EncodeUtf8(entry.Key.AsSpan()), entry.Value);
                 }
             }
@@ -181,13 +181,13 @@ internal sealed class Utf8CaptureCatalog
         var automatic = arena.Allocate<AutomaticDefinition>(automaticCount, false);
         for (var slot = 1; slot <= unnamedCount; slot++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             taken[slot] = true;
         }
         var count = 0;
         for (var index = 0; index < definitions.Length; index++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var definition = definitions[index];
             if (definition.IsAutomatic) automatic[count++] = new(index, definition.OpenPosition);
             else if (definition.DeclaredNumber > 0) taken[definition.DeclaredNumber] = true;
@@ -197,14 +197,14 @@ internal sealed class Utf8CaptureCatalog
         var nextFree = 1;
         foreach (var item in automatic)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var definition = definitions[item.Index];
             if (autoSlots.TryGetValue(definition.Name, out var shared)) numbers[item.Index] = shared;
             else
             {
                 while (taken.ContainsKey(nextFree))
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     nextFree++;
                 }
                 numbers[item.Index] = nextFree;
@@ -220,7 +220,7 @@ internal sealed class Utf8CaptureCatalog
         var right = numbers.Length - 1;
         while (left <= right)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var middle = left + (right - left) / 2;
             if (numbers[middle] == number) return middle;
             if (numbers[middle] < number) left = middle + 1;
@@ -233,7 +233,7 @@ internal sealed class Utf8CaptureCatalog
     {
         if (number == 0) return "0";
         Span<char> text = stackalloc char[10];
-        budget.ChargeWork((ulong)text.Length);
+        budget.Checkpoint();
         if (!number.TryFormat(text, out var length, provider: CultureInfo.InvariantCulture))
             throw new InvalidOperationException("A capture number must fit its decimal representation.");
         return budget.CopyText(text[..length]);

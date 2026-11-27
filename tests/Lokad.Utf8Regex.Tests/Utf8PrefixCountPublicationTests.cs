@@ -17,7 +17,7 @@ public sealed class Utf8PrefixCountPublicationTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 50000000
+                MaxDepth = 4096
             }
         });
         Assert.True(regex.Inspection.SearchPlan.CanGuideFallbackStarts);
@@ -56,17 +56,17 @@ public sealed class Utf8PrefixCountPublicationTests
     [InlineData(true, false, "#[xy]+")] [InlineData(true, true, "#[xy]+")]
     public void ExhaustedPrefixChecksOriginalAuthorityAtTheFinalAdmittedStep(bool priorMatch, bool expire, string pattern)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var plan = regex.Inspection.SearchPlan;
         var input = Encoding.UTF8.GetBytes(priorMatch ? (pattern[0] == '#' ? "#x xxxx" : "ab xxxx") : "xxxx");
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
-        var limits = new Utf8ExecutionLimits(ulong.MaxValue, 0, 0);
+        var limits = new Utf8ExecutionLimits(0, 0);
         var measured = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, default);
         var baseline = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref measured, plan);
         Assert.Equal(priorMatch ? 1 : 0, baseline.Count);
-        Assert.InRange(measured.Budget.Steps, 1UL, 63UL);
 
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -75,9 +75,9 @@ public sealed class Utf8PrefixCountPublicationTests
             expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, token.Token);
         // A borrowing caller can already have spent validation/projection work.
         // Align that cumulative owner so the final search step reaches the hook.
-        var precedingWork = 64 - measured.Budget.Steps;
+        var precedingWork = 64 - measured.Budget.DiagnosticCheckpoints;
         for (ulong i = 0; i < precedingWork; i++)
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckInput());
         Assert.True(invocation.Ledger.TryReserve(13));
         var injected = false;
         invocation.CheckpointHook = _ => { injected = true; if (expire) ticks = 50; else token.Cancel(); };
@@ -89,7 +89,6 @@ public sealed class Utf8PrefixCountPublicationTests
         Assert.False(published.HasValue, "Published a count after cancellation at the final prefix-search step.");
         if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
         else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        Assert.Equal(64UL, invocation.Budget.Steps);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
     }
 }

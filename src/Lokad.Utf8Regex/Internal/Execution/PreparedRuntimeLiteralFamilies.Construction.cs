@@ -17,12 +17,12 @@ internal readonly partial struct PreparedShortAsciiLiteralFamilyCounter
             var shortest = int.MaxValue;
             foreach (var literal in literals)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 // This is a search-strategy gate, not the comparator's safety
                 // limit. Wider mixed-length families can give this counter a
                 // much weaker primary filter than prepared first-byte search.
                 if (literal.Length is < 3 or > 8) { scope.Complete(); return false; }
-                budget.ChargeWork((ulong)literal.Length);
+                budget.Checkpoint();
                 if (!Ascii.IsValid(literal)) { scope.Complete(); return false; }
                 shortest = Math.Min(shortest, literal.Length);
             }
@@ -55,13 +55,13 @@ internal readonly partial struct PreparedShortAsciiLiteralFamilyCounter
         Span<byte> secondValues = stackalloc byte[4];
         for (var first = 0; first < shortest; first++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var firstCount = GetDistinctValues(literals, first, firstValues, budget);
             if (firstCount <= 1) continue;
             var firstScore = ScoreValues(firstValues[..firstCount], budget);
             for (var second = 0; second < shortest; second++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (second == first || !HasUniquePairs(literals, first, second, budget)) continue;
                 var secondCount = GetDistinctValues(literals, second, secondValues, budget);
                 if (secondCount <= 1) continue;
@@ -78,12 +78,12 @@ internal readonly partial struct PreparedShortAsciiLiteralFamilyCounter
         var count = 0;
         foreach (var literal in literals)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var value = literal[offset];
             var found = false;
             for (var index = 0; index < count; index++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (values[index] != value) continue;
                 found = true; break;
             }
@@ -97,7 +97,7 @@ internal readonly partial struct PreparedShortAsciiLiteralFamilyCounter
         for (var left = 0; left < literals.Length; left++)
             for (var right = left + 1; right < literals.Length; right++)
             {
-                budget.ChargeWork(2);
+                budget.Checkpoint();
                 if (literals[left][first] == literals[right][first] && literals[left][second] == literals[right][second]) return false;
             }
         return true;
@@ -107,7 +107,7 @@ internal readonly partial struct PreparedShortAsciiLiteralFamilyCounter
     {
         var commonness = 0;
         foreach (var value in values)
-        { budget.ChargeWork(1); commonness += AsciiSearch.GetAsciiFrequencyRank(value); }
+        { budget.Checkpoint(); commonness += AsciiSearch.GetAsciiFrequencyRank(value); }
         return commonness * 8 + values.Length;
     }
 }

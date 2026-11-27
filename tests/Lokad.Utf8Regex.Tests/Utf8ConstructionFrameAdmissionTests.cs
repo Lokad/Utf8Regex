@@ -11,7 +11,7 @@ public sealed class Utf8ConstructionFrameAdmissionTests
         var descriptor = Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<(Utf8ConstructionBudget, bool, int[], int)>());
         using var owner = new Utf8ConstructionScope(ulong.MaxValue,
             denial == 1 ? ulong.MaxValue : denial == 2 ? 48 + descriptor : 48,
-            ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
+            denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             Utf8ConstructionFrames<int>.Create(owner.Budget, 42));
@@ -19,7 +19,6 @@ public sealed class Utf8ConstructionFrameAdmissionTests
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(denial == 2 ? 48 + descriptor : 48, owner.Budget.PeakBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Equal(denial == 2 ? 3ul : 1ul, owner.Budget.WorkSteps);
 
         owner.Budget.ReleaseArray(parent, false);
     }
@@ -27,17 +26,18 @@ public sealed class Utf8ConstructionFrameAdmissionTests
     [Fact]
     public void ChildDepthDenialPrecedesGrowthAndCleanupRestoresParent()
     {
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, 1);
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 1);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         using (var child = Utf8ConstructionScope.Enter())
         {
             using var frames = Utf8ConstructionFrames<int>.Create(child.Budget, 7);
             var peak = owner.Budget.PeakBytes;
-            var work = owner.Budget.WorkSteps;
+            var work = owner.Budget.DiagnosticCheckpoints;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => frames.Push(8));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, failure.ResourceKind);
             Assert.Equal(peak, owner.Budget.PeakBytes);
-            Assert.Equal(work, owner.Budget.WorkSteps);
+            Assert.Equal(work, owner.Budget.DiagnosticCheckpoints);
             Assert.Equal(1, frames.Count);
             Assert.Equal(7, frames[0]);
             Assert.Equal(1ul, owner.Budget.Depth);

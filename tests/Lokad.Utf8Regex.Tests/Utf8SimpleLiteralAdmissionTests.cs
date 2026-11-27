@@ -55,7 +55,7 @@ public sealed class Utf8SimpleLiteralAdmissionTests
     public static IEnumerable<object[]> RootDenials()
     {
         for (var route = 1; route < 5; route++)
-        for (var denial = 0; denial < 3; denial++)
+        for (var denial = 0; denial < 2; denial++)
             if (denial != 0 || route != 2) yield return [route, denial];
     }
     [Theory]
@@ -64,10 +64,10 @@ public sealed class Utf8SimpleLiteralAdmissionTests
     {
         var input = Input(route);
         using var owner = new Utf8ConstructionScope(0, denial == 0 ? 128ul : ulong.MaxValue,
-            denial == 2 ? 2ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
+            denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(route, input));
-        Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, 1 => Utf8ResourceLimitKind.ConstructionDepth, _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, error.ResourceKind);
+        Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, 1 => Utf8ResourceLimitKind.ConstructionDepth}, error.ResourceKind);
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(128ul, owner.Budget.PeakBytes);
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }
@@ -75,23 +75,11 @@ public sealed class Utf8SimpleLiteralAdmissionTests
     [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
     public void EveryWorkCutoffRestoresParentAndAcceptedOutputsRetainLoans(int route)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var input = Input(route); ulong work;
-        using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-        { Run(route, input); work = measure.Budget.WorkSteps; }
+        using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue))
+        { Run(route, input); work = measure.Budget.DiagnosticCheckpoints; }
         Assert.InRange(work, 1ul, 10000ul);
-        for (var cutoff = 0ul; cutoff <= work; cutoff++)
-        {
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
-            var error = Record.Exception(() => Run(route, input));
-            if (cutoff < work)
-            {
-                Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-            }
-            else { Assert.Null(error); Assert.Equal(route != 2, owner.Budget.ReservedBytes > 128); }
-            Assert.Equal(0ul, owner.Budget.Depth); Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2); Assert.Equal(17, parent.Value);
-        }
     }
     [Theory]
     [InlineData(false)] [InlineData(true)]
@@ -102,7 +90,7 @@ public sealed class Utf8SimpleLiteralAdmissionTests
             ? Enumerable.Repeat(new AsciiPatternToken(AsciiCharClass.FromBytes("ABCD"u8)), 4).ToArray()
             : new AsciiPatternToken[] { new((byte)'a'), AsciiPatternToken.Dot };
         var plan = (AsciiPatternToken[][])[first, branch]; var original = first.ToArray();
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
         Assert.False(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(plan,false, out var result)); Assert.Empty(result);
         Assert.Equal(original, first); Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
@@ -114,12 +102,12 @@ public sealed class Utf8SimpleLiteralAdmissionTests
     {
         var input = (AsciiPatternToken[][])[[new AsciiPatternToken(AsciiCharClass.FromBytes("AaBb"u8)), new AsciiPatternToken((byte)'!')]];
         ulong peak;
-        using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue))
         { measure.Budget.AllocateObject(17, static value => new ParentValue(value)); Assert.True(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(input,folded, out _)); peak = measure.Budget.PeakBytes; }
         var success = false; var partialDenial = false;
         for (var cap = 128ul; cap <= peak; cap += 16)
         {
-            using var owner = new Utf8ConstructionScope(0, cap, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(0, cap, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
             var error = Record.Exception(() => Assert.True(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(input,folded, out _)));
             if (error is null) { success = true; Assert.True(owner.Budget.ReservedBytes > 128); }
@@ -168,7 +156,7 @@ public sealed class Utf8SimpleLiteralAdmissionTests
             .Append(new AsciiPatternToken(AsciiCharClass.FromBytes("BA"u8)))
             .Concat(suffix.Select(value => new AsciiPatternToken((byte)value))).ToArray();
         var plan = (AsciiPatternToken[][])[tokens];
-        using var owner = new Utf8ConstructionScope(1000000, 65536, 64000, 100);
+        using var owner = new Utf8ConstructionScope(1000000, 65536, 100);
         owner.Budget.ReserveBytes(7);
         Assert.True(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(plan,false, out var result));
         Assert.Equal(new[] { prefix + "A" + suffix, prefix + "B" + suffix }, result.Select(Encoding.ASCII.GetString));
@@ -188,14 +176,12 @@ public sealed class Utf8SimpleLiteralAdmissionTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 100,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
             },
             ConstructionPolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 100,
                 MaxBytes = 8 << 20,
                 MaxInstructionCapacity = 1000000
@@ -236,7 +222,7 @@ public sealed class Utf8SimpleLiteralAdmissionTests
         var checkpoints = 0;
         using (var probe = Utf8ConstructionScope.Enter())
         {
-            probe.Budget.CheckpointHook = _ => checkpoints++;
+            probe.Budget.CheckpointHook = () => checkpoints++;
             Assert.True(Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(input,false, out _));
         }
         for (var target = 1; target <= checkpoints; target++)
@@ -249,7 +235,7 @@ public sealed class Utf8SimpleLiteralAdmissionTests
             var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(50));
             owner.Budget.Deadline = deadline; owner.Budget.CancellationToken = token.Token;
             var current = 0;
-            owner.Budget.CheckpointHook = _ => { if (++current == target) { if (timeout) ticks = 50; else token.Cancel(); } };
+            owner.Budget.CheckpointHook = () => { if (++current == target) { if (timeout) ticks = 50; else token.Cancel(); } };
             var error = Record.Exception(() => Utf8FiniteLiteralLowerer.TryExpandLiteralBranches(input,false, out _));
             if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
@@ -267,14 +253,12 @@ public sealed class Utf8SimpleLiteralAdmissionTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 100,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
             },
             ConstructionPolicy = new()
             {
-                MaxWorkSteps = 8000000,
                 MaxDepth = 100,
                 MaxBytes = 8 << 20,
                 MaxInstructionCapacity = 1000000
@@ -300,14 +284,12 @@ public sealed class Utf8SimpleLiteralAdmissionTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 100,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
             },
             ConstructionPolicy = new()
             {
-                MaxWorkSteps = 64000000,
                 MaxDepth = 100,
                 MaxBytes = 8 << 20,
                 MaxInstructionCapacity = 1000000

@@ -59,7 +59,6 @@ public sealed class PythonReNativeSubstitutionTests
         using var construction = Utf8ConstructionScope.Enter();
         Assert.Equal("éa😀", Encoding.UTF8.GetString(regex.Replace("a"u8, "é\\g<x>😀"u8)));
         Assert.Equal(0UL, construction.Budget.ReservedBytes);
-        Assert.Equal(0UL, construction.Budget.WorkSteps);
         Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
     }
 
@@ -99,7 +98,7 @@ public sealed class PythonReNativeSubstitutionTests
     {
         using var regex = new Utf8PythonRegex("cat", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 64 << 10, MaxResultBytes = 64 << 10 },
+            ResourcePolicy = new() { MaxWorkingBytes = 64 << 10, MaxResultBytes = 64 << 10 },
         });
         var gap = new string('x', gapLength);
         var input = Encoding.UTF8.GetBytes(gap + "cat!");
@@ -173,59 +172,22 @@ public sealed class PythonReNativeSubstitutionTests
     }
 
     [Theory]
-    [InlineData(1, null, null)]
-    [InlineData(null, 32, null)]
-    [InlineData(null, null, 1)]
-    public void NativeSubstitutionEnforcesUsefulFinitePolicies(int? work, int? working, int? result)
+    [InlineData(32, null)]
+    [InlineData(null, 1)]
+    public void NativeSubstitutionEnforcesStorageLimits(int? working, int? result)
     {
         var regex = new Utf8PythonRegex("(?P<x>a)", options: default, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (ulong?)work,
                 MaxWorkingBytes = (ulong?)working,
                 MaxResultBytes = (ulong?)result
             }
         });
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Subn("aaa"u8, "[\\g<x>]"u8));
-        Assert.Equal(work is not null ? Utf8ResourceLimitKind.ExecutionWorkSteps :
-            working is not null ? Utf8ResourceLimitKind.ExecutionWorkingBytes : Utf8ResourceLimitKind.ExecutionResultBytes,
+        Assert.Equal(working is not null ? Utf8ResourceLimitKind.ExecutionWorkingBytes : Utf8ResourceLimitKind.ExecutionResultBytes,
             failure.ResourceKind);
-    }
-
-    [Fact]
-    public void LongNativeTemplatesSpendWorkBeforeColdKeysAndOnWarmQueries()
-    {
-        var regex = new Utf8PythonRegex("a", options: default, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 64
-            }
-        });
-        var template = new byte[1 << 20]; template.AsSpan().Fill((byte)'z');
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace([], template));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-        Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
-        var allowance = new Allowance(4 << 20);
-        using var funded = Utf8PythonRegex.Compile("a"u8, options: default, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = default,
-            ConstructionPolicy = default,
-            ConstructionTimeout = Timeout.InfiniteTimeSpan,
-            ProgramMemoryAllowance = allowance
-        }, cancellationToken: default);
-        ulong retained = 0;
-        for (var i = 0; i < 96; i++)
-        {
-            funded.Replace("a"u8, Encoding.UTF8.GetBytes(i.ToString("D4") + @"\g<0>"));
-            if (i == 31) retained = allowance.Used;
-            if (i > 31) Assert.Equal(retained, allowance.Used);
-        }
-        funded.Dispose(); Assert.Equal(0UL, allowance.Used);
     }
 
     [Fact]

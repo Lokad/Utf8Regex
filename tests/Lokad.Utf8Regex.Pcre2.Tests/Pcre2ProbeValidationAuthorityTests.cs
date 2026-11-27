@@ -7,17 +7,6 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2ProbeValidationAuthorityTests
 {
-    [Theory]
-    [InlineData("abc")]
-    [InlineData("(a)b+")]
-    public void SearchStopsAtWorkDenial(string pattern)
-    {
-        var regex = Create(pattern, 3);
-        var input = new byte[16385];
-        input.AsSpan().Fill((byte)'a');
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = regex.Probe(input, Pcre2PartialMode.Soft); }).ErrorKind);
-    }
 
     [Theory]
     [InlineData("abc", false)] [InlineData("abc", true)]
@@ -49,7 +38,7 @@ public sealed class Pcre2ProbeValidationAuthorityTests
     [InlineData("abc")] [InlineData("(a)b+")]
     public void ScalarBoundariesAndRetainedResultsStayValid(string pattern)
     {
-        var regex = Create(pattern, 100000);
+        var regex = Create(pattern);
         foreach (var scalar in new[] { "é", "€", "😀" })
         foreach (var lead in new[] { 2045, 2046, 2047, 2048, 2049 })
         {
@@ -68,11 +57,10 @@ public sealed class Pcre2ProbeValidationAuthorityTests
         }
     }
 
-    private static Utf8Pcre2Regex Create(string pattern, uint work) => new(pattern, options:         Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    private static Utf8Pcre2Regex Create(string pattern) => new(pattern, options:         Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
     {
         ResourcePolicy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = (work) == 0 ? null : (work),
             MaxDepth = 256,
             MaxWorkingBytes = 1 << 20,
             MaxResultBytes = 1 << 20

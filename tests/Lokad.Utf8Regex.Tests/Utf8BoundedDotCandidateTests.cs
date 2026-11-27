@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8BoundedDotCandidateTests
 {
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 20000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Theory]
     [InlineData("A Tail xTail", RegexOptions.None, " ")]
@@ -21,7 +21,7 @@ public sealed class Utf8BoundedDotCandidateTests
     {
         using var regex = Utf8Regex.Compile(@"\AA(?<gap>.{0,8})\bTail\b", options, new Utf8RegexPolicy
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = 64, MaxDepth = 1 },
+            ResourcePolicy = Funded with { MaxDepth = 1 },
         });
         var input = Encoding.UTF8.GetBytes(text);
         using var token = new CancellationTokenSource();
@@ -98,7 +98,7 @@ public sealed class Utf8BoundedDotCandidateTests
         using var token = new CancellationTokenSource();
         using var limited = Utf8Regex.Compile(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new Utf8ResourcePolicy { MaxWorkSteps = 128, MaxDepth = 1, MaxWorkingBytes = 1 }
+            ResourcePolicy = new Utf8ResourcePolicy { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         Assert.True(limited.IsMatch(input, token.Token));
 
@@ -148,20 +148,12 @@ public sealed class Utf8BoundedDotCandidateTests
     {
         var program = new Utf8Regex(@"\AA.{0,25}Watson").Inspection.AvailableOwnedSliceProgram;
         var input = Encoding.UTF8.GetBytes("AéW-not-a-tail " + (hit ? "Watson" : "Watsxx"));
-        var baseline = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var baseline = new Utf8SliceInvocation(new(128, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         var expected = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref baseline);
         Assert.Equal(Utf8ExecutionLimitKind.None, expected.Breach);
         Assert.Equal(hit ? 1 : 0, expected.Count);
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
-        for (ulong work = 1; work <= baseline.Budget.Steps; work++)
-        {
-            var invocation = new Utf8SliceInvocation(new(work, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var outcome = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation);
-            Assert.Equal(work == baseline.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, outcome.Breach);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]
@@ -174,7 +166,7 @@ public sealed class Utf8BoundedDotCandidateTests
         using var regex = new Utf8Regex(reverse ? @"\AA.*Watson" : @"\AA.{0,262144}Watson");
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var input = Encoding.UTF8.GetBytes(reverse ? "AWatson" + new string('x', 250000) : "A" + new string('x', 200000) + "Watson");
-        var invocation = new Utf8SliceInvocation(new(100000, 1024, 1 << 20),
+        var invocation = new Utf8SliceInvocation(new(1024, 1 << 20),
             expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan, token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         var entered = false;
@@ -201,20 +193,8 @@ public sealed class Utf8BoundedDotCandidateTests
         var program = new Utf8Regex(@"\AA(?<gap>.{0,25})Watson").Inspection.AvailableOwnedSliceProgram;
         var input = "AéWatson"u8.ToArray();
         var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
-        var baseline = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var baseline = new Utf8SliceInvocation(new(128, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref baseline).IsMatch);
-        for (ulong work = 1; work < baseline.Budget.Steps; work++)
-        {
-            Array.Fill(starts, -1); Array.Fill(ends, -1);
-            var invocation = new Utf8SliceInvocation(new(work, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var result = Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, result.Breach);
-            Assert.False(result.IsMatch);
-            Assert.All(starts, value => Assert.Equal(-1, value));
-            Assert.All(ends, value => Assert.Equal(-1, value));
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]
@@ -349,18 +329,10 @@ public sealed class Utf8BoundedDotCandidateTests
     {
         var program = new Utf8Regex("A.{8,25}Z").Inspection.AvailableOwnedSliceProgram;
         var input = Encoding.ASCII.GetBytes("A" + new string('x', 110));
-        var baseline = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var baseline = new Utf8SliceInvocation(new(128, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         Assert.Equal(0, Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref baseline).Count);
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
-        for (ulong work = 1; work <= baseline.Budget.Steps; work++)
-        {
-            var invocation = new Utf8SliceInvocation(new(work, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var outcome = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation);
-            Assert.Equal(work == baseline.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, outcome.Breach);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]

@@ -22,7 +22,7 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
         foreach (var allow in new[] { false, true })
         {
             var bytes = 7 + groupBytes - (allow || slots == 0 ? 0UL : 1UL);
-            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, bytes), Timeout.InfiniteTimeSpan, default);
+            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, bytes), Timeout.InfiniteTimeSpan, default);
             Assert.True(invocation.Ledger.TryReserve(7));
             if (!allow && slots != 0)
             {
@@ -60,51 +60,21 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
     }
 
     [Theory]
-    [InlineData(9)]
-    [InlineData(33)]
-    public void EveryWorkCutoffRestoresLoansWithoutRefundingSteps(int slots)
-    {
-        var bytes = Encoding.UTF8.GetBytes("a" + string.Concat(Enumerable.Repeat("😀", 3000)) + "é");
-        var starts = Enumerable.Repeat(1, slots - 1).ToArray();
-        var ends = Enumerable.Repeat(bytes.Length - 2, slots - 1).ToArray();
-        var completed = false;
-        for (ulong steps = 1; steps <= 4096; steps++)
-        {
-            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(steps, 0, 1UL << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            try
-            {
-                var groups = Pcre2Runner.PublishSliceCaptures(slots, 0, bytes.Length, starts, ends, ref invocation);
-                Pcre2SliceDriver.DetachProjectedGroups(groups, ref invocation);
-                completed = true;
-            }
-            catch (Pcre2MatchException failure)
-            {
-                Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
-                Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.TryChargeStep());
-            }
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-            invocation.Ledger.Release(7);
-            if (completed) break;
-        }
-        Assert.True(completed);
-    }
-
-    [Theory]
     [InlineData(4097)]
     [InlineData(8193)]
     public void LiveCancellationDuringPublicationUnwindsCaptureStorage(int slots)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var cancellation = new CancellationTokenSource();
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", 20)));
         var starts = new int[Math.Max(0, slots - 1)];
         var ends = Enumerable.Repeat(bytes.Length, starts.Length).ToArray();
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 1UL << 20), Timeout.InfiniteTimeSpan, cancellation.Token);
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 1UL << 20), Timeout.InfiniteTimeSpan, cancellation.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         invocation.CheckpointHook = _ => cancellation.Cancel();
         try { _ = Pcre2Runner.PublishSliceCaptures(slots, 0, bytes.Length, starts, ends, ref invocation); Assert.Fail("Expected cancellation after entry."); }
         catch (OperationCanceledException failure) { Assert.Equal(cancellation.Token, failure.CancellationToken); }
-        Assert.True(invocation.Budget.Steps > 0);
+        Assert.True(invocation.Budget.DiagnosticCheckpoints > 0);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         invocation.Ledger.Release(7);
     }

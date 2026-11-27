@@ -24,11 +24,11 @@ public sealed class Pcre2ReplacementPreparationIsolationTests
         Assert.Equal(1, result.CacheCountAfterRetry);
     }
 
-    [Theory] [InlineData("TimeoutOwner")] [InlineData("WorkOwner")]
+    [Theory] [InlineData("TimeoutOwner")]
     public void ForeignInvocationFailureUsesTheWaitersOwnAllowance(string failure)
     {
         var result = RunContended("Bytes", failure, true);
-        Assert.Equal(failure == "TimeoutOwner" ? Pcre2ErrorKind.Timeout : Pcre2ErrorKind.MatchLimit,
+        Assert.Equal(Pcre2ErrorKind.Timeout,
             Assert.IsType<Pcre2MatchException>(result.OwnerFailure).ErrorKind);
         Assert.Null(result.FollowerFailure);
         Assert.Equal(new string('a', 128), result.FollowerOutput);
@@ -74,7 +74,7 @@ public sealed class Pcre2ReplacementPreparationIsolationTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (failure == "WorkOwner" ? 100_000u : 0) == 0 ? null : (failure == "WorkOwner" ? 100_000u : 0)
+                MaxDepth = 4096
             },
             MatchTimeout = finiteDeadline ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan
         });
@@ -95,7 +95,7 @@ public sealed class Pcre2ReplacementPreparationIsolationTests
         {
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => Volatile.Read(ref ownerTicks));
             using var construction = Utf8ConstructionScope.Enter();
-            construction.Budget.CheckpointHook = _ =>
+            construction.Budget.CheckpointHook = () =>
             {
                 var entry = first.GetValue(cache);
                 if (stopped || entry is null || (int)entry.GetType().GetField("Status", fields)!.GetValue(entry)! != 0 ||

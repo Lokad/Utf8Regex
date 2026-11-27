@@ -13,8 +13,7 @@ public sealed class PythonReHostCompositionCursorTests
             ResourcePolicy = new()
             {
                 MaxWorkingBytes = 1 << 20,
-                MaxResultBytes = 4096,
-                MaxWorkSteps = 1_000_000
+                MaxResultBytes = 4096
             }
         });
         using var cursor = regex.CreateMatchCursor(input);

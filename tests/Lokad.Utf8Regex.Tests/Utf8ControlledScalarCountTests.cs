@@ -11,7 +11,6 @@ public sealed class Utf8ControlledScalarCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1

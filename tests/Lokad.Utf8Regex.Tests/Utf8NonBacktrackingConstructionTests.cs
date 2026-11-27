@@ -188,7 +188,6 @@ public sealed class Utf8NonBacktrackingConstructionTests
             (compiled ? RegexOptions.Compiled : 0);
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 1000000,
             MaxDepth = 4096,
             MaxWorkingBytes = 1 << 20,
             MaxResultBytes = 1 << 20

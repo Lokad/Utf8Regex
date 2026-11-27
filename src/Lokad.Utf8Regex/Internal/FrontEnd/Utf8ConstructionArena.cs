@@ -34,7 +34,7 @@ internal sealed class Utf8ConstructionArena : IDisposable
     {
         if (array.Length == 0) return;
         var bytes = Utf8ConstructionBudget.ArrayBytes<T>(array.Length);
-        budget.ChargeWork(1);
+        budget.Checkpoint();
         budget.ReserveBytes(bytes);
         _retainedBytes += bytes;
     }

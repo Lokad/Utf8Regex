@@ -210,13 +210,13 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
             foreach (var bucket in buckets)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (bucket.Literals.Length != 1) return false;
             }
             literals = budget.AllocateArray<byte[]>(buckets.Length, false);
             for (var i = 0; i < buckets.Length; i++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 literals[i] = buckets[i].Literals[0];
             }
 
@@ -422,7 +422,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         var firstBytes = e.AllocateScratch<byte>(literals.Length);
         for (var index = 0; index < literals.Length; index++)
         {
-            e.ChargeWork(1);
+            e.Checkpoint();
             firstBytes[index] = literals[index][0];
         }
         e.EmitByteDispatch(currentByteLocal, firstBytes, perLiteralLabels, retryLabel);

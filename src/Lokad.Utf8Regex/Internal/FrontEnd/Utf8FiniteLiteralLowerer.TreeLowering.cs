@@ -32,10 +32,10 @@ internal static partial class Utf8FiniteLiteralLowerer
         combined = storage.Buffer<LoweredBranch>();
         foreach (var left in leftBranches)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             foreach (var right in rightBranches)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (!TryCombineBranches(storage, left, right, budget, out var branch))
                 {
                     return false;
@@ -90,11 +90,11 @@ internal static partial class Utf8FiniteLiteralLowerer
         var variants = storage.Buffer<LoweredBranch>();
         for (var count = maxCount; count >= minCount; count--)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             var expanded = SingleBranch(storage, EmptyBranch(storage));
             for (var i = 0; i < count; i++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (!TryConcatenate(storage, expanded, repeatedBranches, budget, out expanded))
                 {
                     return false;

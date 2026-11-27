@@ -31,8 +31,6 @@ public sealed class Pcre2LiteralCompilerTests
     }
 
     [Theory]
-    [InlineData(0, false)]
-    [InlineData(0, true)]
     [InlineData(1, false)]
     [InlineData(1, true)]
     [InlineData(2, false)]
@@ -41,7 +39,7 @@ public sealed class Pcre2LiteralCompilerTests
     {
         var policy = kind switch
         {
-            0 => new Utf8ConstructionPolicy { MaxWorkSteps = 1 },
+            0 => new Utf8ConstructionPolicy {  },
             1 => new Utf8ConstructionPolicy { MaxInstructionCapacity = 1 },
             _ => new Utf8ConstructionPolicy { MaxBytes = 1 },
         };
@@ -64,7 +62,6 @@ public sealed class Pcre2LiteralCompilerTests
         });
         Assert.Equal(kind switch
         {
-            0 => Utf8ResourceLimitKind.ConstructionWorkSteps,
             1 => Utf8ResourceLimitKind.ConstructionInstructionCapacity,
             _ => Utf8ResourceLimitKind.ConstructionBytes,
         }, failure.ResourceKind);
@@ -75,7 +72,8 @@ public sealed class Pcre2LiteralCompilerTests
     [Fact]
     public void LiteralByteDenialPrecedesItsFirstMajorAllocation()
     {
-        using var owner = new Utf8ConstructionScope(1000, 1, 100000, 16);
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
+        using var owner = new Utf8ConstructionScope(1000, 1, 16);
         var request = new Pcre2CompileRequest("abc", Pcre2CompileOptions.None, default,
             default, Timeout.InfiniteTimeSpan);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Pcre2LiteralCompiler.Compile(request));
@@ -83,7 +81,7 @@ public sealed class Pcre2LiteralCompilerTests
         Assert.Equal(0ul, owner.Budget.PeakBytes);
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Reserved);
-        Assert.True(owner.Budget.WorkSteps > 0);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > 0);
     }
 
     [Theory]
@@ -193,23 +191,6 @@ public sealed class Pcre2LiteralCompilerTests
 
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         Assert.True(regex.IsMatch("--def--"u8));
-    }
-
-    [Fact]
-    public void LiteralSearchHonorsConfiguredMatchWorkLimit()
-    {
-        var regex = new Utf8Pcre2Regex("needle", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var input = Encoding.UTF8.GetBytes(new string('x', 16_384));
-
-        var exception = Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
     }
 
     [Fact]

@@ -10,7 +10,7 @@ public sealed class PythonReConstructionAdmissionTests
     [InlineData(PythonReCompileOptions.Ascii | PythonReCompileOptions.Unicode)]
     public void InvalidFlagsPrecedeByteDecodingAndSpendNoConstructionAllowance(PythonReCompileOptions options)
     {
-        using var scope = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var scope = new Utf8ConstructionScope(0, 0, 0);
         foreach (var pattern in new[] { new byte[] { 0xff }, new byte[4096] })
         {
             Assert.Throws<PythonRePatternException>(() =>
@@ -21,7 +21,6 @@ public sealed class PythonReConstructionAdmissionTests
                     ResourcePolicy = Utf8ResourcePolicy.Unlimited
                 });
             });
-            Assert.Equal(0UL, scope.Budget.WorkSteps);
             Assert.Equal(0UL, scope.Budget.ReservedBytes);
             Assert.Equal(0UL, scope.Budget.PeakBytes);
             Assert.Equal(0UL, scope.Budget.Depth);
@@ -31,7 +30,7 @@ public sealed class PythonReConstructionAdmissionTests
     [Fact]
     public void InvalidTimeoutPrecedesByteDecodingAndSpendsNoConstructionAllowance()
     {
-        using var scope = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var scope = new Utf8ConstructionScope(0, 0, 0);
         foreach (var pattern in new[] { new byte[] { 0xff }, new byte[4096] })
         {
             var error = Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -43,7 +42,6 @@ public sealed class PythonReConstructionAdmissionTests
                 });
             });
             Assert.Equal("policy", error.ParamName);
-            Assert.Equal(0UL, scope.Budget.WorkSteps);
             Assert.Equal(0UL, scope.Budget.ReservedBytes);
             Assert.Equal(0UL, scope.Budget.PeakBytes);
             Assert.Equal(0UL, scope.Budget.Depth);
@@ -53,63 +51,32 @@ public sealed class PythonReConstructionAdmissionTests
     [Fact]
     public void ZeroPolicyStillPrecedesInvalidFlagsTimeoutAndBytes()
     {
-        using var scope = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var scope = new Utf8ConstructionScope(0, 0, 0);
         var error = Assert.Throws<ArgumentOutOfRangeException>(() =>
             new Utf8PythonRegex(new byte[] { 0xff }, options: PythonReCompileOptions.Locale, policy: new Utf8RegexPolicy()
             {
                 MatchTimeout = TimeSpan.Zero,
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = 0
+                    MaxDepth = 0
                 }
             }));
         Assert.Equal("policy", error.ParamName);
-        Assert.Equal(0UL, scope.Budget.WorkSteps);
         Assert.Equal(0UL, scope.Budget.ReservedBytes);
     }
 
     [Fact]
     public void BytePatternWorkAdmissionPrecedesValidationAndSourceAcquisition()
     {
-        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8PythonRegex(new byte[] { 0xff }));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-        Assert.Equal(1ul, failure.Requested);
-        Assert.Equal(0ul, scope.Budget.WorkSteps);
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
-        var working = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            new Utf8PythonRegex("cat"u8, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = new Utf8ResourcePolicy
-                {
-                    MaxWorkingBytes = 1
-                }
-            }));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, working.ResourceKind);
-        Assert.Equal(1UL, working.Requested);
-        Assert.Equal(0ul, scope.Budget.WorkSteps);
-        var acceptedPolicy = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            new Utf8PythonRegex("cat"u8, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = new Utf8ResourcePolicy
-                {
-                    MaxWorkSteps = 1
-                }
-            }));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, acceptedPolicy.ResourceKind);
-        Assert.Equal(0ul, scope.Budget.WorkSteps);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
     }
 
     [Fact]
     public void StringParserWorkUsesTheOuterOwnerAndDoesNotSelectAnOptionalBackend()
     {
-        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8PythonRegex("cat"));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-        Assert.Equal(0ul, scope.Budget.WorkSteps);
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
     }
 
@@ -118,9 +85,10 @@ public sealed class PythonReConstructionAdmissionTests
     [InlineData(true)]
     public void ScalarPreparationInheritsDepthAndRecoversWithTheSameOwner(bool bytes)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var pattern = new string('(', 64) + "." + new string(')', 64);
         var encoded = System.Text.Encoding.UTF8.GetBytes(pattern);
-        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, 8);
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 8);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
             if (bytes) _ = new Utf8PythonRegex(encoded);
@@ -130,7 +98,7 @@ public sealed class PythonReConstructionAdmissionTests
         Assert.Equal(8ul, failure.Limit);
         Assert.Equal(0ul, scope.Budget.Depth);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
-        Assert.True(scope.Budget.WorkSteps > 0);
+        Assert.True(scope.Budget.DiagnosticCheckpoints > 0);
         Assert.True(new Utf8PythonRegex(".").IsMatch("😀"u8));
     }
 

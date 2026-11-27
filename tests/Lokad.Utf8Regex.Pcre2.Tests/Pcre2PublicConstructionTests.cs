@@ -27,11 +27,9 @@ public sealed class Pcre2PublicConstructionTests
         }, cancellationToken: cancellationToken);
 
     [Theory]
-    [InlineData(0, false)]
     [InlineData(1, false)]
     [InlineData(2, false)]
     [InlineData(3, false)]
-    [InlineData(0, true)]
     [InlineData(1, true)]
     [InlineData(2, true)]
     [InlineData(3, true)]
@@ -39,7 +37,7 @@ public sealed class Pcre2PublicConstructionTests
     {
         var policy = limit switch
         {
-            0 => new Utf8ConstructionPolicy { MaxWorkSteps = 1 },
+            0 => new Utf8ConstructionPolicy {  },
             1 => new Utf8ConstructionPolicy { MaxDepth = 1 },
             2 => new Utf8ConstructionPolicy { MaxInstructionCapacity = 1 },
             _ => new Utf8ConstructionPolicy { MaxBytes = 1 },
@@ -47,7 +45,6 @@ public sealed class Pcre2PublicConstructionTests
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Compile(policy, bytes));
         Assert.Equal(limit switch
         {
-            0 => Utf8ResourceLimitKind.ConstructionWorkSteps,
             1 => Utf8ResourceLimitKind.ConstructionDepth,
             2 => Utf8ResourceLimitKind.ConstructionInstructionCapacity,
             _ => Utf8ResourceLimitKind.ConstructionBytes,
@@ -71,14 +68,12 @@ public sealed class Pcre2PublicConstructionTests
         using var cancellation = new CancellationTokenSource();
         var policy = new Utf8ConstructionPolicy
         {
-            MaxWorkSteps = 1000000,
             MaxDepth = 256,
             MaxInstructionCapacity = 10000,
             MaxBytes = 1000000
         };
         var execution = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000,
             MaxDepth = 128,
             MaxWorkingBytes = 1000000,
             MaxResultBytes = 1000000
@@ -98,30 +93,12 @@ public sealed class Pcre2PublicConstructionTests
         }, cancellationToken: cancellation.Token);
         cancellation.Cancel();
         Assert.False(Utf8ConstructionScope.IsActive);
-        Assert.Equal(100000u, regex.DefaultExecutionLimits.MatchLimit);
         ReadOnlySpan<byte> result2Input = "z😀😀😀z"u8;
         var result2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
         var result = regex.Match(result2Input, captures: result2Captures);
         Assert.True(result.Success);
         Assert.Equal("😀😀😀", System.Text.Encoding.UTF8.GetString(result.GetValueBytes()));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((result2Captures[1].Success ? result2Input.Slice(result2Captures[1].StartOffsetInBytes, result2Captures[1].EndOffsetInBytes - result2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-    }
-
-    [Fact]
-    public void ExecutionPolicyStillEnforcesItsOwnLimitAfterCompilation()
-    {
-        var regex = Utf8Pcre2Regex.Compile("foo", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 1
-            },
-            ConstructionPolicy = Utf8ConstructionPolicy.Default,
-            ConstructionTimeout = Timeout.InfiniteTimeSpan
-        }, cancellationToken: CancellationToken.None);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => regex.Count("foo foo foo"u8)).ErrorKind);
     }
 
     [Fact]
@@ -133,7 +110,7 @@ public sealed class Pcre2PublicConstructionTests
             MatchTimeout = TimeSpan.Zero,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 0
+                MaxDepth = 4096
             },
             ConstructionPolicy = new()
             {
@@ -159,7 +136,7 @@ public sealed class Pcre2PublicConstructionTests
             MatchTimeout = invalid <= 3 ? TimeSpan.Zero : Timeout.InfiniteTimeSpan,
             ResourcePolicy = invalid <= 1 ? new()
             {
-                MaxWorkSteps = 0
+                MaxDepth = 4096
             }
 
             : Utf8ResourcePolicy.Unlimited,
@@ -330,7 +307,7 @@ public sealed class Pcre2PublicConstructionTests
             if (budget is null)
             {
                 budget = Utf8ConstructionScope.CurrentBudget;
-                budget.CheckpointHook = _ =>
+                budget.CheckpointHook = () =>
                 {
                     if (++checkpoints != 2) return;
                     if (timeout) ticks = 25; else cancellation.Cancel();
@@ -348,7 +325,6 @@ public sealed class Pcre2PublicConstructionTests
         if (timeout) Assert.IsType<RegexMatchTimeoutException>(failure);
         else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         Assert.NotNull(budget);
-        Assert.Equal((ulong)input.Length, budget.WorkSteps);
         Assert.Equal(0ul, budget.PeakBytes);
         Assert.Equal(0ul, budget.ReservedBytes);
         Assert.False(Utf8ConstructionScope.IsActive);
@@ -360,7 +336,6 @@ public sealed class Pcre2PublicConstructionTests
         using var owner = Utf8ConstructionScope.Enter();
         Assert.Throws<InvalidOperationException>(() => Compile(Utf8ConstructionPolicy.Default, false));
         Assert.Same(owner.Budget, Utf8ConstructionScope.CurrentBudget);
-        Assert.Equal(0ul, owner.Budget.WorkSteps);
         Assert.True(new Utf8Pcre2Regex("😀+").IsMatch("😀"u8));
     }
 

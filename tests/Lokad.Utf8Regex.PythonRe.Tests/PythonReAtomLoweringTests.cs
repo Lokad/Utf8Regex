@@ -24,7 +24,7 @@ public sealed class PythonReAtomLoweringTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1000000
+                    MaxDepth = 4096
                 }
             });
             Assert.Equal(expected.Length, regex.Count(input));
@@ -53,7 +53,6 @@ public sealed class PythonReAtomLoweringTests
             {
                 ResourcePolicy = finite ? new()
                 {
-                    MaxWorkSteps = 1000000,
                     MaxWorkingBytes = 1048576
                 }
 

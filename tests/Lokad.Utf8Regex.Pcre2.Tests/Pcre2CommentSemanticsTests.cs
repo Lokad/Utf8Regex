@@ -56,27 +56,6 @@ public sealed class Pcre2CommentSemanticsTests
         Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind);
     }
 
-    [Fact]
-    public void CommentDoesNotBypassSingleMatchWork()
-    {
-        var regex = new Utf8Pcre2Regex("(?#ignored)(é)(😀)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        {
-            ReadOnlyMemory<byte> result2Input = ("é😀"u8).ToArray();
-            using var result2Cursor = regex.CreateMatchCursor(result2Input);
-            result2Cursor.MoveNext(out var result2Result);
-            result2Cursor.Dispose();
-            _ = result2Result;
-        }).ErrorKind);
-    }
-
     [Theory]
     [InlineData("(?#one)é(?#two)😀(?#tail)", "xé😀", "é😀")]
     [InlineData(@"(?#one)\A(?#two)é😀\z(?#tail)", "é😀", "é😀")]

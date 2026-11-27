@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8NumberPrefixValueMatchTests
 {
     private const string Pattern = @"\G-?[0-9]+(\.[0-9]+)?(e[+-]?[0-9]+)?";
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     private static Utf8CaptureRange Scalar(Utf8Regex regex, byte[] input, int start = 0)
     {
@@ -90,22 +90,6 @@ public sealed class Utf8NumberPrefixValueMatchTests
     }
 
     [Fact]
-    public void LongReverseSearchStillObservesTheWorkLimit()
-    {
-        var regex = new Utf8Regex(Pattern, options: RegexOptions.RightToLeft, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = Funded with
-            {
-                MaxWorkSteps = 1000
-            }
-        });
-        var input = Encoding.ASCII.GetBytes(new string('1', 2049));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input)).ResourceKind);
-    }
-
-    [Fact]
     public void RetainedCapturesAndCursorAliasesKeepTheirRanges()
     {
         var regex = new Utf8Regex(Pattern);
@@ -134,35 +118,11 @@ public sealed class Utf8NumberPrefixValueMatchTests
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(Pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4, MaxDepth = 1, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         var actual = regex.Match(Encoding.UTF8.GetBytes(text), origin, [], cancellationToken: token.Token);
         Assert.True(actual.Success);
         Assert.Equal((origin, origin + length), (actual.StartOffsetInBytes, actual.EndOffsetInBytes));
-    }
-
-    [Theory]
-    [InlineData("12.3e-4!", true)]
-    [InlineData("wrong", false)]
-    public void WorkDenialCannotPublishSuccessOrNoMatch(string text, bool success)
-    {
-        var input = Encoding.ASCII.GetBytes(text); var admitted = false;
-        for (ulong work = 1; work < 100; work++)
-        {
-            var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = Funded with
-                {
-                    MaxWorkSteps = work,
-                    MaxWorkingBytes = 8 << 20,
-                    MaxResultBytes = 1
-                }
-            });
-            try { Assert.Equal(success, regex.Match(input).Success); admitted = true; break; }
-            catch (Utf8ResourceLimitExceededException error) { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
-        }
-        Assert.True(admitted);
     }
 
     [Theory]

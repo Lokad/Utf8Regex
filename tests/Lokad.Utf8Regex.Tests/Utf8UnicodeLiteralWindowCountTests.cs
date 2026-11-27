@@ -39,7 +39,6 @@ public sealed class Utf8UnicodeLiteralWindowCountTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 1024,
                     MaxWorkingBytes = 1 << 20,
                     MaxResultBytes = 1
@@ -81,10 +80,8 @@ public sealed class Utf8UnicodeLiteralWindowCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count("é a😀b"u8)).ResourceKind);
     }
 }

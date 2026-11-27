@@ -10,7 +10,6 @@ public sealed class PythonReLeadingAsciiTests
 {
     private static Utf8ResourcePolicy Generous => new()
     {
-        MaxWorkSteps = 1_000_000,
         MaxDepth = 1024,
         MaxWorkingBytes = 1 << 20,
         MaxResultBytes = 1 << 20
@@ -73,46 +72,6 @@ public sealed class PythonReLeadingAsciiTests
                 collectedRanges2.Add(rangeMatch2);
         }
         Assert.Equal(expected, collectedRanges2.ToArray().Length);
-    }
-
-    [Fact]
-    public void SkippedStartsNeedNoVmWorkspaceAndKeepRealWorkAdmission()
-    {
-        var input = Encoding.UTF8.GetBytes(new string('x', 4096));
-        var miss = new Utf8PythonRegex(@"needle\d+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 2000,
-                MaxDepth = 1,
-                MaxWorkingBytes = 1,
-                MaxResultBytes = 1
-            }
-        });
-        Assert.Equal(0, miss.Count(input));
-        var hit = new Utf8PythonRegex(@"needle\d+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Generous with
-            {
-                MaxWorkSteps = 2000,
-                MaxResultBytes = 1
-            }
-        });
-        Assert.Equal(1, hit.Count(Encoding.UTF8.GetBytes(new string('x', 4096) + "needle१२")));
-        var denied = new Utf8PythonRegex(@"needle\d+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Generous with
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-        Assert.Equal(1UL, error.Limit); Assert.True(error.Requested > error.Limit);
-        Assert.Equal(0, miss.Count(input));
     }
 
     [Fact]

@@ -274,26 +274,13 @@ public sealed class Utf8OffsetEnumerationInvocationTests
         var prefix = kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix;
         var text = prefix ? Encoding.UTF8.GetString(literal) + (mixed ? "é😀" : "xxx") : (mixed ? "é😀" + new string('x', 8193) : new string('x', 8193)) + Encoding.UTF8.GetString(literal) + (kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix ? "\n" : "");
         var input = Encoding.UTF8.GetBytes(text);
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        var baseline = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(7));
         var original = new Utf8OperationMatchCursor(input, literal, kind, baseline);
         Assert.Equal(Utf8ExecutionLimitKind.None, original.TryMoveNextAnchoredLiteral(out var found));
         Assert.True(found);
         var expected = new Regex((prefix ? "^" : "") + new string('a', 4097) + (prefix ? "" : kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix ? "$" : "\\z")).Match(text);
         Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (original.CurrentValueMatch.StartOffsetInBytes, (original.CurrentValueMatch.EndOffsetInBytes - original.CurrentValueMatch.StartOffsetInBytes)));
-        for (ulong cap = 1; cap < original.DebugInvocationSteps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            var cursor = new Utf8OperationMatchCursor(input, literal, kind, invocation);
-            var previous = cursor.CurrentValueMatch;
-            var floor = cursor.DebugConsumed;
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, cursor.TryMoveNextAnchoredLiteral(out found));
-            Assert.False(found);
-            Assert.Equal(previous, cursor.CurrentValueMatch);
-            Assert.Equal(floor, cursor.DebugConsumed);
-            Assert.Equal(7UL, cursor.DebugInvocationReservedBytes);
-        }
         Assert.False(original.MoveNext());
         Assert.False(original.MoveNext());
         Assert.Equal(7UL, original.DebugInvocationReservedBytes);
@@ -304,10 +291,11 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     [InlineData(true)]
     public void ControlledBoundaryCursorsKeepOriginalContextAndRetainRanges(bool useOffset)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const string pattern = @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b";
         using var regex = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
         });
         using var source = new CancellationTokenSource();
         var input = "éLogTrace|😀LogTrace😀|LogWarning\u200c|LogError"u8;
@@ -317,11 +305,11 @@ public sealed class Utf8OffsetEnumerationInvocationTests
         Assert.True(cursor.MoveNext());
         var first = new Utf8CaptureRange(15, 23);
         Assert.Equal(first, cursor.Current);
-        var work = cursor.DebugInvocationSteps;
-        Assert.Equal(work, copy.DebugInvocationSteps);
+        var work = cursor.DiagnosticCheckpointCount;
+        Assert.Equal(work, copy.DiagnosticCheckpointCount);
         Assert.True(copy.MoveNext());
         Assert.Equal(first, copy.Current);
-        Assert.True(cursor.DebugInvocationSteps > work);
+        Assert.True(cursor.DiagnosticCheckpointCount > work);
         Assert.True(cursor.MoveNext());
         Assert.Equal(new Utf8CaptureRange(42, 50), cursor.Current);
 
@@ -343,19 +331,20 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     [InlineData("(?:ab|xy)")]
     public void NativeFactoryKeepsPriorWorkAndBorrowedAdmission(string pattern)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var prepared = Prepared(new Utf8Regex(pattern, options: RegexOptions.CultureInvariant));
         var input = Encoding.UTF8.GetBytes(new string('x', 8193) + "abc ab1d getAlpha é");
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
         Utf8SliceBufferWork.Checkpoint(ref invocation);
         Assert.True(Utf8CompiledOperationCursorFactory.CanCreateInvocationMatchCursor(prepared, ref invocation));
-        var steps = invocation.Budget.Steps;
+        var steps = invocation.Budget.DiagnosticCheckpoints;
         var cursor = Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(prepared, input, invocation, 8193);
-        Assert.True(cursor.DebugInvocationSteps >= steps);
+        Assert.True(cursor.DiagnosticCheckpointCount >= steps);
         Assert.Equal(7UL, cursor.DebugInvocationReservedBytes);
         Assert.False(cursor.DebugIsOwnedSlice);
         while (cursor.MoveNext()) { }
-        Assert.True(cursor.DebugInvocationSteps > steps);
+        Assert.True(cursor.DiagnosticCheckpointCount > steps);
         Assert.Equal(7UL, cursor.DebugInvocationReservedBytes);
     }
 }

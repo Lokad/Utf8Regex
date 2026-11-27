@@ -1,5 +1,12 @@
 # Release notes
 
+## Unreleased
+
+- Remove `MaxWorkSteps` from execution and construction policies and
+  `MatchLimit` from PCRE2's managed limits. Use a cancellation token for
+  cooperative interruption. Timeouts, depth limits and storage admission
+  remain available.
+
 ## 0.5.0 — 2026-11-27
 
 Published on NuGet. [Core](https://www.nuget.org/packages/Lokad.Utf8Regex/0.5.0) ·

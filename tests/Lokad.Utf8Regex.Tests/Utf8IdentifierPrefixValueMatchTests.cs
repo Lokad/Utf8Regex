@@ -10,7 +10,7 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
     private const string Pattern = @"\G[a-z][a-z0-9_]*";
     private const RegexOptions Options = RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant;
     private static readonly Utf8ResourcePolicy Policy = new()
-    { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 };
+    { MaxDepth = 256, MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 };
 
     [Fact]
     public void BoundedFoldedAsciiValuesUseTheExistingCompletePrefixProof()
@@ -44,7 +44,7 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
     public void FoldedHeadAndTerminalRepeatFitTheSingleOriginWorkLimit()
     {
         using var regex = new Utf8Regex(Pattern, Options | RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 4, MaxWorkingBytes = 1, MaxDepth = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1, MaxDepth = 1 } });
         using var source = new CancellationTokenSource();
 
         Assert.Equal(new Utf8CaptureRange(0, 5), regex.Match("AbC_9-tail"u8, cancellationToken: source.Token));
@@ -134,32 +134,6 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
             var input = Encoding.UTF8.GetBytes(text);
             Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: canceled.Token)).CancellationToken);
         }
-    }
-
-    [Theory]
-    [InlineData("AbC_9-tail", true)]
-    [InlineData("0bad", false)]
-    public void EveryWorkCutoffRefusesPartialPublication(string text, bool success)
-    {
-        var input = Encoding.ASCII.GetBytes(text); var denied = false; var admitted = false;
-        for (ulong work = 1; work < 100; work++)
-        {
-            var regex = new Utf8Regex(Pattern, options: Options, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = Policy with
-                {
-                    MaxWorkSteps = work,
-                    MaxDepth = 1,
-                    MaxWorkingBytes = 1,
-                    MaxResultBytes = 1
-                }
-            });
-            try { Assert.Equal(success, regex.Match(input).Success); admitted = true; break; }
-            catch (Utf8ResourceLimitExceededException failure)
-            { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind); denied = true; }
-        }
-        Assert.True(denied); Assert.True(admitted);
     }
 
     [Theory]

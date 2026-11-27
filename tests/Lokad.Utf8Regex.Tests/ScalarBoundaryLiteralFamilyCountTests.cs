@@ -24,7 +24,6 @@ public sealed class ScalarBoundaryLiteralFamilyCountTests
             {
                 ResourcePolicy = controlled ? new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 1024,
                     MaxWorkingBytes = 1 << 20,
                     MaxResultBytes = 1 << 20
@@ -85,7 +84,7 @@ public sealed class ScalarBoundaryLiteralFamilyCountTests
         using var ordinary = new Utf8Regex(pattern, options);
         using var funded = new Utf8Regex(pattern, options, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 10_000 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var cancellation = new CancellationTokenSource();
 

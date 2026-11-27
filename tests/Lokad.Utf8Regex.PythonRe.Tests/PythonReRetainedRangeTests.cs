@@ -278,7 +278,7 @@ public sealed class PythonReRetainedRangeTests
     public async Task SeparateProgramsShareBudgetAcrossRetainedMatchAndOutputLifetimes()
     {
         var account = new Allowance(8 << 20); Assert.True(account.TryReserve(17));
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10_000_000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        var policy = new Utf8ResourcePolicy { MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
         using var first = Compile("(?i)(?P<x>é+|a+)", account, policy);
         using var second = Compile("(?P<d>[0-9]+)", account, policy);
         using var advance = new CancellationTokenSource();

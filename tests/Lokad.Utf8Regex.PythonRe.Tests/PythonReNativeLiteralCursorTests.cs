@@ -25,7 +25,6 @@ public sealed class PythonReNativeLiteralCursorTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -68,31 +67,6 @@ public sealed class PythonReNativeLiteralCursorTests
         finally { cursor.Dispose(); }
     }
 
-    [Fact]
-    public void MatchFullMatchAndBudgetFailuresKeepTheirContracts()
-    {
-        var regex = new Utf8PythonRegex("cat|dog");
-        Assert.False(regex.Match("xcat"u8).Success);
-        Assert.True(regex.Match("xcat"u8, 1).Success);
-        Assert.False(regex.Match("cat tail"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.True(regex.Match("dog"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀cat"u8, 1, mode: Utf8PythonMatchMode.Search));
-        var bounded = new Utf8PythonRegex("cat|dog", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 1,
-                MaxDepth = 1,
-                MaxWorkingBytes = 1,
-                MaxResultBytes = 1
-            }
-        });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => bounded.Match("cat"u8, mode: Utf8PythonMatchMode.Search)).ResourceKind);
-    }
-
     [Theory]
     [InlineData("cat(?=!)|dog", "cat? dog", 5, 8)]
     [InlineData(@"cat\b|dog", "catch dog", 6, 9)]
@@ -114,6 +88,7 @@ public sealed class PythonReNativeLiteralCursorTests
     [InlineData(true)]
     public void LongNativeSearchKeepsOriginalInterruptionAndPriorSnapshot(bool timeout)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         Utf8PythonRangeMatch cursorRange = default;
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
@@ -134,7 +109,6 @@ public sealed class PythonReNativeLiteralCursorTests
                 MatchTimeout = TimeSpan.FromMilliseconds(20),
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1000000,
                     MaxDepth = 1024,
                     MaxWorkingBytes = 4000000,
                     MaxResultBytes = 4000000
@@ -144,7 +118,7 @@ public sealed class PythonReNativeLiteralCursorTests
             using var cursor = regex.CreateMatchCursor(input, 0, cancellation.Token);
             Assert.True(cursor.MoveNext(out cursorRange));
             var retained = cursorRange;
-            armedAt = cursor.WorkingInvocation.Budget.Steps;
+            armedAt = cursor.WorkingInvocation.Budget.DiagnosticCheckpoints;
             armed = true;
             var failure = Record.Exception(() => cursor.MoveNext(out _));
             Assert.True(interrupted);

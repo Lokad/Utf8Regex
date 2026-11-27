@@ -72,7 +72,7 @@ internal sealed class Pcre2LiteralProgram
             total++;
             start = candidate + _literalUtf8.Length;
         }
-        var terminal = invocation.TryChargeInputStep();
+        var terminal = invocation.CheckInput();
         invocation.Budget.ThrowIfCancellationRequested();
         if (terminal == Utf8ExecutionLimitKind.None) count = total;
         return terminal;
@@ -108,10 +108,10 @@ internal static class Pcre2LiteralCompiler
     {
         var literal = budget.AllocateArray<byte>(byteCount, false);
         var written = 0;
-        budget.ChargeWork((ulong)nodes.Length + 1);
+        budget.Checkpoint();
         for (var index = 0; index < nodes.Length; index++)
         {
-            if ((index & 255) == 0) budget.ChargeWork(0);
+            if ((index & 255) == 0) budget.Checkpoint();
             written += ((Pcre2TokenBacktrackingNode)nodes[index]).Token.Literal.EncodeToUtf8(literal.AsSpan(written));
         }
         return literal;
@@ -129,7 +129,7 @@ internal static class Pcre2LiteralCompiler
         var length = children?.Length ?? 1;
         if (length is 0 or > 32) return null;
         var budget = Utf8ConstructionScope.CurrentBudget;
-        budget.ChargeWork((ulong)length);
+        budget.Checkpoint();
         Span<byte> literal = stackalloc byte[length];
         for (var index = 0; index < length; index++)
         {
@@ -168,7 +168,7 @@ internal static class Pcre2LiteralCompiler
 
         var budget = Utf8ConstructionScope.CurrentBudget;
         Span<byte> literal = stackalloc byte[sequence.Children.Length - 1];
-        budget.ChargeWork((ulong)literal.Length);
+        budget.Checkpoint();
         for (var index = 0; index < literal.Length; index++)
         {
             if (sequence.Children[index + 1] is not Pcre2TokenBacktrackingNode
@@ -182,7 +182,7 @@ internal static class Pcre2LiteralCompiler
         if (body is Pcre2SequenceBacktrackingNode parts)
         {
             if (parts.Children.Length > literal.Length) return null;
-            budget.ChargeWork((ulong)parts.Children.Length);
+            budget.Checkpoint();
             foreach (var part in parts.Children)
                 if (!FitsLiteral(part, literal, ref offset)) return null;
         }
@@ -229,7 +229,7 @@ internal static class Pcre2LiteralCompiler
         {
             // Literal preparation owns its buffers; it needs no second Core
             // compilation to supply construction bounds or group-zero metadata.
-            budget.ChargeWork((ulong)request.ConstructionPattern.Length);
+            budget.Checkpoint();
             if (!TryParse(request.ConstructionPattern, out var atoms, out var startAnchor, out var endAnchored))
                 return null;
             try
@@ -240,19 +240,19 @@ internal static class Pcre2LiteralCompiler
                 endAnchored |= (request.Options & Pcre2CompileOptions.EndAnchored) != 0;
                 var byteCount = 0;
                 var hasExplicitCrOrLf = false;
-                budget.ChargeWork((ulong)atoms.Length);
+                budget.Checkpoint();
                 for (var index = 0; index < atoms.Length; index++)
                 {
-                    if ((index & 1023) == 0) budget.ChargeWork(0);
+                    if ((index & 1023) == 0) budget.Checkpoint();
                     byteCount = checked(byteCount + atoms[index].Utf8SequenceLength);
                     hasExplicitCrOrLf |= atoms[index].Value is '\r' or '\n';
                 }
                 var literalUtf8 = budget.AllocateArray<byte>(byteCount, false);
-                budget.ChargeWork((ulong)byteCount);
+                budget.Checkpoint();
                 var written = 0;
                 for (var index = 0; index < atoms.Length; index++)
                 {
-                    if ((index & 1023) == 0) budget.ChargeWork(0);
+                    if ((index & 1023) == 0) budget.Checkpoint();
                     written += atoms[index].EncodeToUtf8(literalUtf8.AsSpan(written));
                 }
                 var program = budget.AllocateObject((literalUtf8, startAnchor, endAnchored, hasExplicitEndAssertion, hasExplicitCrOrLf),
@@ -292,7 +292,7 @@ internal static class Pcre2LiteralCompiler
 
         while (position < pattern.Length)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (Pcre2CompileValidator.TrySkipParenthesizedComment(pattern, ref position)) continue;
             if (pattern.StartsWithAscii(position, @"\z"))
             {

@@ -21,7 +21,7 @@ public sealed class LokadCodeRouteGuardrailTests
     {
         using var regex = Utf8Regex.Compile(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 10_000 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
 
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);

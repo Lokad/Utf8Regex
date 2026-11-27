@@ -28,6 +28,7 @@ public sealed class PythonReTranslatorFrameAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void InspectionAdmissionFailurePreservesParentAndAllowsSameOwnerRetry(bool depth)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var root = new PythonReSequenceNode(new IndexedOnlyList<PythonReNode>([new PythonReLiteralNode('a')]));
         ulong literalPeak;
         using (var measured = Utf8ConstructionScope.Enter())
@@ -36,16 +37,16 @@ public sealed class PythonReTranslatorFrameAdmissionTests
             literalPeak = measured.Budget.PeakBytes;
         }
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, depth ? ulong.MaxValue : literalPeak + 48,
-            ulong.MaxValue, depth ? 1ul : ulong.MaxValue);
+            depth ? 1ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReTranslator.InspectNativeSelection(root));
         Assert.Equal(depth ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
 
-        var spent = owner.Budget.WorkSteps;
+        var spent = owner.Budget.DiagnosticCheckpoints;
         Assert.Equal((true, true), PythonReTranslator.InspectNativeSelection(new PythonReLiteralNode('a')));
-        Assert.True(owner.Budget.WorkSteps > spent);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > spent);
         owner.Budget.ReleaseArray(parent, false);
     }
 

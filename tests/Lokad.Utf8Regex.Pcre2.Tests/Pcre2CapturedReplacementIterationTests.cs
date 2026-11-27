@@ -17,7 +17,6 @@ public sealed class Pcre2CapturedReplacementIterationTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000,
                 MaxWorkingBytes = 1 << 20
             },
             MatchTimeout = Timeout.InfiniteTimeSpan

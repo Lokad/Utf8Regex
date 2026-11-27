@@ -64,10 +64,10 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
             object pattern = patternSource.Text;
             if (patternSource.IsUtf8)
             {
-                construction.Budget.ChargeWork((ulong)patternSource.Utf8.Length);
+                construction.Budget.Checkpoint();
                 ValidatePatternUtf8(patternSource.Utf8, construction.Budget);
                 var bytes = construction.Budget.AllocateArray<byte>(patternSource.Length, false);
-                construction.Budget.ChargeWork((ulong)bytes.Length);
+                construction.Budget.Checkpoint();
                 patternSource.Utf8.CopyTo(bytes);
                 pattern = bytes;
             }
@@ -96,11 +96,11 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                 construction.Budget.ReserveBytes(_replacementCache.MaximumMetadataBytes + _replacementCache.MaximumPayloadBytes);
                 var storage = construction.Budget.AllocateObject(account,
                     static allowance => new Utf8FundedStorage(allowance, nameof(Utf8Pcre2Regex)));
-                construction.Budget.ChargeWork(0);
+                construction.Budget.Checkpoint();
                 storage.Retain(construction.Budget.TransferFundedBytes());
                 _programMemory = storage;
             }
-            else if (ownsConstruction) construction.Budget.ChargeWork(0);
+            else if (ownsConstruction) construction.Budget.Checkpoint();
             construction.Complete();
         }
         catch (Utf8ExecutionDeadlineExpiredException) when (ownsConstruction)
@@ -108,24 +108,12 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     }
 
     /// <summary>Maps a shared resource policy onto PCRE2 execution limits.</summary>
-    /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero.</exception>
     private static Utf8Pcre2ExecutionLimits ToExecutionLimits(Utf8ResourcePolicy resourcePolicy)
     {
         resourcePolicy.Validate("policy");
-        uint workSteps = 0;
-        if (resourcePolicy.MaxWorkSteps.HasValue && resourcePolicy.MaxWorkSteps.Value > uint.MaxValue)
-        {
-            throw new ArgumentOutOfRangeException("policy", "The work-steps budget exceeds the 32-bit PCRE2 range.");
-        }
-
-        if (resourcePolicy.MaxWorkSteps.HasValue)
-        {
-            workSteps = (uint)resourcePolicy.MaxWorkSteps.Value;
-        }
-
         return new Utf8Pcre2ExecutionLimits
         {
-            MatchLimit = workSteps,
             DepthLimit = resourcePolicy.MaxDepth ?? 0u,
             HeapLimitInBytes = resourcePolicy.MaxWorkingBytes ?? 0ul,
             ResultLimitInBytes = resourcePolicy.MaxResultBytes ?? 0ul
@@ -149,7 +137,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     /// <summary>Gets the compile-time newline, group-name, and byte-oriented settings.</summary>
     public Utf8Pcre2CompileSettings CompileSettings => _program.Request.Settings;
 
-    /// <summary>Gets the shared invocation work, depth, working and result policy copied at construction.</summary>
+    /// <summary>Gets the invocation limits on depth, working capacity and result capacity copied at construction.</summary>
     public Utf8ResourcePolicy ResourcePolicy => _program.Request.CoreResourcePolicy;
 
     /// <summary>Gets the read-only PCRE2-unit projection of the shared invocation policy; zero denotes unlimited.</summary>
@@ -357,7 +345,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     {
         for (var offset = 0; offset < output.Length;)
         {
-            budget.ChargeWorkspaceStep();
+            budget.CheckWorkspace();
             var count = Math.Min(256, output.Length - offset);
             output.Slice(offset, count).Clear(); offset += count;
         }
@@ -1209,7 +1197,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
             return result;
         }
         catch (Exception failure) when (failure is OperationCanceledException ||
-            failure is Pcre2MatchException { ErrorKind: Pcre2ErrorKind.Timeout or Pcre2ErrorKind.MatchLimit or
+            failure is Pcre2MatchException { ErrorKind: Pcre2ErrorKind.Timeout or
                 Pcre2ErrorKind.DepthLimit or Pcre2ErrorKind.HeapLimit or Pcre2ErrorKind.ResultLimit })
         {
             Pcre2ReplacementPreparationControl.Check();
@@ -1260,7 +1248,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
             var budget = Utf8ConstructionScope.CurrentBudget;
             ulong total = 0;
             charge = 0;
-            control.Check(); budget.ChargeWork(1);
+            control.Check(); budget.Checkpoint();
             if (value.Simple is { } simple)
             {
                 if (!Add(Utf8ConstructionBudget.ArrayBytes<Pcre2SimpleReplacementSegment>(simple.Segments.Length))) return false;
@@ -1279,7 +1267,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
 
             bool Add(ulong bytes)
             {
-                control.Check(); budget.ChargeWork(1);
+                control.Check(); budget.Checkpoint();
                 if (bytes > maximum - total) return false;
                 total += bytes; return true;
             }

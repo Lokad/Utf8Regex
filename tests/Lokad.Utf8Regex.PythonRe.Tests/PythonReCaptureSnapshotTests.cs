@@ -39,8 +39,7 @@ public sealed class PythonReCaptureSnapshotTests
             ResourcePolicy = new()
             {
                 MaxResultBytes = 12 << 10,
-                MaxWorkingBytes = 1 << 20,
-                MaxWorkSteps = 1000000
+                MaxWorkingBytes = 1 << 20
             }
         });
         var text = new string('a', 4096);

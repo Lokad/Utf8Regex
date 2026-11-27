@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-/// <summary>Invocation-owned state bundle for one owned-slice run: step/depth
+/// <summary>Invocation-owned state bundle for one owned-slice run: depth
 /// budget with deadline and token, aggregate storage admission ledger, and an
 /// optional deterministic checkpoint hook (test-only cancellation injection).
 /// An exclusive owner can keep this state inline and pass it by reference.
@@ -13,7 +13,7 @@ internal struct Utf8SliceInvocation
 {
     private Utf8ExecutionBudget _inlineBudget;
     private Utf8StorageLedger _inlineLedger;
-    private SharedInvocationState? _sharedWork;
+    private SharedInvocationState? _sharedState;
 
     internal Utf8SliceInvocation(Utf8ExecutionLimits limits, TimeSpan timeout, CancellationToken token)
         : this(limits, Utf8ExecutionDeadline.Start(timeout), token)
@@ -54,7 +54,7 @@ internal struct Utf8SliceInvocation
         invocation.AnchorOriginByte = -1;
         // Share from entry when a later value copy can make charges. Unlimited
         // scopes without funding or a hook can defer sharing until they fork.
-        invocation._sharedWork = share &&
+        invocation._sharedState = share &&
             (!invocation._inlineBudget.IsUnmetered || memoryAllowance is not null || invocation.CheckpointHook is not null)
             ? new SharedInvocationState(invocation._inlineBudget, invocation._inlineLedger)
             : null;
@@ -65,7 +65,7 @@ internal struct Utf8SliceInvocation
     {
         get
         {
-            if (_sharedWork is not null) return ref _sharedWork.Budget;
+            if (_sharedState is not null) return ref _sharedState.Budget;
             return ref _inlineBudget;
         }
     }
@@ -75,14 +75,14 @@ internal struct Utf8SliceInvocation
     {
         get
         {
-            if (_sharedWork is not null) return ref _sharedWork.Ledger;
+            if (_sharedState is not null) return ref _sharedState.Ledger;
             return ref _inlineLedger;
         }
     }
 
     internal void ShareStorageForCursor()
     {
-        _sharedWork ??= new SharedInvocationState(_inlineBudget, _inlineLedger);
+        _sharedState ??= new SharedInvocationState(_inlineBudget, _inlineLedger);
     }
     internal Action<ulong>? CheckpointHook;
     // Contiguous-anchor origin in bytes (-1 selects the attempt start): set anew
@@ -97,7 +97,7 @@ internal struct Utf8SliceInvocation
     // execution. Its construction scope owns/refunds its temporary loans; no
     // second account or release/reacquire transfer is needed between phases.
     internal IUtf8MemoryAllowance BorrowWorkingMemoryAllowance()
-        => _sharedWork ?? throw new InvalidOperationException("Working admission requires a shared invocation.");
+        => _sharedState ?? throw new InvalidOperationException("Working admission requires a shared invocation.");
 
     // One checked admission for major capacity, including old/new overlap.
     // A denied request updates the existing peak/first-failure authority but
@@ -134,30 +134,32 @@ internal struct Utf8SliceInvocation
         return ledger.TryReserve(bytes) ? Utf8ExecutionLimitKind.None : budget.DenyWorkingBytes(requested);
     }
 
-    internal Utf8ExecutionLimitKind TryChargeStep()
+    internal Utf8ExecutionLimitKind CheckProgress()
     {
         // Borrow only until invoking the hook; later checks select the current owner again.
         ref var budget = ref Budget;
-        var breach = budget.TryChargeStep();
-        if (breach == Utf8ExecutionLimitKind.None && CheckpointHook is not null && (budget.Steps & 63) == 0)
+        var hook = CheckpointHook;
+        var breach = budget.CheckProgress(hook is not null);
+        if (breach == Utf8ExecutionLimitKind.None && hook is not null &&
+            (budget.DiagnosticCheckpoints & 63) == 0)
         {
-            CheckpointHook(budget.Steps);
+            hook(budget.DiagnosticCheckpoints);
         }
         return breach;
     }
 
-    internal Utf8ExecutionLimitKind TryChargeInputStep()
+    internal Utf8ExecutionLimitKind CheckInput()
     {
-        var breach = TryChargeStep();
+        var breach = CheckProgress();
         Budget.CheckDeadline();
         return breach;
     }
 
     // Small setup and predicate checks use the VM cadence. Their caller
     // checks the deadline directly before a scan or publication.
-    internal Utf8ExecutionLimitKind TryChargeBoundedCheck()
+    internal Utf8ExecutionLimitKind CheckBoundedProgress()
     {
-        var breach = TryChargeStep();
+        var breach = CheckProgress();
         if (breach != Utf8ExecutionLimitKind.None) Budget.CheckDeadline();
         return breach;
     }
@@ -172,7 +174,7 @@ internal struct Utf8SliceInvocation
         public bool TryReserve(ulong bytes)
         {
             // This temporary view shares counters; it does not copy their state.
-            var invocation = new Utf8SliceInvocation { _sharedWork = this };
+            var invocation = new Utf8SliceInvocation { _sharedState = this };
             if (invocation.TryReserveWorking(bytes) != Utf8ExecutionLimitKind.None)
                 throw Budget.CreateResourceFailure();
             return true;

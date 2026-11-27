@@ -174,8 +174,7 @@ admission. Invalid UTF-8 reports its byte offset. `Pattern` decodes byte
 source on request.
 
 Construction admission covers candidate-search literal bytes and branch
-tables. A declined candidate plan releases its temporary capacity while
-its construction work remains charged.
+tables. A declined candidate plan releases its temporary capacity.
 
 PCRE2 caps backtracking and lexical construction at 256 live frames. A
 caller can tighten that bound. A funded build with no explicit `MaxBytes`
@@ -190,7 +189,7 @@ discovery, projection, publication, cold replacement preparation and cursor
 waits. Expiry throws `Pcre2MatchException` with `Timeout`. An omitted
 `MatchTimeout` inherits `Utf8Pcre2Regex.DefaultMatchTimeout`, initially infinite.
 
-Cold replacement scans charge work in blocks of at most 2 KiB for literal
+Cold replacement scans use blocks of at most 2 KiB for literal
 runs. Each block checks the original cancellation token and deadline.
 Basic templates emit a forward instruction sequence directly. Extended
 templates use temporary position tables for conditional and quoted paths.
@@ -201,28 +200,26 @@ Calls with resource controls, a deadline, a token or shared working
 admission use metered execution.
 
 `ResourcePolicy` exposes the policy. `DefaultExecutionLimits` projects null
-as zero and preserves these PCRE2 units. `MaxWorkSteps` is at most
-`uint.MaxValue`. A numeric denial throws `Pcre2MatchException` with the
-corresponding kind.
+as zero and preserves these PCRE2 units. A numeric denial throws
+`Pcre2MatchException` with the corresponding kind.
 
 | Policy field | Projected limit | Covered scope | Error kind |
 | --- | --- | --- | --- |
-| `MaxWorkSteps` | `MatchLimit` | Cumulative work, including search, retries and publication | `MatchLimit` |
 | `MaxDepth` | `DepthLimit` | Live backtracking, subroutine and assertion depth | `DepthLimit` |
 | `MaxWorkingBytes` | `HeapLimitInBytes` | Major live buffers, including growth overlap | `HeapLimit` |
 | `MaxResultBytes` | `ResultLimitInBytes` | Cumulative covered results and staging | `ResultLimit` |
 
-Work and storage requirements vary by version and pattern. Borrowed input,
+Storage requirements vary by version and pattern. Borrowed input,
 caller destinations, host retention and metadata queries fall outside
 numeric execution limits. [Shared resource rules](SPEC.md#cancellation-deadlines-and-resource-limits)
 
 The backtracking matcher finds lookbehind candidates with a single reverse
-scalar walk. The assertion step covers the first 64 scalar retreats. Each
-additional block charges work and checks the original token and deadline
-before scanning. Verifying candidate starts has its own work charges.
+scalar walk. After the first 64 scalar retreats, each block checks the
+original token and deadline before scanning. Candidate verification checks
+for interruption separately.
 
 `(*ACCEPT)` closes open captures at the current call depth. Wide scans of
-capture slots use bounded work and interruption checkpoints, including
+capture slots check for interruption in bounded blocks, including
 duplicate-name backreferences and capture conditions.
 
 ### Program and working allowances

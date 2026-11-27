@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8TerminatedPrefixValueMatchTests
 {
     private const string Pattern = @"\G///[^\n]*\n";
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Theory]
     [InlineData("", false)]
@@ -83,15 +83,7 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
                     Assert.Equal((expected.Success, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.Success, actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
                 }
         using var token = new CancellationTokenSource(); token.Cancel();
-        var denied = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = Funded with
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match(input));
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => captured.Match(input, cancellationToken: token.Token)).CancellationToken);
     }
 
     [Theory]

@@ -7,13 +7,12 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8FiniteWordDelimitedCountTests
 {
     private const string Pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
-    private static Utf8Regex Create(RegexOptions options, ulong work)
+    private static Utf8Regex Create(RegexOptions options)
         => new(Pattern, options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = work,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 8 << 20,
                 MaxResultBytes = 1
@@ -43,7 +42,7 @@ public sealed class Utf8FiniteWordDelimitedCountTests
         using var cancellation = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = Create(options, 100000);
+            var regex = Create(options);
             Assert.Equal(expected, regex.Count(bytes.AsSpan(3, length)));
             Assert.Equal(expected, regex.Count(bytes.AsSpan(3, length), cancellation.Token));
         }
@@ -55,18 +54,7 @@ public sealed class Utf8FiniteWordDelimitedCountTests
     {
         var input = Encoding.UTF8.GetBytes(new string('a', headLength) + "@b.c");
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
-            Assert.Equal(1, Create(options, 100000).Count(input));
-    }
-
-    [Fact]
-    public void WorkDenialDoesNotPoisonOtherInvocations()
-    {
-        var input = Encoding.UTF8.GetBytes(new string('a', 8192));
-        var tiny = Create(RegexOptions.None, 1);
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => tiny.Count(input)).ResourceKind);
-        Assert.Equal(0, Create(RegexOptions.None, 100000).Count(input));
-        Assert.Equal(1, Create(RegexOptions.None, 100000).Count("a@b.c"u8));
+            Assert.Equal(1, Create(options).Count(input));
     }
 
     [Fact]
@@ -77,7 +65,7 @@ public sealed class Utf8FiniteWordDelimitedCountTests
         var oracle = new Regex(Pattern);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = Create(options, 100000);
+            var regex = Create(options);
             for (var sample = 0; sample < 400; sample++)
             {
                 var chars = new char[random.Next(128)];
@@ -100,7 +88,6 @@ public sealed class Utf8FiniteWordDelimitedCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000
@@ -121,7 +108,7 @@ public sealed class Utf8FiniteWordDelimitedCountTests
             var expected = new[] { 1, 1, 1, 0, 0, 1 };
             foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
             {
-                var regex = Create(options, 100000);
+                var regex = Create(options);
                 for (var index = 0; index < texts.Length; index++)
                     Assert.Equal(expected[index], regex.Count(Encoding.UTF8.GetBytes(texts[index])));
             }

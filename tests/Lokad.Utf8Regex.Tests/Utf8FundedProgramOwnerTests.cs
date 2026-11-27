@@ -22,15 +22,9 @@ public sealed class Utf8FundedProgramOwnerTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             }
         });
-        var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-        {
-            if (exists) _ = bounded.IsMatch("aaaa"u8, workingMemoryAllowance: null);
-            else _ = bounded.Count("aaaa"u8, workingMemoryAllowance: null);
-        });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, denied.ResourceKind);
         using var source = new CancellationTokenSource(); source.Cancel();
         var canceled = Assert.Throws<OperationCanceledException>(() =>
         {
@@ -265,8 +259,6 @@ public sealed class Utf8FundedProgramOwnerTests
             Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.IsMatch("alpha"u8, token.Token)).CancellationToken);
             Assert.Equal(held, account.Used);
         }
-        using (var work = Compile("(a+)", account, policy: new() { MaxWorkSteps = 1 }))
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Count("aaaa"u8)).ResourceKind);
         using (var bytes = Compile("(a+)", account, policy: new() { MaxWorkingBytes = 1 }))
             Assert.Equal(1, bytes.Count("aaaa"u8));
         using (var dependent = Compile(@"(?<x>a+)\k<x>", account, policy: new() { MaxWorkingBytes = 1 }))
@@ -542,7 +534,6 @@ public sealed class Utf8FundedProgramOwnerTests
     }
 
     [Theory]
-    [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
     public void FundedTemplateOtherNumericControlsStillApply(int control)
@@ -550,7 +541,7 @@ public sealed class Utf8FundedProgramOwnerTests
         var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
         var policy = control switch
         {
-            0 => new Utf8ResourcePolicy { MaxWorkSteps = 1 },
+            0 => new Utf8ResourcePolicy { MaxDepth = 4096 },
             1 => new Utf8ResourcePolicy { MaxDepth = 1 },
             _ => new Utf8ResourcePolicy { MaxResultBytes = 1 }
         };
@@ -559,7 +550,6 @@ public sealed class Utf8FundedProgramOwnerTests
             "a"u8, "[$1]"u8, new byte[16], out _, workingMemoryAllowance: working));
         Assert.Equal(control switch
         {
-            0 => Utf8ResourceLimitKind.ExecutionWorkSteps,
             1 => Utf8ResourceLimitKind.ExecutionDepth,
             _ => Utf8ResourceLimitKind.ExecutionResultBytes
         }, failure.ResourceKind);

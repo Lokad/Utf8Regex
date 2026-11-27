@@ -106,21 +106,21 @@ public sealed class Utf8SliceBoundaryTests
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(pattern, options, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 20_000, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxWorkingBytes = 4096 }
         });
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text), token.Token));
     }
 
     [Theory]
-    [InlineData(" ", 256, 320UL)]
-    [InlineData("abc ", 64, 100UL)]
-    public void RejectedAsciiStartsUseBoundedWorkAndObserveOriginalCancellation(string segment, int copies, ulong maxWork)
+    [InlineData(" ", 256)]
+    [InlineData("abc ", 64)]
+    public void RejectedAsciiStartsUseBoundedWorkAndObserveOriginalCancellation(string segment, int copies)
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(segment, copies)));
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(@"\b\w{10,}\b", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = maxWork, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         Assert.Equal(0, regex.Count(input, token.Token));
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps => { if (steps >= 64) token.Cancel(); });

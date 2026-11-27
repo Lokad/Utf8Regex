@@ -29,7 +29,7 @@ public sealed class Pcre2SliceAnchorTests
     {
         using var regex = new Utf8Pcre2Regex("^ERROR: .+$", Pcre2CompileOptions.Multiline, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var source = new CancellationTokenSource();
         var cursor = regex.EnumerateMatches("😀\nERROR: "u8, 5, cancellationToken: source.Token);

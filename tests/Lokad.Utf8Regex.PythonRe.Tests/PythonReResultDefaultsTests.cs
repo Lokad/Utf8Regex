@@ -17,7 +17,6 @@ public sealed class PythonReResultDefaultsTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = controlled ? new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 64,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000

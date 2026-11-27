@@ -28,7 +28,6 @@ public sealed class Utf8LiteralCountTests
                 MatchTimeout = Timeout.InfiniteTimeSpan,
                 ResourcePolicy = controlled ? new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 1024,
                     MaxWorkingBytes = 1 << 20,
                     MaxResultBytes = 1 << 20
@@ -92,7 +91,7 @@ public sealed class Utf8LiteralCountTests
         foreach (var controlled in new[] { false, true })
         {
             using var cancellation = new CancellationTokenSource();
-                var policy = controlled ? new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 256, MaxWorkingBytes = 1UL << 20, MaxResultBytes = 1UL << 20 } : default;
+                var policy = controlled ? new Utf8ResourcePolicy { MaxDepth = 256, MaxWorkingBytes = 1UL << 20, MaxResultBytes = 1UL << 20 } : default;
                 var regex = new Utf8Regex(literal, options: options, policy: new Utf8RegexPolicy
                 {
                     MatchTimeout = Timeout.InfiniteTimeSpan,

@@ -52,11 +52,9 @@ public sealed class PythonReLazyDisjointRepeatTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Match("aaab"u8, mode: Utf8PythonMatchMode.Search)).ResourceKind);
         var results = new Utf8PythonRegex("a+?b", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
@@ -95,7 +93,6 @@ public sealed class PythonReLazyDisjointRepeatTests
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1 << 20
             }

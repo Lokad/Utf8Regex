@@ -27,7 +27,6 @@ public class Utf8RequiredLiteralBenchmarks
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 50000000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 64UL << 20,
                 MaxResultBytes = 128UL << 20

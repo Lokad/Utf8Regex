@@ -36,13 +36,13 @@ internal static class PythonReDotNetReference
         var namedPythonGroups = arena.Allocate<bool>(coreNumbersByPython.Length, false);
         foreach (var number in parseResult.NamedGroups.Values)
         {
-            construction.Budget.ChargeWork(1);
+            construction.Budget.Checkpoint();
             namedPythonGroups[number] = true;
         }
         var nextCoreGroup = 1;
         for (var pythonGroup = 1; pythonGroup <= parseResult.CaptureGroupCount; pythonGroup++)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (!namedPythonGroups[pythonGroup])
             {
                 coreNumbersByPython[pythonGroup] = nextCoreGroup++;
@@ -51,7 +51,7 @@ internal static class PythonReDotNetReference
 
         for (var pythonGroup = 1; pythonGroup <= parseResult.CaptureGroupCount; pythonGroup++)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (namedPythonGroups[pythonGroup])
             {
                 coreNumbersByPython[pythonGroup] = nextCoreGroup++;
@@ -126,7 +126,7 @@ internal static class PythonReDotNetReference
         var complete = false;
         for (var index = 0; index < node.Items.Count; index++)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (node.Items[index] is PythonReCharacterClassRangeItem { StartScalar: 0, EndScalar: 0x10ffff })
             { complete = true; break; }
         }
@@ -153,7 +153,7 @@ internal static class PythonReDotNetReference
         for (var itemIndex = 0; itemIndex < items.Count; itemIndex++)
         {
             var item = items[itemIndex];
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             switch (item)
             {
                 case PythonReCharacterClassLiteralItem literal:
@@ -237,7 +237,7 @@ internal static class PythonReDotNetReference
         builder.Append('[');
         foreach (var fragment in fragments)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             builder.Append(fragment);
         }
 
@@ -248,7 +248,7 @@ internal static class PythonReDotNetReference
             var currentEnd = ranges[0].End;
             for (var index = 1; index < ranges.Count; index++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 var next = ranges[index];
                 if (next.Start <= currentEnd + 1) currentEnd = Math.Max(currentEnd, next.End);
                 else
@@ -344,7 +344,7 @@ internal static class PythonReDotNetReference
 
     private static string BuildSurrogateBranch(char highStart, char highEnd, char lowStart, char lowEnd)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         using var builder = Utf8ConstructionText.Create();
         builder.Append("(?:");
         if (highStart == highEnd) builder.Append(@"\u").AppendHex(highStart);
@@ -372,7 +372,7 @@ internal static class PythonReDotNetReference
         using var frames = Utf8ConstructionFrames<RenderFrame>.Create(budget, new(node));
         while (frames.Count != 0)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var index = frames.Count - 1;
             var frame = frames[index];
             var complete = ResumeRender(ref frame, builder, pythonGroupNumbers, coreNumbersByPython, out var child);
@@ -464,13 +464,13 @@ internal static class PythonReDotNetReference
         {
             case PythonReAlternationNode alternation:
                 if (frame.Stage == alternation.Branches.Count) return true;
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (frame.Stage != 0) builder.Append('|');
                 child = new(alternation.Branches[frame.Stage++]);
                 return false;
             case PythonReSequenceNode sequence:
                 if (frame.Stage == sequence.Elements.Count) return true;
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 child = new(sequence.Elements[frame.Stage++]);
                 return false;
             case PythonReLiteralNode literal:
@@ -480,7 +480,7 @@ internal static class PythonReDotNetReference
                 AppendCharacterClass(characterClass, builder);
                 return true;
             case PythonReRawNode raw:
-                Utf8ConstructionScope.ChargeWork((ulong)raw.Text.Length);
+                Utf8ConstructionScope.Checkpoint();
                 builder.Append(RenderFragment(raw.Text));
                 return true;
             case PythonReNamedBackreferenceNode named:

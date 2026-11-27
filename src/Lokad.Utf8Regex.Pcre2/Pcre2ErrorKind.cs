@@ -51,10 +51,8 @@ public enum Pcre2ErrorKind
     UnsetReplacementGroup,
     /// <summary>The match deadline expired.</summary>
     Timeout,
-    /// <summary>The configured match-operation limit was exceeded.</summary>
-    MatchLimit,
     /// <summary>The configured backtracking-depth limit was exceeded.</summary>
-    DepthLimit,
+    DepthLimit = 25,
     /// <summary>The configured match-workspace heap limit was exceeded.</summary>
     HeapLimit,
     /// <summary>The managed profile's cumulative result-capacity limit was exceeded.</summary>

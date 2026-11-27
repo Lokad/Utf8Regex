@@ -4,7 +4,7 @@ namespace Lokad.Utf8Regex;
 /// <remarks>Profiles copy the settings at construction. Construction and execution have independent deadlines and limits. Borrowed input, caller-owned output and incidental objects remain outside modeled major-storage admission; this is not a process-memory bound. The caller owns the lifetime and thread safety of a supplied allowance.</remarks>
 public sealed class Utf8RegexPolicy
 {
-    /// <summary>Gets invocation work, depth, working and result limits; default leaves them unlimited.</summary>
+    /// <summary>Gets invocation depth, working-capacity and result-capacity limits. The default leaves them unlimited.</summary>
     public Utf8ResourcePolicy ResourcePolicy { get; init; }
 
     /// <summary>Gets the timeout for each later operation, or null for the profile's default match timeout.</summary>

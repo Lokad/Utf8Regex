@@ -95,7 +95,7 @@ internal sealed class Utf8PackedNibbleLiteralFamilyCountStrategy
         var lookahead = _prefilter.LongestLength - 1;
         while (nextStart <= end - _prefilter.ShortestLength)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var first = nextStart;
             var block = input.Slice(first, Math.Min(2048, end - first));
@@ -107,7 +107,7 @@ internal sealed class Utf8PackedNibbleLiteralFamilyCountStrategy
                 if (at < nextStart) continue;
                 // At most eight short comparisons and their boundary predicates.
                 // Only an exact hit proves a scalar boundary at the candidate.
-                breach = invocation.TryChargeBoundedCheck();
+                breach = invocation.CheckBoundedProgress();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var remaining = block[relative..];
                 var literals = _prefilter.Literals;
@@ -123,7 +123,7 @@ internal sealed class Utf8PackedNibbleLiteralFamilyCountStrategy
                     total++;
                     if (firstOnly)
                     {
-                        breach = invocation.TryChargeInputStep();
+                        breach = invocation.CheckInput();
                         invocation.Budget.ThrowIfCancellationRequested();
                         if (breach != Utf8ExecutionLimitKind.None) return breach;
                         match = new(at, literal.Length, ordinal);
@@ -138,7 +138,7 @@ internal sealed class Utf8PackedNibbleLiteralFamilyCountStrategy
             nextStart = Math.Max(nextStart, first + starts);
         }
 
-        var outcome = invocation.TryChargeInputStep();
+        var outcome = invocation.CheckInput();
         invocation.Budget.ThrowIfCancellationRequested();
         if (outcome == Utf8ExecutionLimitKind.None)
         {

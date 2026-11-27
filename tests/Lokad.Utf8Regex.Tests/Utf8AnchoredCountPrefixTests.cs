@@ -23,7 +23,7 @@ public sealed class Utf8AnchoredCountPrefixTests
         foreach (var finite in new[] { false, true })
         {
             var policy = finite
-                ? new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 }
+                ? new Utf8ResourcePolicy { MaxDepth = 8192, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 }
                 : new Utf8ResourcePolicy();
             var actual = new Utf8Regex(pattern, options: options | mode, policy: new Utf8RegexPolicy
             {
@@ -73,7 +73,6 @@ public sealed class Utf8AnchoredCountPrefixTests
                 MatchTimeout = Timeout.InfiniteTimeSpan,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 8192,
                     MaxWorkingBytes = 1048576,
                     MaxResultBytes = 1048576
@@ -90,22 +89,13 @@ public sealed class Utf8AnchoredCountPrefixTests
         var regex = new Utf8Regex("^i.+$", options: RegexOptions.Multiline);
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var input = Encoding.UTF8.GetBytes("x\né\n😀\ni1\r\nx\nimport");
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Timeout.InfiniteTimeSpan, default);
+        var baseline = new Utf8SliceInvocation(new(0, 0), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
         var complete = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref baseline);
         Assert.Equal(Utf8ExecutionLimitKind.None, complete.Breach);
         Assert.Equal(2, complete.Count);
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
-        for (ulong cap = 1; cap <= baseline.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var outcome = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation);
-            Assert.Equal(cap == baseline.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, outcome.Breach);
-            if (outcome.Breach == Utf8ExecutionLimitKind.None) Assert.Equal(2, outcome.Count);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Fact]
@@ -118,7 +108,6 @@ public sealed class Utf8AnchoredCountPrefixTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576
@@ -136,18 +125,19 @@ public sealed class Utf8AnchoredCountPrefixTests
     [InlineData(true, true)]
     public void AnchoredMissObservesOriginalCheckpointInterruption(bool expire, bool firstOnly)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var clock = Utf8DeadlineTestClock.Start();
         using var token = new CancellationTokenSource();
         var regex = new Utf8Regex("^a.+$", options: RegexOptions.Multiline);
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("x\n", 32)));
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0),
+        var invocation = new Utf8SliceInvocation(new(0, 0),
             expire ? TimeSpan.FromMilliseconds(200) : Timeout.InfiniteTimeSpan, token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         // Reach the next checkpoint inside discovery even when bounded search
         // rejects all these lines in one block rather than visiting each line.
         for (var step = 0; step < 62; step++)
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckInput());
         var triggered = false;
         invocation.CheckpointHook = _ => { triggered = true; if (expire) clock.Advance(250); else token.Cancel(); };
         void Run()
@@ -162,7 +152,6 @@ public sealed class Utf8AnchoredCountPrefixTests
         if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(Run);
         else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(Run).CancellationToken);
         Assert.True(triggered);
-        Assert.Equal(64UL, invocation.Budget.Steps);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
     }
 }

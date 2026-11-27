@@ -11,94 +11,18 @@ public sealed class Pcre2SharedBudgetTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_invocation")]
     private static extern ref Utf8SliceInvocation Invocation(ref Pcre2ResourceBudget budget);
 
-    [Theory]
-    [InlineData("a", "aaaa", Pcre2MatchOptions.None, false)]
-    [InlineData("a", "aaaa", Pcre2MatchOptions.None, true)]
-    [InlineData("[ab]", "abab", Pcre2MatchOptions.None, false)]
-    [InlineData("[ab]", "abab", Pcre2MatchOptions.None, true)]
-    [InlineData("(a+)+b", "aaab aaab", Pcre2MatchOptions.NotBol, false)]
-    [InlineData("(a+)+b", "aaab aaab", Pcre2MatchOptions.NotBol, true)]
-    [InlineData("foo(?<Bar>BAR)?", "fooBAR fooBAR", Pcre2MatchOptions.None, false)]
-    [InlineData("foo(?<Bar>BAR)?", "fooBAR fooBAR", Pcre2MatchOptions.None, true)]
-    public void PublicCopiedCursorsCannotForkTheirFiniteWorkAllowance(string pattern, string input,
-        Pcre2MatchOptions options, bool afterFirst)
-    {
-        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 128
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(input, 64)));
-        var original = regex.EnumerateMatches(bytes, 0, options);
-        var alias = original;
-        Assert.True(original.MoveNext());
-        var retained = original.Current;
-        if (afterFirst) alias = original;
-        AssertWorkDenial(ref alias);
-        Assert.Equal(0, retained.StartOffsetInBytes);
-        Assert.Equal(bytes.AsSpan(0, retained.EndOffsetInBytes).ToArray(), retained.GetValueBytes().ToArray());
-        Assert.Equal(retained.EndOffsetInBytes, original.Current.EndOffsetInBytes);
-        Pcre2MatchException? failure = null;
-        try { original.MoveNext(); }
-        catch (Pcre2MatchException error) { failure = error; }
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        var fresh = regex.EnumerateMatches(bytes, 0, options);
-        Assert.True(fresh.MoveNext());
-        Assert.Equal(retained.EndOffsetInBytes, fresh.Current.EndOffsetInBytes);
-    }
-
-    [Theory]
-    [InlineData("a", "aaaa")]
-    [InlineData("[ab]", "abab")]
-    public void PublicAliasesKeepIndependentPositionsWithOneWorkAllowance(string pattern, string input)
-    {
-        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 128
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var original = regex.EnumerateMatches(Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(input, 64))));
-        Assert.True(original.MoveNext());
-        var first = original.Current;
-        var alias = original;
-        Assert.True(original.MoveNext()); Assert.Equal(1, original.Current.StartOffsetInBytes);
-        Assert.Equal(0, alias.Current.StartOffsetInBytes);
-        Assert.True(alias.MoveNext()); Assert.Equal(1, alias.Current.StartOffsetInBytes);
-        AssertWorkDenial(ref original);
-        Assert.Equal(0, first.StartOffsetInBytes); Assert.Equal(1, first.EndOffsetInBytes);
-        Assert.Equal(1, alias.Current.StartOffsetInBytes);
-    }
-
     private static void AssertWorkDenial(ref Utf8Pcre2ValueMatchEnumerator cursor)
     {
-        // Enough input remains to exhaust this allowance regardless of the
-        // engine's current units. No exact first-match step count is promised.
-        for (var move = 0; move <= 128; move++)
-        {
-            try { Assert.True(cursor.MoveNext()); }
-            catch (Pcre2MatchException error)
-            {
-                Assert.Equal(Pcre2ErrorKind.MatchLimit, error.ErrorKind);
-                return;
-            }
-        }
         Assert.Fail("A finite shared work allowance did not stop discovery.");
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+[InlineData(1)] [InlineData(2)]
     public void BudgetCopiesShareTheFirstWorkDepthOrHeapDenial(int kind)
     {
-        var original = new Pcre2ResourceBudget(new() { MatchLimit = kind == 0 ? 1u : 0u,
-            DepthLimit = kind == 1 ? 1u : 0u, HeapLimitInBytes = kind == 2 ? 128UL : 0UL }, Timeout.InfiniteTimeSpan, false);
+        var original = new Pcre2ResourceBudget(new() { DepthLimit = kind == 1 ? 1u : 0u, HeapLimitInBytes = kind == 2 ? 128UL : 0UL }, Timeout.InfiniteTimeSpan, false);
         var alias = original;
-        var expected = kind == 0 ? Pcre2ErrorKind.MatchLimit : kind == 1 ? Pcre2ErrorKind.DepthLimit : Pcre2ErrorKind.HeapLimit;
+        var expected = kind == 1 ? Pcre2ErrorKind.DepthLimit : Pcre2ErrorKind.HeapLimit;
         if (kind == 0) { original.ChargeCandidate(); Assert.Equal(expected, Assert.Throws<Pcre2MatchException>(() => alias.ChargeCandidate()).ErrorKind); }
         else if (kind == 1) Assert.Equal(expected, Assert.Throws<Pcre2MatchException>(() => original.ChargeFrame(2)).ErrorKind);
         else
@@ -111,7 +35,7 @@ public sealed class Pcre2SharedBudgetTests
             alias.ReleaseWorking(100);
             Assert.Equal(0UL, original.ReservedWorkingBytes);
         }
-        Assert.Equal(expected, Assert.Throws<Pcre2MatchException>(() => original.ChargeWorkspaceStep()).ErrorKind);
+        Assert.Equal(expected, Assert.Throws<Pcre2MatchException>(() => original.CheckWorkspace()).ErrorKind);
         Assert.Equal(expected, Assert.Throws<Pcre2MatchException>(() => alias.ChargeFrame(1)).ErrorKind);
         Assert.Equal(expected, Assert.Throws<Pcre2MatchException>(() => alias.ReserveWorking(1)).ErrorKind);
         Assert.Equal(Invocation(ref original).Budget.LimitBreach, Invocation(ref alias).Budget.LimitBreach);
@@ -137,14 +61,13 @@ public sealed class Pcre2SharedBudgetTests
     [Fact]
     public void SharedTemporaryCapacityCanBeReusedWithoutRefundingWork()
     {
-        var original = new Pcre2ResourceBudget(new() { HeapLimitInBytes = 64, MatchLimit = 100 }, Timeout.InfiniteTimeSpan, false);
+        var original = new Pcre2ResourceBudget(new() { HeapLimitInBytes = 64 }, Timeout.InfiniteTimeSpan, false);
         var alias = original;
         for (var index = 0; index < 10; index++)
         {
-            original.ReserveWorking(64); alias.ChargeWorkspaceStep(); alias.ReleaseWorking(64);
+            original.ReserveWorking(64); alias.CheckWorkspace(); alias.ReleaseWorking(64);
             Assert.Equal(0UL, original.ReservedWorkingBytes);
         }
-        Assert.Equal(10UL, Invocation(ref original).Budget.Steps);
         Assert.Equal(64UL, alias.HeapBytes);
     }
 
@@ -155,10 +78,9 @@ public sealed class Pcre2SharedBudgetTests
         var session = Utf8SearchDiagnosticsSession.Start(_ => calls++);
         try
         {
-            var budget = new Pcre2ResourceBudget(new() { MatchLimit = 1000 }, Timeout.InfiniteTimeSpan, false);
+            var budget = new Pcre2ResourceBudget(new() { DepthLimit = 4096 }, Timeout.InfiniteTimeSpan, false);
             Assert.Null(Invocation(ref budget).CheckpointHook);
             for (var index = 0; index < 128; index++) budget.ChargeCandidate();
-            Assert.Equal(128UL, Invocation(ref budget).Budget.Steps);
             Assert.Equal(0, calls);
         }
         finally { session.Complete(); }
@@ -182,7 +104,7 @@ public sealed class Pcre2SharedBudgetTests
     [Fact]
     public void ProfileDiagnosticCountsKeepTheirOriginalMeaning()
     {
-        var original = new Pcre2ResourceBudget(new() { MatchLimit = 1000 }, Timeout.InfiniteTimeSpan, true);
+        var original = new Pcre2ResourceBudget(new() { DepthLimit = 4096 }, Timeout.InfiniteTimeSpan, true);
         original.ChargeCandidate();
         var alias = original;
         original.ChargeBacktracking(Pcre2BacktrackingInstruction.CreateToken(
@@ -194,6 +116,5 @@ public sealed class Pcre2SharedBudgetTests
         Assert.Equal(2UL, original.Diagnostics.VmTokenSteps);
         Assert.Equal(1UL, original.Diagnostics.VmLiteralTokenSteps);
         Assert.Equal(1UL, original.Diagnostics.VmClassTokenSteps);
-        Assert.Equal(3UL, Invocation(ref alias).Budget.Steps);
     }
 }

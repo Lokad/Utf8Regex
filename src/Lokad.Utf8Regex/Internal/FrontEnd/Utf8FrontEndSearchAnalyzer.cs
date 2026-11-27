@@ -228,7 +228,7 @@ internal static class Utf8FrontEndSearchAnalyzer
 
         for (var i = 0; i < node.ChildCount; i++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var child = node.Child(i);
             if (child.Kind is Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary)
             {
@@ -303,7 +303,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic &&
                node.ChildCount == 1)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             node = node.Child(0);
         }
 
@@ -325,7 +325,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     {
         foreach (var item in value)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (item > 0x7f) return false;
         }
         return true;
@@ -335,7 +335,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     {
         foreach (var ch in value)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (ch > 0x7F)
             {
                 return false;

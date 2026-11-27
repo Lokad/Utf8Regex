@@ -27,7 +27,6 @@ public sealed class Pcre2ControlVerbLabelTests
         {
             var limits = finite ? new Utf8Pcre2ExecutionLimits
             {
-                MatchLimit = 1_000_000,
                 DepthLimit = 256,
                 HeapLimitInBytes = 1_048_576,
                 ResultLimitInBytes = 1_048_576
@@ -36,7 +35,6 @@ public sealed class Pcre2ControlVerbLabelTests
             {
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                     MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                     MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                     MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
@@ -47,7 +45,6 @@ public sealed class Pcre2ControlVerbLabelTests
             {
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                     MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                     MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                     MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
@@ -85,7 +82,6 @@ public sealed class Pcre2ControlVerbLabelTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1_048_576,
                 MaxResultBytes = 1_048_576
@@ -127,7 +123,7 @@ public sealed class Pcre2ControlVerbLabelTests
         owner.Budget.Deadline = deadline;
         owner.Budget.CancellationToken = cancellation.Token;
         var polls = 0;
-        owner.Budget.CheckpointHook = _ =>
+        owner.Budget.CheckpointHook = () =>
         {
             if (++polls != 2) return;
             if (timeout) ticks = 30000;

@@ -6,8 +6,8 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8RtlStrictEndCountTests
 {
-    private static Utf8ResourcePolicy Limits(ulong work = 1000000) => new()
-    { MaxWorkSteps = work, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Limits() => new()
+    { MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     public static IEnumerable<object[]> Cases()
     {
@@ -33,7 +33,7 @@ public sealed class Utf8RtlStrictEndCountTests
     {
         using var regex = new Utf8Regex(@"\k<g>(?<g>[aé])\z", options: RegexOptions.RightToLeft, policy: new()
         {
-            ResourcePolicy = Limits(64)
+            ResourcePolicy = Limits()
         });
         var input = Encoding.UTF8.GetBytes(new string('a', 4096) + "éaa\n");
         var end = input.Length - 1;
@@ -60,7 +60,7 @@ public sealed class Utf8RtlStrictEndCountTests
         var options = RegexOptions.RightToLeft | (dotAll ? RegexOptions.Singleline : RegexOptions.None);
         using var regex = new Utf8Regex(@"\A.{128}\z", options, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         using var token = new CancellationTokenSource();
         var prefix = new string('a', 126) + "😀";
@@ -76,7 +76,7 @@ public sealed class Utf8RtlStrictEndCountTests
         var options = RegexOptions.RightToLeft | (dotAll ? RegexOptions.Singleline : RegexOptions.None);
         using var regex = new Utf8Regex(@"(?<g>.{4093})\z", options, policy: new()
         {
-            ResourcePolicy = Limits(64)
+            ResourcePolicy = Limits()
         });
         var prefix = "é\n" + new string('a', 2046) + "😀";
         var input = Encoding.UTF8.GetBytes(prefix + new string('a', 2046) + "\nmore");
@@ -140,12 +140,11 @@ public sealed class Utf8RtlStrictEndCountTests
         var input = Encoding.UTF8.GetBytes(new string('a', length));
         foreach (var start in new[] { input.Length, 0 })
         {
-            var invocation = new Utf8SliceInvocation(new(1000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(new(1, 7, 1), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
             var result = Utf8SliceRunner.CountFromBytes(program, input, start, [], [], ref invocation);
             Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
             Assert.Equal(start == input.Length ? 1 : 0, result.Count);
-            Assert.InRange(invocation.Budget.Steps, 1UL, 64UL);
             Assert.Equal(start, invocation.AnchorOriginByte);
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         }
@@ -157,7 +156,7 @@ public sealed class Utf8RtlStrictEndCountTests
         var regex = new Utf8Regex(@"\A\k<g>(?<g>.{64})\z", options: RegexOptions.RightToLeft);
         var program = regex.Inspection.PreparedRegex.ScalarProgram!;
         var input = Encoding.UTF8.GetBytes(new string('a', 128));
-        var wrongFloor = new Utf8SliceInvocation(new(1000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+        var wrongFloor = new Utf8SliceInvocation(new(1, 7, 1), Regex.InfiniteMatchTimeout, default);
         Assert.True(wrongFloor.Ledger.TryReserve(7));
         var missed = Utf8SliceRunner.CountFromBytes(program, input, input.Length / 2,
             new int[program.GroupCount], new int[program.GroupCount], ref wrongFloor);
@@ -165,7 +164,7 @@ public sealed class Utf8RtlStrictEndCountTests
         Assert.Equal(0, missed.Count);
         Assert.Equal(7UL, wrongFloor.Ledger.ReservedBytes);
 
-        var funded = new Utf8SliceInvocation(new(ulong.MaxValue, 1024, 1 << 20, 1 << 20),
+        var funded = new Utf8SliceInvocation(new(1024, 1 << 20, 1 << 20),
             Regex.InfiniteMatchTimeout, default);
         Assert.True(funded.Ledger.TryReserve(7));
         var match = Utf8SliceRunner.CountFromBytes(program, input, input.Length, new int[program.GroupCount],
@@ -173,22 +172,6 @@ public sealed class Utf8RtlStrictEndCountTests
         Assert.Equal(Utf8ExecutionLimitKind.None, match.Breach);
         Assert.Equal(1, match.Count);
         Assert.Equal(0, funded.AnchorOriginByte);
-        for (ulong cap = 1; cap < funded.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 1024, 1 << 20, 1 << 20),
-                Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            var denied = Utf8SliceRunner.CountFromBytes(program, input, input.Length, new int[program.GroupCount],
-                new int[program.GroupCount], ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        }
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(regex.Pattern, options:                 RegexOptions.RightToLeft, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Regex.InfiniteMatchTimeout,
-                ResourcePolicy = Limits(1)
-            }).Count(input)).ResourceKind);
     }
 
     [Theory]
@@ -198,16 +181,17 @@ public sealed class Utf8RtlStrictEndCountTests
     [InlineData(true, true)]
     public void TerminalExhaustionKeepsOriginalAuthority(bool wrongFloor, bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var program = new Utf8Regex(@"\z", options: RegexOptions.RightToLeft).Inspection.PreparedRegex.ScalarProgram!;
         var input = "abcdef"u8.ToArray();
         var start = wrongFloor ? 0 : input.Length;
-        var funded = new Utf8SliceInvocation(new(ulong.MaxValue, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+        var funded = new Utf8SliceInvocation(new(1, 7, 1), Regex.InfiniteMatchTimeout, default);
         Assert.True(funded.Ledger.TryReserve(7));
         Assert.Equal(Utf8ExecutionLimitKind.None,
             Utf8SliceRunner.CountFromBytes(program, input, start, [], [], ref funded).Breach);
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 1, 7, 1),
+        var invocation = new Utf8SliceInvocation(new(1, 7, 1),
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         ulong target = 0;
@@ -218,10 +202,10 @@ public sealed class Utf8RtlStrictEndCountTests
             entered = true;
             if (expire) clock.Advance(250); else source.Cancel();
         };
-        var padding = (64 - funded.Budget.Steps % 64) % 64;
+        var padding = (64 - funded.Budget.DiagnosticCheckpoints % 64) % 64;
         for (ulong i = 0; i < padding; i++)
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
-        target = invocation.Budget.Steps + funded.Budget.Steps;
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckInput());
+        target = invocation.Budget.DiagnosticCheckpoints + funded.Budget.DiagnosticCheckpoints;
         Exception? observed = null;
         try { _ = Utf8SliceRunner.CountFromBytes(program, input, start, [], [], ref invocation); }
         catch (Exception error) { observed = error; }

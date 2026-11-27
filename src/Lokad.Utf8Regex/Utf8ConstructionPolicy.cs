@@ -5,22 +5,10 @@ namespace Lokad.Utf8Regex;
 /// Entry points with a caller-owned program allowance instead use that allowance
 /// for byte admission: null MaxBytes adds no private byte cap, and a positive
 /// MaxBytes is an additional limit. Other construction backstops remain.
-/// Limits cover admitted work, traversal frames, instruction capacity and major
-/// storage, not every allocation, CLR/JIT metadata, lazy preparation, caller
-/// retention or process memory. Temporary immutable-metadata enumerable views
-/// and enumerator boxes have no individual byte/acquisition-work charge;
-/// their backing tables and traversal work remain covered.
-/// Map lookups and long collision chains use block work charges; growth includes
-/// replacement-capacity admission and batched source scans. String-key scan and
-/// comparison work remain covered. Metadata enumeration admits its
-/// complete table scan before its first element; early disposal can overcharge.
-/// Arrays and instruction/state expansion retain admission before allocation.
-/// Construction work units can change by version.</remarks>
+/// Limits cover live traversal frames, instruction capacity and major storage.
+/// Parser scans and construction loops observe cooperative interruption.</remarks>
 public readonly record struct Utf8ConstructionPolicy
 {
-    /// <summary>Gets the cumulative covered construction-work limit, or null for the fixed backstop.</summary>
-    public ulong? MaxWorkSteps { get; init; }
-
     /// <summary>Gets the live covered traversal-frame limit, or null for the fixed backstop.</summary>
     public uint? MaxDepth { get; init; }
 
@@ -35,7 +23,7 @@ public readonly record struct Utf8ConstructionPolicy
 
     internal void Validate(string paramName)
     {
-        if (MaxWorkSteps == 0 || MaxDepth == 0 || MaxInstructionCapacity == 0 || MaxBytes == 0)
+        if (MaxDepth == 0 || MaxInstructionCapacity == 0 || MaxBytes == 0)
             throw new ArgumentOutOfRangeException(paramName, "Construction budgets must be null (fixed backstop) or at least one.");
     }
 }

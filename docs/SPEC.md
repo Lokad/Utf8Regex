@@ -151,10 +151,9 @@ host-defined substitutions. Host copying and decoding belong to the caller.
 
 `TryReplace` returns `Done` or `DestinationTooSmall`. Shortage writes zero
 bytes and leaves the destination unchanged. Overlap is supported and
-overlapping input requires staging. Other failures throw. Interruption or
-work exhaustion during final copying can leave a partial destination.
-Staging and output capacities count toward the applicable working and result
-limits.
+overlapping input requires staging. Other failures throw. Interruption during
+final copying can leave a partial destination. Staging and output capacities
+count toward the applicable working and result limits.
 
 ## Cancellation, deadlines and resource limits
 
@@ -185,7 +184,6 @@ unlimited and zero is invalid. All fields default to unlimited.
 
 | Policy | Covered scope | Denial kind |
 | --- | --- | --- |
-| `MaxWorkSteps` | Cumulative modeled engine work, including bounded scans and publication | `ExecutionWorkSteps` |
 | `MaxDepth` | Live backtracking, continuation or assertion state, including logical depth | `ExecutionDepth` |
 | `MaxWorkingBytes` | Live major scratch capacities, including growth overlap | `ExecutionWorkingBytes` |
 | `MaxResultBytes` | Cumulative modeled result and staging acquisitions | `ExecutionResultBytes` |
@@ -193,9 +191,9 @@ unlimited and zero is invalid. All fields default to unlimited.
 Denial throws `Utf8ResourceLimitExceededException` with the resource kind,
 limit and requested total. Totals saturate and the first denial remains in
 effect across cursor copies. A denied acquisition never publishes a partial
-successful result. Search, retries, and direct matches retain bounded work
-and interruption checks. Depth includes logical assertion state even when
-the engine allocates no continuation. Ordinary ordered range search and Count
+successful result. Search, retries and direct matches check for interruption
+in bounded blocks. Depth includes logical assertion state even when the
+engine allocates no continuation. Ordinary ordered range search and Count
 can admit the prepared leaf count as their depth bound. Smaller limits can
 still use scalar execution, and any capture replay has its own live depth
 checks within the invocation. Charges vary with the execution route and
@@ -275,7 +273,7 @@ invocation without keeping abandoned payloads alive.
 A memory cursor can cross calls or awaits. It retains admitted program use
 through regex close, and useful working state counts against its working limit
 until released. Aliases share position and disposal. Concurrent or reentrant
-access is rejected. The creation token, deadline and cumulative work/result
+access is rejected. The creation token, deadline and cumulative result
 traffic continue to apply. An optional advance token applies to that advance
 only, with the creation token winning when both are canceled. EOF, failure and
 explicit disposal release exclusive scratch and program use synchronously.
@@ -326,7 +324,6 @@ to `RegexOptions.None`.
 | --- | ---: |
 | Instruction slots | 1,048,576 |
 | Covered bytes | 64 MiB |
-| Work units | 67,108,864 |
 | Live frames | 65,536 |
 
 Positive construction policy values tighten the backstops and null keeps
@@ -334,14 +331,14 @@ the defaults. A program allowance handles byte admission for funded creation,
 including an optional `MaxBytes`. Transient search facts borrow their separately
 admitted payloads without a separate byte charge. A required prefilter that
 reuses the candidate search shares its byte charge. An independent prefilter
-has its own charge. Denials use `ConstructionWorkSteps`,
-`ConstructionDepth`, `ConstructionInstructionCapacity` or `ConstructionBytes`.
+has its own charge. Denials use `ConstructionDepth`,
+`ConstructionInstructionCapacity` or `ConstructionBytes`.
 Construction timeout has empty `Input` and uses the supplied text `Pattern`
 or an empty pattern for byte source diagnostics.
 
 Admission precedes major buffers, instruction expansion and growth overlap.
-Construction work limits and interruption cover parsing, lowering and emission.
-Covered work and byte charges can change with compiler algorithms and storage layouts.
+Parsing, lowering and emission check cancellation and deadlines.
+Covered byte charges can change with compiler algorithms and storage layouts.
 Unpublished storage is released on failure. Replacement preparation uses
 its own construction backstops within the original invocation deadline.
 Finite working bytes also cover cold preparation and can cause

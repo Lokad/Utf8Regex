@@ -30,17 +30,16 @@ public sealed class Utf8PatternByteSetQualificationTests
     }
 
     [Fact]
-    public void CyrillicPreparationSharesByteWorkAndDepthAdmissionWithItsParent()
+    public void CyrillicPreparationSharesByteAndDepthAdmissionWithItsParent()
     {
-        for (var denial = 0; denial < 3; denial++)
+        foreach (var denial in new[] { 0, 2 })
         {
             using var owner = new Utf8ConstructionScope(0, denial == 0 ? 128ul : ulong.MaxValue,
-                denial == 1 ? 2ul : ulong.MaxValue, denial == 2 ? 0ul : ulong.MaxValue);
+                denial == 2 ? 0ul : ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static _ => new ParentValue());
             var checkpoint = owner.Budget.ReservedBytes;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Prepare("Она|он"));
-            Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
-                1 => Utf8ResourceLimitKind.ConstructionWorkSteps, _ => Utf8ResourceLimitKind.ConstructionDepth }, failure.ResourceKind);
+            Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, _ => Utf8ResourceLimitKind.ConstructionDepth }, failure.ResourceKind);
             Assert.Equal(128ul, owner.Budget.ReservedBytes);
             Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
@@ -50,35 +49,36 @@ public sealed class Utf8PatternByteSetQualificationTests
     [Fact]
     public void CyrillicPreparationRejectsLateEndpointsAndRollsBackTheWholeChild()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const string pattern = " Она| она| ОН| он";
         ulong bytes, work, depth;
-        using (var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        using (var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue))
         {
             Assert.Equal(4, Prepare(pattern).Count(" Она она ОН он"u8));
-            bytes = owner.Budget.PeakBytes; work = owner.Budget.WorkSteps; depth = owner.Budget.PeakDepth;
+            bytes = owner.Budget.PeakBytes; work = owner.Budget.DiagnosticCheckpoints; depth = owner.Budget.PeakDepth;
             Assert.True(bytes > 0 && work > 0 && depth > 0);
         }
-        for (var denial = 0; denial < 3; denial++)
+        foreach (var denial in new[] { 0, 2 })
         {
             using var owner = new Utf8ConstructionScope(0, denial == 0 ? bytes - 1 : ulong.MaxValue,
-                denial == 1 ? work - 1 : ulong.MaxValue, denial == 2 ? depth - 1 : ulong.MaxValue);
+                denial == 2 ? depth - 1 : ulong.MaxValue);
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Prepare(pattern));
-            Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
-                1 => Utf8ResourceLimitKind.ConstructionWorkSteps, _ => Utf8ResourceLimitKind.ConstructionDepth }, failure.ResourceKind);
+            Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, _ => Utf8ResourceLimitKind.ConstructionDepth }, failure.ResourceKind);
             Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.True(owner.Budget.WorkSteps > 0);
+            Assert.True(owner.Budget.DiagnosticCheckpoints > 0);
         }
     }
 
     [Fact]
     public void CyrillicDeclinesRetainSpentWorkAndReleaseSpeculativePayloads()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         foreach (var pattern in new[] { "Она|.", "Она|", "Она|abc", "Она|😀", "123|456" })
         {
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
             Assert.False(Utf8InvariantCyrillicLiteralCountStrategy.TryCreate(pattern, CyrillicOptions,
                 Timeout.InfiniteTimeSpan, out var strategy));
-            Assert.Null(strategy); Assert.True(owner.Budget.WorkSteps > 0);
+            Assert.Null(strategy); Assert.True(owner.Budget.DiagnosticCheckpoints > 0);
             Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
 
         }

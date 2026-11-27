@@ -34,7 +34,7 @@ public sealed class Pcre2LeadingSetCountTests
     [Fact]
     public void CountUsesTheFirstScreenedStartWithinOneWorkAllowance()
     {
-        using var regex = Create("(a)b+", working: 1, work: 90);
+        using var regex = Create("(a)b+", working: 1);
         using var source = new CancellationTokenSource();
         var subject = Encoding.UTF8.GetBytes("ab😀" + new string('x', 65536) + "a ax ab abb aabc aa😀abbb");
 
@@ -49,14 +49,12 @@ public sealed class Pcre2LeadingSetCountTests
         var subject = Encoding.UTF8.GetBytes("😀ab" + new string('x', 2045) + "abéabbb a");
         var skippedBlock = Encoding.UTF8.GetBytes("😀ab" + new string('x', 4094) + "ab");
         using var token = new CancellationTokenSource();
-        using var regex = Create(pattern, working: 1, work: 10);
-        using var denied = Create(pattern, working: 1, work: 3);
+        using var regex = Create(pattern, working: 1);
+        using var denied = Create(pattern, working: 1);
 
         Assert.Equal(3, regex.Count(subject, 4, cancellationToken: token.Token));
         Assert.Equal(2, regex.Count(subject, 6, cancellationToken: token.Token));
         Assert.Equal(2, regex.Count(skippedBlock, 4, cancellationToken: token.Token));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => denied.Count(subject, 4, cancellationToken: token.Token)).ErrorKind);
     }
 
     [Theory]
@@ -144,16 +142,17 @@ public sealed class Pcre2LeadingSetCountTests
     public void ImpossibleSubjectsNeedNoVmScratchWhileRealAttemptsStillAdmitIt(
         string pattern, char filler, string hit, bool needsStorage)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = Create(pattern, working: 1, result: 1);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
         var bytes = Encoding.UTF8.GetBytes(new string(filler, 65536));
         Pcre2Runner.AdmitStart(bytes, 0, ref invocation);
         ReadOnlySpan<byte> input = bytes;
-        var validation = invocation.Budget.Steps;
+        var validation = invocation.Budget.DiagnosticCheckpoints;
         Assert.True(Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, input,
             new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
         Assert.Equal(0, count);
-        Assert.True(invocation.Budget.Steps > validation);
+        Assert.True(invocation.Budget.DiagnosticCheckpoints > validation);
         Assert.Equal(0UL, invocation.Budget.PeakWorkingBytes);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         if (needsStorage)
@@ -164,11 +163,11 @@ public sealed class Pcre2LeadingSetCountTests
         var budget = new Pcre2ResourceBudget(regex.DebugCompiledProgram.Request, default);
         ref var matchInvocation = ref budget.WorkingInvocation;
         Pcre2Runner.AdmitStart(bytes, 0, ref matchInvocation);
-        validation = matchInvocation.Budget.Steps;
+        validation = matchInvocation.Budget.DiagnosticCheckpoints;
         Assert.True(Pcre2Runner.TryIsMatch(regex.DebugCompiledProgram, input,
             new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget, out var found));
         Assert.False(found);
-        Assert.True(matchInvocation.Budget.Steps > validation);
+        Assert.True(matchInvocation.Budget.DiagnosticCheckpoints > validation);
         Assert.Equal(0UL, matchInvocation.Budget.PeakWorkingBytes);
         Assert.Equal(0UL, matchInvocation.Ledger.ReservedBytes);
         Assert.False(regex.IsMatch(bytes));
@@ -176,31 +175,6 @@ public sealed class Pcre2LeadingSetCountTests
             Assert.Equal(Pcre2ErrorKind.HeapLimit,
                 Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(Encoding.UTF8.GetBytes(hit))).ErrorKind);
         else Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(hit)));
-    }
-
-    [Theory]
-    [InlineData("(a+)(b)", 'x')]
-    [InlineData("[a-z]+@[a-z]+", 'a')]
-    [InlineData(@"[^a]+\.[^z]+", 'b')]
-    public void ValidationAndAbsenceSearchSpendOneStickyWorkAllowance(string pattern, char filler)
-    {
-        var bytes = Encoding.UTF8.GetBytes(new string(filler, 262144));
-        var regex = Create(pattern);
-        var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-        Pcre2Runner.AdmitStart(bytes, 0, ref invocation);
-        ReadOnlySpan<byte> input = bytes;
-        var validation = invocation.Budget.Steps;
-        Assert.True(Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, input,
-            new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
-        Assert.Equal(0, count);
-        var search = invocation.Budget.Steps - validation;
-        Assert.True(validation > 0 && search > 0);
-        var limit = checked((uint)Math.Max(validation, search));
-        var denied = Create(pattern, work: limit);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => denied.Count(bytes)).ErrorKind);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => denied.IsMatch(bytes)).ErrorKind);
     }
 
     [Theory]
@@ -215,6 +189,7 @@ public sealed class Pcre2LeadingSetCountTests
     public void AbsenceSearchKeepsOriginalInterruptionAndRetainedCaptures(bool cancel, bool isMatch, string pattern,
         string hit, string firstCapture, string? secondCapture)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
@@ -222,7 +197,6 @@ public sealed class Pcre2LeadingSetCountTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -239,7 +213,7 @@ public sealed class Pcre2LeadingSetCountTests
         var bytes = Encoding.UTF8.GetBytes(new string('x', 262144));
         Pcre2Runner.AdmitStart(bytes, 0, ref invocation);
         ReadOnlySpan<byte> input = bytes;
-        var validation = invocation.Budget.Steps;
+        var validation = invocation.Budget.DiagnosticCheckpoints;
         var checkpoints = 0;
         invocation.CheckpointHook = _ => { checkpoints++; if (cancel) token.Cancel(); else ticks = 25; };
         Exception? failure = null;
@@ -253,7 +227,7 @@ public sealed class Pcre2LeadingSetCountTests
                     new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _);
         }
         catch (Exception error) { failure = error; }
-        Assert.True(checkpoints > 0 && invocation.Budget.Steps > validation);
+        Assert.True(checkpoints > 0 && invocation.Budget.DiagnosticCheckpoints > validation);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         Assert.Equal(0UL, invocation.Budget.PeakWorkingBytes);
         if (cancel) Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
@@ -265,7 +239,7 @@ public sealed class Pcre2LeadingSetCountTests
     [Fact]
     public void DelimiterWindowsCountNonOverlappingHitsUnderOneWorkLimit()
     {
-        using var regex = Create("[a-z]+@(?<tail>[a-z]+)", work: 256);
+        using var regex = Create("[a-z]+@(?<tail>[a-z]+)");
         using var source = new CancellationTokenSource();
         var rejected = "😀" + new string('a', 2048) + "@!𐐨";
         var input = Encoding.UTF8.GetBytes(rejected + "abc@tailx@longer!xy@last!");
@@ -281,7 +255,7 @@ public sealed class Pcre2LeadingSetCountTests
     [Fact]
     public void CapturedDelimiterWindowsRetainTheFirstStartAndItsRanges()
     {
-        using var regex = Create("([a-z]+)@([a-z]+)(![0-9]+)?", work: 256);
+        using var regex = Create("([a-z]+)@([a-z]+)(![0-9]+)?");
         var slice = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         Assert.Equal((int)'@', slice.DisjointClassDelimiter);
         var prefix = string.Concat(Enumerable.Repeat("aa@!😀", 12));
@@ -333,12 +307,11 @@ public sealed class Pcre2LeadingSetCountTests
     }
 
     private static Utf8Pcre2Regex Create(string pattern, ulong working = 1 << 20,
-        ulong result = 1 << 20, uint work = 1000000) =>
+        ulong result = 1 << 20) =>
         new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (work) == 0 ? null : (work),
                 MaxDepth = 256,
                 MaxWorkingBytes = (working) == 0 ? null : (working),
                 MaxResultBytes = (result) == 0 ? null : (result)

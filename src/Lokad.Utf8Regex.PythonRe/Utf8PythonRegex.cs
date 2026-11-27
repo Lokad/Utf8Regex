@@ -70,14 +70,14 @@ public sealed partial class Utf8PythonRegex
                 // This retained copy also supplies the parser's borrow. Admission
                 // precedes allocation; caller reuse after compilation is harmless.
                 var bytes = construction.Budget.AllocateArray<byte>(patternSource.Length, false);
-                construction.Budget.ChargeWork((ulong)bytes.Length);
+                construction.Budget.Checkpoint();
                 patternSource.Utf8.CopyTo(bytes);
                 _patternSource = bytes;
             }
             else _patternSource = patternSource.Text;
             Options = options;
             InvocationLimits = new(resourcePolicy);
-            HasFiniteExecutionLimits = resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue ||
+            HasFiniteExecutionLimits = resourcePolicy.MaxDepth.HasValue ||
                 resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue;
 
             var parser = PythonReParser.Create(_patternSource);
@@ -99,7 +99,7 @@ public sealed partial class Utf8PythonRegex
             var nameIndex = 0;
             foreach (var entry in parseResult.NamedGroups)
             {
-                construction.Budget.ChargeWork(1);
+                construction.Budget.Checkpoint();
                 _nameEntriesUtf8[nameIndex++] = new(construction.Budget.EncodeUtf8(entry.Key.AsSpan()), entry.Value);
             }
             // Transfer the parser's admitted immutable name map for replacement
@@ -148,12 +148,12 @@ public sealed partial class Utf8PythonRegex
             {
                 var owner = construction.Budget.AllocateObject(programMemoryAllowance,
                     static allowance => new Utf8FundedStorage(allowance, nameof(Utf8PythonRegex)));
-                construction.Budget.ChargeWork(0);
+                construction.Budget.Checkpoint();
                 _replacementPlanCache.EnableFunding(programMemoryAllowance);
                 owner.Retain(construction.Budget.TransferFundedBytes());
                 _programMemory = owner;
             }
-            else if (explicitConstruction) construction.Budget.ChargeWork(0);
+            else if (explicitConstruction) construction.Budget.Checkpoint();
             construction.Complete();
         }
         catch (Utf8ExecutionDeadlineExpiredException) when (explicitConstruction)
@@ -188,7 +188,7 @@ public sealed partial class Utf8PythonRegex
     /// <summary>Gets the maximum duration of an individual matching operation.</summary>
     public TimeSpan MatchTimeout { get; }
 
-    /// <summary>Gets the invocation resource policy. Finite work, depth, working and result-capacity limits are supported.</summary>
+    /// <summary>Gets the invocation limits on depth, working capacity and result capacity.</summary>
     public Utf8ResourcePolicy ResourcePolicy => InvocationLimits.ToResourcePolicy();
 
     internal bool DebugUsesUtf8RegexBackend => _utf8Regex is not null;

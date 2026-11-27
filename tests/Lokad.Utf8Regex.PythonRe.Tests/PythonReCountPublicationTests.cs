@@ -13,96 +13,6 @@ public sealed class PythonReCountPublicationTests
     private static T Field<T>(Utf8PythonRegex value, string name) =>
         (T)typeof(Utf8PythonRegex).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(value)!;
 
-    [Fact]
-    public void CountRequiresItsTerminalWorkAndDoesNotPublishPartialResults()
-    {
-        var input = "😀x"u8.ToArray();
-        const string pattern = "(😀*)";
-        var regex = new Utf8PythonRegex(pattern);
-        var program = Field<Utf8SliceProgram>(regex, "_scalarProgram");
-        var candidate = Field<global::Lokad.Utf8Regex.Utf8Regex?>(regex, "_utf8Regex");
-        var invocation = new Utf8SliceInvocation(new(100000, 1024, 1048576, 1), Regex.InfiniteMatchTimeout, default);
-        var cursor = new PythonReScalarMatchCursor(input, program, 0, Regex.InfiniteMatchTimeout, candidate, pattern, invocation);
-        ulong work;
-        try
-        {
-            var count = 0;
-            while (cursor.MoveNext()) count++;
-            Assert.Equal(3, count);
-            work = cursor.WorkingInvocation.Budget.Steps;
-        }
-        finally { cursor.Dispose(); }
-        foreach (var admit in new[] { false, true })
-        {
-            var bounded = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-            {
-                MatchTimeout = Regex.InfiniteMatchTimeout,
-                ResourcePolicy = new()
-                {
-                    MaxWorkSteps = work - (admit ? 0UL : 1UL),
-                    MaxDepth = 1024,
-                    MaxWorkingBytes = 1048576,
-                    MaxResultBytes = 1
-                }
-            });
-            int? published = null;
-            var failure = Record.Exception(() => published = bounded.Count(input));
-            if (admit) { Assert.Null(failure); Assert.Equal(3, published); }
-            else
-            {
-                var error = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-                Assert.Null(published);
-            }
-        }
-        Assert.Equal(3, regex.Count(input));
-    }
-
-    [Fact]
-    public void CursorTerminalWorkDenialFaultsWithoutInvalidatingOwnedSnapshots()
-    {
-        Utf8PythonRangeMatch cursorRange = default;
-        var input = "😀x"u8.ToArray();
-        const string pattern = "(😀*)";
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 };
-        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = policy
-        });
-        ulong work;
-        var matches = 0;
-        using (var measured = regex.CreateMatchCursor(input))
-        {
-            measured.WorkingInvocation.ShareStorageForCursor();
-            var observer = measured.WorkingInvocation;
-            while (measured.MoveNext(out _)) matches++;
-            work = observer.Budget.Steps;
-        }
-        var bounded = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = policy with
-            {
-                MaxWorkSteps = work - 1
-            }
-        });
-        var account = new PythonReSharedWorkingAllowanceTests.Allowance(1 << 20);
-        Assert.True(account.TryReserve(13));
-        using var cursor = bounded.CreateMatchCursor(input, workingMemoryAllowance: account);
-        Assert.True(cursor.MoveNext(out cursorRange));
-        var retained = cursorRange;
-        for (var index = 1; index < matches; index++) Assert.True(cursor.MoveNext(out cursorRange));
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-        Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
-        cursor.Dispose();
-        Assert.Equal(13UL, account.Used);
-        account.Release(13);
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
-    }
-
     [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
@@ -110,13 +20,13 @@ public sealed class PythonReCountPublicationTests
     [InlineData(true, true)]
     public void TerminalCursorFailureKeepsOriginalAuthorityAndRetainedSnapshots(bool finite, bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         Utf8PythonRangeMatch cursorRange = default;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var policy = finite ? new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000,
             MaxDepth = 1024,
             MaxWorkingBytes = 1048576,
             MaxResultBytes = 1048576
@@ -140,7 +50,7 @@ public sealed class PythonReCountPublicationTests
             var observer = measured.WorkingInvocation;
             var count = 0;
             while (measured.MoveNext(out _)) count++;
-            terminal = observer.Budget.Steps;
+            terminal = observer.Budget.DiagnosticCheckpoints;
             if ((terminal & 63) == 0) expected = count;
         }
         Assert.True(expected > 0, "No bounded terminal cursor checkpoint witness found.");
@@ -198,13 +108,13 @@ public sealed class PythonReCountPublicationTests
     [InlineData("(?!x)a+", true, true)]
     public void TerminalVmStepCannotPublishCountAfterInterruption(string pattern, bool finite, bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        var limits = finite ? new Utf8ExecutionLimits(100000, 1024, 1048576, 1048576) : Utf8ExecutionLimits.Unlimited;
+        var limits = finite ? new Utf8ExecutionLimits(1024, 1048576, 1048576) : Utf8ExecutionLimits.Unlimited;
         var policy = finite ? new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000,
             MaxDepth = 1024,
             MaxWorkingBytes = 1048576,
             MaxResultBytes = 1048576
@@ -231,7 +141,7 @@ public sealed class PythonReCountPublicationTests
             {
                 var count = 0;
                 while (cursor.MoveNext()) count++;
-                terminal = cursor.WorkingInvocation.Budget.Steps;
+                terminal = cursor.WorkingInvocation.Budget.DiagnosticCheckpoints;
                 if ((terminal & 63) == 0) expected = count;
             }
             finally { cursor.Dispose(); }
@@ -280,7 +190,6 @@ public sealed class PythonReCountPublicationTests
     {
         var policy = finite ? new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000,
             MaxDepth = 1024,
             MaxWorkingBytes = 1048576,
             MaxResultBytes = 1048576

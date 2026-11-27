@@ -28,7 +28,7 @@ public sealed class PythonReFiniteResultPolicyTests
             long ticks = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
             var error = Assert.Throws<RegexMatchTimeoutException>(() =>
-                PythonReFiniteWorkPolicyTests.Run(regex, input, operation));
+                PythonReOperationTests.Run(regex, input, operation));
             Assert.Empty(error.Input);
             Assert.Equal("z", error.Pattern);
             Assert.Equal(TimeSpan.FromMilliseconds(1), error.MatchTimeout);
@@ -73,7 +73,7 @@ public sealed class PythonReFiniteResultPolicyTests
             MatchTimeout = TimeSpan.FromMilliseconds(1),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = ulong.MaxValue
+                MaxDepth = 4096
             }
         });
         long ticks = 0;
@@ -86,11 +86,10 @@ public sealed class PythonReFiniteResultPolicyTests
         Assert.Equal(cancellation.Token, canceled.CancellationToken);
     }
 
-    public static IEnumerable<object[]> Operations() => PythonReFiniteWorkPolicyTests.Operations();
-    private static Utf8PythonRegex Create(string pattern, ulong cap, bool bytes = false, ulong? work = null,
-        PythonReCompileOptions options = PythonReCompileOptions.None, TimeSpan? timeout = null)
+    public static IEnumerable<object[]> Operations() => PythonReOperationTests.Operations();
+    private static Utf8PythonRegex Create(string pattern, ulong cap, bool bytes = false,         PythonReCompileOptions options = PythonReCompileOptions.None, TimeSpan? timeout = null)
     {
-        var policy = new Utf8ResourcePolicy { MaxResultBytes = cap, MaxWorkSteps = work };
+        var policy = new Utf8ResourcePolicy { MaxResultBytes = cap };
         return bytes ? new(Encoding.UTF8.GetBytes(pattern), options: options, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = timeout ?? Regex.InfiniteMatchTimeout,
@@ -102,7 +101,7 @@ public sealed class PythonReFiniteResultPolicyTests
         });
     }
     private static string Run(Utf8PythonRegex regex, byte[] input, int operation, int start = 0, CancellationToken token = default)
-        => PythonReFiniteWorkPolicyTests.Run(regex, input, operation, start, token);
+        => PythonReOperationTests.Run(regex, input, operation, start, token);
     private static void Check(Utf8ResourceLimitExceededException error, ulong cap)
     {
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, error.ResourceKind);
@@ -124,7 +123,7 @@ public sealed class PythonReFiniteResultPolicyTests
             {
                 Assert.Equal(expected, Run(Create(pattern, 1000000, bytes), input, operation, token: token));
                 Assert.Equal(expected, Run(Create(pattern, ulong.MaxValue, bytes), input, operation, token: token));
-                Assert.Equal(expected, Run(Create(pattern, 1000000, bytes, work: 1000000), input, operation, token: token));
+                Assert.Equal(expected, Run(Create(pattern, 1000000, bytes), input, operation, token: token));
             }
         }
     }
@@ -179,10 +178,6 @@ public sealed class PythonReFiniteResultPolicyTests
         var canceled = Assert.Throws<OperationCanceledException>(() => Run(Create(pattern, 1), input, operation, token: source.Token));
         Assert.Equal(source.Token, canceled.CancellationToken);
         var valid = Encoding.UTF8.GetBytes(text);
-        var work = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(Create(pattern, 1000000, work: 1), valid, operation));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, work.ResourceKind);
-        Assert.Equal(1UL, work.Limit);
-        Assert.Equal(2UL, work.Requested);
     }
 
     [Theory]

@@ -36,7 +36,7 @@ public sealed class Utf8ConstructionTextTests
     [InlineData(0ul)] [InlineData(47ul)] [InlineData(48ul)]
     public void TextByteDenialPreservesParentCapacityAndRoots(ulong allowance)
     {
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 48, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 48, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         var failure = Record.Exception(() => owner.Budget.CopyText("a"));
         if (allowance < 48)
@@ -53,7 +53,7 @@ public sealed class Utf8ConstructionTextTests
     [Fact]
     public void BulkGrowthDenialKeepsOriginalCharactersAndCapacity()
     {
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 207, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 207, ulong.MaxValue);
         using var buffer = Utf8ConstructionBuffer<char>.Create(owner.Budget);
         buffer.AddRange("abcd");
         var held = owner.Budget.ReservedBytes;
@@ -62,23 +62,6 @@ public sealed class Utf8ConstructionTextTests
         Assert.Equal("abcd", new string(buffer.Span));
         Assert.Equal(held, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.PeakBytes <= 207);
-    }
-
-    [Theory]
-    [InlineData(0ul)] [InlineData(1ul)] [InlineData(2ul)] [InlineData(3ul)]
-    public void StringCopyWorkDenialRestoresParentWithoutCreatingRoots(ulong allowance)
-    {
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, allowance + 1, ulong.MaxValue);
-        var parent = owner.Budget.AllocateArray<byte>(1, false);
-        using (var child = Utf8ConstructionScope.Enter())
-        {
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => child.Budget.CopyText("12345678"));
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-        }
-        Assert.Equal(48ul, owner.Budget.ReservedBytes);
-
-        Assert.Equal(1ul, owner.Budget.WorkSteps);
-        owner.Budget.ReleaseArray(parent, false);
     }
 
     [Fact]
@@ -113,9 +96,8 @@ public sealed class Utf8ConstructionTextTests
     {
         var source = string.Concat(Enumerable.Repeat(@"\ ", count));
         var allowance = 16ul * (ulong)source.Length;
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, allowance, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         Assert.Equal(new string(' ', count), Utf8ConstructionText.Replace(source, @"\ ", " "));
-        Assert.InRange(owner.Budget.WorkSteps, (ulong)source.Length, allowance);
     }
 
     [Theory]
@@ -139,33 +121,30 @@ public sealed class Utf8ConstructionTextTests
     {
         using var owner = Utf8ConstructionScope.Enter();
         Assert.Throws<ArgumentException>(() => Utf8ConstructionText.Replace("abc", "", "!"));
-        Assert.Equal(0ul, owner.Budget.WorkSteps);
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void ReplacementDenialRestoresParentStorageWithoutRefundingWork(bool bytes)
+    [Fact]
+    public void ReplacementDenialRestoresParentStorage()
     {
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, bytes ? 48ul : ulong.MaxValue,
-            bytes ? ulong.MaxValue : 16ul, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 48, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 37;
         using (var child = Utf8ConstructionScope.Enter())
         {
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8ConstructionText.Replace("abababab", "ab", "larger"));
-            Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
+            Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         }
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(37, parent[0]);
-        Assert.Equal(bytes ? 17ul : 1ul, owner.Budget.WorkSteps);
     }
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void ReplacementChecksOriginalInterruptionBetweenSearches(bool timeout)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var owner = Utf8ConstructionScope.Enter();
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
@@ -175,9 +154,10 @@ public sealed class Utf8ConstructionTextTests
         owner.Budget.CancellationToken = cancellation.Token;
         // Four search units + four helper units + one allocation unit + one
         // copied replacement unit. The next checkpoint resumes the search.
-        owner.Budget.CheckpointHook = spent =>
+        var checkpoints = 0;
+        owner.Budget.CheckpointHook = () =>
         {
-            if (spent != 10) return;
+            if (checkpoints++ != 10) return;
             if (timeout) ticks = 30000;
             else cancellation.Cancel();
         };
@@ -188,10 +168,9 @@ public sealed class Utf8ConstructionTextTests
             else Assert.IsType<OperationCanceledException>(failure);
         }
         Assert.Same(deadline, owner.Budget.Deadline);
-        Assert.Equal(10ul, owner.Budget.WorkSteps);
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.True(owner.Budget.WorkSteps > 0);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > 0);
     }
 
     [Fact]

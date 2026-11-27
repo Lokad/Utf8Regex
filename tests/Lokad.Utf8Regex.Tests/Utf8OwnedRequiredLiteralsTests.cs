@@ -78,7 +78,7 @@ public sealed class Utf8OwnedRequiredLiteralsTests
             for (var boundary = 0; boundary <= input.Length; boundary++)
             {
                 if (boundary < input.Length && (input[boundary] & 0xc0) == 0x80) continue;
-                var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(100_000, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+                var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
                 // Probe scalar VM positions directly, bypassing every search fact.
                 var match = Utf8SliceRunner.TryMatchAt(program, input, boundary, starts, ends, true, ref invocation);
                 Assert.Equal(Utf8ExecutionLimitKind.None, match.Breach);

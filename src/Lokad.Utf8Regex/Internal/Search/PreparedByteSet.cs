@@ -189,7 +189,7 @@ internal sealed class PreparedByteSet(PreparedByteSetState state)
         budget.EnterDepth();
         try
         {
-            budget.ChargeWork((ulong)values.Length + 256);
+            budget.Checkpoint();
             var result = budget.AllocateObject(PreparedByteSetState.FromValues(values), static value => new PreparedByteSet(value));
             scope.Complete();
             return result;
@@ -205,7 +205,7 @@ internal sealed class PreparedByteSet(PreparedByteSetState state)
         budget.EnterDepth();
         try
         {
-            budget.ChargeWork(256);
+            budget.Checkpoint();
             var result = budget.AllocateObject(PreparedByteSetState.FromMasks(mask0, mask1, mask2, mask3), static value => new PreparedByteSet(value));
             scope.Complete();
             return result;

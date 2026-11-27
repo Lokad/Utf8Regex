@@ -69,7 +69,6 @@ public sealed class PosixPublicContractTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -167,7 +166,6 @@ public sealed class PosixPublicContractTests
             MatchTimeout = TimeSpan.FromSeconds(5),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -194,7 +192,6 @@ public sealed class PosixPublicContractTests
             MatchTimeout = TimeSpan.FromSeconds(5),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -367,7 +364,6 @@ public sealed class PosixPublicContractTests
                 MatchTimeout = deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxWorkingBytes = 1 << 20
                 }
             });
@@ -418,7 +414,6 @@ public sealed class PosixPublicContractTests
                     MatchTimeout = deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
                     ResourcePolicy = new()
                     {
-                        MaxWorkSteps = 1_000_000,
                         MaxWorkingBytes = 1 << 20
                     }
                 });
@@ -695,7 +690,6 @@ public sealed class PosixPublicContractTests
                 MatchTimeout = Timeout.InfiniteTimeSpan,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxWorkingBytes = 1 << 20
                 }
             });
@@ -737,26 +731,6 @@ public sealed class PosixPublicContractTests
             Assert.Equal(admitted + 1, account.Attempts); Assert.Equal(0UL, account.Used);
             Assert.All(output, match => Assert.False(match.Success));
         }
-    }
-    [Fact]
-    public void CursorWorkIsCumulativeAcrossAdvances()
-    {
-        var account = new Account();
-        var regex = new Utf8PosixRegex("a", options: default, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 256
-            }
-        });
-        using var cursor = regex.CreateMatchCursor(Encoding.ASCII.GetBytes(new string('a', 128)), workingMemoryAllowance: account);
-        var hits = 0;
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-        { while (cursor.MoveNext(match: out _)) hits++; });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-        Assert.InRange(hits, 1, 127); Assert.Equal(0UL, account.Used);
-        Assert.True(regex.IsMatch("a"u8));
     }
     [Fact]
     public void NumericWorkingAdmissionIncludesGrowthOverlap()
@@ -820,7 +794,7 @@ public sealed class PosixPublicContractTests
             MatchTimeout = deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000
+                MaxDepth = 4096
             }
         });
         var input = terminalUnicode || requiredUnicode ? Encoding.UTF8.GetBytes("Z" + new string('é', 8192)) :

@@ -142,22 +142,6 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
     }
 
     [Fact]
-    public void MeteredLiteralFamilyCountRetainsPcre2ResourceSemantics()
-    {
-        var regex = new Utf8Pcre2Regex("foo|bar", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-
-        var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count("xxfoo"u8));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
-    }
-
-    [Fact]
     public void LiteralFamilyCountHandlesEmptyAlternativesAndCompileAnchors()
     {
         var empty = new Utf8Pcre2Regex("foo|");
@@ -254,32 +238,6 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         Assert.NotEqual(Pcre2CandidateSearchKind.LeadingAsciiWordRun, regex.DebugCompiledProgram.CandidateSearch.Kind);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void LeadingAsciiWordRunSearchPreservesRuntimeLimitsAndOptions(bool requiresBoundary)
-    {
-        var input = "abcdefghijkl mnopqrstuv"u8.ToArray();
-        var pattern = requiresBoundary ? @"\b\w{10,}\b" : @"\w{10,}";
-        var regex = new Utf8Pcre2Regex(pattern);
-        Assert.Equal(2, regex.Count(input));
-        Assert.Equal(requiresBoundary ? 1 : 2, regex.Count(input, 2));
-        Assert.True(regex.IsMatch(input, 0, Pcre2MatchOptions.Anchored));
-        Assert.Equal(!requiresBoundary, regex.IsMatch(input, 2, Pcre2MatchOptions.Anchored));
-
-        var limited = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        Assert.Equal(
-            Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => limited.Count(input)).ErrorKind);
-    }
-
     [Fact]
     public void LeadingAsciiWordRunSearchRetriesInsideTheSameWord()
     {
@@ -303,14 +261,12 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         var input = Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("abc ", 8192)));
         using var limited = new Utf8Pcre2Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 8 },
+            ResourcePolicy = new() { MaxDepth = 4096 },
         });
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => limited.Count(input)).ErrorKind);
 
         using var regex = new Utf8Pcre2Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 32 },
+            ResourcePolicy = new() { MaxDepth = 4096 },
             MatchTimeout = TimeSpan.FromMilliseconds(20),
         });
         var reads = 0;
@@ -479,28 +435,6 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         Assert.Equal("<bc.d>za<bc.e>za<β.γ>z", Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
     }
 
-    [Fact]
-    public void OverlappingLeadingRunCandidateSearchHonorsStartAndMetering()
-    {
-        var regex = new Utf8Pcre2Regex(@"[^a]+\.[^z]+");
-        var input = "xbc.de"u8;
-
-        var match = regex.Match(input, startOffsetInBytes: 2);
-        Assert.True(match.Success);
-        Assert.Equal("c.de", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
-
-        var metered = new Utf8Pcre2Regex(@"[^a]+\.[^z]+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var longMiss = Encoding.UTF8.GetBytes(new string('x', 8192));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => metered.IsMatch(longMiss)).ErrorKind);
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -508,7 +442,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
     {
         using var regex = new Utf8Pcre2Regex(@"[a-z]+@[a-z]+", policy: funded ? new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxDepth = 64, MaxWorkingBytes = 4096 }
         } : null);
         using var source = new CancellationTokenSource();
         var input = "😀 foo@bar"u8;
@@ -525,7 +459,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
     {
         using var regex = new Utf8Pcre2Regex(@"[a-z]+@(?<tail>[a-z]+)", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256, MaxWorkingBytes = 4096 },
+            ResourcePolicy = new() { MaxWorkingBytes = 4096 },
         });
         var prefix = "😀" + new string('a', 2048);
         var rejected = prefix + "@!";
@@ -544,7 +478,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
     {
         using var unicode = new Utf8Pcre2Regex(@"[\p{L}]+@(?<tail>[a-z]+)", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256, MaxWorkingBytes = 4096 },
+            ResourcePolicy = new() { MaxWorkingBytes = 4096 },
         });
         using var ascii = new Utf8Pcre2Regex(@"\w+@(?<tail>[a-z]+)");
         var input = "!!βK𐐨@tail!"u8;
@@ -566,7 +500,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
     {
         using var regex = new Utf8Pcre2Regex(@"[\w]+://[^/\s?#]+[^\s?#]+", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 32, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         using var source = new CancellationTokenSource();
         Assert.Equal(Pcre2CandidateSearchKind.LeadingRunThenLiteral, regex.DebugCompiledProgram.CandidateSearch.Kind);
@@ -584,7 +518,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         {
             using var regex = new Utf8Pcre2Regex(pattern, policy: funded ? new Utf8RegexPolicy
             {
-                ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 4096 }
+                ResourcePolicy = new() { MaxDepth = 64, MaxWorkingBytes = 4096 }
             } : null);
             var token = funded ? source.Token : default;
             Assert.NotEqual(Pcre2CandidateSearchKind.LeadingRunThenLiteral, regex.DebugCompiledProgram.CandidateSearch.Kind);
@@ -593,22 +527,6 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
             Assert.Equal((3, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
             Assert.Equal(1, regex.Count(input, cancellationToken: token));
         }
-    }
-
-    [Fact]
-    public void ConfiguredLimitsBypassCandidateSearchAndRetainPcre2Accounting()
-    {
-        var regex = new Utf8Pcre2Regex(@"[a-z]+@[a-z]+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-
-        var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count("xx foo@bar"u8));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
     }
 
     [Fact]
@@ -707,7 +625,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
     {
         using var regex = new Utf8Pcre2Regex(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         using var token = new CancellationTokenSource();
         var input = "😀 https://atlas.example.org/path?q=1#frag"u8;

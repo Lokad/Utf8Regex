@@ -33,7 +33,6 @@ public sealed class Pcre2ScalarRangeAdmissionTests
         {
             var limits = finite ? new Utf8Pcre2ExecutionLimits
             {
-                MatchLimit = 1_000_000,
                 DepthLimit = 256,
                 HeapLimitInBytes = 1_048_576,
                 ResultLimitInBytes = 1_048_576
@@ -42,7 +41,6 @@ public sealed class Pcre2ScalarRangeAdmissionTests
             {
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                     MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                     MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                     MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
@@ -53,7 +51,6 @@ public sealed class Pcre2ScalarRangeAdmissionTests
             {
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                     MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                     MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                     MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
@@ -92,7 +89,6 @@ public sealed class Pcre2ScalarRangeAdmissionTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1_048_576,
                 MaxResultBytes = 1_048_576
@@ -119,11 +115,9 @@ public sealed class Pcre2ScalarRangeAdmissionTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => denied.Count(input)).ErrorKind);
     }
 }

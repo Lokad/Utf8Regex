@@ -34,7 +34,6 @@ public sealed class Utf8TemplateFinalCaptureTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 8 << 20,
                 MaxResultBytes = 8 << 20

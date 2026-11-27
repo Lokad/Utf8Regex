@@ -209,7 +209,6 @@ public sealed class Pcre2FirstLineProbeTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = bytes
@@ -227,24 +226,6 @@ public sealed class Pcre2FirstLineProbeTests
         Assert.Equal("horse", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(1).Probe("ho"u8, Pcre2PartialMode.Hard).Kind);
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, Create(1).Probe("x\nho"u8, Pcre2PartialMode.Hard).Kind);
-    }
-
-    [Fact]
-    public void FirstLineCandidateWalkIsMeteredWithoutEagerEarlyHitScan()
-    {
-        var regex = new Utf8Pcre2Regex("cat|horse", options: Pcre2CompileOptions.FirstLine, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 80
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var late = Encoding.UTF8.GetBytes(new string('x', 20000) + "horse\nq");
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = regex.Probe(late, Pcre2PartialMode.Soft); }).ErrorKind);
-        var early = Encoding.UTF8.GetBytes("horse" + new string('x', 20000) + "\ncat");
-        Assert.Equal("horse", System.Text.Encoding.UTF8.GetString(regex.Probe(early, Pcre2PartialMode.Soft).GetMatch().Value.GetValueBytes()));
     }
 
     [Theory]

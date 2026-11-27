@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8FundedCountFactsTests
 {
     private static Utf8ResourcePolicy Limits => new()
-    { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
+    { MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
 
     [Theory]
     [InlineData(@"\p{L}", "Aé𝒜1😀", 3)]
@@ -50,13 +50,8 @@ public sealed class Utf8FundedCountFactsTests
         var account = new Account();
         var regex = new Utf8Regex("needle", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = Limits with
-            {
-                MaxWorkSteps = 1
-            }
+            ResourcePolicy = Limits
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count("é😀needle"u8, token.Token, account)).ResourceKind);
         Assert.Equal(0UL, account.Used);
         token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count("needle"u8, token.Token, account)).CancellationToken);

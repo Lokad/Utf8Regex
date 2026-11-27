@@ -22,7 +22,6 @@ public sealed class Utf8CountCaptureElisionTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 4096,
                 MaxResultBytes = 1
@@ -59,7 +58,6 @@ public sealed class Utf8CountCaptureElisionTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1000000,
                     MaxDepth = 128,
                     MaxWorkingBytes = 1280,
                     MaxResultBytes = 1
@@ -87,7 +85,6 @@ public sealed class Utf8CountCaptureElisionTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 1,
                     MaxWorkingBytes = 64,
                     MaxResultBytes = 1
@@ -115,7 +112,6 @@ public sealed class Utf8CountCaptureElisionTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1000000,
                     MaxDepth = 128,
                     MaxWorkingBytes = (ulong)Utf8SliceRunner.TrailReserveBytes - 1,
                     MaxResultBytes = 1000000
@@ -128,7 +124,6 @@ public sealed class Utf8CountCaptureElisionTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1000000,
                     MaxDepth = 128,
                     MaxWorkingBytes = 1000000,
                     MaxResultBytes = 1000000
@@ -169,7 +164,6 @@ public sealed class Utf8CountCaptureElisionTests
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10000000,
                 MaxDepth = 100000,
                 MaxWorkingBytes = 16777216,
                 MaxResultBytes = 1

@@ -27,11 +27,10 @@ internal ref struct Pcre2ReplacementTemplateWriter
         _invocation = invocation;
         try
         {
-            CheckWork();
+            Checkpoint();
             if (!Utf8SliceOutputWriter.Rent(input.Length, ref _invocation, out _writer)) ThrowOutputLimitExceeded();
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
-        catch (InvalidOperationException) when (_invocation.Budget.WorkLimitExceeded) { throw WorkFailure(); }
     }
 
     internal int Length => _writer.Length;
@@ -54,7 +53,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
         var pc = plan.Fragments[0].Normal;
         while (true)
         {
-            CheckWork();
+            Checkpoint();
             var instruction = plan.Instructions[pc];
             switch (instruction.Kind)
             {
@@ -129,20 +128,19 @@ internal ref struct Pcre2ReplacementTemplateWriter
     {
         try
         {
-            CheckWork();
+            Checkpoint();
             ReleaseFrames();
             if (!_writer.TryToArrayAndRelease(ref _invocation, out var result)) ThrowOutputLimitExceeded();
             return result;
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
-        catch (InvalidOperationException) when (_invocation.Budget.WorkLimitExceeded) { throw WorkFailure(); }
     }
 
     internal OperationStatus CompleteToDestination(Span<byte> destination, bool overflowLength, out int written)
     {
         try
         {
-            CheckWork();
+            Checkpoint();
             ReleaseFrames();
             var bytes = _writer.WrittenBytes;
             if (bytes.Length > destination.Length)
@@ -177,13 +175,12 @@ internal ref struct Pcre2ReplacementTemplateWriter
             return result;
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
-        catch (InvalidOperationException) when (invocation.Budget.WorkLimitExceeded) { throw WorkFailure(); }
         finally { control.ReleaseWorking(reservation); }
     }
 
     private void Push(Pcre2ReplacementRuntimeFrame frame)
     {
-        CheckWork();
+        Checkpoint();
         if (_frameCount == _frames.Length)
         {
             var capacity = checked(Math.Max(4, _frames.Length * 2));
@@ -192,7 +189,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
             try
             {
                 var grown = new Pcre2ReplacementRuntimeFrame[capacity];
-                for (var index = 0; index < _frameCount; index++) { CheckWork(); grown[index] = _frames[index]; }
+                for (var index = 0; index < _frameCount; index++) { Checkpoint(); grown[index] = _frames[index]; }
                 _invocation.Ledger.Release(_frameReservation);
                 _frameReservation = bytes; _frames = grown;
             }
@@ -209,18 +206,17 @@ internal ref struct Pcre2ReplacementTemplateWriter
 
     private void AppendBytes(scoped ReadOnlySpan<byte> bytes)
     {
-        CheckWork();
+        Checkpoint();
         try { if (!_writer.Append(bytes, ref _invocation)) ThrowOutputLimitExceeded(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
-        catch (InvalidOperationException) when (_invocation.Budget.WorkLimitExceeded) { throw WorkFailure(); }
     }
 
-    private void CheckWork()
+    private void Checkpoint()
     {
         Pcre2ReplacementPreparationControl.Check();
         try
         {
-            Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.TryChargeInputStep());
+            Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.CheckInput());
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         { throw DeadlineFailure(); }
@@ -228,9 +224,6 @@ internal ref struct Pcre2ReplacementTemplateWriter
 
     private static Pcre2MatchException DeadlineFailure()
         => new("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
-
-    private static Pcre2MatchException WorkFailure()
-        => new("The PCRE2 match limit was exceeded.", Pcre2ErrorKind.MatchLimit);
 
     private void ThrowOutputLimitExceeded()
         => Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None
@@ -261,7 +254,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
             var token = name; var candidate = entry.Name.AsSpan();
             while (!token.IsEmpty && !candidate.IsEmpty)
             {
-                CheckWork();
+                Checkpoint();
                 _ = Rune.DecodeFromUtf8(token, out var expected, out var bytes);
                 _ = Rune.DecodeFromUtf16(candidate, out var actual, out var chars);
                 if (expected != actual) break;
@@ -278,7 +271,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
     {
         if (groups.Length <= 1) return default;
         for (var index = groups.Length - 1; index >= 1; index--)
-        { CheckWork(); if (groups[index].Success) return ResolveNumber(index, groups); }
+        { Checkpoint(); if (groups[index].Success) return ResolveNumber(index, groups); }
         return new(true, false, 0, 0, false);
     }
 
@@ -306,7 +299,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
         var text = _mark.AsSpan();
         while (!text.IsEmpty)
         {
-            CheckWork();
+            Checkpoint();
             var status = Rune.DecodeFromUtf16(text, out var scalar, out var consumed);
             AppendScalar(status == OperationStatus.Done ? scalar : Rune.ReplacementChar, ref state, syntaxOnly);
             text = text[Math.Max(1, consumed)..];
@@ -319,7 +312,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
         { if (!syntaxOnly) AppendBytes(bytes); return; }
         while (!bytes.IsEmpty)
         {
-            CheckWork();
+            Checkpoint();
             if (Rune.DecodeFromUtf8(bytes, out var scalar, out var consumed) != OperationStatus.Done)
                 throw Utf8Validation.CreateInvalidUtf8Exception(0);
             AppendScalar(scalar, ref state, syntaxOnly);

@@ -12,7 +12,7 @@ public sealed class Utf8TreeObjectAdmissionTests
     public static IEnumerable<object[]> NodeLimits()
     {
         for (var route = 0; route < 6; route++)
-            foreach (var kind in new[] { Utf8ResourceLimitKind.ConstructionBytes, Utf8ResourceLimitKind.ConstructionWorkSteps })
+            foreach (var kind in new[] { Utf8ResourceLimitKind.ConstructionBytes})
                 yield return [route, kind];
     }
 
@@ -37,7 +37,7 @@ public sealed class Utf8TreeObjectAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(ulong.MaxValue,
                 kind == Utf8ResourceLimitKind.ConstructionBytes ? 128 + cutoff : ulong.MaxValue,
-                kind == Utf8ResourceLimitKind.ConstructionWorkSteps ? 2 + cutoff : ulong.MaxValue, ulong.MaxValue);
+                ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             Utf8TreeNode? node = null;
@@ -51,7 +51,6 @@ public sealed class Utf8TreeObjectAdmissionTests
                 Assert.True(limit.Requested > limit.Limit);
                 Assert.Equal(128ul, owner.Budget.PeakBytes);
                 Assert.Equal(128ul, owner.Budget.ReservedBytes);
-                Assert.Equal(2ul, owner.Budget.WorkSteps);
                 Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 Assert.NotNull(parent);
             }
@@ -60,7 +59,6 @@ public sealed class Utf8TreeObjectAdmissionTests
                 Assert.Null(failure);
                 Assert.NotNull(node);
                 Assert.Equal(128 + loan, owner.Budget.ReservedBytes);
-                Assert.Equal(4ul, owner.Budget.WorkSteps);
                 Assert.True(node.MatchCaseInsensitive);
                 if (route is 2 or 5) Assert.Same(text, node.Str);
                 if (route == 5)
@@ -78,8 +76,6 @@ public sealed class Utf8TreeObjectAdmissionTests
     [Theory]
     [InlineData(false, Utf8ResourceLimitKind.ConstructionBytes)]
     [InlineData(true, Utf8ResourceLimitKind.ConstructionBytes)]
-    [InlineData(false, Utf8ResourceLimitKind.ConstructionWorkSteps)]
-    [InlineData(true, Utf8ResourceLimitKind.ConstructionWorkSteps)]
     public void TreeAdmissionSharesTheParentAndBorrowsItsCanonicalCatalog(bool full, Utf8ResourceLimitKind kind)
     {
         var seed = Utf8OwnedTreeParser.TryParse("(?<9>😀)(?<x>b)", RegexOptions.CultureInvariant)!;
@@ -89,7 +85,7 @@ public sealed class Utf8TreeObjectAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(ulong.MaxValue,
                 kind == Utf8ResourceLimitKind.ConstructionBytes ? 128 + cutoff : ulong.MaxValue,
-                kind == Utf8ResourceLimitKind.ConstructionWorkSteps ? 2 + cutoff : ulong.MaxValue, ulong.MaxValue);
+                ulong.MaxValue);
             _ = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             Utf8OwnedRegexTree? result = null;
@@ -104,14 +100,12 @@ public sealed class Utf8TreeObjectAdmissionTests
                 Assert.Equal(kind, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
                 Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 Assert.Equal(128ul, owner.Budget.ReservedBytes);
-                Assert.Equal(2ul, owner.Budget.WorkSteps);
             }
             else
             {
                 Assert.Null(failure);
                 Assert.NotNull(result);
                 Assert.Equal(128 + loan, owner.Budget.ReservedBytes);
-                Assert.Equal(4ul, owner.Budget.WorkSteps);
                 Assert.Same(seed.Root, result.Root);
                 Assert.Same(seed.CaptureNames, result.CaptureNames);
                 Assert.Same(seed.CaptureNameToNumberMapping, result.CaptureNameToNumberMapping);
@@ -130,9 +124,9 @@ public sealed class Utf8TreeObjectAdmissionTests
     [Theory]
     [InlineData("", 3, Utf8ResourceLimitKind.ConstructionBytes)]
     [InlineData("a|😀", 4, Utf8ResourceLimitKind.ConstructionBytes)]
-    [InlineData("(?<x>a)\\k<x>", 4, Utf8ResourceLimitKind.ConstructionWorkSteps)]
     public void ParserBoundaryFailureRestoresCapacityAndKeepsCreationWorkSpent(string pattern, int minimumNodes, Utf8ResourceLimitKind kind)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         ulong bytes, work;
         using (var measured = Utf8ConstructionScope.Enter())
         {
@@ -141,20 +135,16 @@ public sealed class Utf8TreeObjectAdmissionTests
             Assert.NotNull(tree.Root.Child(0));
             Assert.True(measured.Budget.ReservedBytes >= (ulong)minimumNodes * 128ul);
             bytes = measured.Budget.ReservedBytes;
-            work = measured.Budget.WorkSteps;
+            work = measured.Budget.DiagnosticCheckpoints;
         }
         using var denied = new Utf8ConstructionScope(ulong.MaxValue,
             kind == Utf8ResourceLimitKind.ConstructionBytes ? bytes - 1 : ulong.MaxValue,
-            kind == Utf8ResourceLimitKind.ConstructionWorkSteps ? work - 1 : ulong.MaxValue, ulong.MaxValue);
+            ulong.MaxValue);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.None));
         Assert.Equal(kind, failure.ResourceKind);
         Assert.True(failure.Requested > failure.Limit);
-        if (kind == Utf8ResourceLimitKind.ConstructionWorkSteps) Assert.Equal(work, failure.Requested);
         Assert.Equal(0ul, denied.Budget.ReservedBytes);
         Assert.Equal(0ul, denied.Budget.Depth);
-
-        if (kind == Utf8ResourceLimitKind.ConstructionWorkSteps) Assert.Equal(work - 2, denied.Budget.WorkSteps);
-        else Assert.InRange(denied.Budget.WorkSteps, 0ul, work - 2);
     }
 
     private static ulong CompleteLoan(Type type, int fieldCount)

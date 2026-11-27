@@ -9,6 +9,7 @@ public sealed class Utf8ConstructionArenaNumericTests
     [InlineData(false)] [InlineData(true)]
     public void ArenaReleasesNumericScratchAndKeepsOnlyCompletedRetainedCharges(bool complete)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var budget = new Utf8ConstructionBudget(1000, 1000000);
         budget.ReserveBytes(13);
         var arena = new Utf8ConstructionArena(budget);
@@ -20,11 +21,11 @@ public sealed class Utf8ConstructionArenaNumericTests
         arena.Retain(scratch);
         arena.Retain(scratch); // Shared publication is intentionally counted twice.
         Assert.Equal(13UL + retainedExtent + 3 * scratchExtent, budget.ReservedBytes);
-        var work = budget.WorkSteps;
+        var work = budget.DiagnosticCheckpoints;
         if (complete) arena.Complete();
         arena.Dispose(); arena.Dispose();
         Assert.Equal(complete ? 13UL + retainedExtent + 2 * scratchExtent : 13UL, budget.ReservedBytes);
-        Assert.Equal(work, budget.WorkSteps);
+        Assert.Equal(work, budget.DiagnosticCheckpoints);
         Assert.Equal((byte)42, scratch[0]); Assert.Equal(99, retained[0]);
     }
 

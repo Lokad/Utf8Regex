@@ -75,7 +75,7 @@ public sealed class Utf8TerminalCaptureRepeatTests
         Assert.False(program.Assertions[0].Body.RightToLeft);
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
-        var invocation = new Utf8SliceInvocation(new(100000, 32, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var invocation = new Utf8SliceInvocation(new(32, 1 << 20), Timeout.InfiniteTimeSpan, default);
         var result = Utf8SliceRunner.TryFindFirst(program, "abx"u8, 2, starts, ends, false, ref invocation);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
         Assert.Equal(success, result.Found);
@@ -100,7 +100,6 @@ public sealed class Utf8TerminalCaptureRepeatTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -120,26 +119,19 @@ public sealed class Utf8TerminalCaptureRepeatTests
     [InlineData("(é{1,3})", "éé é!")]
     public void EveryWorkCutoffPreservesTheParentLoan(string pattern, string text)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.UTF8.GetBytes(text);
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
-        var baseline = new Utf8SliceInvocation(new(100000, 1, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var baseline = new Utf8SliceInvocation(new(1, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         var outcome = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref baseline);
         Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
         Assert.Equal(2, outcome.Count);
         Assert.Equal(13ul, baseline.Ledger.ReservedBytes);
         Assert.Equal(0u, baseline.Budget.PeakDepth);
-        for (ulong limit = 1; limit < baseline.Budget.Steps; limit++)
-        {
-            var invocation = new Utf8SliceInvocation(new(limit, 1, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var result = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, result.Breach);
-            Assert.Equal(13ul, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]
@@ -165,7 +157,7 @@ public sealed class Utf8TerminalCaptureRepeatTests
             entered = true;
             if (timeout) ticks = 25; else token.Cancel();
         });
-        var invocation = new Utf8SliceInvocation(new(100000, 1, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
+        var invocation = new Utf8SliceInvocation(new(1, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         try
         {

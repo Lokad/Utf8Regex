@@ -158,6 +158,7 @@ public sealed class Utf8SliceClassAdmissionTests
     [InlineData(true)]
     public void DeepClassStepsRespectLimitsCancellationAndRecovery(bool compiled)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var pattern = @"\A(?<x>" + Chain(4097, "a", "b") + ")";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var program = Utf8SliceParser.TryParse(pattern, options);
@@ -170,21 +171,11 @@ public sealed class Utf8SliceClassAdmissionTests
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
             collectHistory: false, ref baseline).Found);
-        Assert.True(baseline.Budget.Steps > 4097);
+        Assert.True(baseline.Budget.DiagnosticCheckpoints > 4097);
         Assert.Equal(0UL, baseline.Ledger.ReservedBytes);
-        for (ulong work = 1; work < baseline.Budget.Steps; work++)
-        {
-            Array.Fill(starts, -1);
-            Array.Fill(ends, -1);
-            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(work, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps,
-                Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
-                    collectHistory: false, ref invocation).Breach);
-            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        }
         Array.Fill(starts, -1);
         Array.Fill(ends, -1);
-        var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
+        var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
             Regex.InfiniteMatchTimeout, CancellationToken.None);
         // Caller-owned slots need no runner scratch without rollback or history.
         Assert.Equal(Utf8ExecutionLimitKind.None,

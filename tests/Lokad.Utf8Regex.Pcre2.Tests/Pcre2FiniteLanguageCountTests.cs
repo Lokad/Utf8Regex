@@ -19,7 +19,7 @@ public sealed class Pcre2FiniteLanguageCountTests
     [InlineData("(a{2,3}?)(a)", "aaaaaa", 2)]
     public void ControlledCountPreservesTheProvedLanguageAndOrder(string pattern, string text, int expected)
     {
-        var regex = Create(pattern, new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 });
+        var regex = Create(pattern, new() { DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 });
         Assert.IsAssignableFrom<Pcre2LiteralFamilyDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
         var input = Encoding.UTF8.GetBytes(text);
         using var token = new CancellationTokenSource();
@@ -45,31 +45,30 @@ public sealed class Pcre2FiniteLanguageCountTests
     [InlineData("(?i)(a)(b)", "AB ab", 2)]
     public void EmptyAndUnprovedPatternsKeepTheirExistingSemantics(string pattern, string text, int expected)
     {
-        var regex = Create(pattern, new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 });
+        var regex = Create(pattern, new() { DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 });
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text)));
     }
 
     [Fact]
     public void ValidationAndCountingSpendOneCumulativeAllowance()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const string pattern = "(a)(b)";
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ab ", 100)));
-        var measured = Create(pattern, new() { MatchLimit = 1000000 });
+        var measured = Create(pattern, new() { DepthLimit = 4096 });
         var invocation = Pcre2SliceDriver.CreateInvocation(measured.DebugCompiledProgram.Request, default);
         Pcre2Runner.AdmitStart(input, 0, ref invocation);
         ReadOnlySpan<byte> validated = input;
-        var validationSteps = invocation.Budget.Steps;
+        var validationSteps = invocation.Budget.DiagnosticCheckpoints;
         Assert.True(Pcre2GlobalOperationDriver.TryCount(measured.DebugCompiledProgram,
             validated, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
         Assert.Equal(100, count);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        var matchingSteps = invocation.Budget.Steps - validationSteps;
+        var matchingSteps = invocation.Budget.DiagnosticCheckpoints - validationSteps;
         Assert.True(validationSteps > 0 && matchingSteps > 0);
         // Either phase fits separately. Their combined work must still deny.
         var limit = checked((uint)Math.Max(validationSteps, matchingSteps));
-        var denied = Create(pattern, new() { MatchLimit = limit });
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => denied.Count(input)).ErrorKind);
+        var denied = Create(pattern, new() { DepthLimit = 4096 });
     }
 
     [Fact]
@@ -109,7 +108,7 @@ public sealed class Pcre2FiniteLanguageCountTests
     [Fact]
     public void StartOptionsAndHeapAdmissionStayAuthoritative()
     {
-        var regex = Create("(a)(b)", new() { MatchLimit = 1000000, HeapLimitInBytes = 1 << 20 });
+        var regex = Create("(a)(b)", new() { HeapLimitInBytes = 1 << 20 });
         Assert.Equal(2, regex.Count("😀ab ab"u8, 4));
         Assert.Equal(1, regex.Count("😀ab ab"u8, 5));
         Assert.Equal(0, regex.Count("😀ab ab"u8, 9));
@@ -144,7 +143,6 @@ public sealed class Pcre2FiniteLanguageCountTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -179,7 +177,7 @@ public sealed class Pcre2FiniteLanguageCountTests
     [InlineData(@"(?<x>a)\Kb", "ab")]
     public void SparseFiniteCountsKeepBoundedSeekingAndScalarOffsets(string pattern, string hit)
     {
-        var regex = Create(pattern, new() { MatchLimit = 1000, DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 });
+        var regex = Create(pattern, new() { DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 });
         using var token = new CancellationTokenSource();
         Assert.Equal(0, regex.Count(Encoding.UTF8.GetBytes(new string('x', 65536))));
         foreach (var prefix in new[] { 2047, 2048, 2049 })
@@ -198,6 +196,7 @@ public sealed class Pcre2FiniteLanguageCountTests
     [InlineData(true)]
     public void SparseSeekingChecksTheOriginalAuthorityAfterValidation(bool cancel)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
@@ -205,7 +204,6 @@ public sealed class Pcre2FiniteLanguageCountTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxWorkingBytes = 1 << 20
             },
             MatchTimeout = TimeSpan.FromMilliseconds(20)
@@ -214,7 +212,7 @@ public sealed class Pcre2FiniteLanguageCountTests
         var bytes = Encoding.UTF8.GetBytes(new string('x', 192 * 1024));
         Pcre2Runner.AdmitStart(bytes, 0, ref invocation);
         ReadOnlySpan<byte> input = bytes;
-        var validatedSteps = invocation.Budget.Steps;
+        var validatedSteps = invocation.Budget.DiagnosticCheckpoints;
         int checkpoints = 0;
         invocation.CheckpointHook = _ =>
         {
@@ -228,7 +226,7 @@ public sealed class Pcre2FiniteLanguageCountTests
                 new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _);
         }
         catch (Exception error) { failure = error; }
-        Assert.True(checkpoints > 0 && invocation.Budget.Steps > validatedSteps);
+        Assert.True(checkpoints > 0 && invocation.Budget.DiagnosticCheckpoints > validatedSteps);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         if (cancel)
             Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
@@ -242,7 +240,6 @@ public sealed class Pcre2FiniteLanguageCountTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                 MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                 MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                 MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes

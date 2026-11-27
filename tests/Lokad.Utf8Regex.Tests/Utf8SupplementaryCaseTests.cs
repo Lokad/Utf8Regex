@@ -38,8 +38,7 @@ public sealed class Utf8SupplementaryCaseTests
         foreach (var compiled in new[] { false, true })
         foreach (var finite in new[] { false, true })
         {
-            var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 100000,
-                MaxDepth = 128, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 } : default;
+            var policy = finite ? new Utf8ResourcePolicy { MaxDepth = 128, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 } : default;
             var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
                 (reverse ? RegexOptions.RightToLeft : 0) | (compiled ? RegexOptions.Compiled : 0);
             foreach (var pattern in new[] { capital, "[" + capital + "]", "[" + capital + "-" + capital + "]",

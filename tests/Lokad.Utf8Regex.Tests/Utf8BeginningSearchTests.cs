@@ -8,8 +8,8 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8BeginningSearchTests
 {
-    private static Utf8ResourcePolicy Policy(ulong work)
-        => new() { MaxWorkSteps = work, MaxDepth = 1024, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 };
+    private static Utf8ResourcePolicy Policy()
+        => new() { MaxDepth = 1024, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 };
 
     [Theory]
     [InlineData(@"^[a-z][a-z0-9_]*$")]
@@ -17,7 +17,7 @@ public sealed class Utf8BeginningSearchTests
     public void AnchoredFoldedRepeatPreservesScalarFoldingAndTheEndAnchor(string pattern)
     {
         const RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        using var regex = new Utf8Regex(pattern, options, new Utf8RegexPolicy { ResourcePolicy = Policy(4096) });
+        using var regex = new Utf8Regex(pattern, options, new Utf8RegexPolicy { ResourcePolicy = Policy() });
         using var source = new CancellationTokenSource();
         var oracle = new Regex(pattern, options);
         foreach (var text in new[] { "", "A", "É", "Key_K", "Key\n", "Key\r\n", "A\nB", "A😀", "_0", "Aİ" })
@@ -36,7 +36,7 @@ public sealed class Utf8BeginningSearchTests
     public void ContiguousLineMatchConsumesTheFirstNewlineWithinTheSelectedExtent(int padding)
     {
         using var regex = new Utf8Regex(@"\G///[^\n]*\n", RegexOptions.Compiled | RegexOptions.Multiline,
-            new Utf8RegexPolicy { ResourcePolicy = Policy(4096) });
+            new Utf8RegexPolicy { ResourcePolicy = Policy() });
         using var source = new CancellationTokenSource();
         const string head = "é";
         var line = "///" + new string('x', padding) + "😀\r\n";
@@ -63,7 +63,7 @@ public sealed class Utf8BeginningSearchTests
             var regex = new Utf8Regex("^(a+)", options: options, policy: new Utf8RegexPolicy
             {
                 MatchTimeout = Regex.InfiniteMatchTimeout,
-                ResourcePolicy = Policy(100000)
+                ResourcePolicy = Policy()
             });
             var oracle = new Regex("^(a+)", options);
             Assert.Equal(2, regex.Count(input));
@@ -98,7 +98,7 @@ public sealed class Utf8BeginningSearchTests
         var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Policy(100000)
+            ResourcePolicy = Policy()
         });
         var oracle = new Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes(text);
@@ -119,7 +119,7 @@ public sealed class Utf8BeginningSearchTests
         var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Policy(100000)
+            ResourcePolicy = Policy()
         });
         Assert.Equal(2, regex.Count(input));
         var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
@@ -128,7 +128,7 @@ public sealed class Utf8BeginningSearchTests
         var scalar = new Utf8Regex("^(.)", options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Policy(100000)
+            ResourcePolicy = Policy()
         });
         var scalarMatch = Utf8MatchSequence.First(scalar.CreateMatchCursor("xx\n😀x"u8.ToArray()));
         Assert.Equal(2, scalar.Count("xx\n😀x"u8));
@@ -152,7 +152,7 @@ public sealed class Utf8BeginningSearchTests
         var regex = new Utf8Regex("^(a+)", options: RegexOptions.CultureInvariant | RegexOptions.Multiline, policy: new Utf8RegexPolicy
         {
             MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Policy(1_000_000)
+            ResourcePolicy = Policy()
         });
         var triggered = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
@@ -183,7 +183,7 @@ public sealed class Utf8BeginningSearchTests
         var regex = new Utf8Regex("^(a*)", options: RegexOptions.Multiline, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Policy(100000)
+            ResourcePolicy = Policy()
         });
         foreach (var ending in new[] { "", "\n", "\na" })
         {
@@ -194,39 +194,5 @@ public sealed class Utf8BeginningSearchTests
             Assert.Equal(oracle.Matches(text, padding).Count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, padding)))));
             Assert.Equal(oracle.Match(text, padding).Success, regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, padding)), []).Success);
         }
-    }
-
-    [Fact]
-    public void WorkCutoffCountsBoundedScansAndFailedCallsDoNotPoisonFreshCalls()
-    {
-        var input = Encoding.UTF8.GetBytes(new string('x', 4097) + "\naaa\n");
-        ulong low = 1, high = 1000;
-        while (low < high)
-        {
-            var cap = low + (high - low) / 2;
-            try { Assert.Equal(1, new Utf8Regex("^(a+)", options: RegexOptions.Multiline, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Regex.InfiniteMatchTimeout,
-                ResourcePolicy = Policy(cap)
-            }).Count(input)); high = cap; }
-            catch (Utf8ResourceLimitExceededException failure)
-            {
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-                Assert.Equal(cap + 1, failure.Requested); low = cap + 1;
-            }
-        }
-        var denied = new Utf8Regex("^(a+)", options: RegexOptions.Multiline, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Policy(low - 1)
-        });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input));
-        Assert.Equal(1, denied.Count("aaa"u8));
-        var admitted = new Utf8Regex("^(a+)", options: RegexOptions.Multiline, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Policy(low)
-        });
-        Assert.Equal(1, admitted.Count(input)); Assert.Equal(1, admitted.Count(input));
     }
 }

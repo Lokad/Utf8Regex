@@ -33,32 +33,6 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
 
     [Theory]
     [MemberData(nameof(Shapes))]
-    public void EveryConstructionWorkCutoffPreservesTheParentAndSpentWork(string template)
-    {
-        ulong work;
-        using (var measured = Utf8ConstructionScope.Enter())
-        { _ = Pcre2PreparedReplacementParser.Parse(Encoding.UTF8.GetBytes(template), Pcre2SubstitutionOptions.Extended); work = measured.Budget.WorkSteps; }
-        for (var cap = 0ul; cap <= work; cap++)
-        {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cap + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new Pcre2ParentValue(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            using (var child = Utf8ConstructionScope.Enter())
-            {
-                var failure = Record.Exception(() => Pcre2PreparedReplacementParser.Parse(Encoding.UTF8.GetBytes(template), Pcre2SubstitutionOptions.Extended));
-                if (cap < work) Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                else Assert.Null(failure);
-            }
-            AssertParent(owner.Budget, checkpoint, parent);
-            Assert.True(owner.Budget.WorkSteps <= cap + 2);
-            var spent = owner.Budget.WorkSteps;
-            using (var child = Utf8ConstructionScope.Enter()) { }
-            Assert.Equal(spent, owner.Budget.WorkSteps);
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(Shapes))]
     public void ByteInstructionAndDepthDenialsRollbackWithoutRefundingWork(string template)
     {
         ulong bytes, slots, depth, minimumBytes, instructionCount;
@@ -70,7 +44,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
         }
         foreach (var cap in new[] { 0ul, 1ul, bytes / 2, bytes - 1, bytes })
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 128 + cap, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 128 + cap, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Pcre2ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
@@ -85,7 +59,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
         }
         for (var cap = 0ul; cap <= slots; cap++)
         {
-            using var owner = new Utf8ConstructionScope(cap, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(cap, ulong.MaxValue, ulong.MaxValue);
             using (var child = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Pcre2PreparedReplacementParser.Parse(Encoding.UTF8.GetBytes(template), Pcre2SubstitutionOptions.Extended));
@@ -98,7 +72,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
         }
         for (var cap = 0ul; cap <= depth; cap++)
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, cap);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cap);
             using (var child = Utf8ConstructionScope.Enter())
                 if (cap < depth) Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.Throws<Utf8ResourceLimitExceededException>(() => Pcre2PreparedReplacementParser.Parse(Encoding.UTF8.GetBytes(template), Pcre2SubstitutionOptions.Extended)).ResourceKind);
                 else _ = Pcre2PreparedReplacementParser.Parse(Encoding.UTF8.GetBytes(template), Pcre2SubstitutionOptions.Extended);
@@ -112,7 +86,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
         var preparation = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse("${1:+A:B}"u8, Pcre2SubstitutionOptions.Extended));
         var groups = new[] { new Pcre2GroupData { Number = 0,Success = true,EndOffsetInBytes = 1}, new Pcre2GroupData { Number = 1,Success = true,EndOffsetInBytes = 1} };
         var writer = new Pcre2ReplacementTemplateWriter("x"u8, [],
-            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 144),
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 144),
                 Timeout.InfiniteTimeSpan, default));
         try
         {
@@ -124,7 +98,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
         }
         finally { writer.Release(); }
         var denied = new Pcre2ReplacementTemplateWriter("x"u8, [],
-            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 143),
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 143),
                 Timeout.InfiniteTimeSpan, default));
         try
         {
@@ -148,7 +122,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
             var checkpoints = 0;
             using (var measured = Utf8ConstructionScope.Enter())
             {
-                measured.Budget.CheckpointHook = _ => checkpoints++;
+                measured.Budget.CheckpointHook = () => checkpoints++;
                 _ = Pcre2PreparedReplacementParser.Parse(Encoding.UTF8.GetBytes(template), Pcre2SubstitutionOptions.Extended);
             }
             for (var target = 1; target <= checkpoints; target++)
@@ -160,7 +134,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
                 long clock = 30000;
                 using var timer = Utf8ExecutionDeadline.UseClockForDiagnostics(() => clock);
                 var calls = 0;
-                owner.Budget.CheckpointHook = _ => { if (++calls == target) { if (timeout) clock++; else token.Cancel(); } };
+                owner.Budget.CheckpointHook = () => { if (++calls == target) { if (timeout) clock++; else token.Cancel(); } };
                 var failure = Record.Exception(() =>
                 {
                     using var control = Pcre2ReplacementPreparationControl.EnterOperation(timeout ? TimeSpan.FromMilliseconds(1) : Timeout.InfiniteTimeSpan, token.Token);
@@ -184,7 +158,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
         var regex = new Utf8Pcre2Regex("(x)");
         using var token = new CancellationTokenSource();
         using var owner = Utf8ConstructionScope.Enter();
-        owner.Budget.CheckpointHook = _ => token.Cancel();
+        owner.Budget.CheckpointHook = () => token.Cancel();
         var error = Assert.Throws<OperationCanceledException>(() => regex.Replace("x"u8, @"\x{1f600}"u8, 0,
             Pcre2SubstitutionOptions.Extended, Pcre2MatchOptions.None, token.Token));
         Assert.Equal(token.Token, error.CancellationToken);
@@ -202,7 +176,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
         var preparation = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse("${1:+A:${missing:+B:C}}"u8, Pcre2SubstitutionOptions.Extended));
         var groups = new[] { new Pcre2GroupData { Number = 0,Success = true,EndOffsetInBytes = 1}, new Pcre2GroupData { Number = 1,Success = true,EndOffsetInBytes = 1} };
         var writer = new Pcre2ReplacementTemplateWriter("x"u8, [],
-            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 144),
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 144),
                 Timeout.InfiniteTimeSpan, default));
         try
         {
@@ -232,7 +206,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
             return 30000;
         });
         var writer = new Pcre2ReplacementTemplateWriter("x"u8, [],
-            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0),
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0),
                 timeout ? TimeSpan.FromMilliseconds(1) : TimeSpan.FromHours(1), token.Token));
         try
         {

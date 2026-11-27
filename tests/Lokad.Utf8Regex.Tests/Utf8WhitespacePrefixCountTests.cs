@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8WhitespacePrefixCountTests
 {
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Theory]
     [InlineData(@"(\s*)#x")]
@@ -50,19 +50,10 @@ public sealed class Utf8WhitespacePrefixCountTests
     }
 
     [Fact]
-    public void CountObservesWorkDenialAndOriginalCancellation()
+    public void CountObservesOriginalCancellation()
     {
         const string pattern = @"(\s*)#x";
         var input = Encoding.UTF8.GetBytes(new string('z', 300) + "\u00a0 #x");
-        var bounded = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => bounded.Count(input));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         var error = Assert.Throws<OperationCanceledException>(() => new Utf8Regex(pattern).Count(input, cancellation.Token));
@@ -113,10 +104,7 @@ public sealed class Utf8WhitespacePrefixCountTests
         var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = Funded with
-            {
-                MaxWorkSteps = 4096
-            }
+            ResourcePolicy = Funded
         });
         using var token = new CancellationTokenSource();
         Assert.Equal(1, regex.Count(input, token.Token));
@@ -135,24 +123,16 @@ public sealed class Utf8WhitespacePrefixCountTests
     [Fact]
     public void EveryDiscoveryWorkCutoffPreservesItsParentLoan()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex(@"(?<s>\s*)#[aA]bc\k<s>X");
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.UTF8.GetBytes(new string('z', 260) + "#abY  #abc X");
-        var complete = new Utf8SliceInvocation(new(100000, 0, 0), Timeout.InfiniteTimeSpan, default);
+        var complete = new Utf8SliceInvocation(new(0, 0), Timeout.InfiniteTimeSpan, default);
         Assert.True(complete.Ledger.TryReserve(13));
         var result = Utf8SliceRunner.CountFromBytes(program, input, 0, new int[program.GroupCount],
             new int[program.GroupCount], ref complete, regex.Inspection.PreparedRegex.SearchPlan);
         Assert.Equal((1, Utf8ExecutionLimitKind.None), (result.Count, result.Breach));
         Assert.Equal(13UL, complete.Ledger.ReservedBytes);
-        for (ulong cap = 1; cap <= complete.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            result = Utf8SliceRunner.CountFromBytes(program, input, 0, new int[program.GroupCount],
-                new int[program.GroupCount], ref invocation, regex.Inspection.PreparedRegex.SearchPlan);
-            Assert.Equal(cap < complete.Budget.Steps ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.None, result.Breach);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]

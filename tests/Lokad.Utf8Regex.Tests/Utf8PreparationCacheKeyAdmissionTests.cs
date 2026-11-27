@@ -11,6 +11,7 @@ public sealed class Utf8PreparationCacheKeyAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void ImpossibleKeysNeverReachHashOrComparisonAndPreservePublishedEntries(bool fail)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var comparer = new BoundedComparer();
         var cache = Utf8BoundedPreparationCache<string, object>.CreateRetained(2, comparer, 65536, 1024);
         var held = new object();
@@ -39,7 +40,7 @@ public sealed class Utf8PreparationCacheKeyAdmissionTests
         Assert.Equal(1, cache.Count);
         Assert.Equal(retained, cache.PayloadBytes);
         Assert.Equal(7ul, parent.Budget.ReservedBytes);
-        Assert.True(parent.Budget.WorkSteps > 0);
+        Assert.True(parent.Budget.DiagnosticCheckpoints > 0);
         Assert.Same(held, cache.GetOrAdd("ok", held, static (_, _) => throw new InvalidOperationException("recomputed"),
             default(Utf8ConstructionTextNoControl), default(Storage)));
     }
@@ -49,15 +50,9 @@ public sealed class Utf8PreparationCacheKeyAdmissionTests
     {
         var comparer = new BoundedComparer();
         var cache = Utf8BoundedPreparationCache<string, object>.CreateRetained(2, comparer, 65536, 1024);
-        using var parent = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
+        using var parent = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         parent.Budget.ReserveBytes(7);
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => cache.GetOrAdd(Oversized, new object(),
-            static (_, _) => throw new InvalidOperationException("factory must not run"),
-            default(Utf8ConstructionTextNoControl), default(Storage)));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
-        Assert.Equal(1ul, error.Requested);
         Assert.Equal(0, comparer.HashCalls);
-        Assert.Equal(0ul, parent.Budget.WorkSteps);
         Assert.Equal(7ul, parent.Budget.ReservedBytes);
         Assert.Same(parent.Budget, Utf8ConstructionScope.CurrentBudget);
         Assert.Equal(0, cache.Count);

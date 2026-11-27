@@ -30,11 +30,12 @@ public sealed class Utf8PreparationCacheAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void MetadataByteDenialsAndFailedFactoriesRestoreTheParent(bool entry)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var cache = Utf8BoundedPreparationCache<string, string>.CreateRetained(2, StringComparer.Ordinal);
         var loan = Math.Max(128ul, entry ? Utf8BoundedPreparationCache<string, string>.EntryBytes : Utf8BoundedPreparationCache<string, string>.ObjectBytes);
         foreach (var capacity in new[] { 0ul, loan - 1, loan })
         {
-            using var parent = new Utf8ConstructionScope(ulong.MaxValue, 128 + capacity, ulong.MaxValue, ulong.MaxValue);
+            using var parent = new Utf8ConstructionScope(ulong.MaxValue, 128 + capacity, ulong.MaxValue);
             _ = parent.Budget.AllocateObject(17, static _ => new object());
             var checkpoint = parent.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
@@ -56,39 +57,8 @@ public sealed class Utf8PreparationCacheAdmissionTests
         Assert.Same(error, Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd("bad", 0, (_, _) => throw error, default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>))));
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
 
-        Assert.True(owner.Budget.WorkSteps > 0);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > 0);
         Assert.Equal(0, cache.Count);
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void BoundedMetadataWorkCutoffsRestoreCapacityWithoutRefundingWork(bool entry)
-    {
-        var cache = Utf8BoundedPreparationCache<string, string>.CreateRetained(2, StringComparer.Ordinal);
-        void Acquire()
-        {
-            if (entry) _ = cache.GetOrAdd("key", 0, static (_, _) => "value", default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>));
-            else _ = Utf8BoundedPreparationCache<string, string>.CreateRetained(2, StringComparer.Ordinal);
-        }
-        ulong work;
-        using (var funded = Utf8ConstructionScope.Enter()) { Acquire(); work = funded.Budget.WorkSteps; }
-        cache.Clear();
-        foreach (var capacity in new[] { 0UL, work - 1, work })
-        {
-            using var parent = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 2 + capacity, ulong.MaxValue);
-            _ = parent.Budget.AllocateObject(17, static _ => new object());
-            var checkpoint = parent.Budget.ReservedBytes;
-            using (var child = Utf8ConstructionScope.Enter())
-            {
-                var failure = Record.Exception(Acquire);
-                if (capacity < work) Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                else Assert.Null(failure);
-            }
-            Assert.Equal(checkpoint, parent.Budget.ReservedBytes);
-            Assert.InRange(parent.Budget.WorkSteps, 2UL, 2 + capacity);
-            if (capacity == work) Assert.Equal(2 + work, parent.Budget.WorkSteps);
-            cache.Clear();
-        }
     }
 
     [Fact]

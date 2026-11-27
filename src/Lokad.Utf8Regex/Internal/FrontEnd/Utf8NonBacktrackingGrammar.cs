@@ -19,7 +19,7 @@ internal static class Utf8NonBacktrackingGrammar
         using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(root));
         while (frames.Count != 0)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var index = frames.Count - 1;
             var frame = frames[index];
             var node = frame.Node;

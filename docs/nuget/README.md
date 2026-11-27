@@ -50,14 +50,14 @@ slice-validity rules; check result slice properties before decoding those result
 ## Cancellation, limits and ownership
 
 Synchronous cancellation observes the original token. One absolute deadline and
-finite work/depth/working/result policies cover the documented operation stages.
-Explicit compilation factories offer separate construction controls. Defaults are
-unlimited.
+finite depth, working-byte and result-byte policies cover the documented operation
+stages. Invocation limits default to unlimited. Compilation factories offer separate
+construction controls with default capacity backstops.
 
 Memory limits admit modeled major buffers, retained payloads and growth overlap,
 not total heap/RSS, arbitrary callbacks/getters or host retention. Caller-owned
-output destinations are not producer-owned result allocations. Work units and
-capacity charges depend on the engine/version/route: recheck finite policies when
+output destinations are not producer-owned result allocations. Capacity charges
+depend on the engine, version and route. Recheck finite policies when
 upgrading. A refusal is distinct from no match; it does not publish truncated
 successful output or retry under a different allowance.
 

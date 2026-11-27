@@ -22,10 +22,9 @@ public sealed class PythonReTextAdmissionTests
     {
         var parse = new PythonReParser(new string(' ', count)).Parse(PythonReCompileOptions.None);
         var allowance = 128ul * (ulong)count;
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, allowance, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var result = PythonReTranslator.Translate(parse, true);
         Assert.Equal(Enumerable.Repeat((byte)' ', count).ToArray(), result.NativePatternUtf8);
-        Assert.InRange(owner.Budget.WorkSteps, (ulong)count, allowance);
     }
 
     [Theory]
@@ -44,7 +43,7 @@ public sealed class PythonReTextAdmissionTests
         }
         foreach (var allowance in new[] { 0ul, 112ul, peak / 2, peak - 1, peak })
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 48, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 48, ulong.MaxValue);
             var parent = owner.Budget.AllocateArray<byte>(1, false);
             var failure = Record.Exception(() => PythonReTranslator.Translate(parse, true));
             Assert.Equal(0ul, owner.Budget.Depth);

@@ -48,7 +48,7 @@ public sealed class Pcre2ValueInvocationAuthorityTests
     [Theory] [MemberData(nameof(Routes))]
     public void ScalarOffsetsAndRetainedValuesStayValid(string pattern, string text, bool value)
     {
-        var regex = Create(pattern, 100000);
+        var regex = Create(pattern);
         foreach (var lead in new[] { 2046, 2047, 2048 })
         {
             var prefix = new string('x', lead) + "😀";
@@ -85,11 +85,10 @@ public sealed class Pcre2ValueInvocationAuthorityTests
         Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
     }
 
-    private static Utf8Pcre2Regex Create(string pattern, uint work) => new(pattern, options:         Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    private static Utf8Pcre2Regex Create(string pattern) => new(pattern, options:         Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
     {
         ResourcePolicy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = (work) == 0 ? null : (work),
             MaxDepth = 256,
             MaxWorkingBytes = 1 << 20,
             MaxResultBytes = 1

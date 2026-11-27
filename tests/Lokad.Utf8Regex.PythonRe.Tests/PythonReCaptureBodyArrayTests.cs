@@ -55,10 +55,8 @@ public sealed class PythonReCaptureBodyArrayTests
     {
         var parse = new PythonReParser("(😀)").Parse(PythonReCompileOptions.None);
         Assert.True(parse.TryGetGroupBody(1, out var body));
-        using (var denied = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue))
+        using (var denied = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => parse.TryGetGroupBody(1, out _));
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
             Assert.Equal(0UL, denied.Budget.ReservedBytes);
         }
         Assert.True(parse.TryGetGroupBody(1, out var retained));
@@ -70,7 +68,7 @@ public sealed class PythonReCaptureBodyArrayTests
     {
         var pattern = string.Concat(Enumerable.Repeat("(a)", 65));
         var expected = new Utf8PythonRegex(pattern);
-        foreach (var work in new[] { false, true })
+        foreach (var work in new[] { false})
         {
             Utf8PythonRegex Compile(ulong cap) => Utf8PythonRegex.Compile(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
             {
@@ -78,7 +76,7 @@ public sealed class PythonReCaptureBodyArrayTests
                 ResourcePolicy = Utf8ResourcePolicy.Unlimited,
                 ConstructionPolicy = work ? new()
                 {
-                    MaxWorkSteps = cap
+
                 }
 
     : new()
@@ -114,7 +112,7 @@ public sealed class PythonReCaptureBodyArrayTests
             foreach (var cap in new[] { 1UL, 128UL, 1024UL })
             {
                 var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Compile(cap));
-                Assert.Equal(work ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes, error.ResourceKind);
+                Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, error.ResourceKind);
                 Assert.Equal(cap, error.Limit);
                 Assert.False(Utf8ConstructionScope.IsActive);
             }
@@ -127,22 +125,15 @@ public sealed class PythonReCaptureBodyArrayTests
     [InlineData(65)]
     public void DenseBodyGrowthAndPublicationDenialsRestoreParentLoans(int groups)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var pattern = new string('(', groups) + "a" + new string(')', groups);
         ulong work, bytes;
         using (var measured = Utf8ConstructionScope.Enter())
         {
             _ = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
-            work = measured.Budget.WorkSteps; bytes = measured.Budget.PeakBytes;
+            work = measured.Budget.DiagnosticCheckpoints; bytes = measured.Budget.PeakBytes;
         }
-        foreach (var cap in new[] { 1UL, work / 2, work - 1 })
-        {
-            using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cap, ulong.MaxValue);
-            scope.Budget.ReserveBytes(13);
-            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => new PythonReParser(pattern).Parse(PythonReCompileOptions.None));
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
-            Assert.Equal(13UL, scope.Budget.ReservedBytes); Assert.Equal(0UL, scope.Budget.Depth);
-        }
-        using (var scope = new Utf8ConstructionScope(ulong.MaxValue, bytes + 12, ulong.MaxValue, ulong.MaxValue))
+        using (var scope = new Utf8ConstructionScope(ulong.MaxValue, bytes + 12, ulong.MaxValue))
         {
             scope.Budget.ReserveBytes(13);
             var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => new PythonReParser(pattern).Parse(PythonReCompileOptions.None));
@@ -166,7 +157,8 @@ public sealed class PythonReCaptureBodyArrayTests
         scope.Budget.Deadline = expire ? Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20))
             : Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline.Infinite;
         var entered = false;
-        scope.Budget.CheckpointHook = work => { if (work > 300) { entered = true; if (expire) ticks = 50; else token.Cancel(); } };
+        var checkpoints = 0;
+        scope.Budget.CheckpointHook = () => { if (checkpoints++ > 300) { entered = true; if (expire) ticks = 50; else token.Cancel(); } };
         var pattern = new string('(', 65) + "a" + new string(')', 65);
         if (expire) Assert.Throws<Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadlineExpiredException>(() => new PythonReParser(pattern).Parse(PythonReCompileOptions.None));
         else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => new PythonReParser(pattern).Parse(PythonReCompileOptions.None)).CancellationToken);

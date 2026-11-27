@@ -148,7 +148,6 @@ public sealed class PythonReTerminalCaptureRootTests
             MatchTimeout = TimeSpan.FromMilliseconds(100),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
             }

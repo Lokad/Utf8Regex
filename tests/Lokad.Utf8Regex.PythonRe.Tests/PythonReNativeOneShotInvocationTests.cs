@@ -18,7 +18,6 @@ public sealed class PythonReNativeOneShotInvocationTests
             MatchTimeout = timeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 64,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
             }
@@ -46,7 +45,6 @@ public sealed class PythonReNativeOneShotInvocationTests
             MatchTimeout = timeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxWorkingBytes = 1UL << 20
             }
         });
@@ -54,7 +52,7 @@ public sealed class PythonReNativeOneShotInvocationTests
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var limits = new Utf8ExecutionLimits(100000, 0, 1UL << 20);
+        var limits = new Utf8ExecutionLimits(0, 1UL << 20);
         var invocation = new Utf8SliceInvocation(limits, timeout, token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         var enteredSearch = false;
@@ -117,50 +115,5 @@ public sealed class PythonReNativeOneShotInvocationTests
                 Assert.Equal((first, last), (value.StartOffsetInBytes, value.EndOffsetInBytes));
                 if (expected is not null) Assert.Equal(Encoding.UTF8.GetBytes(expected), value.GetValueBytes().ToArray());
             }
-    }
-
-
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(3)]
-    [InlineData(4)]
-    public void EveryNativeValueWorkCutoffIsCumulativeAndUnpublished(int kind)
-    {
-        var pattern = kind switch { 0 => "Шерлок", 4 => "needle", _ => "é😀" };
-        var input = Encoding.UTF8.GetBytes(kind switch { 0 => "π Шерлок 𝒜", 4 => "needle", _ => "xé😀z" });
-        var expected = kind switch { 0 => "Шерлок", 4 => "needle", _ => "é😀" };
-        var regex = new Utf8PythonRegex(pattern);
-        if (kind == 0) Assert.True(regex.DebugUsesZeroOffsetUtf8SearchValueFastPath);
-        // The supplementary sequence has an exact core backend, while Python's
-        // narrower public classifier keeps scalar discovery. Retain this case
-        // as an internal borrowed-backend witness, separately from public routes.
-        if (kind == 3) Assert.Equal("ExactUtf8Literal", regex.DebugUtf8ExecutionKind);
-        const int start = 0;
-        var operationKind = kind switch { 3 => 0, 4 => 2, _ => kind };
-        const ulong seed = 7;
-        var measured = new Utf8SliceInvocation(new(100000, 0, 1UL << 20), Regex.InfiniteMatchTimeout, default);
-        for (var index = 0; index < (int)seed; index++) Assert.Equal(Utf8ExecutionLimitKind.None, measured.TryChargeInputStep());
-        PythonReMatchAssert.Equal(expected, regex.MaterializeNativeMatchValue(input, start, operationKind, ref measured));
-        var required = measured.Budget.Steps - seed;
-        Assert.InRange(required, 1UL, 100000UL);
-        for (ulong cutoff = 0; cutoff <= required; cutoff++)
-        {
-            var invocation = new Utf8SliceInvocation(new(seed + cutoff, 0, 1UL << 20), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            for (var index = 0; index < (int)seed; index++) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
-            var published = false;
-            Exception? failure = null;
-            try
-            {
-                PythonReMatchAssert.Equal(expected, regex.MaterializeNativeMatchValue(input, start, operationKind, ref invocation));
-                published = true;
-            }
-            catch (InvalidOperationException error) { failure = error; }
-            Assert.Equal(cutoff == required, published);
-            if (published) Assert.Null(failure); else Assert.NotNull(failure);
-            Assert.True(invocation.Budget.Steps >= seed + cutoff);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13);
-        }
     }
 }

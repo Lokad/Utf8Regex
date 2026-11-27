@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8Ipv4BooleanTests
 {
     private const string Pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     private static bool Scalar(Utf8Regex regex, byte[] input)
     {
@@ -31,7 +31,7 @@ public sealed class Utf8Ipv4BooleanTests
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(Pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 12, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         Assert.False(regex.IsMatch("012.200.033.1AA"u8, token.Token));
         Assert.True(regex.IsMatch("😀99.99.99.99"u8, token.Token));
@@ -54,7 +54,7 @@ public sealed class Utf8Ipv4BooleanTests
         using var ordinary = new Utf8Regex(Pattern, RegexOptions.Compiled);
         using var limited = new Utf8Regex(Pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 24, MaxDepth = 1, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         var bytes = Encoding.UTF8.GetBytes(text);
         var expected = Regex.Match(text, Pattern);
@@ -80,7 +80,7 @@ public sealed class Utf8Ipv4BooleanTests
         using var source = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(Pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 1, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         Assert.Equal(expectedCount != 0, regex.IsMatch(input, source.Token));
         Assert.Equal(expectedCount, regex.Count(input, source.Token));
@@ -91,15 +91,16 @@ public sealed class Utf8Ipv4BooleanTests
     [InlineData("no leading digit", true)]
     public void BranchedCandidateSearchChecksInterruptionWithAdmittedStorage(string text, bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var regex = new Utf8Regex(Pattern, RegexOptions.Compiled);
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(64, 1, 13),
+        var invocation = new Utf8SliceInvocation(new(1, 13),
             expire ? TimeSpan.FromMilliseconds(200) : Timeout.InfiniteTimeSpan, source.Token);
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
         for (var i = 0; i < 63; i++)
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeStep());
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckProgress());
         invocation.CheckpointHook = _ =>
         {
             if (expire) clock.Advance(250);
@@ -112,7 +113,6 @@ public sealed class Utf8Ipv4BooleanTests
 
         if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
         else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
-        Assert.Equal(64UL, invocation.Budget.Steps);
         Assert.Equal(13UL, invocation.Budget.PeakWorkingBytes);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         invocation.Ledger.Release(13);
@@ -155,7 +155,7 @@ public sealed class Utf8Ipv4BooleanTests
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(Pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 100, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.IsMatch(input, token.Token));
@@ -172,7 +172,7 @@ public sealed class Utf8Ipv4BooleanTests
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(Pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 8, MaxDepth = 1, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         var input = Encoding.UTF8.GetBytes(text);
         var expected = Regex.Match(text, Pattern);
@@ -188,7 +188,7 @@ public sealed class Utf8Ipv4BooleanTests
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(Pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 1, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         Assert.Equal(Regex.Count(text, Pattern), regex.Count(Encoding.UTF8.GetBytes(text), token.Token));
     }

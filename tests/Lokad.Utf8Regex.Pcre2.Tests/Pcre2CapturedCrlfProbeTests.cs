@@ -129,7 +129,6 @@ public sealed class Pcre2CapturedCrlfProbeTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = bytes
@@ -157,13 +156,10 @@ public sealed class Pcre2CapturedCrlfProbeTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (work) == 0 ? null : (work),
                 MaxWorkingBytes = (heap) == 0 ? null : (heap)
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = Create(1, 1 << 20).Probe("a\r\n"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(100000, 1).Probe("a\r\n"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, Create(100000, 1 << 20).Probe("a\r\n"u8, Pcre2PartialMode.Soft).Kind);

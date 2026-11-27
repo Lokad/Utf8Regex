@@ -117,7 +117,7 @@ internal sealed partial class PythonReParser
         {
             SkipIgnoredPatternTrivia(options);
             if (!TryConsumeLeadingInlineFlagGroup(out var add)) return;
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             options |= add;
         }
     }
@@ -138,7 +138,7 @@ internal sealed partial class PythonReParser
 
         while (probe < Pattern.Length && IsInlineFlagChar(Pattern[probe]))
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             probe++;
         }
 
@@ -283,7 +283,7 @@ internal sealed partial class PythonReParser
             // numeric value exceeds our group index. Keep every digit metered.
             while (TryPeekDigit())
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 var digit = Consume() - '0';
                 if (number > (int.MaxValue - digit) / 10) tooLarge = true;
                 else if (!tooLarge) number = number * 10 + digit;
@@ -302,7 +302,7 @@ internal sealed partial class PythonReParser
             {
                 while (!IsAtEnd && Current != ')')
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     _position++;
                 }
 
@@ -323,7 +323,7 @@ internal sealed partial class PythonReParser
         var start = _position;
         while (!IsAtEnd && Current != ')')
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             _position++;
         }
 
@@ -356,7 +356,7 @@ internal sealed partial class PythonReParser
         var allowLiteralClosingBracket = true;
         while (!IsAtEnd)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (Current == ']' && !allowLiteralClosingBracket)
             {
                 _position++;
@@ -417,7 +417,7 @@ internal sealed partial class PythonReParser
             // retain it before allocating pages or visiting every code point.
             for (var index = 0; index < classItems.Count; index++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (classItems[index] is PythonReCharacterClassRangeItem { StartScalar: 0, EndScalar: 0x10ffff })
                     return Storage.Arena.Take(classItems, true);
             }
@@ -425,7 +425,7 @@ internal sealed partial class PythonReParser
             using var others = Utf8ConstructionBuffer<PythonReCharacterClassItem>.Create(Storage.Arena.Budget);
             for (var index = 0; index < classItems.Count; index++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 switch (classItems[index])
                 {
                     case PythonReCharacterClassLiteralItem literal:
@@ -434,7 +434,7 @@ internal sealed partial class PythonReParser
                     case PythonReCharacterClassRangeItem range:
                         for (var scalar = range.StartScalar; ; scalar++)
                         {
-                            Utf8ConstructionScope.ChargeWork(1);
+                            Utf8ConstructionScope.Checkpoint();
                             AddExpandedScalar(scalar);
                             if (scalar == range.EndScalar) break;
                         }
@@ -449,7 +449,7 @@ internal sealed partial class PythonReParser
             var runEnd = -1;
             foreach (var scalar in scalars)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (runStart < 0) runStart = runEnd = scalar;
                 else if (scalar == runEnd + 1 && (IsAsciiMode(scopeOptions) || scalar != 0x10000)) runEnd = scalar;
                 else
@@ -462,7 +462,7 @@ internal sealed partial class PythonReParser
                 rebuilt.Add(runStart == runEnd ? PythonReAstFactory.ClassLiteral(runStart) : PythonReAstFactory.ClassRange(runStart, runEnd));
             for (var index = 0; index < others.Count; index++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 rebuilt.Add(others[index]);
             }
             return Storage.Arena.Take(rebuilt.Count == 0 ? classItems : rebuilt, true);
@@ -478,7 +478,7 @@ internal sealed partial class PythonReParser
                 else
                     foreach (var partner in PythonReScalarCaseData.LiteralPartners(scalar))
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         scalars.Add(partner);
                     }
             }
@@ -540,13 +540,13 @@ internal sealed partial class PythonReParser
         using var members = PythonReScalarSet.Create(Storage.Arena.Budget);
         foreach (var partner in partners)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             members.Add(partner);
         }
         using var items = Utf8ConstructionBuffer<PythonReCharacterClassItem>.Create(Storage.Arena.Budget);
         foreach (var member in members)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             items.Add(PythonReAstFactory.ClassLiteral(member));
         }
         return PythonReAstFactory.CharacterClass(false, Storage.Arena.Take(items, true));
@@ -720,7 +720,7 @@ internal sealed partial class PythonReParser
         var scalar = 0;
         while (_position - start < digits && !IsAtEnd && HexDigits.IndexOf(Current) >= 0)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             var value = Current;
             var digit = value <= '9' ? value - '0' : (value | 32) - 'a' + 10;
             scalar = unchecked(scalar * 16 + digit);
@@ -728,7 +728,7 @@ internal sealed partial class PythonReParser
         }
         if (_position - start != digits)
             throw new PythonRePatternException($@"incomplete escape \{kind}{Pattern.CopyText(start, _position - start)}", escapeStart);
-        Utf8ConstructionScope.ChargeWork((ulong)digits);
+        Utf8ConstructionScope.Checkpoint();
         return scalar;
     }
 
@@ -736,12 +736,12 @@ internal sealed partial class PythonReParser
     {
         Span<char> octal = stackalloc char[3];
         octal[0] = firstDigit;
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         var count = 1;
         var value = firstDigit - '0';
         while (count < 3 && !IsAtEnd && IsOctalDigit(Current))
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             var digit = Consume();
             octal[count++] = digit;
             value = value * 8 + digit - '0';
@@ -753,7 +753,7 @@ internal sealed partial class PythonReParser
 
     private int ParseOctalEscapeIntValue(int escapeStart, char firstDigit, char secondDigit, char thirdDigit)
     {
-        Utf8ConstructionScope.ChargeWork(3);
+        Utf8ConstructionScope.Checkpoint();
         var value = ((firstDigit - '0') * 8 + secondDigit - '0') * 8 + thirdDigit - '0';
         if (value > 0xFF)
             throw new PythonRePatternException($@"octal escape value \{Pattern.CopyText(_position - 3, 3)} outside of range 0-0o377", escapeStart);
@@ -772,7 +772,7 @@ internal sealed partial class PythonReParser
         var start = _position;
         while (!IsAtEnd && Current != terminator)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (terminator == '>' && Current == ')')
             {
                 if (_position == start)
@@ -817,7 +817,7 @@ internal sealed partial class PythonReParser
         var options = PythonReCompileOptions.None;
         while (!IsAtEnd)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             PythonReCompileOptions next = Current switch
             {
                 'i' => PythonReCompileOptions.IgnoreCase,
@@ -913,7 +913,7 @@ internal sealed partial class PythonReParser
                 continue;
             }
             if ((options & PythonReCompileOptions.Verbose) == 0) return;
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             // CPython verbose skips exactly space, tab, LF, CR, VT, and FF (Lib/re/_parser.py WHITESPACE), unlike char.IsWhiteSpace, which also eats no-break spaces and Unicode spaces that CPython preserves literally.
             if (Current is ' ' or '\t' or '\n' or '\r' or '\v' or '\f')
             {
@@ -926,7 +926,7 @@ internal sealed partial class PythonReParser
                 _position++;
                 while (!IsAtEnd && Current != '\n')
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     if (Pattern[_position++] == '\\') SkipEscapedCommentCharacter();
                 }
 
@@ -940,11 +940,11 @@ internal sealed partial class PythonReParser
     private void SkipGroupComment()
     {
         var start = _position;
-        Utf8ConstructionScope.ChargeWork(3);
+        Utf8ConstructionScope.Checkpoint();
         _position += 3; // The caller established "(?#".
         while (!IsAtEnd)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             var character = Pattern[_position++];
             if (character == ')') return;
             if (character == '\\') SkipEscapedCommentCharacter();
@@ -958,7 +958,7 @@ internal sealed partial class PythonReParser
     private void SkipEscapedCommentCharacter()
     {
         if (IsAtEnd) throw new PythonRePatternException("bad escape (end of pattern)", _position - 1);
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         _position++;
     }
 
@@ -1034,12 +1034,12 @@ internal sealed partial class PythonReParser
         if (IsAtEnd || Current != '{') return false;
         // Only complete repeat syntax reserves a brace. Peek without allocating
         // or rewinding work; malformed/unfinished text remains literal Python syntax.
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         var index = _position + 1;
         var minimumStart = index;
         while (index < Pattern.Length && char.IsAsciiDigit(Pattern[index]))
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             index++;
         }
         if (index < Pattern.Length && Pattern[index] == ',')
@@ -1047,7 +1047,7 @@ internal sealed partial class PythonReParser
             index++;
             while (index < Pattern.Length && char.IsAsciiDigit(Pattern[index]))
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 index++;
             }
         }
@@ -1065,7 +1065,7 @@ internal sealed partial class PythonReParser
         uint value = 0;
         while (TryPeekDigit())
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             var digit = (uint)(Current - '0');
             // Python reserves UINT_MAX for infinity; a finite bound cannot use it.
             if (value > (uint.MaxValue - 1 - digit) / 10)
@@ -1133,7 +1133,7 @@ internal sealed partial class PythonReParser
     {
         for (var offset = 0; offset < input.Length;)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (Rune.DecodeFromUtf8(input[offset..], out _, out var consumed) != OperationStatus.Done)
             {
                 // Preserve the existing byte overload's failure vocabulary and
@@ -1143,7 +1143,7 @@ internal sealed partial class PythonReParser
             }
             offset += consumed;
         }
-        budget.ChargeWork(0);
+        budget.Checkpoint();
     }
 
     private string SourceCharacterText(int offset)
@@ -1164,7 +1164,7 @@ internal sealed partial class PythonReParser
         var textPosition = 0;
         for (var offset = 0; offset < end;)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             _ = Rune.DecodeFromUtf8(input[offset..], out var scalar, out var consumed);
             if (offset + consumed > end) break;
             offset += consumed;
@@ -1186,7 +1186,7 @@ internal readonly record struct PythonReParseResult(
 {
     internal bool TryGetGroupBody(int number, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out PythonReNode? body)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         body = number > 0 && number <= GroupBodies.Length ? GroupBodies[number - 1] : null;
         return body is not null;
     }

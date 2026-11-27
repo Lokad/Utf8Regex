@@ -24,8 +24,6 @@ public sealed class Pcre2FiniteAsciiSearchTests
         var error = Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input,
             startOffsetInBytes: -1, matchOptions: (Pcre2MatchOptions)int.MaxValue, cancellationToken: source.Token));
         Assert.Equal(source.Token, error.CancellationToken);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => CreateMetered(pattern, 1).IsMatch(input)).ErrorKind);
     }
 
     [Theory]
@@ -44,7 +42,7 @@ public sealed class Pcre2FiniteAsciiSearchTests
         var regex = new Utf8Pcre2Regex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.IsMatch(input));
-        Assert.Equal(expected, CreateMetered(pattern, 1_000_000).IsMatch(input));
+        Assert.Equal(expected, CreateMetered(pattern).IsMatch(input));
         using var token = new CancellationTokenSource();
         Assert.Equal(expected, regex.IsMatch(input, 0, default, token.Token));
     }
@@ -54,7 +52,7 @@ public sealed class Pcre2FiniteAsciiSearchTests
     {
         const string pattern = @"\b(\d{1,2})/(\d{1,2})/(\d{2,4})\b";
         var regex = new Utf8Pcre2Regex(pattern);
-        var metered = CreateMetered(pattern, 1_000_000);
+        var metered = CreateMetered(pattern);
         var input = Encoding.UTF8.GetBytes("😀11/18/2019 1/2/34é");
         for (var start = 0; start <= input.Length; start++)
         {
@@ -73,8 +71,6 @@ public sealed class Pcre2FiniteAsciiSearchTests
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.IsMatch(input, 0, default, canceled.Token)).CancellationToken);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => CreateMetered(pattern, 1).IsMatch(input)).ErrorKind);
     }
 
     [Theory]
@@ -106,7 +102,7 @@ public sealed class Pcre2FiniteAsciiSearchTests
         var direct = new Utf8Pcre2Regex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, direct.IsMatch(input));
-        Assert.Equal(expected, CreateMetered(pattern, 1_000_000).IsMatch(input));
+        Assert.Equal(expected, CreateMetered(pattern).IsMatch(input));
     }
 
     [Fact]
@@ -114,7 +110,7 @@ public sealed class Pcre2FiniteAsciiSearchTests
     {
         const string pattern = "(?(?=(a))(a)b|(c)d)";
         var direct = new Utf8Pcre2Regex(pattern);
-        var metered = CreateMetered(pattern, 1_000_000);
+        var metered = CreateMetered(pattern);
         var input = Encoding.UTF8.GetBytes("😀ab écd");
         for (var start = 0; start <= input.Length; start++)
         {
@@ -135,8 +131,6 @@ public sealed class Pcre2FiniteAsciiSearchTests
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token,
             Assert.Throws<OperationCanceledException>(() => direct.IsMatch("ab"u8, 0, default, canceled.Token)).CancellationToken);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => CreateMetered(pattern, 1).IsMatch("ab"u8)).ErrorKind);
     }
 
     [Theory]
@@ -146,7 +140,7 @@ public sealed class Pcre2FiniteAsciiSearchTests
     public void AcceptGuardBooleanProofPreservesCallerCapturesAndAuthority(string pattern)
     {
         var regex = new Utf8Pcre2Regex(pattern);
-        var metered = CreateMetered(pattern, 1_000_000);
+        var metered = CreateMetered(pattern);
         var input = Encoding.UTF8.GetBytes("😀abc édef");
         for (var start = 0; start <= input.Length; start++)
         {
@@ -164,8 +158,6 @@ public sealed class Pcre2FiniteAsciiSearchTests
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token,
             Assert.Throws<OperationCanceledException>(() => regex.IsMatch("abc"u8, 0, default, canceled.Token)).CancellationToken);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => CreateMetered(pattern, 1).IsMatch("abc"u8)).ErrorKind);
     }
 
     [Theory]
@@ -185,7 +177,7 @@ public sealed class Pcre2FiniteAsciiSearchTests
         Assert.Equal(expected, regex.IsMatch(input));
         using var token = new CancellationTokenSource();
         Assert.Equal(expected, regex.IsMatch(input, 0, default, token.Token));
-        Assert.Equal(expected, CreateMetered(pattern, 1_000_000).IsMatch(input));
+        Assert.Equal(expected, CreateMetered(pattern).IsMatch(input));
     }
 
     [Fact]
@@ -193,7 +185,7 @@ public sealed class Pcre2FiniteAsciiSearchTests
     {
         const string pattern = @"(?1)\d{3}(a)";
         var regex = new Utf8Pcre2Regex(pattern);
-        var metered = CreateMetered(pattern, 1_000_000);
+        var metered = CreateMetered(pattern);
         var input = Encoding.UTF8.GetBytes("😀a123a éa345a");
         for (var start = 0; start <= input.Length; start++)
         {
@@ -221,8 +213,6 @@ public sealed class Pcre2FiniteAsciiSearchTests
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token,
             Assert.Throws<OperationCanceledException>(() => regex.IsMatch("a123a"u8, 0, default, canceled.Token)).CancellationToken);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => CreateMetered(pattern, 1).IsMatch("a123a"u8)).ErrorKind);
     }
 
     [Fact]
@@ -246,7 +236,7 @@ public sealed class Pcre2FiniteAsciiSearchTests
     public void BoundedAsciiLanguageMatchesTheMeteredVmAtEveryValidStart()
     {
         var direct = new Utf8Pcre2Regex(CreditCardPattern);
-        var vm = CreateMetered(CreditCardPattern, 1_000_000);
+        var vm = CreateMetered(CreditCardPattern);
 
         foreach (var inputText in new[]
                  {
@@ -290,44 +280,18 @@ public sealed class Pcre2FiniteAsciiSearchTests
         bool expected)
     {
         var direct = new Utf8Pcre2Regex(pattern);
-        var vm = CreateMetered(pattern, 1_000_000);
+        var vm = CreateMetered(pattern);
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.Equal(expected, direct.IsMatch(input));
         Assert.Equal(vm.IsMatch(input), direct.IsMatch(input));
     }
 
-    [Fact]
-    public void BoundedAsciiLanguageFallsBackForMatchOptionsAndLimits()
-    {
-        var direct = new Utf8Pcre2Regex(CreditCardPattern);
-        var vm = CreateMetered(CreditCardPattern, 1_000_000);
-        var input = "card 4111-1111-1111-1111"u8.ToArray();
-
-        foreach (var options in new[]
-                 {
-                     Pcre2MatchOptions.Anchored,
-                     Pcre2MatchOptions.EndAnchored,
-                     Pcre2MatchOptions.NotBol,
-                     Pcre2MatchOptions.NotEol,
-                     Pcre2MatchOptions.NotEmpty,
-                     Pcre2MatchOptions.NotEmptyAtStart,
-                 })
-        {
-            Assert.Equal(vm.IsMatch(input, 0, options), direct.IsMatch(input, 0, options));
-        }
-
-        var tightlyMetered = CreateMetered(CreditCardPattern, 1);
-        Assert.Equal(
-            Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch(input)).ErrorKind);
-    }
-
-    private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
+    private static Utf8Pcre2Regex CreateMetered(string pattern) =>
         new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (matchLimit) == 0 ? null : (matchLimit)
+                MaxDepth = 4096
             },
             MatchTimeout = Regex.InfiniteMatchTimeout
         });

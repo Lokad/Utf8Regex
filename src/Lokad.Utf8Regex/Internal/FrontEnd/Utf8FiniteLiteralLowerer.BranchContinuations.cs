@@ -27,7 +27,7 @@ internal static partial class Utf8FiniteLiteralLowerer
             Utf8ConstructionBuffer<LoweredBranch>? completed = null;
             while (frames.Count != 0)
             {
-                storage.Budget.ChargeWork(1);
+                storage.Budget.Checkpoint();
                 var index = frames.Count - 1;
                 var frame = frames[index];
                 node = frame.Node;

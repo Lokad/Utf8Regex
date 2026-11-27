@@ -21,7 +21,6 @@ public sealed class Pcre2HostCompositionCursorTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
             },
@@ -64,7 +63,6 @@ public sealed class Pcre2HostCompositionCursorTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000,
                 MaxWorkingBytes = 1 << 20
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
@@ -122,7 +120,6 @@ public sealed class Pcre2HostCompositionCursorTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
             },

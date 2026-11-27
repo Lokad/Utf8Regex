@@ -56,7 +56,7 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
         var alternatives = new List<Pcre2FiniteLiteralState>(states.Count);
         foreach (var state in states)
         {
-            budget.ChargeWork((ulong)state.Value.Length + 1);
+            budget.Checkpoint();
             if (distinctValues.Add(state.Value))
             {
                 alternatives.Add(state);
@@ -86,7 +86,7 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
             for (var index = 0; index < alternatives.Count; index++)
             {
                 var state = alternatives[index];
-                budget.ChargeWork((ulong)state.ReportedStartCharacterIndex + 1);
+                budget.Checkpoint();
                 boundaries[index] = new(alternativeBytes[index],
                     Encoding.UTF8.GetByteCount(state.Value.AsSpan(0, state.ReportedStartCharacterIndex)));
             }
@@ -101,7 +101,7 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
         void Admit(ulong bytes, ulong work)
         {
             budget.CheckBytes(bytes);
-            budget.ChargeWork(work);
+            budget.Checkpoint();
             budget.ReserveBytes(bytes);
         }
 
@@ -313,7 +313,7 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
                         when backreference.Options == Pcre2CharacterOptions.None:
                         foreach (var input in inputs)
                         {
-                        budget.ChargeWork((ulong)input.Captures.Count + 1);
+                        budget.Checkpoint();
                             var slot = backreference.Target.Kind switch
                             {
                                 Pcre2BackreferenceTargetKind.Absolute => backreference.Target.Number,

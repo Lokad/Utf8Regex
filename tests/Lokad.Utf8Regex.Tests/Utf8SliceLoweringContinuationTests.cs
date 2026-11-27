@@ -111,6 +111,7 @@ public sealed class Utf8SliceLoweringContinuationTests
     [InlineData(4097, 4)]
     public void DeepFlatProgramsRespectWorkStorageCancellationAndRecovery(int depth, int shape)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var root = Deep(depth, shape, new Utf8SliceNode.LiteralNode('é', false));
         // Assertions are zero-width; a following literal consumes the subject.
         if (shape == 4) root = new Utf8SliceNode.ConcatNode([root, new Utf8SliceNode.LiteralNode('é', false)]);
@@ -128,18 +129,9 @@ public sealed class Utf8SliceLoweringContinuationTests
             Assert.Equal(new[] { 0 }, starts);
             Assert.Equal(new[] { 2 }, ends);
         }
-        var cutoffs = depth == 65 ? Enumerable.Range(1, checked((int)baseline.Budget.Steps - 1)).Select(static value => (ulong)value)
-            : new[] { 1UL, 2UL, 63UL, 64UL, 127UL, 128UL, 4095UL, 4096UL, baseline.Budget.Steps - 1 };
-        foreach (var work in cutoffs)
-        {
-            Array.Fill(starts, -1);
-            Array.Fill(ends, -1);
-            var limited = new Utf8SliceInvocation(new Utf8ExecutionLimits(work, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
-                collectHistory: false, ref limited).Breach);
-            Assert.Equal(0UL, limited.Ledger.ReservedBytes);
-        }
-        var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
+        var cutoffs = depth == 65 ? Enumerable.Range(1, checked((int)baseline.Budget.DiagnosticCheckpoints - 1)).Select(static value => (ulong)value)
+            : new[] { 1UL, 2UL, 63UL, 64UL, 127UL, 128UL, 4095UL, 4096UL, baseline.Budget.DiagnosticCheckpoints - 1 };
+        var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
             Regex.InfiniteMatchTimeout, CancellationToken.None);
         // A single linear slot has no rollback/history consumer. Its caller-owned
         // arrays need no runner scratch; continuations still require admission.

@@ -24,7 +24,7 @@ Pass UTF-8 replacement templates to `Replace` for owned bytes or `TryReplace`
 for caller-owned storage. Use `CreateMatchCursor` to compute custom replacements
 and write the output in the host.
 
-Instances support finite `Utf8ResourcePolicy` work, depth, working-capacity and
+Instances support finite `Utf8ResourcePolicy` depth, working-capacity and
 result-capacity limits. Defaults are unlimited. The original cancellation token
 and absolute deadline cover matching, template preparation, result shaping and
 cursor advances. Explicit `Compile` factories offer separate construction

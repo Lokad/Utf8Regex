@@ -16,7 +16,7 @@ internal readonly partial struct PreparedAsciiIgnoreCaseLiteralSetSearch
             var shortest = int.MaxValue;
             foreach (var literal in literals)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 shortest = Math.Min(shortest, literal.Length);
                 if (shortest == 0) break;
             }
@@ -27,7 +27,7 @@ internal readonly partial struct PreparedAsciiIgnoreCaseLiteralSetSearch
                 var buckets = budget.AllocateArray<AsciiIgnoreCaseLiteralBucket>(1, false);
                 buckets[0] = new(0, references);
                 var map = budget.AllocateArray<int>(256, false);
-                budget.ChargeWork(257);
+                budget.Checkpoint();
                 Array.Fill(map, -1);
                 map[0] = 0;
                 _data = AcquireData(PreparedByteSearch.FromOwnedValues([], null), buckets, map, 0, default, budget);
@@ -38,13 +38,13 @@ internal readonly partial struct PreparedAsciiIgnoreCaseLiteralSetSearch
             Span<int> indexByByte = stackalloc int[256];
             Span<int> counts = stackalloc int[256];
             Span<byte> firstBytes = stackalloc byte[256];
-            budget.ChargeWork(512);
+            budget.Checkpoint();
             indexByByte.Fill(-1);
             counts.Clear();
             var distinct = 0;
             foreach (var literal in literals)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var first = AsciiSearch.FoldCase(literal[0]);
                 var group = indexByByte[first];
                 if (group < 0)
@@ -58,32 +58,32 @@ internal readonly partial struct PreparedAsciiIgnoreCaseLiteralSetSearch
             var foldedBuckets = budget.AllocateArray<AsciiIgnoreCaseLiteralBucket>(distinct, false);
             for (var group = 0; group < distinct; group++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 foldedBuckets[group] = new(firstBytes[group], budget.AllocateArray<byte[]>(counts[group], false));
                 counts[group] = 0;
             }
             foreach (var literal in literals)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var normalized = budget.AllocateArray<byte>(literal.Length, false);
-                budget.ChargeWork((ulong)literal.Length);
+                budget.Checkpoint();
                 for (var offset = 0; offset < literal.Length; offset++)
                     normalized[offset] = AsciiSearch.FoldCase(literal[offset]);
                 var group = indexByByte[normalized[0]];
                 foldedBuckets[group].Literals[counts[group]++] = normalized;
             }
             var foldedMap = budget.AllocateArray<int>(256, false);
-            budget.ChargeWork(256);
+            budget.Checkpoint();
             indexByByte.CopyTo(foldedMap);
 
             Span<bool> seen = stackalloc bool[256];
             Span<byte> searchBytes = stackalloc byte[256];
-            budget.ChargeWork(256);
+            budget.Checkpoint();
             seen.Clear();
             var searchCount = 0;
             for (var group = 0; group < distinct; group++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var folded = firstBytes[group];
                 if (!seen[folded]) { seen[folded] = true; searchBytes[searchCount++] = folded; }
                 if ((uint)(folded - (byte)'a') <= 'z' - 'a')
@@ -110,7 +110,7 @@ internal readonly partial struct PreparedAsciiIgnoreCaseLiteralSetSearch
                     var position = 0;
                     foreach (var bucket in foldedBuckets)
                     {
-                        budget.ChargeWork(1 + (ulong)bucket.Literals.Length);
+                        budget.Checkpoint();
                         bucket.Literals.CopyTo(flattened, position);
                         position += bucket.Literals.Length;
                     }

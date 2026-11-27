@@ -37,7 +37,7 @@ public sealed class Utf8StructuralInvocationTests
         var hit = "target needle TARGET";
         var input = Encoding.UTF8.GetBytes(new string('x', offset) + hit + new string('x', 2200) + hit);
         var expectedFound = reverse ? searcher.TryFindLastMatch(input, out var expected) : searcher.TryFindFirstMatch(input, out expected);
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
         Assert.Equal(Utf8ExecutionLimitKind.None, searcher.TryFindMatch(input, 0, input.Length,
             reverse, ref invocation, out var actual, out var found));
@@ -53,7 +53,7 @@ public sealed class Utf8StructuralInvocationTests
     {
         var literals = new[] { "abcde"u8.ToArray(), "d"u8.ToArray() };
         var searcher = new PreparedSearcher(new PreparedMultiLiteralSearch(literals, folded));
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, searcher.TryFindMatch("abcde"u8, 0, 5, true,
             ref invocation, out var raw, out var found));
         Assert.True(found);
@@ -72,23 +72,14 @@ public sealed class Utf8StructuralInvocationTests
     [InlineData(4)]
     public void BoundedPreparedSearchDenialLeavesCoordinatesUnpublished(int kind)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var searcher = Searcher(kind);
         var hit = "target";
         var input = Encoding.UTF8.GetBytes(new string('x', 10000) + hit);
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        var baseline = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, searcher.TryFindMatch(input, 1, input.Length,
             false, ref baseline, out _, out var found));
         Assert.True(found);
-        for (var cap = 1UL; cap < baseline.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, searcher.TryFindMatch(input, 1, input.Length,
-                false, ref invocation, out var denied, out found));
-            Assert.False(found);
-            Assert.Equal(default, denied);
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     public static IEnumerable<object[]> PublicCases()

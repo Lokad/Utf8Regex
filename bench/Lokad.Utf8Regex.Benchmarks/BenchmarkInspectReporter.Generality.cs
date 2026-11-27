@@ -100,7 +100,7 @@ internal static partial class BenchmarkInspectReporter
                 Scope = "24 representative patterns; structural neighbours and everyday patterns. Not exhaustive old-catalog coverage or adapter coverage.",
                 OutputContract = "MatchSlots reads last captures into caller slots. For capture-free patterns the BCL lane reads the first value match. Cursor reads complete capture histories. Both return byte ranges, with the BCL coordinate map prepared outside timing. No string materialization. Construction consumes the same CultureInvariant Options mask on every producer, without metadata-array copies.",
                 Policy = "Ordinary Core and .NET lanes use an infinite timeout. Controlled Core lanes use a token, " +
-                    "10-second deadline, 50M work steps, 4096 depth, 16 MiB working/result and a caller working allowance in the combined lane.",
+                    "10-second deadline, 4096 depth, 16 MiB working/result and a caller working allowance in the combined lane.",
                 Results = results }, new JsonSerializerOptions { WriteIndented = true }) + "\n");
             Console.WriteLine($"Generality output: {path}; elapsed {started.Elapsed.TotalSeconds:F1}s.");
         }
@@ -120,7 +120,6 @@ internal static partial class BenchmarkInspectReporter
         private readonly int _start;
         private readonly GeneralityAllowance _allowance = new();
         private static readonly Utf8ResourcePolicy Limits = new() {
-            MaxWorkSteps = 50_000_000,
             MaxDepth = 4096,
             MaxWorkingBytes = 16 << 20,
             MaxResultBytes = 16 << 20

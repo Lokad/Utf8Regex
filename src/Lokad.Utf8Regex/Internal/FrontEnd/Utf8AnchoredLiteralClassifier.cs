@@ -12,7 +12,7 @@ internal static class Utf8AnchoredLiteralClassifier
     private static Utf8TreeNode Unwrap(Utf8TreeNode node)
     {
         while (node.ChildCount == 1 && (node.Kind == Utf8TreeNodeKind.Group || node.Kind == Utf8TreeNodeKind.Capture && node.N == -1))
-        { Utf8ConstructionScope.ChargeWork(1); node = node.Child(0); }
+        { Utf8ConstructionScope.Checkpoint(); node = node.Child(0); }
         return node;
     }
 
@@ -56,7 +56,7 @@ internal static class Utf8AnchoredLiteralClassifier
             using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(body.Child(index), 0));
             while (frames.Count != 0)
             {
-                budget.ChargeWork(1); var slot = frames.Count - 1; var frame = frames[slot]; var node = frame.Node;
+                budget.Checkpoint(); var slot = frames.Count - 1; var frame = frames[slot]; var node = frame.Node;
                 if (node.Kind is Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Group || node.Kind == Utf8TreeNodeKind.Capture && node.N == -1)
                 {
                     if (frame.NextChild == node.ChildCount) { frames.Pop(); continue; }
@@ -95,7 +95,7 @@ internal static class Utf8AnchoredLiteralClassifier
 
     private static bool Append(int value, bool fold, RegexOptions options, Span<byte> destination, bool write, ref int length, ref bool folded, ref bool sensitiveLetter)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         if ((uint)value >= 128 || length == int.MaxValue) return false;
         if (fold && (!Utf8ScalarAsciiProjector.TryCloseAsciiCaseFiber(AsciiCharClass.ForByte((byte)value), true, options, out var closed) || closed != FoldMask((byte)value, true))) return false;
         if ((uint)((value | 32) - 'a') <= 'z' - 'a') { folded |= fold; sensitiveLetter |= !fold; }

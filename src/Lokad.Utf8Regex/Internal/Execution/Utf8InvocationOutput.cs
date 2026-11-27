@@ -10,7 +10,7 @@ internal static class Utf8InvocationOutput
     internal static void Checkpoint<TControl>(scoped TControl control)
         where TControl : IUtf8InvocationBufferControl, allows ref struct
     {
-        var breach = control.TryChargeWorkspaceStep();
+        var breach = control.CheckWorkspace();
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException($"Owned output exceeded {breach}.");
     }

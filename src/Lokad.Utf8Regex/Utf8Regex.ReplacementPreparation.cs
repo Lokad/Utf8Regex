@@ -38,7 +38,7 @@ public sealed partial class Utf8Regex
         if ((!previousToken.CanBeCanceled || previousToken == control.Token) &&
             (previousDeadline.IsInfinite || ReferenceEquals(previousDeadline, control.Deadline)))
         {
-            // ChargeWork already checks these fields after the existing hook.
+            // The checkpoint checks the token and deadline after the existing hook.
             // Borrow the same authority instead of adding another callback.
             budget.CancellationToken = control.Token;
             budget.Deadline = control.Deadline;
@@ -47,7 +47,7 @@ public sealed partial class Utf8Regex
         {
             var parentHook = previousHook;
             var currentControl = control;
-            budget.CheckpointHook = steps => { parentHook?.Invoke(steps); currentControl.Check(); };
+            budget.CheckpointHook = () => { parentHook?.Invoke(); currentControl.Check(); };
         }
         try
         {
@@ -69,11 +69,7 @@ public sealed partial class Utf8Regex
     {
         control.Check();
         var construction = Utf8ConstructionScope.IsActive ? Utf8ConstructionScope.CurrentBudget : null;
-        var work = (ulong)template.Length;
-        if (construction is not null) construction.ChargeWork(work);
-        else if (work > Utf8ConstructionScope.DefaultWorkSteps)
-            throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionWorkSteps,
-                Utf8ConstructionScope.DefaultWorkSteps, work);
+        construction?.Checkpoint();
 
         // This scan acquires no payload and needs no new numeric owner. A live
         // parent shares its cumulative admission and interruption checkpoints.
@@ -82,13 +78,13 @@ public sealed partial class Utf8Regex
         { Utf8Validation.ThrowIfInvalidOnly(template); return; }
         for (var offset = 0; offset < template.Length;)
         {
-            construction?.ChargeWork(0);
+            construction?.Checkpoint();
             control.Check();
             var count = Utf8SliceBufferWork.Utf8BlockLength(template[offset..]);
             Utf8Validation.ThrowIfInvalidOnly(template.Slice(offset, count), offset);
             offset += count;
         }
-        construction?.ChargeWork(0);
+        construction?.Checkpoint();
         control.Check();
     }
 
@@ -145,7 +141,7 @@ public sealed partial class Utf8Regex
             {
                 var parentHook = previousHook;
                 var currentControl = control;
-                budget.CheckpointHook = steps => { parentHook?.Invoke(steps); currentControl.Check(); };
+                budget.CheckpointHook = () => { parentHook?.Invoke(); currentControl.Check(); };
             }
             try
             {
@@ -177,7 +173,7 @@ public sealed partial class Utf8Regex
         {
             control.Check();
             var count = Math.Min(2048, source.Length - offset);
-            budget.ChargeWork((ulong)count);
+            budget.Checkpoint();
             source.Slice(offset, count).CopyTo(result.AsSpan(offset, count)); offset += count;
         }
         control.Check(); return result;

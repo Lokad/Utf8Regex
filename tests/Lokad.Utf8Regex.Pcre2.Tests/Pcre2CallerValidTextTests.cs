@@ -16,7 +16,7 @@ public sealed class Pcre2CallerValidTextTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 64
+                MaxDepth = 4096
             }
         });
         using var source = new CancellationTokenSource();

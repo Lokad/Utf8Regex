@@ -154,34 +154,6 @@ public sealed class Utf8ValueMatchRangeTests
             AssertRange(Create("(a+)", mode, finite ? 1000000UL : null).Match(bytes, cancellationToken: source.Token), text, index, length);
     }
 
-    [Theory]
-    [InlineData(@"\A(?s:(.+))\z", "π😀中", 0, 4)]
-    [InlineData("(a+)(b*)", "zz aaaabbb", 3, 7)]
-    public void EveryWorkCutoffDeniesOrPublishesTheCompleteValue(
-        string pattern, string text, int index, int length)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        ulong low = 1, high = 100000;
-        while (low < high)
-        {
-            var cap = low + (high - low) / 2;
-            try { AssertRange(Create(pattern, RegexOptions.Compiled, cap).Match(input), text, index, length); high = cap; }
-            catch (Utf8ResourceLimitExceededException error)
-            {
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-                Assert.Equal(cap + 1, error.Requested);
-                low = cap + 1;
-            }
-        }
-        for (ulong cap = 1; cap < low; cap++)
-        {
-            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(pattern, RegexOptions.Compiled, cap).Match(input));
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-            Assert.Equal(cap + 1, error.Requested);
-        }
-        AssertRange(Create(pattern, RegexOptions.Compiled, low).Match(input), text, index, length);
-    }
-
     [Fact]
     public void PreCanceledScalarMatchKeepsTheOriginalToken()
     {
@@ -202,7 +174,6 @@ public sealed class Utf8ValueMatchRangeTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = work is null ? Utf8ResourcePolicy.Unlimited : new()
             {
-                MaxWorkSteps = work,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1_048_576,
                 MaxResultBytes = 1_048_576

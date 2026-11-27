@@ -44,13 +44,9 @@ public sealed class Utf8OrdinalBackreferenceTests
         var regex = new Utf8Regex(@"(\w)\1", policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Limits(4)
+            ResourcePolicy = Limits()
         });
         var input = "aéê中世b"u8.ToArray();
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input)).ResourceKind);
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(input)).ResourceKind);
         using var source = new CancellationTokenSource();
         source.Cancel();
         Assert.Equal(source.Token,
@@ -61,8 +57,8 @@ public sealed class Utf8OrdinalBackreferenceTests
         ? $@"\A\k<g>(?<g>.{{{scalars}}})\z"
         : $@"\A(?<g>.{{{scalars}}})\k<g>\z";
 
-    private static Utf8ResourcePolicy Limits(ulong work = 20000000) => new()
-    { MaxWorkSteps = work, MaxDepth = 1024, MaxWorkingBytes = 64 << 20, MaxResultBytes = 64 << 20 };
+    private static Utf8ResourcePolicy Limits() => new()
+    { MaxDepth = 1024, MaxWorkingBytes = 64 << 20, MaxResultBytes = 64 << 20 };
 
     [Theory]
     [InlineData(false, false)]
@@ -159,7 +155,7 @@ public sealed class Utf8OrdinalBackreferenceTests
         var program = regex.Inspection.PreparedRegex.ScalarProgram!;
         var input = Encoding.UTF8.GetBytes(new string('a', 128));
         var start = rtl ? input.Length : 0;
-        var funded = new Utf8SliceInvocation(new(ulong.MaxValue, 1024, 1 << 20, 1 << 20),
+        var funded = new Utf8SliceInvocation(new(1024, 1 << 20, 1 << 20),
             Regex.InfiniteMatchTimeout, default);
         Assert.True(funded.Ledger.TryReserve(13));
         var result = Utf8SliceRunner.CountFromBytes(program, input, start, new int[program.GroupCount],
@@ -167,25 +163,6 @@ public sealed class Utf8OrdinalBackreferenceTests
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
         Assert.Equal(1, result.Count);
         Assert.Equal(13UL, funded.Ledger.ReservedBytes);
-        for (ulong cap = 1; cap < funded.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 1024, 1 << 20, 1 << 20),
-                Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var denied = Utf8SliceRunner.CountFromBytes(program, input, start, new int[program.GroupCount],
-                new int[program.GroupCount], ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-            // Internal progress is invalid after denial. The public operation
-            // must throw instead of publishing that partial count.
-            var bounded = new Utf8Regex(Pattern(64, rtl), options: options, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Regex.InfiniteMatchTimeout,
-                ResourcePolicy = Limits(cap)
-            });
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => bounded.Count(input)).ResourceKind);
-        }
     }
 
     [Theory]
@@ -238,7 +215,7 @@ public sealed class Utf8OrdinalBackreferenceTests
         Array.Fill(ends, -1);
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(20000000, 1024, 64 << 20, 64 << 20),
+        var invocation = new Utf8SliceInvocation(new(1024, 64 << 20, 64 << 20),
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         var entered = false;

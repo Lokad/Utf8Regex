@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8FiniteLiteralFamilyAdmissionTests
 {
     private static Utf8ResourcePolicy Small => new()
-    { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
+    { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
 
     [Theory]
     [InlineData(13)]
@@ -97,7 +97,6 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -116,7 +115,6 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -130,7 +128,6 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -147,7 +144,6 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -206,14 +202,11 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input)).ResourceKind);
     }
 
     [Theory]

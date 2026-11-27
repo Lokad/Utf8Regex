@@ -71,7 +71,7 @@ public sealed class Utf8LiteralAssertionTests
     {
         using var regex = Utf8Regex.Compile(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
-        var invocation = new Utf8SliceInvocation(new(100000, 1, 1), Timeout.InfiniteTimeSpan, default);
+        var invocation = new Utf8SliceInvocation(new(1, 1), Timeout.InfiniteTimeSpan, default);
         var result = Utf8SliceRunner.TryMatchAt(program, Encoding.UTF8.GetBytes(text), start, [], [], true, ref invocation);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
         Assert.True(result.IsMatch);
@@ -83,17 +83,17 @@ public sealed class Utf8LiteralAssertionTests
     public void LogicalAssertionDepthAndOriginalLoansSurviveTheShortcut()
     {
         var plain = new Utf8Regex("(?<=foo)bar").Inspection.AvailableOwnedSliceProgram!;
-        var tiny = new Utf8SliceInvocation(new(100000, 1, 1), Timeout.InfiniteTimeSpan, default);
+        var tiny = new Utf8SliceInvocation(new(1, 1), Timeout.InfiniteTimeSpan, default);
         var literal = Utf8SliceRunner.TryMatchAt(plain, "foobar"u8, 3, [], [], true, ref tiny);
         Assert.Equal(Utf8ExecutionLimitKind.None, literal.Breach); Assert.True(literal.IsMatch);
         Assert.Equal(1u, tiny.Budget.PeakDepth); Assert.Equal(0UL, tiny.Ledger.ReservedBytes);
         var program = new Utf8Regex("(?:foo|fo)(?<=foo)bar").Inspection.AvailableOwnedSliceProgram!;
-        var complete = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var complete = new Utf8SliceInvocation(new(128, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(complete.Ledger.TryReserve(13));
         var outcome = Utf8SliceRunner.TryMatchAt(program, "foobar"u8, 0, [], [], true, ref complete);
         Assert.True(outcome.IsMatch); Assert.True(complete.Budget.PeakDepth >= 2);
         Assert.Equal(13UL, complete.Ledger.ReservedBytes);
-        var denied = new Utf8SliceInvocation(new(100000, 1, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var denied = new Utf8SliceInvocation(new(1, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(denied.Ledger.TryReserve(13));
         outcome = Utf8SliceRunner.TryMatchAt(program, "foobar"u8, 0, [], [], true, ref denied);
         Assert.Equal(Utf8ExecutionLimitKind.Depth, outcome.Breach);
@@ -108,18 +108,10 @@ public sealed class Utf8LiteralAssertionTests
     public void EveryWorkCutoffKeepsTheExistingLoan(string pattern, bool expected)
     {
         var program = new Utf8Regex(pattern).Inspection.AvailableOwnedSliceProgram!;
-        var complete = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var complete = new Utf8SliceInvocation(new(128, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(complete.Ledger.TryReserve(13));
         var outcome = Utf8SliceRunner.TryMatchAt(program, "foobar"u8, 3, [], [], true, ref complete);
         Assert.Equal(expected, outcome.IsMatch); Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
-        for (ulong work = 1; work <= complete.Budget.Steps; work++)
-        {
-            var invocation = new Utf8SliceInvocation(new(work, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            outcome = Utf8SliceRunner.TryMatchAt(program, "foobar"u8, 3, [], [], true, ref invocation);
-            Assert.Equal(work < complete.Budget.Steps ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.None, outcome.Breach);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]
@@ -137,7 +129,7 @@ public sealed class Utf8LiteralAssertionTests
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000
+                MaxDepth = 4096
             }
         });
         var entered = false;
@@ -163,7 +155,7 @@ public sealed class Utf8LiteralAssertionTests
         using var regex = new Utf8Regex(@"HttpClient(?=\s+client)", RegexOptions.Compiled, new()
         {
             MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new() { MaxWorkSteps = 100_000, MaxDepth = 1, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         Assert.Equal(1, regex.Count(input));
 
@@ -203,12 +195,13 @@ public sealed class Utf8LiteralAssertionTests
     [InlineData(" W")]
     public void GuardProofChecksTheDeadlineAtItsExit(string subject)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var regex = new Utf8Regex(@"(?<=\s)[A-Z][a-z]+(?=\s)");
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var bytes = Encoding.UTF8.GetBytes(subject);
         using var clock = Utf8DeadlineTestClock.Start();
         var invocation = new Utf8SliceInvocation(default, TimeSpan.FromMilliseconds(20), default);
-        for (var charge = 0; charge < 63; charge++) invocation.TryChargeStep();
+        for (var charge = 0; charge < 63; charge++) invocation.CheckProgress();
         invocation.CheckpointHook = step => { if (step == 64) clock.Advance(50); };
 
         var position = 1;
@@ -265,7 +258,7 @@ public sealed class Utf8LiteralAssertionTests
         using var regex = new Utf8Regex(@"HttpClient(?=\s+client)", RegexOptions.Compiled, new()
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new() { MaxWorkSteps = 700, MaxDepth = 64, MaxWorkingBytes = 1 << 16 }
+            ResourcePolicy = new() { MaxDepth = 64, MaxWorkingBytes = 1 << 16 }
         });
 
         Assert.True(regex.IsMatch(input, token.Token));

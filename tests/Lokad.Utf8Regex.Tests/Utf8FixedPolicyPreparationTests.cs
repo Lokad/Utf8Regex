@@ -24,7 +24,7 @@ public sealed class Utf8FixedPolicyPreparationTests
             var expected = Utf8MatchSequence.First(baseline.CreateMatchCursor(input));
             Assert.True(expected.Success);
             foreach (var policy in new[] {
-                new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000 },
+                new Utf8ResourcePolicy { MaxDepth = 4096 },
                 new Utf8ResourcePolicy { MaxDepth = 2048 },
                 new Utf8ResourcePolicy { MaxWorkingBytes = 1_048_576 },
                 new Utf8ResourcePolicy { MaxResultBytes = 1_048_576 } })

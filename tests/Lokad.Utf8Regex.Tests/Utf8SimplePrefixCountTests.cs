@@ -25,7 +25,7 @@ public sealed class Utf8SimplePrefixCountTests
         using var cancellation = new CancellationTokenSource();
         using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 100_000, MaxWorkingBytes = 1 << 20 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 << 20 }
         });
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, cancellation.Token));
         Assert.Equal(oracle.Count(text), regex.Count(input, cancellation.Token));
@@ -86,7 +86,7 @@ public sealed class Utf8SimplePrefixCountTests
     public void SafePrefixesAndDependentCapturesRespectWorkingAdmission(bool compiled)
     {
         const string pattern = "((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))";
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
         var regex = new Utf8Regex(pattern, options: Options(compiled), policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
@@ -110,15 +110,6 @@ public sealed class Utf8SimplePrefixCountTests
         });
         Assert.Equal(1, new Utf8Regex(pattern + @"\1", options: Options(compiled)).Count("😀ASIAABCDEFGHIJKLMNOPASIAABCDEFGHIJKLMNOP"u8));
         Assert.Throws<Utf8ResourceLimitExceededException>(() => dependent.Count("😀ASIAABCDEFGHIJKLMNOPASIAABCDEFGHIJKLMNOP"u8, token.Token));
-        var denied = new Utf8Regex(pattern, options: Options(compiled), policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = policy with
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input));
         token.Cancel();
         var canceled = Assert.Throws<OperationCanceledException>(() => regex.Count(input, token.Token));
         Assert.Equal(token.Token, canceled.CancellationToken);
@@ -140,25 +131,6 @@ public sealed class Utf8SimplePrefixCountTests
     }
 
     [Fact]
-    public void PublicScalarCountUsesPrefixProofUnderFiniteLimits()
-    {
-        const string pattern = @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+";
-        var input = Encoding.UTF8.GetBytes("😀" + new string('x', 65536));
-        using var regex = Create(1000000);
-        Assert.Equal(0, regex.Count(input));
-        // Unicode word boundaries, whitespace and the suffix still require verification.
-        Assert.Equal(2, regex.Count("éclass Wrong 😀class\u00a0Right record Good"u8));
-        using var denied = Create(1);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-
-        static Utf8Regex Create(ulong steps) => new(pattern, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new() { MaxWorkSteps = steps, MaxDepth = 32, MaxWorkingBytes = 2048 }
-        });
-    }
-
-    [Fact]
     public void LeadingAsciiLiteralKeepsScalarDotAndDeepCaptureSemantics()
     {
         // A supplementary scalar is one dot; the UTF-16 BCL matcher is not
@@ -170,7 +142,7 @@ public sealed class Utf8SimplePrefixCountTests
         }
         var deep = new Utf8Regex(new string('(', 100) + "#x" + new string(')', 100));
         var input = "zz#x zz#x"u8.ToArray();
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(1000000, 1024, 1 << 20),
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(1024, 1 << 20),
             Regex.InfiniteMatchTimeout, default);
         var program = deep.Inspection.AvailableOwnedSliceProgram;
         var starts = new int[program.GroupCount];

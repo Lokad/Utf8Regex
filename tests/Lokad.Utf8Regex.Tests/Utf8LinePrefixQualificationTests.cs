@@ -90,7 +90,7 @@ public sealed class Utf8LinePrefixQualificationTests
         using var cancellation = new CancellationTokenSource();
         using var regex = new Utf8Regex(pattern, RegexOptions.Multiline, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 10_000, MaxDepth = 256 }
+            ResourcePolicy = new() { MaxDepth = 256 }
         });
 
         Assert.True(regex.IsMatch(input, cancellation.Token));

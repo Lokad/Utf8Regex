@@ -35,7 +35,6 @@ public sealed class Utf8NativeCapturePreparationTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 512,
                 MaxWorkingBytes = 2 << 20,
                 MaxResultBytes = 1 << 20
@@ -130,7 +129,7 @@ public sealed class Utf8NativeCapturePreparationTests
     public void FixedFinitePolicyOrDeadlinePreservesAsciiCaptures(bool compiled, bool deadline)
     {
         var policy = deadline ? Utf8ResourcePolicy.Unlimited : new Utf8ResourcePolicy
-        { MaxWorkSteps = 1000000, MaxDepth = 64, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        { MaxDepth = 64, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
         var regex = new Utf8Regex("(?<a>cat)|(?<b>horse)", options: Options(compiled), policy: new Utf8RegexPolicy
         {
             MatchTimeout = deadline ? TimeSpan.FromSeconds(30) : Regex.InfiniteMatchTimeout,

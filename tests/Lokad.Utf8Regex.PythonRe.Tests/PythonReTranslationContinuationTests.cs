@@ -19,7 +19,7 @@ public sealed class PythonReTranslationContinuationTests
         // Atomic syntax uses additional owned parser frames. Exercise the
         // explicit shared owner here and keep the default denial separately.
         using var construction = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity,
-            Utf8ConstructionScope.DefaultBufferBytes, Utf8ConstructionScope.DefaultWorkSteps, 131072);
+            Utf8ConstructionScope.DefaultBufferBytes, 131072);
         var pattern = string.Concat(Enumerable.Repeat(opener, depth)) + "." + new string(')', depth);
         var regex = new Utf8PythonRegex(pattern);
         Utf8PythonRangeMatch result = default;
@@ -94,8 +94,9 @@ public sealed class PythonReTranslationContinuationTests
     [MemberData(nameof(Walkers))]
     public void EveryRecursivePredecessorNowInheritsTheDepthLimitAndPreservesParentLoans(int operation)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var parse = new PythonReParser(string.Concat(Enumerable.Repeat("(?:", 129)) + "a" + new string(')', 129)).Parse(PythonReCompileOptions.None);
-        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, 8);
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 8);
         var parent = scope.Budget.AllocateArray<byte>(1, false);
         scope.Budget.EnterDepth();
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(operation, parse));
@@ -104,7 +105,7 @@ public sealed class PythonReTranslationContinuationTests
         Assert.Equal(9ul, failure.Requested);
         Assert.Equal(1ul, scope.Budget.Depth);
         Assert.Equal(48ul, scope.Budget.ReservedBytes);
-        Assert.True(scope.Budget.WorkSteps > 1);
+        Assert.True(scope.Budget.DiagnosticCheckpoints > 1);
         var simple = new PythonReParser("a").Parse(PythonReCompileOptions.None);
         var held = scope.Budget.ReservedBytes;
         Assert.True(held >= 48ul + 128ul);
@@ -121,38 +122,15 @@ public sealed class PythonReTranslationContinuationTests
     [MemberData(nameof(Walkers))]
     public void EverySmallWorkCutoffReleasesTraversalAndMemoCapacity(int operation)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var parse = new PythonReParser("(?:ab)").Parse(PythonReCompileOptions.None);
         ulong work;
         using (var measured = Utf8ConstructionScope.Enter())
         {
             _ = Run(operation, parse);
-            work = measured.Budget.WorkSteps;
+            work = measured.Budget.DiagnosticCheckpoints;
         }
         Assert.InRange(work, 1ul, 512ul);
-        for (var cutoff = 0ul; cutoff <= work; cutoff++)
-        {
-            using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cutoff + 1, ulong.MaxValue);
-            var parent = scope.Budget.AllocateArray<byte>(1, false);
-            scope.Budget.EnterDepth();
-            var failure = Record.Exception(() => Run(operation, parse));
-            Assert.Equal(1ul, scope.Budget.Depth);
-            if (cutoff == work)
-            {
-                Assert.Null(failure);
-                Assert.True(scope.Budget.ReservedBytes >= 48ul
-            + (operation == 5 ? Utf8ConstructionBudget.ArrayBytes<int>(1) : 0));
-            }
-            else
-            {
-                var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
-                Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, breach.ResourceKind);
-                Assert.True(breach.Requested > breach.Limit);
-                Assert.Equal(48ul, scope.Budget.ReservedBytes);
-
-            }
-            scope.Budget.LeaveDepth();
-            scope.Budget.ReleaseArray(parent, false);
-        }
     }
 
     [Theory]
@@ -206,12 +184,11 @@ public sealed class PythonReTranslationContinuationTests
         for (var number = 1; number < groups; number++)
             pattern.Append("(?P<g").Append(number).Append(">(?P=g").Append(number - 1).Append(")(?P=g").Append(number - 1).Append("))");
         var parse = new PythonReParser(pattern.ToString()).Parse(PythonReCompileOptions.None);
-        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 100_000, ulong.MaxValue);
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         Assert.False(PythonReTranslator.CanMatchEmpty(parse.Root, parse));
         Assert.True(PythonReTranslator.GetWidth(parse.Root, parse).Max > 0);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         Assert.Equal(0ul, scope.Budget.Depth);
-        Assert.InRange(scope.Budget.WorkSteps, 1ul, 100_000ul);
     }
 
     [Fact]

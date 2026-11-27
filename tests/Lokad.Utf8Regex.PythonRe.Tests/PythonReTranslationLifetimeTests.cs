@@ -151,7 +151,6 @@ public sealed class PythonReTranslationLifetimeTests
         var policy = finite
             ? new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1_048_576,
                 MaxResultBytes = 1_048_576
@@ -233,6 +232,7 @@ public sealed class PythonReTranslationLifetimeTests
     [Fact]
     public void ScalarOnlyTranslationAdmitsLessWorkAndStorageWithoutChangingNames()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const string pattern = "(?P<α>a)?(?(α)b|)";
         var rendered = Translate(true);
         var scalar = Translate(false);
@@ -248,7 +248,7 @@ public sealed class PythonReTranslationLifetimeTests
             var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
             var translation = PythonReTranslator.Translate(parse, render);
             var name = PythonReScalarCompiler.Compile(parse).GroupNames[1];
-            return (translation.NativePatternUtf8, name, scope.Budget.WorkSteps, scope.Budget.PeakBytes);
+            return (translation.NativePatternUtf8, name, scope.Budget.DiagnosticCheckpoints, scope.Budget.PeakBytes);
         }
     }
 

@@ -29,22 +29,21 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(1)]
     public void RootAdmissionPrecedesScanningAndRestoresParent(int denial)
     {
         var tree = Make(0);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, denial == 0 ? 128ul : ulong.MaxValue,
-            denial == 2 ? 2ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
+            denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SliceParser.IsNonBacktrackingFlatGraph(tree));
         Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
-            1 => Utf8ResourceLimitKind.ConstructionDepth, _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, failure.ResourceKind);
+            1 => Utf8ResourceLimitKind.ConstructionDepth}, failure.ResourceKind);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(128ul, owner.Budget.PeakBytes);
         Assert.Equal(0ul, owner.Budget.Reserved);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Equal(2ul, owner.Budget.WorkSteps);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
@@ -52,9 +51,10 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     [Fact]
     public void DeepChildDenialAndSameOwnerRecoveryRestoreLoans()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var input = Make(32);
         var shallow = Make(0);
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, 8);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 8);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SliceParser.IsNonBacktrackingFlatGraph(input));
@@ -64,9 +64,9 @@ public sealed class Utf8NativeEligibilityAdmissionTests
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        var work = owner.Budget.WorkSteps;
+        var work = owner.Budget.DiagnosticCheckpoints;
         using (var child = Utf8ConstructionScope.Enter()) Assert.True(Utf8SliceParser.IsNonBacktrackingFlatGraph(shallow));
-        Assert.True(owner.Budget.WorkSteps > work);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > work);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Reserved);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
@@ -77,7 +77,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     public void GrowthDenialReleasesFramesAndAnyLoweredPayload()
     {
         var input = Make(128);
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 2048, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 2048, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SliceParser.IsNonBacktrackingFlatGraph(input));
@@ -94,33 +94,15 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     [Fact]
     public void EveryWorkCutoffRestoresParentWithoutRefundingWork()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var input = Make(3);
         ulong work;
-        using (var measure = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        using (var measure = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
             Assert.True(Utf8SliceParser.IsNonBacktrackingFlatGraph(input));
-            work = measure.Budget.WorkSteps;
+            work = measure.Budget.DiagnosticCheckpoints;
         }
         Assert.InRange(work, 1ul, 10000ul);
-        for (var cutoff = 0ul; cutoff <= work; cutoff++)
-        {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            Exception? failure;
-            using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Assert.True(Utf8SliceParser.IsNonBacktrackingFlatGraph(input)));
-            // The flat-graph proof scans borrowed tree/catalog facts;
-            // they do not compile a discarded scalar program or vary by map probes.
-            if (cutoff == work) Assert.Null(failure);
-            else Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
-                Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-            Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2);
-            Assert.Equal(128ul, owner.Budget.ReservedBytes);
-            Assert.Equal(0ul, owner.Budget.Reserved);
-            Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-            Assert.Equal(17, parent.Value);
-        }
     }
 
     [Fact]
@@ -128,7 +110,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     {
         var input = Make(3);
         ulong peak;
-        using (var measure = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        using (var measure = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
             Assert.True(Utf8SliceParser.IsNonBacktrackingFlatGraph(input));
             peak = measure.Budget.PeakBytes;
@@ -136,7 +118,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
         Assert.InRange(peak, 1ul, 30000ul);
         for (var allowance = 0ul; allowance <= peak; allowance++)
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 128 + allowance, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 128 + allowance, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             Exception? failure;
@@ -168,13 +150,14 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     [Fact]
     public void FlatProofDeclinedForSharedCapturesRollsBackTheWholeAttempt()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var tree = Utf8OwnedTreeParser.TryParse("(?<x>a)(?<x>b)", RegexOptions.CultureInvariant) ?? throw new InvalidOperationException();
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         Assert.False(Utf8SliceParser.IsNonBacktrackingFlatGraph(tree));
         Assert.True(owner.Budget.PeakBytes > 128);
-        Assert.True(owner.Budget.WorkSteps > 2);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > 2);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Reserved);
         Assert.Equal(0ul, owner.Budget.Depth);

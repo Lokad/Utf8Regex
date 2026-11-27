@@ -199,7 +199,7 @@ public sealed class Utf8SliceIgnoreCaseTests
             const RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.Compiled;
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
             using var regex = new Utf8Regex(pattern, options,
-                new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 4096 } });
+                new() { ResourcePolicy = new() { MaxWorkingBytes = 4096 } });
             using var token = new CancellationTokenSource();
             Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
             foreach (var suffix in Enumerable.Range(0, 128).Select(value => ((char)value).ToString())
@@ -227,7 +227,7 @@ public sealed class Utf8SliceIgnoreCaseTests
     {
         const RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
         using var regex = new Utf8Regex(@"^[a-z][a-z0-9_]*$", options,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 4096 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 4096 } });
         using var token = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes("A" + new string('b', asciiLength) + "K_9\n");
         Assert.Equal(new Utf8CaptureRange(0, input.Length - 1), regex.Match(input, cancellationToken: token.Token));

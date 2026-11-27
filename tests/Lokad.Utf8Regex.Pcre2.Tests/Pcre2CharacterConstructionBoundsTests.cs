@@ -49,7 +49,7 @@ public sealed class Pcre2CharacterConstructionBoundsTests
         parent.Budget.CancellationToken = cancellation.Token;
         parent.Budget.Deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(10));
         var interrupted = false;
-        parent.Budget.CheckpointHook = _ =>
+        parent.Budget.CheckpointHook = () =>
         {
             if (parent.Budget.Reserved < 64) return;
             interrupted = true;

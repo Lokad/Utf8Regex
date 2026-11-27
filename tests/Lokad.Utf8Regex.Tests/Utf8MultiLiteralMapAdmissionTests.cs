@@ -59,7 +59,7 @@ public sealed class Utf8MultiLiteralMapAdmissionTests
     public void PackedMapsKeepMajorStorageAdmittedAndPreserveDiscriminators(int family)
     {
         var values = PackedFamily(family); var expected = Discriminator(values);
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 0xa5;
         var held = owner.Budget.ReservedBytes;
@@ -95,7 +95,7 @@ public sealed class Utf8MultiLiteralMapAdmissionTests
     public void SegmentProjectionKeepsDistinctSegmentsAdmittedInFirstOccurrenceOrder(int family)
     {
         var values = SegmentFamily(family); var expected = Groups(values);
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 0xa5;
         var held = owner.Budget.ReservedBytes;
@@ -131,7 +131,7 @@ public sealed class Utf8MultiLiteralMapAdmissionTests
     public void RootDepthAndNestedDiscriminatorSearchAreAdmittedBeforeScratch(int kind, int depth)
     {
         var required = kind == 2 ? 1 : 2;
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, (ulong)depth);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Record.Exception(() => Prepare(kind));
         if (depth < required)
@@ -147,16 +147,16 @@ public sealed class Utf8MultiLiteralMapAdmissionTests
     [Fact]
     public void EmptyFamiliesBorrowAllStateWithoutAnyAllowance()
     {
-        using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var owner = new Utf8ConstructionScope(0, 0, 0);
         Assert.False(PreparedMultiLiteralPackedSearch.TryCreate([], out _));
         Assert.Empty(new PreparedMultiLiteralLeadingUtf8SegmentPrefilter([]).Segments);
-        Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
+Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
     }
 
     [Fact]
     public void UnsupportedLateSegmentDoesNotAcquireOrRetainAnAbandonedGroup()
     {
-        using var owner = new Utf8ConstructionScope(0, 128, ulong.MaxValue, 1);
+        using var owner = new Utf8ConstructionScope(0, 128, 1);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var p = new PreparedMultiLiteralLeadingUtf8SegmentPrefilter(SegmentFamily(5));
         Assert.False(p.HasValue); Assert.Empty(p.Segments); Assert.Equal(128ul, owner.Budget.PeakBytes);
@@ -199,7 +199,7 @@ public sealed class Utf8MultiLiteralMapAdmissionTests
 
     private static (long Allocated, ulong Admitted) MeasureSingleGroup(byte[][] values)
     {
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         var before = GC.GetAllocatedBytesForCurrentThread(); var p = new PreparedMultiLiteralLeadingUtf8SegmentPrefilter(values);
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.Single(p.Segments); Assert.Equal("中文"u8.ToArray(), p.Segments[0]);

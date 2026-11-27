@@ -16,7 +16,7 @@ internal static class Pcre2CaptureNameValidator
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        budget.ChargeWork((ulong)pattern.Length);
+        budget.Checkpoint();
         byte extended = (options & Pcre2CompileOptions.ExtendedMore) != 0 ? (byte)2 : (options & Pcre2CompileOptions.Extended) != 0 ? (byte)1 : (byte)0;
         using var scopes = new Utf8ConstructionBuffer<byte>(budget);
         var quoted = false;
@@ -28,7 +28,7 @@ internal static class Pcre2CaptureNameValidator
         {
             if (offset >= nextCheckpoint)
             {
-                budget.ChargeWork(0);
+                budget.Checkpoint();
                 nextCheckpoint = offset + 2048;
             }
             var character = pattern[offset];
@@ -88,7 +88,7 @@ internal static class Pcre2CaptureNameValidator
                 // At most 129 source units prove an overlong UTF-8 name.
                 // Native units are bytes; never decode or rescan the suffix.
                 var count = Math.Min(129, pattern.Length - nameStart);
-                Utf8ConstructionScope.ChargeWork((ulong)count);
+                Utf8ConstructionScope.Checkpoint();
                 var end = pattern.IndexOf(pattern[nameStart - 1] == '\'' ? '\'' : '>', nameStart, count);
                 if (end >= 0 ? !FitsUtf8Limit(pattern, nameStart, end - nameStart, 128) : count == 129)
                     throw new Pcre2CompileException("PCRE2 capture names cannot exceed 128 UTF-8 bytes.",

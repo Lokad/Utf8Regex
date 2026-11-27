@@ -14,7 +14,7 @@ public sealed class Pcre2ConstructionAdmissionTests
     [InlineData(4)]
     public void InvalidArgumentsPrecedeByteDecodingAndLeaveConstructionUnspent(int kind)
     {
-        using var scope = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var scope = new Utf8ConstructionScope(0, 0, 0);
         var options = kind == 1 ? (Pcre2CompileOptions)(1 << 29) : Pcre2CompileOptions.None;
         var settings = kind switch
         {
@@ -31,7 +31,6 @@ public sealed class Pcre2ConstructionAdmissionTests
                 _ = new Utf8Pcre2Regex(pattern, options, settings, new() { MatchTimeout = timeout });
             });
             Assert.Equal(kind == 0 ? "policy" : kind == 1 ? "options" : "compileSettings", error.ParamName);
-            Assert.Equal(0UL, scope.Budget.WorkSteps);
             Assert.Equal(0UL, scope.Budget.ReservedBytes);
             Assert.Equal(0UL, scope.Budget.PeakBytes);
             Assert.Equal(0UL, scope.Budget.Depth);
@@ -41,7 +40,7 @@ public sealed class Pcre2ConstructionAdmissionTests
     [Fact]
     public void InvalidPolicyPrecedesOtherInvalidArguments()
     {
-        using var scope = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var scope = new Utf8ConstructionScope(0, 0, 0);
         var error = Assert.Throws<ArgumentOutOfRangeException>(() =>
             new Utf8Pcre2Regex(new byte[] { 0xff }, options: (Pcre2CompileOptions)(1 << 29), compileSettings:                 new Utf8Pcre2CompileSettings { Bsr = (Pcre2BsrConvention)999 }, policy: new Utf8RegexPolicy
             {
@@ -52,7 +51,6 @@ public sealed class Pcre2ConstructionAdmissionTests
                 MatchTimeout = TimeSpan.Zero
             }));
         Assert.Equal("policy", error.ParamName);
-        Assert.Equal(0UL, scope.Budget.WorkSteps);
         Assert.Equal(0UL, scope.Budget.ReservedBytes);
     }
 
@@ -76,7 +74,7 @@ public sealed class Pcre2ConstructionAdmissionTests
     [Fact]
     public void Pcre2CandidateByteSearchSharesCoreAdmissionAndRecoversTheParent()
     {
-        using var owner = new Utf8ConstructionScope(0, 48, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, 48, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false); parent[0] = 0xa5;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             Pcre2CandidateSearchProgram.FromLeadingAsciiSet(new byte[] { 0, 64, 96, 127 }, default));
@@ -99,7 +97,7 @@ public sealed class Pcre2ConstructionAdmissionTests
         const ulong parentBytes = 48;
         var tableBytes = Utf8ConstructionBudget.ArrayBytes<byte[]>(2);
         var limit = parentBytes + tableBytes;
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, limit, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, limit, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 17;
         var request = new Pcre2CompileRequest("", default, default, default, Timeout.InfiniteTimeSpan);
@@ -116,6 +114,7 @@ public sealed class Pcre2ConstructionAdmissionTests
     [Fact]
     public void DeclinedCandidateFamilyReleasesItsScratchAndKeepsWorkSpent()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var owner = Utf8ConstructionScope.Enter();
         var root = new Pcre2AlternationBacktrackingNode([LiteralBranch(new Rune('é'), 300), Pcre2EmptyBacktrackingNode.Instance]);
         var request = new Pcre2CompileRequest("", default, default, default, Timeout.InfiniteTimeSpan);
@@ -123,7 +122,7 @@ public sealed class Pcre2ConstructionAdmissionTests
         Assert.False(Pcre2CandidateSearchAnalyzer.Compile(root, request).HasValue);
         Assert.Equal(0UL, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.PeakBytes >= Utf8ConstructionBudget.ArrayBytes<byte>(600));
-        Assert.True(owner.Budget.WorkSteps >= 300);
+        Assert.True(owner.Budget.DiagnosticCheckpoints >= 300);
     }
 
     [Fact]
@@ -136,7 +135,7 @@ public sealed class Pcre2ConstructionAdmissionTests
         owner.Budget.CancellationToken = source.Token;
         var reserved = Utf8ConstructionBudget.ArrayBytes<byte[]>(2) + Utf8ConstructionBudget.ArrayBytes<byte>(1026);
         var encodeCheckpoints = 0;
-        owner.Budget.CheckpointHook = _ =>
+        owner.Budget.CheckpointHook = () =>
         {
             if (owner.Budget.ReservedBytes == reserved && ++encodeCheckpoints == 3) source.Cancel();
         };
@@ -155,11 +154,7 @@ public sealed class Pcre2ConstructionAdmissionTests
     [Fact]
     public void BytePatternWorkAdmissionPrecedesValidationAndAcquisition()
     {
-        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Pcre2Regex(new byte[] { 0xff }));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-        Assert.Equal(1ul, failure.Requested);
-        Assert.Equal(0ul, scope.Budget.WorkSteps);
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             new Utf8Pcre2Regex("cat"u8, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
@@ -170,16 +165,12 @@ public sealed class Pcre2ConstructionAdmissionTests
                 },
                 MatchTimeout = Timeout.InfiniteTimeSpan
             }));
-        Assert.Equal(0ul, scope.Budget.WorkSteps);
     }
 
     [Fact]
     public void DelegatedStringParserWorkCannotResetOrSuppressTheOuterOwner()
     {
-        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Pcre2Regex("cat"));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-        Assert.Equal(0ul, scope.Budget.WorkSteps);
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
     }
 
@@ -187,9 +178,10 @@ public sealed class Pcre2ConstructionAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void CoreParserDepthCannotBeSuppressedAndRecoversWithTheSameOwner(bool bytes)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var pattern = new string('(', 64) + "." + new string(')', 64);
         var encoded = System.Text.Encoding.UTF8.GetBytes(pattern);
-        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, 8);
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 8);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
             if (bytes) _ = new Utf8Pcre2Regex(encoded);
@@ -199,7 +191,7 @@ public sealed class Pcre2ConstructionAdmissionTests
         Assert.Equal(8ul, failure.Limit);
         Assert.Equal(0ul, scope.Budget.Depth);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
-        Assert.True(scope.Budget.WorkSteps > 0);
+        Assert.True(scope.Budget.DiagnosticCheckpoints > 0);
         Assert.True(new Utf8Pcre2Regex(".").IsMatch("😀"u8));
     }
 

@@ -71,12 +71,10 @@ public sealed class Utf8NativeTemplatePreparationTests
         var entries = regex.Inspection.DebugReplacementCacheEntryCount;
         key[0] = 0xff;
         Assert.Throws<ArgumentException>(() => regex.Replace([], key));
-        using (var owner = new Utf8ConstructionScope(ulong.MaxValue, 0, 1_000_000, ulong.MaxValue))
+        using (var owner = new Utf8ConstructionScope(ulong.MaxValue, 0, ulong.MaxValue))
         {
             Assert.Equal("éaaa😀"u8.ToArray(), regex.Replace("aaa"u8, "é${word}😀"u8));
             Assert.Equal(0UL, owner.Budget.ReservedBytes);
-            // Strict public validation still shares the parent work backstop.
-            Assert.Equal((ulong)"é${word}😀"u8.Length, owner.Budget.WorkSteps);
         }
         Assert.Equal(entries, regex.Inspection.DebugReplacementCacheEntryCount);
     }

@@ -8,9 +8,9 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReResourcePolicyTests
 {
     [Fact]
-    public void ZeroWorkPolicyIsInvalidBeforePatternValidation()
+    public void ZeroDepthPolicyIsInvalidBeforePatternValidation()
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 0 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 0 };
         Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PythonRegex("[invalid", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,

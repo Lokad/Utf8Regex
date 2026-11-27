@@ -24,7 +24,7 @@ internal static partial class PythonReScalarCompiler
                 var source = word ? PythonReScalarClassData.WordAscii
                     : digit ? PythonReScalarClassData.DigitAscii : PythonReScalarClassData.SpaceAscii;
                 var mask = arena.Allocate<byte>(16, true);
-                arena.Budget.ChargeWork(16);
+                arena.Budget.Checkpoint();
                 source.AsSpan().CopyTo(mask);
                 // Python ASCII whitespace excludes U+001C..U+001F, which are
                 // members of the Unicode predicate's ASCII projection.
@@ -76,7 +76,7 @@ internal static partial class PythonReScalarCompiler
         var firstPredefined = 0;
         for (; firstPredefined < characterClass.Items.Count; firstPredefined++)
         {
-            arena.Budget.ChargeWork(1);
+            arena.Budget.Checkpoint();
             if (characterClass.Items[firstPredefined] is PythonReCharacterClassPredefinedItem item
                 && PythonReParser.IsUnicodePredefinedFragment(item.RegexClassFragment)) break;
         }
@@ -87,7 +87,7 @@ internal static partial class PythonReScalarCompiler
         using var branches = new Utf8ConstructionBuffer<Utf8SliceNode>(arena.Budget);
         for (var index = 0; index < characterClass.Items.Count; index++)
         {
-            arena.Budget.ChargeWork(1);
+            arena.Budget.Checkpoint();
             var item = characterClass.Items[index];
             if (item is PythonReCharacterClassPredefinedItem predefined
                 && ConvertPredefined(predefined.RegexClassFragment, arena) is { } converted)
@@ -116,7 +116,7 @@ internal static partial class PythonReScalarCompiler
         // In particular, do not refold a negated class.
         for (var index = 0; index < characterClass.Items.Count; index++)
         {
-            arena.Budget.ChargeWork(1);
+            arena.Budget.Checkpoint();
             var item = characterClass.Items[index];
             if (item is not PythonReCharacterClassLiteralItem { Scalar: >= 0 and < 128 } and
                 not PythonReCharacterClassRangeItem { StartScalar: >= 0, EndScalar: < 128 } and
@@ -135,7 +135,7 @@ internal static partial class PythonReScalarCompiler
                     PythonReParser.AsciiDigitClassFragment => PythonReScalarClassData.DigitAscii,
                     _ => PythonReScalarClassData.SpaceAscii,
                 };
-                arena.Budget.ChargeWork(16);
+                arena.Budget.Checkpoint();
                 for (var offset = 0; offset < mask.Length; offset++)
                 {
                     var bits = source[offset];
@@ -149,7 +149,7 @@ internal static partial class PythonReScalarCompiler
             var low = item is PythonReCharacterClassLiteralItem literal ? literal.Scalar
                 : ((PythonReCharacterClassRangeItem)item).StartScalar;
             var high = item is PythonReCharacterClassRangeItem range ? range.EndScalar : low;
-            arena.Budget.ChargeWork((ulong)(high - low + 1));
+            arena.Budget.Checkpoint();
             for (var value = low; value <= high; value++)
             {
                 mask[value >> 3] |= (byte)(1 << (value & 7));
@@ -164,12 +164,12 @@ internal static partial class PythonReScalarCompiler
         var categoryCount = 0;
         foreach (var branch in branches)
         {
-            arena.Budget.ChargeWork(1);
+            arena.Budget.Checkpoint();
             if (branch is Utf8SliceNode.CategorySetNode { Negated: false, FoldCase: false, Members.Length: 0, Mask16.Length: 16 } category)
             {
                 foreach (var member in category.Categories)
                 {
-                    arena.Budget.ChargeWork(1);
+                    arena.Budget.Checkpoint();
                     // General class programs own their complete predicate and
                     // may use a different mask contract. Borrow only the pinned
                     // scalar predicates emitted by ConvertPredefined.
@@ -188,12 +188,12 @@ internal static partial class PythonReScalarCompiler
         var offset = 0;
         foreach (var branch in branches)
         {
-            arena.Budget.ChargeWork(16);
+            arena.Budget.Checkpoint();
             var mask = branch is Utf8SliceNode.SetNode set ? set.Mask16 : ((Utf8SliceNode.CategorySetNode)branch).Mask16;
             for (var index = 0; index < ascii.Length; index++) ascii[index] |= mask[index];
             if (branch is Utf8SliceNode.CategorySetNode category)
             {
-                arena.Budget.ChargeWork((ulong)category.Categories.Length);
+                arena.Budget.Checkpoint();
                 category.Categories.CopyTo(categories, offset);
                 offset += category.Categories.Length;
             }

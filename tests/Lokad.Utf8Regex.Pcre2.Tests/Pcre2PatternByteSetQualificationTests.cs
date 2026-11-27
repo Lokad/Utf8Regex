@@ -8,8 +8,9 @@ public sealed class Pcre2PatternByteSetQualificationTests
     [Fact]
     public void Pcre2ClassByteSetDenialCannotPublishStateAndRepeatedPreparationBorrowsIt()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var definition = new Pcre2CharacterClass([], false, new AsciiCharClass(1ul, 1ul << 63));
-        using (var owner = new Utf8ConstructionScope(0, 48, ulong.MaxValue, ulong.MaxValue))
+        using (var owner = new Utf8ConstructionScope(0, 48, ulong.MaxValue))
         {
             owner.Budget.AllocateArray<byte>(1, false);
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(definition.PrepareAsciiByteSet);
@@ -18,16 +19,16 @@ public sealed class Pcre2PatternByteSetQualificationTests
             Assert.Equal(48ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
         }
-        using var success = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var success = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         definition.PrepareAsciiByteSet();
         var set = definition.AsciiByteSet;
         Assert.NotNull(set);
         var bytes = success.Budget.ReservedBytes;
-        var work = success.Budget.WorkSteps;
+        var work = success.Budget.DiagnosticCheckpoints;
         definition.PrepareAsciiByteSet();
         Assert.Same(set, definition.AsciiByteSet);
         Assert.Equal(bytes, success.Budget.ReservedBytes);
-        Assert.Equal(work, success.Budget.WorkSteps);
+        Assert.Equal(work, success.Budget.DiagnosticCheckpoints);
         Assert.Equal(1, set.IndexOf(new byte[] { 128, 127, 255 }));
         Assert.Equal(2, set.IndexOfAnyExcept(new byte[] { 0, 127, 128, 255 }));
     }
@@ -35,12 +36,11 @@ public sealed class Pcre2PatternByteSetQualificationTests
     [Fact]
     public void Pcre2NegatedAsciiMaskStopsAtEveryNonAsciiByte()
     {
-        using (var owner = new Utf8ConstructionScope(0, 0, 0, 0))
+        using (var owner = new Utf8ConstructionScope(0, 0, 0))
         {
             Pcre2CharacterClass.Empty.PrepareAsciiByteSet();
             Assert.Null(Pcre2CharacterClass.Empty.AsciiByteSet);
             Assert.Equal(0ul, owner.Budget.ReservedBytes);
-            Assert.Equal(0ul, owner.Budget.WorkSteps);
             Assert.Equal(0ul, owner.Budget.PeakDepth);
         }
         var definition = new Pcre2CharacterClass([], true, new AsciiCharClass(1ul << 9, 0, true));

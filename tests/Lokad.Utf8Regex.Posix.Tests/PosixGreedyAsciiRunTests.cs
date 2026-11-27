@@ -27,42 +27,12 @@ public sealed class PosixGreedyAsciiRunTests
         Assert.False(captures[2].Success);
     }
 
-    [Theory]
-    [InlineData("([[:alpha:]]+)([0-9]+)", 69)]
-    [InlineData("([[:alpha:]]+)([0-9]+)", 512)]
-    [InlineData("(sku)([0-9]+)", 67)]
-    [InlineData("(sku)([0-9]+)", 68)]
-    [InlineData("(sku)([0-9]+)", 69)]
-    public void DisjointRunsSkipRejectedStartsWithoutInitializingCaptureState(string pattern, int asciiPrefix)
-    {
-        using var regex = new Utf8PosixRegex(pattern, policy: new()
-        {
-            ResourcePolicy = new() { MaxWorkSteps = 576 }
-        });
-        var input = Encoding.UTF8.GetBytes("😀" + new string('!', asciiPrefix) + "😀sku007");
-        var captures = new Utf8CaptureRange[3];
-        var start = asciiPrefix + 8;
-        var whole = new Utf8CaptureRange(start, start + 6);
-        Assert.Equal(whole, regex.Match(input, 4, captures));
-        Assert.Equal(whole, captures[0]);
-        Assert.Equal(new Utf8CaptureRange(start, start + 3), captures[1]);
-        Assert.Equal(new Utf8CaptureRange(start + 3, start + 6), captures[2]);
-
-        using var limited = new Utf8PosixRegex(pattern, policy: new()
-        {
-            ResourcePolicy = new() { MaxWorkSteps = 8 }
-        });
-        var refused = Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input, 4, captures));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, refused.ResourceKind);
-        Assert.All(captures, capture => Assert.False(capture.Success));
-    }
-
     [Fact]
     public void ExactStarterSkipsMixedDecoysWithinOneWorkLimit()
     {
         using var regex = new Utf8PosixRegex("(sku)([0-9]+)", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var source = new CancellationTokenSource();
         var prefix = "😀" + string.Concat(Enumerable.Repeat("!!!!é😀", 512));
@@ -82,7 +52,7 @@ public sealed class PosixGreedyAsciiRunTests
     {
         using var plain = new Utf8PosixRegex("^([[:alpha:]]+)([0-9]+)$", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 64, MaxDepth = 4, MaxWorkingBytes = 1024 }
+            ResourcePolicy = new() { MaxDepth = 4, MaxWorkingBytes = 1024 }
         });
         using var source = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes("😀" + new string('!', 2048) + "\nsku007");
@@ -95,7 +65,7 @@ public sealed class PosixGreedyAsciiRunTests
 
         using var prefix = new Utf8PosixRegex("(^sku)", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 64 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var prefixed = Encoding.UTF8.GetBytes("sku😀" + new string('!', 2048));
         Assert.Equal(1, prefix.Count(prefixed, cancellationToken: source.Token));
@@ -413,7 +383,6 @@ public sealed class PosixGreedyAsciiRunTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 40_000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 4096,
                 MaxResultBytes = 1
@@ -425,13 +394,5 @@ public sealed class PosixGreedyAsciiRunTests
         Assert.Equal((0, 8193), (whole.StartOffsetInBytes, (whole.EndOffsetInBytes - whole.StartOffsetInBytes)));
         Assert.Equal((1, 8192), (output[1].StartOffsetInBytes, (output[1].EndOffsetInBytes - output[1].StartOffsetInBytes)));
         Assert.Equal((8193, 0), (output[2].StartOffsetInBytes, (output[2].EndOffsetInBytes - output[2].StartOffsetInBytes)));
-        var limited = new Utf8PosixRegex("Z(a+)()", policy: new Utf8RegexPolicy()
-        {
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input));
     }
 }

@@ -36,7 +36,7 @@ internal static class Pcre2BacktrackingCompiler
     internal static Utf8ConstructionBudget EnterDepth()
     {
         var budget = Utf8ConstructionScope.CurrentBudget;
-        budget.ChargeWork(1);
+        budget.Checkpoint();
         if (budget.Depth >= MaximumRecursiveDepth)
             throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionDepth,
                 MaximumRecursiveDepth, budget.Depth + 1);
@@ -51,7 +51,7 @@ internal static class Pcre2BacktrackingCompiler
         // maps and metadata copies. Shared storage can be charged twice; no helper graph
         // or per-object ledger is retained. Instructions have separate exact
         // array/slot admission in the lowerer.
-        construction.Budget.ChargeWork((ulong)request.ConstructionPattern.Length);
+        construction.Budget.Checkpoint();
         construction.Budget.ReserveBytes(checked((ulong)request.ConstructionPattern.Length * 256));
         var parser = new Pcre2BacktrackingParser(request);
         if (!parser.TryParse(out var root))
@@ -64,7 +64,7 @@ internal static class Pcre2BacktrackingCompiler
         var nameEntries = parser.NameEntries;
         // Names and numeric slots are global to the parsed expression. Admit
         // their lookup once; nested assertion lowerers only borrow it.
-        construction.Budget.ChargeWork((ulong)nameEntries.Length);
+        construction.Budget.Checkpoint();
         construction.Budget.ReserveBytes(checked((ulong)nameEntries.Length * 256));
         var nameSlots = nameEntries
             .GroupBy(static entry => entry.Name, StringComparer.Ordinal)
@@ -94,7 +94,7 @@ internal static class Pcre2BacktrackingAnalysis
 {
     internal static bool LeadingFilterRejectsCr(IPcre2BacktrackingNode node)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         switch (node)
         {
             case Pcre2TokenBacktrackingNode token:
@@ -125,7 +125,7 @@ internal static class Pcre2BacktrackingAnalysis
     // the caller's initial candidate therefore cannot be rescued by bumpalong.
     internal static bool RestrictsSearchToInitialCandidate(IPcre2BacktrackingNode node)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         return node switch
         {
             Pcre2TokenBacktrackingNode { Token: var token } => token.Kind switch
@@ -149,7 +149,7 @@ internal static class Pcre2BacktrackingAnalysis
 
     internal static int GetMinimumByteLength(IPcre2BacktrackingNode node)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         return node switch
         {
             Pcre2EmptyBacktrackingNode => 0,
@@ -183,7 +183,7 @@ internal static class Pcre2BacktrackingAnalysis
 
     internal static int GetMinimumScalarLength(IPcre2BacktrackingNode node)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         return node switch
         {
             Pcre2EmptyBacktrackingNode => 0,
@@ -209,7 +209,7 @@ internal static class Pcre2BacktrackingAnalysis
 
     internal static int GetMaximumScalarLength(IPcre2BacktrackingNode node)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         return node switch
         {
             Pcre2EmptyBacktrackingNode => 0,
@@ -244,7 +244,7 @@ internal static class Pcre2BacktrackingAnalysis
 
     internal static bool StartsWithExtendedGraphemeCluster(IPcre2BacktrackingNode node)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         return node switch
         {
             Pcre2TokenBacktrackingNode token =>
@@ -292,7 +292,7 @@ internal static class Pcre2BacktrackingAnalysis
 
     private static bool TryGetLeadingAsciiByte(IPcre2BacktrackingNode node, out byte leading)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         switch (node)
         {
             case Pcre2TokenBacktrackingNode token when
@@ -376,7 +376,7 @@ internal static class Pcre2BacktrackingAnalysis
 
     private static bool CanConsume(IPcre2BacktrackingNode node)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         return node switch
         {
             Pcre2EmptyBacktrackingNode => false,

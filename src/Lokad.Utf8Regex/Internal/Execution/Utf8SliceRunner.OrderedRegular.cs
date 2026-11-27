@@ -20,7 +20,7 @@ internal static partial class Utf8SliceRunner
         if (instructions.Length > 64 ||
             instructions[0] is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning, B: 0 })
             return false;
-        budget.ChargeWork((ulong)instructions.Length);
+        budget.Checkpoint();
         var leaves = 0;
         foreach (var instruction in instructions)
         {
@@ -59,7 +59,7 @@ internal static partial class Utf8SliceRunner
         // The projected graph keeps the original atom indexes. Only the
         // closures survive, so capture replay still uses the original VM.
         Span<Utf8SliceInstruction> projected = stackalloc Utf8SliceInstruction[instructions.Length];
-        budget.ChargeWork(2UL * (ulong)instructions.Length);
+        budget.Checkpoint();
         instructions.CopyTo(projected);
         for (var pc = 0; pc < instructions.Length; pc++)
         {
@@ -108,7 +108,7 @@ internal static partial class Utf8SliceRunner
     private static bool HasLeadingUnboundedRepeatBeforeClass(ReadOnlySpan<Utf8SliceInstruction> code, Utf8ConstructionBudget budget)
     {
         if (code.Length < 6) return false;
-        budget.ChargeWork((ulong)code.Length);
+        budget.Checkpoint();
         var head = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, 0);
         if (head >= code.Length ||
             code[head] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy,
@@ -158,7 +158,7 @@ internal static partial class Utf8SliceRunner
         ReadOnlySpan<Utf8SliceInstruction> instructions, ReadOnlySpan<int> epsilonOrder, Utf8ConstructionBudget budget)
     {
         if (instructions.Length > 64) return ([], [], 0);
-        budget.ChargeWork((ulong)instructions.Length);
+        budget.Checkpoint();
         Span<byte> leaves = stackalloc byte[OrderedLeafLimit + 1];
         Span<byte> tagsByInstruction = stackalloc byte[instructions.Length];
         leaves[0] = 0;
@@ -186,12 +186,12 @@ internal static partial class Utf8SliceRunner
         // The viability order already visits epsilon children before parents.
         foreach (var pc in epsilonOrder)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var instruction = instructions[pc];
             switch (instruction.Kind)
             {
                 case Utf8SliceInstructionKind.Fork:
-                    budget.ChargeWork(2UL * (ulong)leafCount);
+                    budget.Checkpoint();
                     var first = instruction.B == 0 ? pc + 1 : instruction.A;
                     var second = instruction.B == 0 ? instruction.A : pc + 1;
                     var joined = new OrderedRegularFrontier();
@@ -228,7 +228,7 @@ internal static partial class Utf8SliceRunner
         var order = program.NonBacktrackingEpsilonOrder;
         for (var index = order.Length - 1; index >= 0; index--)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var pc = order[index];
             if ((program.NonBacktrackingEpsilonAncestors[pc] & reachable) != 0)
                 reachable |= 1UL << (pc + 1);
@@ -239,7 +239,7 @@ internal static partial class Utf8SliceRunner
         starts.Clear();
         for (var candidates = program.NonBacktrackingConsumerMask; candidates != 0; candidates &= candidates - 1)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var pc = BitOperations.TrailingZeroCount(candidates);
             if ((program.NonBacktrackingEpsilonAncestors[pc] & reachable) == 0) continue;
             if (!TryAddRegularStartBytes(program, program.Instructions[pc], starts, budget)) return default;
@@ -260,7 +260,7 @@ internal static partial class Utf8SliceRunner
         // and cannot provide a byte. Abandon open paths at the visit limit.
         for (var visit = 0; visit < visitLimit; visit++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             ref readonly var instruction = ref program.Instructions[pc];
             switch (instruction.Kind)
             {
@@ -320,11 +320,11 @@ internal static partial class Utf8SliceRunner
 
         if (instruction is not { Kind: Utf8SliceInstructionKind.Set, B: 0 }) return false;
         var mask = program.SetMasks[instruction.A];
-        budget.ChargeWork((ulong)mask.Length);
+        budget.Checkpoint();
         for (var index = 0; index < mask.Length; index++)
             for (var bits = (uint)mask[index]; bits != 0; bits &= bits - 1)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var scalar = new Rune((index << 3) + BitOperations.TrailingZeroCount(bits));
                 AddOrderedRegularStarts(scalar, instruction.C != 0, behavior, starts);
             }
@@ -449,7 +449,7 @@ internal static partial class Utf8SliceRunner
             {
                 // One quantum covers a row of at most fifteen leaves. Large
                 // class tables keep their own predicate work and checkpoints.
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
                 var viable = program.NonBacktrackingAcceptClosure;
                 var viableLeaves = acceptLeaves;
@@ -534,7 +534,7 @@ internal static partial class Utf8SliceRunner
             var accepts = program.NonBacktrackingWideMasks.AsSpan(wordCount);
             for (var word = 0; word < accepts.Length; word++)
             {
-                var step = invocation.TryChargeInputStep();
+                var step = invocation.CheckInput();
                 if (step != Utf8ExecutionLimitKind.None) return new(0, step);
                 for (var bits = accepts[word]; bits != 0; bits &= bits - 1)
                 {
@@ -583,7 +583,7 @@ internal static partial class Utf8SliceRunner
         // Each word records the consuming leaves and the unconditional accepts.
         for (var pc = 0; pc < instructions.Length; pc++)
         {
-            if ((pc & 63) == 0) budget.ChargeWork((ulong)Math.Min(64, instructions.Length - pc));
+            if ((pc & 63) == 0) budget.Checkpoint();
             var kind = instructions[pc].Kind;
             if (kind == Utf8SliceInstructionKind.Accept)
                 masks[wordCount + (pc >> 6)] |= 1UL << (pc & 63);
@@ -620,7 +620,7 @@ internal static partial class Utf8SliceRunner
             var cells = Math.Max(1, BitOperations.PopCount(candidates));
             if (cells > cellsLeft)
             {
-                var step = invocation.TryChargeInputStep();
+                var step = invocation.CheckInput();
                 if (step != Utf8ExecutionLimitKind.None) return step;
                 cellsLeft = 64;
             }
@@ -655,7 +655,7 @@ internal static partial class Utf8SliceRunner
         {
             if (cellsLeft == 0)
             {
-                var step = invocation.TryChargeInputStep();
+                var step = invocation.CheckInput();
                 if (step != Utf8ExecutionLimitKind.None) return step;
                 cellsLeft = 64;
             }
@@ -776,7 +776,7 @@ internal static partial class Utf8SliceRunner
                 }
                 // A frontier has at most fifteen leaves. Charge each row on the
                 // VM deadline cadence. Bulk seeks and predicates own their checks.
-                breach = invocation.TryChargeStep();
+                breach = invocation.CheckProgress();
                 if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 // Active starts precede the new start. A saved acceptance
                 // eliminates future starts, while earlier threads can extend it.
@@ -877,7 +877,7 @@ internal static partial class Utf8SliceRunner
         }
         if ((seenConditions & bit) != 0) return Utf8ExecutionLimitKind.None;
         seenConditions |= bit;
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         var pc = program.NonBacktrackingOrderedLeaves[(int)tag];
         ref readonly var instruction = ref program.Instructions[pc];
@@ -904,7 +904,7 @@ internal static partial class Utf8SliceRunner
         // established that there is no older path to advance over this gap.
         while (position < input.Length)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var block = input.Slice(position, Math.Min(2048, input.Length - position));
             var candidate = starts.IndexOf(block);
@@ -925,7 +925,7 @@ internal static partial class Utf8SliceRunner
     {
         while (edge > 0)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var blockStart = Math.Max(0, edge - 2048);
             var candidate = starts.LastIndexOf(input[blockStart..edge]);

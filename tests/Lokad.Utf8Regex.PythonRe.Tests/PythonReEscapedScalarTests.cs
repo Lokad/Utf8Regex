@@ -33,7 +33,6 @@ public sealed class PythonReEscapedScalarTests
         {
             var policy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000
@@ -72,7 +71,6 @@ public sealed class PythonReEscapedScalarTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000
@@ -114,25 +112,6 @@ public sealed class PythonReEscapedScalarTests
         Assert.Equal("😀😁", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
     }
 
-    [Fact]
-    public void RepeatedEscapedScalarsKeepConstructionWorkAdmissionAndRecovery()
-    {
-        var pattern = string.Concat(Enumerable.Repeat(@"\😀", 1024));
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8PythonRegex.Compile(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = default,
-            ConstructionPolicy = new()
-            {
-                MaxWorkSteps = 128
-            },
-            ConstructionTimeout = Timeout.InfiniteTimeSpan
-        }, cancellationToken: CancellationToken.None));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
-        Assert.False(Utf8ConstructionScope.IsActive);
-        Assert.True(new Utf8PythonRegex(@"\😀").Match("😀"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -143,13 +122,14 @@ public sealed class PythonReEscapedScalarTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
         var entered = false;
-        using (var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 1000000, 128))
+        using (var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 128))
         {
             owner.Budget.CancellationToken = cancellation.Token;
             owner.Budget.Deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20));
-            owner.Budget.CheckpointHook = steps =>
+            var checkpoints = 0;
+            owner.Budget.CheckpointHook = () =>
             {
-                if (steps < 128)
+                if (checkpoints++ < 128)
                 {
                     return;
                 }
@@ -189,7 +169,6 @@ public sealed class PythonReEscapedScalarTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1

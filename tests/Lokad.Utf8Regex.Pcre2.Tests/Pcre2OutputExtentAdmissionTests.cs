@@ -14,15 +14,16 @@ public sealed class Pcre2OutputExtentAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void FinalTemplateCopyPreservesProfileCancellationAndDeadlineIdentity(bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var writer = new Pcre2ReplacementTemplateWriter(new byte[8192], [],
-            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 1UL << 20),
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 1UL << 20),
                 expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, token.Token));
         writer.AppendGap(0, 8192);
         ref var invocation = ref Invocation(ref writer);
-        while ((invocation.Budget.Steps & 63) != 60) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+        while ((invocation.Budget.DiagnosticCheckpoints & 63) != 60) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckInput());
         var entered = false;
         invocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else token.Cancel(); };
         Exception? failure = null;

@@ -31,7 +31,6 @@ public sealed class PythonLiteralAssertionTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -63,7 +62,6 @@ public sealed class PythonLiteralAssertionTests
         var input = Encoding.UTF8.GetBytes(text); byte[] storage = [0xff, .. input, 0xff];
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000,
             MaxDepth = 128,
             MaxWorkingBytes = 1 << 20,
             MaxResultBytes = 1 << 20

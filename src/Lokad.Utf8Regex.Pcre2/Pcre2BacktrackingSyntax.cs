@@ -376,7 +376,7 @@ internal sealed class Pcre2BacktrackingProgram
     private static bool IsShortStatelessProgram(ReadOnlySpan<Pcre2BacktrackingInstruction> instructions)
     {
         if (instructions.Length > 8) return false;
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         foreach (ref readonly var instruction in instructions)
         {
             if (instruction.Kind is Pcre2BacktrackingInstructionKind.Token or Pcre2BacktrackingInstructionKind.CaptureStart
@@ -396,7 +396,7 @@ internal sealed class Pcre2BacktrackingProgram
         var start = end;
         for (var remaining = 4; remaining > 0 && start >= 3; remaining--)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             var split = instructions[start - 3];
             var head = instructions[start - 2];
             var run = instructions[start - 1];

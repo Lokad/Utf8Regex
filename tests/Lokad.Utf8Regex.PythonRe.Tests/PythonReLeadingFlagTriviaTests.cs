@@ -22,7 +22,6 @@ public sealed class PythonReLeadingFlagTriviaTests
         {
             var policy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000
@@ -92,11 +91,8 @@ public sealed class PythonReLeadingFlagTriviaTests
     public void LongIgnoredTriviaStillSpendsConstructionWork(string prefix, string suffix)
     {
         var pattern = prefix + new string('c', 4096) + suffix;
-        using (var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 128, 128))
+        using (var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 128))
         {
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                new PythonReParser(pattern).Parse(PythonReCompileOptions.None));
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
             Assert.Equal(0ul, owner.Budget.Depth);
             Assert.Equal(0ul, owner.Budget.ReservedBytes);
         }
@@ -116,13 +112,14 @@ public sealed class PythonReLeadingFlagTriviaTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
         var entered = false;
-        using (var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 100000, 128))
+        using (var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 128))
         {
             owner.Budget.Deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20));
             owner.Budget.CancellationToken = cancellation.Token;
-            owner.Budget.CheckpointHook = steps =>
+            var checkpoints = 0;
+            owner.Budget.CheckpointHook = () =>
             {
-                if (steps < 64) return;
+                if (checkpoints++ < 64) return;
                 entered = true;
                 if (expire) ticks = 50;
                 else cancellation.Cancel();

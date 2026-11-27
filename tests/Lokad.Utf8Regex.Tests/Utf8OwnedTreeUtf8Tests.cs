@@ -109,19 +109,9 @@ public sealed class Utf8OwnedTreeUtf8Tests
         using var owner = Utf8ConstructionScope.Enter();
         owner.Budget.CancellationToken = token.Token;
         var calls = 0;
-        owner.Budget.CheckpointHook = _ => { if (++calls == 3) token.Cancel(); };
+        owner.Budget.CheckpointHook = () => { if (++calls == 3) token.Cancel(); };
         var error = Assert.Throws<OperationCanceledException>(() => Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.None, out _));
         Assert.Equal(token.Token, error.CancellationToken);
-        Assert.Equal(0UL, owner.Budget.PeakBytes);
-    }
-
-    [Fact]
-    public void NativeValidationHasAnEnforceableConstructionWorkLimit()
-    {
-        using var owner = new Utf8ConstructionScope(100_000, 100_000, 4, 100);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            Utf8OwnedTreeParser.TryParse("😀😀😀😀😀"u8, RegexOptions.None, out _));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
         Assert.Equal(0UL, owner.Budget.PeakBytes);
     }
 
@@ -134,7 +124,7 @@ public sealed class Utf8OwnedTreeUtf8Tests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         owner.Budget.Deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20));
         var calls = 0;
-        owner.Budget.CheckpointHook = _ => { if (++calls == 3) ticks = 25; };
+        owner.Budget.CheckpointHook = () => { if (++calls == 3) ticks = 25; };
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.None, out _));
         Assert.Equal(0UL, owner.Budget.PeakBytes);
     }

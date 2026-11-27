@@ -40,7 +40,7 @@ public sealed class Pcre2PrefixRepeatTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000
+                MaxDepth = 4096
             },
             MatchTimeout = Regex.InfiniteMatchTimeout
         });
@@ -76,44 +76,5 @@ public sealed class Pcre2PrefixRepeatTests
 
             return ranges;
         }
-    }
-
-    [Fact]
-    public void PrefixRepeatsObserveOptionsAndLimits()
-    {
-        const string Pattern = "(a)b+";
-        var input = "ab abb abbb x ab"u8.ToArray();
-        var direct = new Utf8Pcre2Regex(Pattern);
-        var vm = new Utf8Pcre2Regex(            Pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1_000_000
-            },
-            MatchTimeout = Regex.InfiniteMatchTimeout
-        });
-
-        foreach (var options in new[]
-                 {
-                     Pcre2MatchOptions.Anchored,
-                     Pcre2MatchOptions.NotEmpty,
-                     Pcre2MatchOptions.EndAnchored,
-                 })
-        {
-            Assert.Equal(vm.IsMatch(input, 3, options), direct.IsMatch(input, 3, options));
-            Assert.Equal(vm.Count(input, 3, options), direct.Count(input, 3, options));
-        }
-
-        var tightlyMetered = new Utf8Pcre2Regex(            Pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Regex.InfiniteMatchTimeout
-        });
-        Assert.Equal(
-            Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => tightlyMetered.Count(input)).ErrorKind);
     }
 }

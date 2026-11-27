@@ -23,7 +23,6 @@ public sealed class PosixByteCaptureRangeTests
             {
                 ResourcePolicy = finite ? new()
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 1024,
                     MaxWorkingBytes = 1 << 20
                 }
@@ -86,7 +85,6 @@ public sealed class PosixByteCaptureRangeTests
                 {
                     ResourcePolicy = finite ? new()
                     {
-                        MaxWorkSteps = 1000000,
                         MaxDepth = 1024,
                         MaxWorkingBytes = 1 << 20,
                         MaxResultBytes = 1
@@ -165,7 +163,6 @@ public sealed class PosixByteCaptureRangeTests
         {
             ResourcePolicy = finite ? new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -227,7 +224,6 @@ public sealed class PosixByteCaptureRangeTests
             {
                 ResourcePolicy = finite ? new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 32768,
                     MaxWorkingBytes = 8 << 20,
                     MaxResultBytes = 1

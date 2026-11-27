@@ -28,7 +28,7 @@ profile excludes bytes patterns, LOCALE and `\N{...}` Unicode-name lookup.
 
 ## Controls and lifetimes
 
-`Utf8RegexPolicy` sets match timeouts and optional work, depth, working-byte
+`Utf8RegexPolicy` sets match timeouts and optional depth, working-byte
 and result-byte limits. Construction has separate limits and a deadline.
 `Compile` also accepts a construction token. Calls and cursor advances
 observe cancellation and the original match deadline. A cursor's advance
@@ -54,7 +54,6 @@ var regex = new Utf8PythonRegex(
         MatchTimeout = TimeSpan.FromSeconds(1),
         ResourcePolicy = new()
         {
-            MaxWorkSteps = 1_000_000,
             MaxDepth = 1024,
             MaxWorkingBytes = 16 * 1024 * 1024,
             MaxResultBytes = 16 * 1024 * 1024

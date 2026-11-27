@@ -17,12 +17,11 @@ public sealed class Utf8SharedByteSearchAdmissionTests
     {
         var caller = Enumerable.Range(0, length).Select(value => (byte)(17 + value * 79)).ToArray();
         var expected = caller.ToArray();
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         var search = span ? PreparedByteSearch.Create(caller.AsSpan()) : PreparedByteSearch.Create(caller);
         Array.Fill(caller, (byte)11);
         Assert.Equal(expected, search.Values.ToArray()); Assert.Equal(length, search.Count);
         Assert.Equal(Utf8ConstructionBudget.ArrayBytes<byte>(length) + (length > 5 ? SetBytes : 0), owner.Budget.ReservedBytes);
-        Assert.Equal(length > 5 ? (ulong)(3 * length + 258) : (ulong)(2 * length), owner.Budget.WorkSteps);
         Assert.Equal(length == 0 ? 0ul : length > 5 ? 2ul : 1ul, owner.Budget.PeakDepth);
         Assert.Equal(length > 0, owner.Budget.ReservedBytes > 0);
         Assert.Equal(0ul, owner.Budget.Depth);
@@ -43,18 +42,18 @@ public sealed class Utf8SharedByteSearchAdmissionTests
         var input = Enumerable.Range(0, length).Select(value => (byte)value).ToArray();
         var bytes = Utf8ConstructionBudget.ArrayBytes<byte>(length) + (length > 5 ? SetBytes : 0);
         var work = length > 5 ? (ulong)(3 * length + 258) : (ulong)(2 * length);
-        foreach (var byteLimit in new[] { false, true })
+        foreach (var byteLimit in new[] { true })
             for (var allowance = 0ul; allowance <= (byteLimit ? bytes : work); allowance++)
             {
                 using var owner = new Utf8ConstructionScope(0, byteLimit ? 128 + allowance : ulong.MaxValue,
-                    byteLimit ? ulong.MaxValue : allowance + 2, ulong.MaxValue);
+                    ulong.MaxValue);
                 var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
                 var checkpoint = owner.Budget.ReservedBytes;
                 var error = Record.Exception(() => { _ = span ? PreparedByteSearch.Create(input.AsSpan()) : PreparedByteSearch.Create(input); });
                 if (allowance < (byteLimit ? bytes : work))
                 {
                     var limit = Assert.IsType<Utf8ResourceLimitExceededException>(error);
-                    Assert.Equal(byteLimit ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, limit.ResourceKind);
+                    Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, limit.ResourceKind);
                     Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                     if (byteLimit) Assert.True(limit.Requested > 128 + allowance);
                 }
@@ -64,21 +63,20 @@ public sealed class Utf8SharedByteSearchAdmissionTests
                     Assert.Equal(length > 0, owner.Budget.ReservedBytes > checkpoint);
                 }
                 Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
-                Assert.InRange(owner.Budget.WorkSteps, 2ul, byteLimit ? 2 + work : 2 + allowance);
                 if (byteLimit) Assert.InRange(owner.Budget.PeakBytes, 128ul, 128 + allowance);
             }
     }
 
     public static IEnumerable<object[]> Denials()
-        => from route in Enumerable.Range(0, 4) from denial in Enumerable.Range(0, 3) select new object[] { route, denial };
+        => from route in Enumerable.Range(0, 4) from denial in new[] { 0, 2 } select new object[] { route, denial };
 
     [Theory]
     [MemberData(nameof(Denials))]
-    public void SharedSearchAndSetRootsDenyBytesWorkAndDepthBeforeHeapAcquisition(int route, int denial)
+    public void SharedSearchAndSetRootsDenyBytesAndDepthBeforeHeapAcquisition(int route, int denial)
     {
         byte[] input = [0, 64, 128, 255];
         using var owner = new Utf8ConstructionScope(0, denial == 0 ? 48ul : ulong.MaxValue,
-            denial == 1 ? 1ul : ulong.MaxValue, denial == 2 ? 0ul : ulong.MaxValue);
+            denial == 2 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false); parent[0] = 0xa5;
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
@@ -93,7 +91,6 @@ public sealed class Utf8SharedByteSearchAdmissionTests
         Assert.Equal(denial switch
         {
             0 => Utf8ResourceLimitKind.ConstructionBytes,
-            1 => Utf8ResourceLimitKind.ConstructionWorkSteps,
             _ => Utf8ResourceLimitKind.ConstructionDepth
         }, error.ResourceKind);
         Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Equal(48ul, owner.Budget.PeakBytes);
@@ -103,12 +100,12 @@ public sealed class Utf8SharedByteSearchAdmissionTests
     [Fact]
     public void SharedEmptyPayloadsNeedNoOwnerWorkOrDepth()
     {
-        using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var owner = new Utf8ConstructionScope(0, 0, 0);
         var array = PreparedByteSearch.Create(); var span = PreparedByteSearch.Create(ReadOnlySpan<byte>.Empty);
         Assert.Equal(0, array.Count); Assert.Equal(-1, array.IndexOf(new byte[] { 0, 128, 255 }));
         Assert.Equal(-1, span.LastIndexOf(new byte[] { 0, 128, 255 }));
         Assert.Same(PreparedByteSet.Empty, PreparedByteSet.CreateOwned(0, 0, 0, 0));
-        Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
+Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
     }
 
     [Fact]
@@ -128,6 +125,7 @@ public sealed class Utf8SharedByteSearchAdmissionTests
     [InlineData(2)]
     public void MultiLiteralSearchProducersUseTheSameByteOwnerAndRecoverAfterDenial(int route)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         byte[][] literals = ["ABCD"u8.ToArray(), "EFGH"u8.ToArray(), "IJKL"u8.ToArray(), "MNOP"u8.ToArray()];
         PreparedByteSearch Produce()
         {
@@ -138,14 +136,14 @@ public sealed class Utf8SharedByteSearchAdmissionTests
                 _ => PreparedMultiLiteralTrieSearch.Create(literals).RootSearch,
             };
         }
-        using var owner = new Utf8ConstructionScope(0, 48, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, 48, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false); parent[0] = 0xa5;
         if (route == 1 && (!System.Runtime.Intrinsics.X86.Ssse3.IsSupported || !System.Runtime.Intrinsics.X86.Sse2.IsSupported))
         {
             // An unavailable SIMD optimizer declines before acquiring search
             // storage. The parent loan and spent eligibility work still survive.
             Assert.Equal(0, Produce().Count);
-            Assert.True(owner.Budget.WorkSteps > 1);
+            Assert.True(owner.Budget.DiagnosticCheckpoints > 1);
         }
         else Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, Assert.Throws<Utf8ResourceLimitExceededException>(() => Produce()).ResourceKind);
         Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Equal(0xa5, parent[0]);

@@ -43,7 +43,7 @@ public sealed class Utf8OptionalRepeatTests
         Assert.Equal(expected, regex.IsMatch(input));
         using var finite = new Utf8Regex(pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxWorkingBytes = 4096 }
         });
         using var cancellation = new CancellationTokenSource();
         Assert.Equal(expected, finite.IsMatch(input, cancellation.Token));
@@ -62,7 +62,7 @@ public sealed class Utf8OptionalRepeatTests
     {
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 32, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         using var source = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(text);
@@ -101,7 +101,7 @@ public sealed class Utf8OptionalRepeatTests
         const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant;
         using var regex = new Utf8Regex(pattern, options, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 << 14 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 << 14 }
         });
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var whitespaceRepeats = program.Instructions.Where((instruction, index) => instruction is
@@ -153,7 +153,7 @@ public sealed class Utf8OptionalRepeatTests
         const RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
         using var regex = new Utf8Regex(pattern, options, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1_000, MaxDepth = 64, MaxWorkingBytes = 1 << 16 }
+            ResourcePolicy = new() { MaxDepth = 64, MaxWorkingBytes = 1 << 16 }
         });
         var input = Encoding.UTF8.GetBytes(text);
         var expected = new Regex(pattern, options).Match(text);
@@ -170,7 +170,7 @@ public sealed class Utf8OptionalRepeatTests
     {
         using var regex = new Utf8Regex(@"\A(?<unit>\d)+\d\z", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 2_000, MaxDepth = 1, MaxWorkingBytes = 1 << 10 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 << 10 }
         });
         var input = Encoding.UTF8.GetBytes(new string('١', 128) + "5");
         using var source = new CancellationTokenSource();
@@ -191,7 +191,7 @@ public sealed class Utf8OptionalRepeatTests
         text += new string('é', trailingScalars);
         using var regex = new Utf8Regex(pattern, options, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 16, MaxWorkingBytes = 1 << 14 }
+            ResourcePolicy = new() { MaxDepth = 16, MaxWorkingBytes = 1 << 14 }
         });
         var exit = Assert.Single(regex.Inspection.AvailableOwnedSliceProgram!.Instructions.Where(instruction =>
             instruction.Kind == Utf8SliceInstructionKind.RepeatExit && instruction.RepeatExitRewindStarts != 0));
@@ -250,37 +250,18 @@ public sealed class Utf8OptionalRepeatTests
     [InlineData(true)]
     public void EveryWorkCutoffKeepsParentLoanAndNoPartialCount(bool lazy)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex("(?<v>(?:é|😀)?" + (lazy ? "?" : "") + ")?X");
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.UTF8.GetBytes("éX 😀X X");
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
-        var measured = new Utf8SliceInvocation(new(100000, 64, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var measured = new Utf8SliceInvocation(new(64, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(measured.Ledger.TryReserve(13));
         var result = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref measured);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
         Assert.Equal(3, result.Count);
         Assert.Equal(13ul, measured.Ledger.ReservedBytes);
-        for (ulong limit = 1; limit < measured.Budget.Steps; limit++)
-        {
-            var invocation = new Utf8SliceInvocation(new(limit, 64, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps,
-                Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation).Breach);
-            Assert.Equal(13ul, invocation.Ledger.ReservedBytes);
-            var publicRegex = new Utf8Regex(regex.Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = new Utf8ResourcePolicy
-                {
-                    MaxWorkSteps = limit,
-                    MaxDepth = 64,
-                    MaxWorkingBytes = 1 << 20
-                }
-            });
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => publicRegex.Count(input)).ResourceKind);
-        }
     }
 
     [Theory]
@@ -295,7 +276,7 @@ public sealed class Utf8OptionalRepeatTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var session = Utf8SearchDiagnosticsSession.Start(_ => { if (timeout) ticks = 25; else token.Cancel(); });
-        var invocation = new Utf8SliceInvocation(new(1000000, 65536, 1 << 24), TimeSpan.FromMilliseconds(20), token.Token);
+        var invocation = new Utf8SliceInvocation(new(65536, 1 << 24), TimeSpan.FromMilliseconds(20), token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         try
         {
@@ -311,7 +292,7 @@ public sealed class Utf8OptionalRepeatTests
     [Fact]
     public void SingleAtomOptionalKeepsItsConstantSpaceTerminalPath()
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1, MaxWorkingBytes = 1 };
         foreach (var pattern in new[] { "a?", @"\w?", "[é😀]?" })
         {
             var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
@@ -330,7 +311,7 @@ public sealed class Utf8OptionalRepeatTests
     [InlineData(@"\A[ab]??[ab]\z", "aa")]
     public void SingleAtomOptionalCanRetryWithinOneBranchReservation(string pattern, string subject)
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10_000, MaxDepth = 1, MaxWorkingBytes = 768 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1, MaxWorkingBytes = 768 };
         using var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant,
             new Utf8RegexPolicy { ResourcePolicy = policy });
         using var token = new CancellationTokenSource();
@@ -350,7 +331,7 @@ public sealed class Utf8OptionalRepeatTests
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 100, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         var input = Encoding.UTF8.GetBytes(subject);
         Assert.True(Regex.IsMatch(subject, pattern));
@@ -368,7 +349,7 @@ public sealed class Utf8OptionalRepeatTests
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 100, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         Assert.Equal(end, regex.Match("012"u8, cancellationToken: token.Token).EndOffsetInBytes);
     }
@@ -407,7 +388,7 @@ public sealed class Utf8OptionalRepeatTests
         for (var depth = 0; depth < 64; depth++) atom = $"[ab-{atom}]";
         using var regex = Utf8Regex.Compile(@"\A" + atom + "??[ab]", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new Utf8ResourcePolicy { MaxWorkSteps = 48 }
+            ResourcePolicy = new Utf8ResourcePolicy { MaxDepth = 4096 }
         });
         Assert.True(regex.IsMatch("a"u8));
     }

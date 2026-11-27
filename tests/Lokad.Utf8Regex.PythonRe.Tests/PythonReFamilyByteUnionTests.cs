@@ -84,59 +84,6 @@ public sealed class PythonReFamilyByteUnionTests
         }
     }
 
-    [Fact]
-    public void EveryWorkCutoffAndCursorAliasRetainsTheCallerLoan()
-    {
-        Utf8PythonRangeMatch cursorRange_durable = default;
-        var regex = new Utf8PythonRegex("item-([0-9]+)");
-        const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
-        var program = (Utf8SliceProgram)typeof(Utf8PythonRegex).GetField("_scalarProgram", flags)!.GetValue(regex)!;
-        var hint = (Utf8Regex?)typeof(Utf8PythonRegex).GetField("_utf8Regex", flags)!.GetValue(regex);
-        var input = Encoding.UTF8.GetBytes(new string('x', 4097) + "item-x item-12");
-        ulong Run(ulong maximum, bool complete)
-        {
-            var invocation = new Utf8SliceInvocation(new(maximum, 32, 1 << 20, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var completed = false;
-            try
-            {
-                var cursor = new PythonReScalarMatchCursor(input, program, 0, Timeout.InfiniteTimeSpan, hint, regex, invocation);
-                try
-                {
-                    Assert.True(cursor.MoveNext());
-                    Assert.False(cursor.MoveNext());
-                    completed = true;
-                }
-                finally
-                {
-                    cursor.Dispose();
-                }
-            }
-            catch (Utf8ResourceLimitExceededException failure)
-            {
-                Assert.False(complete);
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-            }
-            Assert.Equal(complete, completed);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-            return invocation.Budget.Steps;
-        }
-        var total = Run(ulong.MaxValue, true);
-        for (ulong cap = 1; cap < total; cap++)
-        {
-            Run(cap, false);
-        }
-        Run(total, true);
-
-        using var durable = regex.CreateMatchCursor(input);
-        var alias = durable;
-        Assert.True(durable.MoveNext(out cursorRange_durable));
-        var retained = cursorRange_durable;
-        Assert.False(alias.MoveNext(out cursorRange_durable));
-        alias.Dispose();
-        Assert.Equal("12", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -151,7 +98,7 @@ public sealed class PythonReFamilyByteUnionTests
         var hint = (Utf8Regex?)typeof(Utf8PythonRegex).GetField("_utf8Regex", flags)!.GetValue(regex);
         var input = Encoding.UTF8.GetBytes("item-x " + new string('i', 300000) + "item-12");
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 32, 1 << 20, 1 << 20), timeout, cancellation.Token);
+        var invocation = new Utf8SliceInvocation(new(32, 1 << 20, 1 << 20), timeout, cancellation.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         var cursor = new PythonReScalarMatchCursor(input, program, 0, timeout, hint, regex, invocation);
         var entered = false;

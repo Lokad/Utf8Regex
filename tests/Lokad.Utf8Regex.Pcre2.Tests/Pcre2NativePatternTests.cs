@@ -82,8 +82,7 @@ public sealed class Pcre2NativePatternTests
             ResourcePolicy = default,
             ConstructionPolicy = new()
             {
-                MaxBytes = 160000,
-                MaxWorkSteps = 16000000
+                MaxBytes = 160000
             },
             ConstructionTimeout = Timeout.InfiniteTimeSpan
         }, cancellationToken: default);

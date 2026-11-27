@@ -31,7 +31,7 @@ public sealed class Utf8SearchDispositionQualificationTests
         foreach (var pattern in patterns)
         {
             var plan = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant).SearchPlan;
-            using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
+            using var zero = new Utf8ConstructionScope(0, 0, 0);
             {
                 var operation = plan.SearchOperation;
                 var native = plan.HasPreparedSearcher;
@@ -46,7 +46,7 @@ public sealed class Utf8SearchDispositionQualificationTests
                     Assert.Equal(plan.ConfirmationPlan, operation.Confirmation);
                 }
             }
-            Assert.Equal(0ul, zero.Budget.WorkSteps); Assert.Equal(0ul, zero.Budget.Depth); Assert.Equal(0ul, zero.Budget.ReservedBytes);
+Assert.Equal(0ul, zero.Budget.Depth); Assert.Equal(0ul, zero.Budget.ReservedBytes);
         }
     }
 
@@ -54,14 +54,13 @@ public sealed class Utf8SearchDispositionQualificationTests
     public void DefaultAndPreparedEmptyPlansHaveNoSearchOperation()
     {
         var prepared = Utf8SearchPlan.Prepare(default);
-        using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var zero = new Utf8ConstructionScope(0, 0, 0);
         var empty = default(Utf8SearchPlan);
         foreach (var plan in new[] { empty, prepared })
         {
             Assert.False(plan.SearchOperation.HasValue); Assert.False(plan.ConfirmationPlan.HasValue);
             Assert.False(plan.HasPreparedSearcher);
         }
-        Assert.Equal(0ul, zero.Budget.WorkSteps);
     }
 
     [Fact]

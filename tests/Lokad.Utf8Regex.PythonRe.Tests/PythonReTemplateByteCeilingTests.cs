@@ -12,6 +12,7 @@ public sealed class PythonReTemplateByteCeilingTests
     [InlineData(true)]
     public void EmptySubjectCannotPrepareAnOversizedTemplate(bool liveToken)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = Create("a", 4096);
         // The key fits, but the remaining working room cannot hold the parser's buffers.
         var template = Encoding.UTF8.GetBytes(new string('x', 2048));
@@ -20,12 +21,12 @@ public sealed class PythonReTemplateByteCeilingTests
         var held = parent.Budget.AllocateArray<byte>(17, false);
         var reserved = parent.Budget.ReservedBytes;
         var maximum = parent.Budget.MaximumBytes;
-        Action<ulong> hook = _ => { };
+        Action hook = () => { };
         parent.Budget.CheckpointHook = hook;
 
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var spent = parent.Budget.WorkSteps;
+            var spent = parent.Budget.DiagnosticCheckpoints;
             var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
                 regex.Replace([], template, 0, 0, liveToken ? token.Token : default));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, error.ResourceKind);
@@ -36,7 +37,7 @@ public sealed class PythonReTemplateByteCeilingTests
             Assert.Equal(maximum, parent.Budget.MaximumBytes);
             Assert.Equal(0ul, parent.Budget.Depth);
             Assert.Same(hook, parent.Budget.CheckpointHook);
-            Assert.True(parent.Budget.WorkSteps > spent);
+            Assert.True(parent.Budget.DiagnosticCheckpoints > spent);
             Assert.Equal(17, held.Length);
         }
 
@@ -52,7 +53,6 @@ public sealed class PythonReTemplateByteCeilingTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -67,7 +67,7 @@ public sealed class PythonReTemplateByteCeilingTests
     public void FundedPreparationAndLaterDenialPreserveScalarResults()
     {
         // Fund template-length work to reach the independent byte ceiling.
-        var regex = Create("(?P<x>😀|a)", 1 << 20, work: 1024);
+        var regex = Create("(?P<x>😀|a)", 1 << 20);
         Assert.Empty(regex.Replace([], System.Text.Encoding.UTF8.GetBytes(new string('x', 65536))));
         var retained = regex.Subn("😀a"u8, @"<\g<x>>"u8);
         Assert.Equal(2, retained.ReplacementCount);
@@ -95,7 +95,6 @@ public sealed class PythonReTemplateByteCeilingTests
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -105,7 +104,7 @@ public sealed class PythonReTemplateByteCeilingTests
         using var parent = Utf8ConstructionScope.Enter();
         var maximum = parent.Budget.MaximumBytes;
         var checkpoints = 0;
-        Action<ulong> hook = _ =>
+        Action hook = () =>
         {
             if (++checkpoints != 8) return;
             if (cancel) token.Cancel(); else ticks = 25;
@@ -154,7 +153,7 @@ public sealed class PythonReTemplateByteCeilingTests
         var parentDeadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20));
         parent.Budget.Deadline = parentDeadline;
         var checkpoints = 0;
-        Action<ulong> hook = _ =>
+        Action hook = () =>
         {
             if (++checkpoints != 8) return;
             if (authority == 0) caller.Cancel();
@@ -181,12 +180,11 @@ public sealed class PythonReTemplateByteCeilingTests
         Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, @"<\g<x>>"u8)));
     }
 
-    private static Utf8PythonRegex Create(string pattern, ulong working, ulong work = 128) => new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+    private static Utf8PythonRegex Create(string pattern, ulong working) => new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
     {
         MatchTimeout = Timeout.InfiniteTimeSpan,
         ResourcePolicy = new()
         {
-            MaxWorkSteps = work,
             MaxDepth = 16,
             MaxWorkingBytes = working,
             MaxResultBytes = 4096

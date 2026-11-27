@@ -77,7 +77,7 @@ internal static partial class Pcre2PartialProbeCompiler
         var budget = construction.Budget;
         // Flat token/literal recognition borrows and meters the parsed nodes.
         // Other curated recognizers inspect only fixed portions of the tree.
-        budget.ChargeWork(128);
+        budget.Checkpoint();
         budget.EnterDepth();
         try
         {
@@ -104,7 +104,7 @@ internal static partial class Pcre2PartialProbeCompiler
         var budget = Utf8ConstructionScope.CurrentBudget;
         foreach (var node in nodes)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (node is not Pcre2TokenBacktrackingNode) return false;
         }
         var firstToken = ((Pcre2TokenBacktrackingNode)nodes[0]).Token;
@@ -178,11 +178,11 @@ internal static partial class Pcre2PartialProbeCompiler
         Pcre2CharacterOptions inertOptions)
     {
         var budget = Utf8ConstructionScope.CurrentBudget;
-        budget.ChargeWork((ulong)nodes.Length + 1);
+        budget.Checkpoint();
         var length = 0;
         for (var index = 0; index < nodes.Length; index++)
         {
-            if ((index & 255) == 0) budget.ChargeWork(0);
+            if ((index & 255) == 0) budget.Checkpoint();
             var token = ((Pcre2TokenBacktrackingNode)nodes[index]).Token;
             if (token.Kind != Pcre2CharacterTokenKind.Literal ||
                 (token.Options & ~inertOptions) != Pcre2CharacterOptions.None)

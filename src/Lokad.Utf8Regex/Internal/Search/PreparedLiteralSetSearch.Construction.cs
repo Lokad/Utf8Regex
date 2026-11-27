@@ -38,7 +38,7 @@ internal readonly partial struct PreparedLiteralSetSearch
         var singles = data.Buckets.Length > 0;
         foreach (var bucket in data.Buckets)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             count = checked(count + bucket.Literals.Length);
             singles &= bucket.Literals.Length == 1;
         }
@@ -59,16 +59,16 @@ internal readonly partial struct PreparedLiteralSetSearch
         Span<bool> seen = stackalloc bool[256];
         for (var offset = 1; offset < data.ShortestLength; offset++)
         {
-            budget.ChargeWork(257);
+            budget.Checkpoint();
             seen.Clear();
             var used = 0;
             var duplicate = false;
             foreach (var bucket in data.Buckets)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 foreach (var literal in bucket.Literals)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     var value = literal[offset];
                     if (seen[value]) { duplicate = true; break; }
                     seen[value] = true;
@@ -80,11 +80,11 @@ internal readonly partial struct PreparedLiteralSetSearch
             var map = budget.AllocateArray<ushort>(256, false);
             for (var bucketIndex = 0; bucketIndex < data.Buckets.Length; bucketIndex++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var literals = data.Buckets[bucketIndex].Literals;
                 for (var index = 0; index < literals.Length; index++)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     map[literals[index][offset]] = (ushort)((bucketIndex << 8) | index);
                 }
             }

@@ -40,6 +40,7 @@ public sealed class Utf8ScalarCaptureContinuationTests
     [InlineData(4097, 0)] [InlineData(4097, 1)] [InlineData(4097, 2)]
     public void ScalarCaptureWorkAndStorageDenialRestoreBorrowedLoansAndRecover(int depth, int shape)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var program = Utf8ScalarCaptureWitness.Lower("(a)(b)", RegexOptions.CultureInvariant, depth, shape);
         var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
@@ -52,16 +53,14 @@ public sealed class Utf8ScalarCaptureContinuationTests
         Assert.Equal(new[] { (1, 2) }, Utf8SliceHistoryAdmissionTests.CaptureEdges(history, 2));
         Assert.Equal(7UL, baseline.Ledger.ReservedBytes);
         baseline.Ledger.Release(7);
-        var limits = Enumerable.Range(1, checked((int)baseline.Budget.Steps - 1))
-            .Select(static work => new Utf8ExecutionLimits((ulong)work, 0, 0))
-            .Concat(new[] { new Utf8ExecutionLimits(0, 0, baseline.Budget.PeakWorkingBytes - 1) });
+        var limits = new[] { new Utf8ExecutionLimits(0, baseline.Budget.PeakWorkingBytes - 1) };
         foreach (var limit in limits)
         {
             var denied = new Utf8SliceInvocation(limit, Regex.InfiniteMatchTimeout, CancellationToken.None);
             Assert.True(denied.Ledger.TryReserve(7));
             var (failed, unpublished) = Utf8ScalarCaptureWitness.MatchAndSnapshot(program, input, 0, starts, ends, ref denied);
             Assert.False(failed.IsMatch);
-            Assert.Equal(limit.MaxWorkSteps == 0 ? Utf8ExecutionLimitKind.WorkingBytes : Utf8ExecutionLimitKind.WorkSteps, failed.Breach);
+            Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, failed.Breach);
             Assert.False(unpublished.Success);
             Assert.Equal(7UL, denied.Ledger.ReservedBytes);
             denied.Ledger.Release(7);

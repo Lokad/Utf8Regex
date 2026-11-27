@@ -10,7 +10,7 @@ public sealed class Utf8ReferenceValueMatchTests
 {
     private const string Cell = @"^(?<col>[a-z])(?<row>(\d)+)$";
     private const string Range = @"^(?<col1>[a-z])(?<row1>(\d)+):?(?<col2>[a-z])(?<row2>(\d)+)$";
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 8192, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 8192, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
@@ -75,7 +75,7 @@ public sealed class Utf8ReferenceValueMatchTests
     }
 
     [Fact]
-    public void DetailedDigitHistoriesAliasesDeclinesAndStrictTailsRemainOwned()
+    public void DetailedDigitHistoriesAndAliasesRemainOwned()
     {
         var regex = new Utf8Regex(Cell, options: RegexOptions.IgnoreCase);
         var bytes = "a123"u8.ToArray(); var value = regex.Match(bytes); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes));
@@ -94,15 +94,7 @@ public sealed class Utf8ReferenceValueMatchTests
             Assert.Equal((expected.Success, System.Text.Encoding.UTF8.GetByteCount(subject.AsSpan(expected.Index, expected.Length))), (actual.Success, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
         }
         using var token = new CancellationTokenSource(); token.Cancel();
-        var denied = new Utf8Regex(Cell, options: RegexOptions.IgnoreCase, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = Funded with
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match(bytes));
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(bytes, cancellationToken: token.Token)).CancellationToken);
     }
 
     [Theory]

@@ -26,7 +26,6 @@ public sealed class PythonReNativeLiteralValidationTests
         {
             var policy = mode == 1 ? new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -59,22 +58,6 @@ public sealed class PythonReNativeLiteralValidationTests
         Assert.True(value.Success);
         Assert.Equal((3, 9), (value.StartOffsetInBytes, value.EndOffsetInBytes));
         Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(value.GetValueBytes()));
-        Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
-        invocation.Ledger.Release(7);
-    }
-
-    [Fact]
-    public void ControlledWorkDenialReleasesNoParentLoan()
-    {
-        var regex = new Utf8PythonRegex("Шерлок");
-        var invocation = new Utf8SliceInvocation(new(1, 1, 7, 1), Timeout.InfiniteTimeSpan, default);
-        Assert.True(invocation.Ledger.TryReserve(7));
-        Exception? failure = null;
-        try { _ = regex.MaterializeNativeMatchValue([0xff], 0, 0, ref invocation); }
-        catch (Exception error) { failure = error; }
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.Budget.LimitBreach);
         Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
         invocation.Ledger.Release(7);
     }

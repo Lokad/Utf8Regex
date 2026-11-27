@@ -101,7 +101,6 @@ public sealed class Pcre2PartialFlagTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = resultBytes

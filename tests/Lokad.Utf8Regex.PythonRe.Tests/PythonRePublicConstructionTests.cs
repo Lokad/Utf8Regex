@@ -49,7 +49,7 @@ public sealed class PythonRePublicConstructionTests
     public void ExplicitCompileNeedsNoLaterFullMatchConstruction(bool bytes)
     {
         var regex = Compile(Utf8ConstructionPolicy.Default, bytes);
-        using var deniedPreparation = new Utf8ConstructionScope(1, 1, 1, 1);
+        using var deniedPreparation = new Utf8ConstructionScope(1, 1, 1);
         Utf8PythonRangeMatch match = default;
         using (var captureCursor1 = regex.CreateMatchCursor(("😀😀"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
         {
@@ -58,7 +58,6 @@ public sealed class PythonRePublicConstructionTests
         Assert.True(match.Success);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(1, match.LastIndex);
-        Assert.Equal(0ul, deniedPreparation.Budget.WorkSteps);
         Assert.Equal(0ul, deniedPreparation.Budget.ReservedBytes);
         Assert.Equal(0ul, deniedPreparation.Budget.Reserved);
     }
@@ -105,11 +104,9 @@ public sealed class PythonRePublicConstructionTests
         }, cancellationToken: CancellationToken.None);
 
     [Theory]
-    [InlineData(0, false)]
     [InlineData(1, false)]
     [InlineData(2, false)]
     [InlineData(3, false)]
-    [InlineData(0, true)]
     [InlineData(1, true)]
     [InlineData(2, true)]
     [InlineData(3, true)]
@@ -117,7 +114,7 @@ public sealed class PythonRePublicConstructionTests
     {
         var policy = limit switch
         {
-            0 => new Utf8ConstructionPolicy { MaxWorkSteps = 1 },
+            0 => new Utf8ConstructionPolicy {  },
             1 => new Utf8ConstructionPolicy { MaxDepth = 1 },
             2 => new Utf8ConstructionPolicy { MaxInstructionCapacity = 1 },
             _ => new Utf8ConstructionPolicy { MaxBytes = 1 },
@@ -125,7 +122,6 @@ public sealed class PythonRePublicConstructionTests
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Compile(policy, bytes));
         Assert.Equal(limit switch
         {
-            0 => Utf8ResourceLimitKind.ConstructionWorkSteps,
             1 => Utf8ResourceLimitKind.ConstructionDepth,
             2 => Utf8ResourceLimitKind.ConstructionInstructionCapacity,
             _ => Utf8ResourceLimitKind.ConstructionBytes,
@@ -151,7 +147,7 @@ public sealed class PythonRePublicConstructionTests
             MatchTimeout = TimeSpan.Zero,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 0
+                MaxDepth = 4096
             },
             ConstructionPolicy = new()
             {
@@ -172,14 +168,12 @@ public sealed class PythonRePublicConstructionTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 64,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000
             },
             ConstructionPolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 128,
                 MaxInstructionCapacity = 10000,
                 MaxBytes = 1000000

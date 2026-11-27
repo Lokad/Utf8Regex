@@ -102,10 +102,5 @@ public sealed class Utf8LiteralMatchingTests
         var noBoundary = Encoding.UTF8.GetBytes(new string('!', 60) + "KILOé" + new string('!', 96));
         Assert.False(word.IsMatch(noBoundary));
         Assert.False(word.Match(noBoundary).Success);
-
-        using var limited = new Utf8Regex("kilo", options, new() { ResourcePolicy = new() { MaxWorkSteps = 1 } });
-        var early = Encoding.UTF8.GetBytes("KILO" + tail);
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(early));
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.IsMatch(early));
     }
 }

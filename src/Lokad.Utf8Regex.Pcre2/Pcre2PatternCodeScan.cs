@@ -19,7 +19,7 @@ internal static class Pcre2PatternCodeScan
         // Admit the full lexical extent, including skipped quotes/comments.
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        budget.ChargeWork((ulong)pattern.Length);
+        budget.Checkpoint();
         var quoted = false;
         var inCharacterClass = false;
         var classHasAtom = false;
@@ -31,7 +31,7 @@ internal static class Pcre2PatternCodeScan
         {
             if (offset >= nextCheckpoint)
             {
-                budget.ChargeWork(0);
+                budget.Checkpoint();
                 nextCheckpoint = offset + 2048;
             }
             var character = pattern[offset];
@@ -161,7 +161,7 @@ internal static class Pcre2PatternCodeScan
         for (var cursor = offset + 2; cursor < pattern.Length;)
         {
             var count = Math.Min(2048, pattern.Length - cursor);
-            Utf8ConstructionScope.ChargeWork((ulong)count);
+            Utf8ConstructionScope.Checkpoint();
             var end = pattern.IndexOf(closing, cursor, count);
             if (end >= 0) { offset = end; return; }
             cursor += count;
@@ -178,7 +178,7 @@ internal static class Pcre2PatternCodeScan
         for (; offset < pattern.Length; offset++)
         {
             if (((offset - start) & 2047) == 0)
-                Utf8ConstructionScope.ChargeWork((ulong)Math.Min(2048, pattern.Length - offset));
+                Utf8ConstructionScope.Checkpoint();
             var character = (int)pattern[offset];
             var scalarBytes = 1;
             if (pattern.IsUtf8 && newline == Pcre2NewlineConvention.Any && character >= 0x80)
@@ -221,7 +221,7 @@ internal static class Pcre2PatternCodeScan
         // only once the directive's terminating ':' or ordinary group is known.
         void AdmitGroup()
         {
-            budget.ChargeWork(0);
+            budget.Checkpoint();
             if (prospective > maximum)
                 throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionDepth, maximum, prospective);
         }
@@ -239,7 +239,7 @@ internal static class Pcre2PatternCodeScan
             var nextCheckpoint = end;
             for (; end < pattern.Length; end++)
             {
-                if (end >= nextCheckpoint) { budget.ChargeWork(0); nextCheckpoint = end + 2048; }
+                if (end >= nextCheckpoint) { budget.Checkpoint(); nextCheckpoint = end + 2048; }
                 var flag = pattern[end];
                 if (flag == '-')
                 {
@@ -280,7 +280,7 @@ internal static class Pcre2PatternCodeScan
         for (var end = offset + 2; end + 1 < pattern.Length; end++)
         {
             if (((end - offset - 2) & 2047) == 0)
-                Utf8ConstructionScope.ChargeWork((ulong)Math.Min(2048, pattern.Length - end - 1));
+                Utf8ConstructionScope.Checkpoint();
             if (pattern[end] == marker && pattern[end + 1] == ']') { offset = end + 1; return true; }
         }
         return false;
@@ -295,7 +295,7 @@ internal static class Pcre2PatternCodeScan
         var end = FindClosingParenthesis(pattern, offset + 2);
         if (end < 0) return false;
         var start = offset + 2;
-        Utf8ConstructionScope.ChargeWork((ulong)(end - start));
+        Utf8ConstructionScope.Checkpoint();
         var colon = pattern.IndexOf(':', start, end - start);
         var length = (colon < 0 ? end : colon) - start;
         if (length != 0 && !IsVerb(pattern, start, length, "MARK") &&
@@ -317,7 +317,7 @@ internal static class Pcre2PatternCodeScan
         for (var offset = start; offset < pattern.Length;)
         {
             var count = Math.Min(2048, pattern.Length - offset);
-            Utf8ConstructionScope.ChargeWork((ulong)count);
+            Utf8ConstructionScope.Checkpoint();
             var end = pattern.IndexOf(')', offset, count);
             if (end >= 0) return end;
             offset += count;

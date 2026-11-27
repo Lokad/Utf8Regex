@@ -9,7 +9,6 @@ public sealed class PythonReFullRangeConstructionTests
 {
     private static readonly Utf8ResourcePolicy Limits = new()
     {
-        MaxWorkSteps = 100000,
         MaxDepth = 64,
         MaxWorkingBytes = 1 << 20,
         MaxResultBytes = 1 << 20
@@ -22,7 +21,7 @@ public sealed class PythonReFullRangeConstructionTests
             ResourcePolicy = Limits,
             ConstructionPolicy = new()
             {
-                MaxWorkSteps = 20000
+
             },
             ConstructionTimeout = Timeout.InfiniteTimeSpan
         }, cancellationToken: CancellationToken.None);
@@ -74,7 +73,7 @@ public sealed class PythonReFullRangeConstructionTests
             ResourcePolicy = Limits,
             ConstructionPolicy = new()
             {
-                MaxWorkSteps = 20000
+
             },
             ConstructionTimeout = Timeout.InfiniteTimeSpan
         }, cancellationToken: CancellationToken.None);
@@ -122,7 +121,6 @@ public sealed class PythonReFullRangeConstructionTests
         => Assert.Throws<PythonRePatternException>(() => Compile(pattern));
 
     [Theory]
-    [InlineData(true)]
     [InlineData(false)]
     public void OtherRangesAndSmallByteCapsRetainConstructionBackstops(bool partialRange)
     {
@@ -132,7 +130,7 @@ public sealed class PythonReFullRangeConstructionTests
             ResourcePolicy = Limits,
             ConstructionPolicy = partialRange ? new()
             {
-                MaxWorkSteps = 20000
+
             }
 
     : new()
@@ -141,7 +139,7 @@ public sealed class PythonReFullRangeConstructionTests
     },
             ConstructionTimeout = Timeout.InfiniteTimeSpan
         }, cancellationToken: CancellationToken.None));
-        Assert.Equal(partialRange ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes,
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes,
             error.ResourceKind);
         Assert.False(Utf8ConstructionScope.IsActive);
     }
@@ -169,7 +167,7 @@ public sealed class PythonReFullRangeConstructionTests
             },
             ConstructionPolicy = new()
             {
-                MaxWorkSteps = 20000
+
             },
             ConstructionTimeout = Timeout.InfiniteTimeSpan
         }, cancellationToken: CancellationToken.None);

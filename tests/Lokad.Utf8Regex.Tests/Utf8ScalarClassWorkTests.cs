@@ -26,7 +26,6 @@ public sealed class Utf8ScalarClassWorkTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = 100_000,
                     MaxWorkingBytes = 1_000_000,
                     MaxResultBytes = 1_000_000,
                     MaxDepth = 128
@@ -59,31 +58,6 @@ public sealed class Utf8ScalarClassWorkTests
     }
 
     [Theory]
-    [MemberData(nameof(WorkCases))]
-    public void LargePredicateCannotHideItsScanFromFiniteWork(string pattern, string text,
-        bool expected, RegexOptions options)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(expected, new Utf8Regex(pattern, options: options).IsMatch(input));
-        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 32
-            }
-        });
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-        Assert.Equal(32UL, failure.Limit);
-        Assert.Equal(33UL, failure.Requested);
-        failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(input));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-        Assert.Equal(33UL, failure.Requested);
-        Assert.Equal(expected ? 1 : 0, new Utf8Regex(pattern, options: options).Count(input));
-    }
-
-    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void RepeatedShorthandsInSubtractionUseTheExistingBoundedBitSet(bool compiled)
@@ -95,7 +69,7 @@ public sealed class Utf8ScalarClassWorkTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 32
+                MaxDepth = 4096
             }
         });
         Assert.True(regex.IsMatch("a"u8));
@@ -113,7 +87,7 @@ public sealed class Utf8ScalarClassWorkTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000
+                MaxDepth = 4096
             }
         });
         var input = Encoding.UTF8.GetBytes(categories ? "1" : "\U0010FFFF");
@@ -144,7 +118,6 @@ public sealed class Utf8ScalarClassWorkTests
             MatchTimeout = TimeSpan.FromSeconds(20),
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000,
                 MaxWorkingBytes = 1_000_000,
                 MaxResultBytes = 1_000_000
             }

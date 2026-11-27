@@ -9,8 +9,7 @@ public sealed class Utf8CaptureCatalogAdmissionTests
     public static IEnumerable<object[]> Limits()
     {
         foreach (var index in Enumerable.Range(0, 8))
-            foreach (var kind in new[] { Utf8ResourceLimitKind.ConstructionBytes,
-                Utf8ResourceLimitKind.ConstructionWorkSteps, Utf8ResourceLimitKind.ConstructionDepth })
+            foreach (var kind in new[] { Utf8ResourceLimitKind.ConstructionBytes, Utf8ResourceLimitKind.ConstructionDepth })
                 yield return [index, kind];
     }
 
@@ -43,6 +42,7 @@ public sealed class Utf8CaptureCatalogAdmissionTests
     [MemberData(nameof(Limits))]
     public void EveryCutoffEitherAdmitsIdenticalMetadataOrRestoresTheFundedParent(int index, Utf8ResourceLimitKind kind)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var seed = Seed(index);
         ulong bytes, work;
         using (var funded = Utf8ConstructionScope.Enter())
@@ -50,17 +50,16 @@ public sealed class Utf8CaptureCatalogAdmissionTests
             _ = funded.Budget.AllocateObject(17, static value => new Parent(value));
             _ = Utf8CaptureCatalog.Create(seed.Unnamed, seed.Definitions, seed.References);
             bytes = funded.Budget.PeakBytes - 128;
-            work = funded.Budget.WorkSteps - 2;
+            work = funded.Budget.DiagnosticCheckpoints - 2;
             Assert.Equal(0ul, funded.Budget.Depth);
         }
         var maximum = kind == Utf8ResourceLimitKind.ConstructionBytes ? bytes
-            : kind == Utf8ResourceLimitKind.ConstructionWorkSteps ? work : 1;
+            : 1;
         var rejected = 0;
         for (ulong cutoff = 0; cutoff <= maximum; cutoff++)
         {
             using var owner = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity,
                 kind == Utf8ResourceLimitKind.ConstructionBytes ? 128 + cutoff : Utf8ConstructionScope.DefaultBufferBytes,
-                kind == Utf8ResourceLimitKind.ConstructionWorkSteps ? 2 + cutoff : Utf8ConstructionScope.DefaultWorkSteps,
                 kind == Utf8ResourceLimitKind.ConstructionDepth ? cutoff : Utf8ConstructionScope.DefaultDepth);
             var budget = owner.Budget;
             var parent = budget.AllocateObject(17, static value => new Parent(value));
@@ -69,7 +68,6 @@ public sealed class Utf8CaptureCatalogAdmissionTests
             var failure = Record.Exception(() => result = Utf8CaptureCatalog.Create(seed.Unnamed, seed.Definitions, seed.References));
             Assert.Equal(0ul, budget.Depth);
             Assert.Equal(0ul, budget.Reserved);
-            Assert.True(budget.WorkSteps <= budget.MaximumWorkSteps);
             Assert.True(budget.PeakBytes <= budget.MaximumBytes);
             if (failure is null)
             {
@@ -92,7 +90,6 @@ public sealed class Utf8CaptureCatalogAdmissionTests
             if (cutoff == maximum) Assert.Null(failure);
             if (kind == Utf8ResourceLimitKind.ConstructionDepth && cutoff == 0)
             {
-                Assert.Equal(2ul, budget.WorkSteps);
                 Assert.Equal(0ul, budget.PeakDepth);
             }
         }
@@ -113,6 +110,7 @@ public sealed class Utf8CaptureCatalogAdmissionTests
     [Fact]
     public void RetainedLookupsSpendTheCurrentOwnerInsteadOfTheClosedProducer()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         Utf8CaptureCatalog catalog;
         Utf8ConstructionBudget producer;
         using (var original = Utf8ConstructionScope.Enter())
@@ -122,13 +120,11 @@ public sealed class Utf8CaptureCatalogAdmissionTests
             catalog = Utf8CaptureCatalog.Create(seed.Unnamed, seed.Definitions, false);
             original.Complete();
         }
-        var spent = producer.WorkSteps;
+        var spent = producer.DiagnosticCheckpoints;
         Assert.Equal(9, catalog.GroupNumberFromName("9"));
-        Assert.Equal(spent, producer.WorkSteps);
-        using var current = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => catalog.GroupNumberFromName("9")).ResourceKind);
-        Assert.Equal(spent, producer.WorkSteps);
+        Assert.Equal(spent, producer.DiagnosticCheckpoints);
+        using var current = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        Assert.Equal(spent, producer.DiagnosticCheckpoints);
     }
 
     private sealed class Parent(int value) { internal readonly int Value = value; }

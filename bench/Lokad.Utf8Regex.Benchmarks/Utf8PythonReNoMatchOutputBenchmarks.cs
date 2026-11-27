@@ -34,7 +34,6 @@ public class Utf8PythonReNoMatchOutputBenchmarks
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 50_000_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 64 << 20,
                 MaxResultBytes = 128 << 20

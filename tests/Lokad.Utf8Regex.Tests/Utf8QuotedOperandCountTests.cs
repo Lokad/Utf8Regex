@@ -63,7 +63,6 @@ public sealed class Utf8QuotedOperandCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 4096,
                 MaxWorkingBytes = 1 << 20
             }
@@ -133,7 +132,6 @@ public sealed class Utf8QuotedOperandCountTests
             MatchTimeout = TimeSpan.FromMilliseconds(50),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10_000_000,
                 MaxDepth = 4096,
                 MaxWorkingBytes = 4 << 20
             }

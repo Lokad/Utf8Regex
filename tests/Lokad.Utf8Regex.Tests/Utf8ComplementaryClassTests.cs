@@ -13,14 +13,12 @@ public sealed class Utf8ComplementaryClassTests
     {
         var construction = new Utf8ConstructionPolicy
         {
-            MaxWorkSteps = 20000,
             MaxDepth = 128,
             MaxInstructionCapacity = 1024,
             MaxBytes = 1 << 20
         };
         var invocation = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 10000,
             MaxDepth = 128,
             MaxWorkingBytes = 1 << 20,
             MaxResultBytes = 1 << 20

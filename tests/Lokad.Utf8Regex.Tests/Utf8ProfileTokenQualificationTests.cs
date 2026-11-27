@@ -99,7 +99,6 @@ public sealed class Utf8ProfileTokenQualificationTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 4096,
                     MaxWorkingBytes = 1 << 20,
                     MaxResultBytes = 1 << 20

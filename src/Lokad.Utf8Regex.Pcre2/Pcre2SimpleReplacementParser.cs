@@ -30,11 +30,11 @@ internal static class Pcre2SimpleReplacementParser
         {
             index += Pcre2ReplacementPreparationControl.FindNextDelimiter(replacement[index..], storage.Budget, (byte)'$', (byte)'$');
             if (index >= replacement.Length - 1) break;
-            storage.Budget.ChargeWork(1);
+            storage.Budget.Checkpoint();
             var next = (char)replacement[index + 1];
             if (next == '0' && index + 2 < replacement.Length)
             {
-                storage.Budget.ChargeWork(1);
+                storage.Budget.Checkpoint();
                 // $01 is group 1, not group 0 followed by a literal 1.
                 if (char.IsAsciiDigit((char)replacement[index + 2])) return false;
             }
@@ -43,7 +43,7 @@ internal static class Pcre2SimpleReplacementParser
             if (next == '{')
             {
                 if (index + 3 >= replacement.Length) return false;
-                storage.Budget.ChargeWork(2);
+                storage.Budget.Checkpoint();
                 if (replacement[index + 2] != '0' || replacement[index + 3] != '}') return false;
                 wholeMatch = true;
                 end = index + 3;

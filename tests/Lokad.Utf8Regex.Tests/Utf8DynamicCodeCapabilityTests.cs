@@ -215,10 +215,10 @@ public sealed class Utf8DynamicCodeCapabilityTests
         Assert.Equal(source.Token,
             Assert.Throws<OperationCanceledException>(() => regex.IsMatch(bytes, source.Token)).CancellationToken);
         using var limited = new Utf8Regex(pattern, RegexOptions.IgnoreCase,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 5 } });
+            new() { ResourcePolicy = new() { MaxDepth = 4096 } });
         Assert.False(limited.Inspection.AvailableOwnedSliceProgram.ObservesProofWork);
         using var controlled = new Utf8Regex(pattern, RegexOptions.IgnoreCase,
-            new() { ConstructionPolicy = new() { MaxWorkSteps = 1_000_000 } });
+            new() { ConstructionPolicy = new() { MaxDepth = 128 } });
         Assert.False(controlled.Inspection.AvailableOwnedSliceProgram.ObservesProofWork);
     }
 
@@ -570,7 +570,7 @@ public sealed class Utf8DynamicCodeCapabilityTests
         using var regex = new Utf8Regex(pattern, options);
         using var controlled = new Utf8Regex(pattern, options, new()
         {
-            ConstructionPolicy = new() { MaxWorkSteps = 128 * 1024 }
+            ConstructionPolicy = new() { MaxDepth = 128 }
         });
         using var source = new CancellationTokenSource();
         var hit = Encoding.UTF8.GetBytes("100-a😀" + new string('x', 57));
@@ -664,7 +664,6 @@ public sealed class Utf8DynamicCodeCapabilityTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 2048,
                     MaxWorkingBytes = 1_048_576,
                     MaxResultBytes = 1_048_576

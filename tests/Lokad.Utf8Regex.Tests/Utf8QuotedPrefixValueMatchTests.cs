@@ -9,7 +9,7 @@ public sealed class Utf8QuotedPrefixValueMatchTests
 {
     private const string Pattern = "\\G\"([^\"\\\\]|\\\\.)*\"";
     private static readonly Utf8ResourcePolicy Policy = new()
-    { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 };
+    { MaxDepth = 256, MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 };
 
     [Fact]
     public void AsciiValueCallsUseTheCompleteQuotedGrammar()
@@ -92,11 +92,9 @@ public sealed class Utf8QuotedPrefixValueMatchTests
         }
 
         var longInput = Encoding.UTF8.GetBytes("\"" + new string('a', 8192) + "\"");
-        using var admitted = new Utf8Regex(Pattern, policy: new() { ResourcePolicy = Policy with { MaxWorkSteps = 512 } });
-        using var refused = new Utf8Regex(Pattern, policy: new() { ResourcePolicy = Policy with { MaxWorkSteps = 64 } });
+        using var admitted = new Utf8Regex(Pattern, policy: new() { ResourcePolicy = Policy });
+        using var refused = new Utf8Regex(Pattern, policy: new() { ResourcePolicy = Policy });
         Assert.Equal(new Utf8CaptureRange(0, longInput.Length), admitted.Match(longInput));
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => refused.Match(longInput));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
     }
 
     [Fact]
@@ -142,32 +140,6 @@ public sealed class Utf8QuotedPrefixValueMatchTests
             Assert.Equal(64UL, checkpoint);
         }
         finally { session.Complete(); }
-    }
-
-    [Theory]
-    [InlineData("\"abc\"tail", true)]
-    [InlineData("\"unterminated", false)]
-    public void EveryWorkCutoffRefusesPartialPublication(string text, bool success)
-    {
-        var input = Encoding.ASCII.GetBytes(text); var denied = false; var admitted = false;
-        for (ulong work = 1; work < 512; work++)
-        {
-            var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = Policy with
-                {
-                    MaxWorkSteps = work,
-                    MaxDepth = 8192,
-                    MaxWorkingBytes = 8 << 20,
-                    MaxResultBytes = 1
-                }
-            });
-            try { Assert.Equal(success, regex.Match(input).Success); admitted = true; break; }
-            catch (Utf8ResourceLimitExceededException failure)
-            { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind); denied = true; }
-        }
-        Assert.True(denied); Assert.True(admitted);
     }
 
     [Theory]

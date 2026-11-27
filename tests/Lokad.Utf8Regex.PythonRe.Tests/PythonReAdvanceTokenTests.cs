@@ -35,6 +35,7 @@ public sealed class PythonReAdvanceTokenTests
     [InlineData(true)]
     public void ActiveAdvanceCancellationInterruptsWorkAndReleasesScratch(bool withCreationToken)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         Utf8PythonRangeMatch cursorRange = default;
         using var creation = new CancellationTokenSource();
         using var operation = new CancellationTokenSource();
@@ -43,7 +44,6 @@ public sealed class PythonReAdvanceTokenTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxWorkingBytes = 4 << 20,
                 MaxResultBytes = 8 << 20
             }
@@ -53,7 +53,7 @@ public sealed class PythonReAdvanceTokenTests
         using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes("z" + new string('a', 262144)), 0,
             withCreationToken ? creation.Token : default, account);
         Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
-        var seed = cursor.WorkingInvocation.Budget.Steps; var entered = false;
+        var seed = cursor.WorkingInvocation.Budget.DiagnosticCheckpoints; var entered = false;
         cursor.WorkingInvocation.CheckpointHook = steps =>
         {
             if (steps > seed + 64) { entered = true; operation.Cancel(); }
@@ -102,7 +102,6 @@ public sealed class PythonReAdvanceTokenTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxWorkingBytes = 4 << 20
             }
         });
@@ -120,6 +119,7 @@ public sealed class PythonReAdvanceTokenTests
     [Fact]
     public void MovingWithDifferentTokensDoesNotResetWorkAdmission()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         Utf8PythonRangeMatch cursorRange = default;
         using var first = new CancellationTokenSource(); using var second = new CancellationTokenSource();
         var policy = new Utf8ResourcePolicy { MaxWorkingBytes = 1 << 20 };
@@ -131,20 +131,14 @@ public sealed class PythonReAdvanceTokenTests
         }).CreateMatchCursor("aa"u8.ToArray()))
         {
             Assert.True(probe.MoveNext(out _, first.Token));
-            Assert.True(probe.MoveNext(out _, second.Token)); secondSteps = probe.WorkingInvocation.Budget.Steps;
+            Assert.True(probe.MoveNext(out _, second.Token)); secondSteps = probe.WorkingInvocation.Budget.DiagnosticCheckpoints;
         }
         using var cursor = new Utf8PythonRegex("(a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = policy with
-            {
-                MaxWorkSteps = secondSteps - 1
-            }
+            ResourcePolicy = policy
         }).CreateMatchCursor("aa"u8.ToArray());
         Assert.True(cursor.MoveNext(out cursorRange, first.Token)); var retained = cursorRange;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _, second.Token));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-        Assert.Equal(secondSteps - 1, failure.Limit); Assert.Equal(secondSteps, failure.Requested);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }
 

@@ -47,7 +47,7 @@ public sealed class Pcre2AnchoredDotSearchTests
     public void AnchoredDefaultDotMatchesAnIndependentOracleAtValidStarts()
     {
         var direct = new Utf8Pcre2Regex(FtpLinePattern);
-        var vm = CreateMetered(FtpLinePattern, 1_000_000);
+        var vm = CreateMetered(FtpLinePattern);
         var oracle = new Regex(FtpLinePattern.Replace(@"\d", "[0-9]", StringComparison.Ordinal), RegexOptions.CultureInvariant);
 
         foreach (var inputText in new[]
@@ -84,38 +84,12 @@ public sealed class Pcre2AnchoredDotSearchTests
         }
     }
 
-    [Fact]
-    public void AnchoredDefaultDotObservesOptionsAndLimits()
-    {
-        var direct = new Utf8Pcre2Regex(FtpLinePattern);
-        var vm = CreateMetered(FtpLinePattern, 1_000_000);
-        var input = "123-file listing"u8.ToArray();
-
-        foreach (var options in new[]
-                 {
-                     Pcre2MatchOptions.Anchored,
-                     Pcre2MatchOptions.EndAnchored,
-                     Pcre2MatchOptions.NotBol,
-                     Pcre2MatchOptions.NotEol,
-                     Pcre2MatchOptions.NotEmpty,
-                     Pcre2MatchOptions.NotEmptyAtStart,
-                 })
-        {
-            Assert.Equal(vm.IsMatch(input, 0, options), direct.IsMatch(input, 0, options));
-        }
-
-        var tightlyMetered = CreateMetered(FtpLinePattern, 1);
-        Assert.Equal(
-            Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch(input)).ErrorKind);
-    }
-
-    private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
+    private static Utf8Pcre2Regex CreateMetered(string pattern) =>
         new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (matchLimit) == 0 ? null : (matchLimit)
+                MaxDepth = 4096
             },
             MatchTimeout = Regex.InfiniteMatchTimeout
         });

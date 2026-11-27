@@ -48,7 +48,7 @@ internal sealed class Pcre2BacktrackingParser
         if (_references is null) return;
         foreach (var (target, subroutine) in _references)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             var slot = target.Name.Length != 0 && nameSlots.TryGetValue(target.Name, out var slots)
                 ? slots[0] : target.Kind == Pcre2BackreferenceTargetKind.Named
                     ? -1 : Pcre2BacktrackingAnalysis.ResolveReferenceSlot(target);
@@ -96,7 +96,7 @@ internal sealed class Pcre2BacktrackingParser
             }
 
             alternatives.Add(sequence);
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             SkipExtendedTrivia();
             if (_offset >= _pattern.Length || _pattern[_offset] != '|')
             {
@@ -116,7 +116,7 @@ internal sealed class Pcre2BacktrackingParser
         var children = new List<IPcre2BacktrackingNode>();
         while (true)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             SkipExtendedTrivia();
             if (_offset >= _pattern.Length || _pattern[_offset] == '|' ||
                 expectClosingParenthesis && _pattern[_offset] == ')')
@@ -522,7 +522,7 @@ internal sealed class Pcre2BacktrackingParser
                 break;
             }
 
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             var literalStart = _offset;
             if (_pattern.DecodeScalar(_offset, out var literal, out var length) != OperationStatus.Done)
             {
@@ -1284,7 +1284,7 @@ internal sealed class Pcre2BacktrackingParser
     {
         // Admit this duplicate-name scan as a block, rather than charging each
         // helper object or equality probe. Names have the profile's length cap.
-        Utf8ConstructionScope.ChargeWork((ulong)_nameEntries.Count + (ulong)name.Length);
+        Utf8ConstructionScope.Checkpoint();
         if (_captureSlotNames.TryGetValue(slot, out var existingSlotName) &&
             !string.Equals(existingSlotName, name, StringComparison.Ordinal))
         {
@@ -1296,7 +1296,7 @@ internal sealed class Pcre2BacktrackingParser
         var scanned = 0;
         foreach (var entry in _nameEntries)
         {
-            if ((scanned++ & 63) == 0) Utf8ConstructionScope.ChargeWork(0);
+            if ((scanned++ & 63) == 0) Utf8ConstructionScope.Checkpoint();
             if (!string.Equals(entry.Name, name, StringComparison.Ordinal))
             {
                 continue;
@@ -1570,7 +1570,7 @@ internal sealed class Pcre2BacktrackingParser
     {
         while (_offset < _pattern.Length)
         {
-            if ((_offset & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
+            if ((_offset & 2047) == 0) Utf8ConstructionScope.Checkpoint();
             if (Pcre2CompileValidator.TrySkipParenthesizedComment(_pattern, ref _offset))
             {
                 continue;

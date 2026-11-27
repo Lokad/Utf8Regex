@@ -11,8 +11,8 @@ public sealed class Pcre2ResultControlTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_budget")]
     private static extern ref Pcre2ResourceBudget CursorBudget(ref Pcre2BacktrackingDetailedGlobalMatchCursor cursor);
 
-    private static Pcre2ResourceBudget Budget(ulong bytes, uint steps = 0) => new(
-        new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = bytes, MatchLimit = steps },
+    private static Pcre2ResourceBudget Budget(ulong bytes) => new(
+        new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = bytes },
         Timeout.InfiniteTimeSpan, collectDiagnostics: true);
 
     [Theory]
@@ -60,42 +60,6 @@ public sealed class Pcre2ResultControlTests
     }
 
     [Theory]
-    [InlineData(9)]
-    [InlineData(33)]
-    public void EveryProjectionWorkCutoffRestoresParentWithoutRefundingWork(int slots)
-    {
-        var subject = Encoding.UTF8.GetBytes(new string('é', 8192));
-        var starts = Enumerable.Range(0, slots).Select(i => i * 2).ToArray();
-        var ends = Enumerable.Repeat(subject.Length, slots).ToArray();
-        var completed = false;
-        for (uint limit = 1; limit <= 4096; limit++)
-        {
-            var budget = Budget(1UL << 20, limit);
-            budget.ReserveWorking(7);
-            ReadOnlySpan<byte> input = subject;
-            try
-            {
-                try
-                {
-                    var groups = Pcre2Runner.PublishCaptures(slots, 0, subject.Length, new(starts, ends), input, ref budget);
-                    Pcre2BacktrackingCaptureResult.FromProjectedGroups(groups).DetachProjectedWorking(ref budget);
-                    completed = true;
-                }
-                catch (Pcre2MatchException failure)
-                {
-                    Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
-                    try { budget.ChargeCandidate(); Assert.Fail("Work must stay spent."); }
-                    catch (Pcre2MatchException exhausted) { Assert.Equal(Pcre2ErrorKind.MatchLimit, exhausted.ErrorKind); }
-                }
-                Assert.Equal(7UL, budget.ReservedWorkingBytes);
-            }
-            finally { budget.ReleaseWorking(7); }
-            if (completed) break;
-        }
-        Assert.True(completed);
-    }
-
-    [Theory]
     [InlineData("(*MARK:tag)(?=(a))a", "a", true)]
     [InlineData("(*MARK:tag)(?!(a))a", "a", false)]
     [InlineData("(*MARK:tag)(?(?=(a))a|b)", "a", true)]
@@ -113,38 +77,6 @@ public sealed class Pcre2ResultControlTests
         Assert.Equal(expected, match.Success);
         Assert.Equal(7UL, budget.ReservedWorkingBytes);
         budget.ReleaseWorking(7);
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(130)]
-    public void EveryAssertionMergeWorkCutoffUnwindsResultAndVmLoans(int unusedCaptures)
-    {
-        var alternatives = string.Concat(Enumerable.Repeat("|(b)", unusedCaptures));
-        var regex = new Utf8Pcre2Regex("(*MARK:tag)(?=(a)" + alternatives + ")a");
-        var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
-        var completed = false;
-        for (uint limit = 1; limit <= 4096; limit++)
-        {
-            var budget = Budget(1UL << 20, limit);
-            budget.ReserveWorking(7);
-            ReadOnlySpan<byte> input = "a"u8;
-            try
-            {
-                try
-                {
-                    var match = Pcre2BacktrackingRunner.Match(direct.Program, regex.DebugCompiledProgram.CandidateSearch,
-                        input, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget);
-                    Assert.True(match.Success);
-                    completed = true;
-                }
-                catch (Pcre2MatchException failure) { Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind); }
-                Assert.Equal(7UL, budget.ReservedWorkingBytes);
-            }
-            finally { budget.ReleaseWorking(7); }
-            if (completed) break;
-        }
-        Assert.True(completed);
     }
 
     [Fact]

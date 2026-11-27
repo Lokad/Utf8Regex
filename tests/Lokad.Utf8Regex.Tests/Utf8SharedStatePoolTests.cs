@@ -333,7 +333,7 @@ public sealed class Utf8SharedStatePoolTests
     [InlineData(454, false)] [InlineData(455, true)]
     public void GrowthAdmitsBothFullExtentsAndPreservesBorrowedLoans(ulong maximum, bool allow)
     {
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, maximum), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, maximum), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(invocation.Ledger.TryReserve(7));
         var buffer = new Utf8InvocationStateBuffer<long>();
         try

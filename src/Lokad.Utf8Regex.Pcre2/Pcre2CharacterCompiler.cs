@@ -274,7 +274,7 @@ internal static class Pcre2CharacterCompiler
         out int patternLength)
     {
         using var construction = Utf8ConstructionScope.Enter();
-        construction.Budget.ChargeWork(1);
+        construction.Budget.Checkpoint();
         using var parser = new Pcre2CharacterParser(request, patternOffset, options);
         if (!parser.TryParseOne(out token, out patternLength)) return false;
         construction.Complete();
@@ -286,12 +286,12 @@ internal static class Pcre2CharacterCompiler
     // does not set HASCRORLF there. Predicates such as \s do not set it either.
     internal static bool HasExplicitCrOrLf(Pcre2CharacterToken token)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         if (token.Kind == Pcre2CharacterTokenKind.Literal) return token.Literal.Value is '\r' or '\n';
         if (token.Kind != Pcre2CharacterTokenKind.CharacterClass || IsNegatedSingleton(token.CharacterClass)) return false;
         foreach (var term in token.CharacterClass.Terms)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (term.Kind == Pcre2CharacterClassTermKind.Range &&
                 (term.Range.Low is '\r' or '\n' || term.Range.High is '\r' or '\n')) return true;
         }
@@ -839,13 +839,13 @@ internal sealed class Pcre2CharacterParser : IDisposable
     private Pcre2CharacterClass CreateClass(Utf8ConstructionBuffer<Pcre2CharacterClassTerm> terms, bool negated)
     {
         var positiveTerms = terms.Take();
-        _budget.ChargeWork(checked((ulong)positiveTerms.Length * 256));
+        _budget.Checkpoint();
         var ucp = (_request.Options & Pcre2CompileOptions.Ucp) != 0;
         var semanticClass = new Pcre2CharacterClass(positiveTerms, negated, AsciiCharClass.Empty);
         var ascii = AsciiCharClass.FromPredicate(
             value =>
             {
-                _budget.ChargeWork(0);
+                _budget.Checkpoint();
                 return semanticClass.MatchesSemantic(new Rune(value), ucp, Pcre2CharacterOptions.None);
             });
         return new Pcre2CharacterClass(positiveTerms, negated, ascii);
@@ -1057,7 +1057,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
         var value = 0;
         for (var index = 0; index < length; index++)
         {
-            if ((index & 2047) == 0) Utf8ConstructionScope.ChargeWork((ulong)Math.Min(2048, length - index));
+            if ((index & 2047) == 0) Utf8ConstructionScope.Checkpoint();
             var ch = _pattern[start + index];
             var digit = ch switch
             {
@@ -1101,7 +1101,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
     private void Checkpoint(int position)
     {
         if (position < _nextCheckpoint) return;
-        _budget.ChargeWork(0);
+        _budget.Checkpoint();
         _nextCheckpoint = position + 2048;
     }
 
@@ -1111,7 +1111,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
         {
             var count = Math.Min(2048, _pattern.Length - cursor);
             var available = Math.Min(_pattern.Length - cursor, count + delimiter.Length - 1);
-            _budget.ChargeWork((ulong)available);
+            _budget.Checkpoint();
             var limit = cursor + available - delimiter.Length;
             for (var candidate = cursor; candidate <= limit; candidate++)
             {
@@ -1298,7 +1298,7 @@ internal static class Pcre2CharacterRunner
 
         if ((request.Options & Pcre2CompileOptions.FirstLine) == 0 &&
             leadingAsciiByte is { } leading &&
-            candidate < input.Length && !budget.RequiresCandidateMetering)
+            candidate < input.Length && !budget.HasDeadline)
         {
             var start = candidate + 1;
             var blockLength = input.Length - start;
@@ -1315,7 +1315,7 @@ internal static class Pcre2CharacterRunner
                     return true;
                 }
                 start += count;
-                if (start < input.Length) budget.ChargeWorkspaceStep();
+                if (start < input.Length) budget.CheckWorkspace();
             }
 
             next = 0;
@@ -1346,7 +1346,7 @@ internal static class Pcre2GraphemeClusterSemantics
     internal static bool TryGetWidth(ReadOnlySpan<byte> input, int offset, ref Pcre2ResourceBudget budget, out int width)
     {
         var controlled = !budget.IsUnmetered;
-        if (controlled) budget.ChargeWorkspaceStep();
+        if (controlled) budget.CheckWorkspace();
         if (!Pcre2CharacterSemantics.TryDecodeScalar(input, offset, out var previous, out var previousWidth))
         {
             width = 0;
@@ -1368,7 +1368,7 @@ internal static class Pcre2GraphemeClusterSemantics
         {
             if (controlled && --remaining == 0)
             {
-                budget.ChargeWorkspaceStep();
+                budget.CheckWorkspace();
                 remaining = 256;
             }
             var nextProperties = Pcre2GraphemeData.GetProperties(next.Value);
@@ -1674,7 +1674,7 @@ internal static class Pcre2CharacterSemantics
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        budget.ChargeWork((ulong)value.Length);
+        budget.Checkpoint();
         var storage = value.Length <= 128 ? null : budget.AllocateArray<char>(value.Length, false);
         try
         {
@@ -1682,7 +1682,7 @@ internal static class Pcre2CharacterSemantics
             var length = 0;
             for (var index = 0; index < value.Length; index++)
             {
-                if ((index & 2047) == 0) budget.ChargeWork(0);
+                if ((index & 2047) == 0) budget.Checkpoint();
                 var character = value[index];
                 if (character is '_' or '-' or ' ' or '\t' or '\n' or '\v' or '\f' or '\r') continue;
                 normalized[length++] = char.ToUpperInvariant(character);

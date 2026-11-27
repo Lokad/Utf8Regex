@@ -8,32 +8,6 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2ProfileResourceTests
 {
-    [Theory]
-    [InlineData(@"\x{41}+", "AAA")]
-    [InlineData(@"\p{L}+", "αβ")]
-    [InlineData("(?<a>x)(?<b>y)", "xy")]
-    public void PrimaryAndSnapshotMatchingEnforceProfileWork(string pattern, string text)
-    {
-        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input)).ErrorKind);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.Match(input)).ErrorKind);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        {
-            ReadOnlyMemory<byte> result1Input = input;
-            using var result1Cursor = regex.CreateMatchCursor(result1Input);
-            result1Cursor.MoveNext(out var result1Result);
-            result1Cursor.Dispose();
-            _ = result1Result;
-        }).ErrorKind);
-    }
 
     [Fact]
     public void CapturedExecutionFramesEnforceDepthBeforeAcquisition()
@@ -130,7 +104,6 @@ public sealed class Pcre2ProfileResourceTests
     }
 
     [Theory]
-    [InlineData(false)]
     [InlineData(true)]
     public void TemplateDiscoveryReplayAndOutputHaveOneFiniteAllowance(bool heap)
     {
@@ -140,14 +113,13 @@ public sealed class Pcre2ProfileResourceTests
             {
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = (heap ? 0 : (uint)cap) == 0 ? null : (heap ? 0 : (uint)cap),
                     MaxWorkingBytes = (heap ? cap : 0) == 0 ? null : (heap ? cap : 0)
                 },
                 MatchTimeout = Timeout.InfiniteTimeSpan
             });
             return System.Text.Encoding.UTF8.GetString(regex.Replace("A😀éA😀"u8, "${v}:😀"u8));
         }
-        var kind = heap ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.MatchLimit;
+        var kind = Pcre2ErrorKind.HeapLimit;
         const string expected = "A:😀éA:😀";
         Assert.Equal(expected, Invoke(1UL << 20));
         ulong first = 1, last = 1UL << 20;
@@ -161,37 +133,6 @@ public sealed class Pcre2ProfileResourceTests
         Assert.Equal(expected, Invoke(first));
         Assert.Equal(kind, Assert.Throws<Pcre2MatchException>(() => Invoke(first - 1)).ErrorKind);
         Assert.Equal(expected, Invoke(first));
-    }
-
-    [Fact]
-    public void CopiedCursorKeepsIndependentPositionAndSharedStickyAllowance()
-    {
-        var regex = new Utf8Pcre2Regex(@"\x{41}", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 16
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var cursor = regex.EnumerateMatches("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"u8);
-        Assert.True(cursor.MoveNext());
-        var retained = cursor.Current;
-        var alias = cursor;
-        Assert.True(cursor.MoveNext());
-        Assert.Equal(0, alias.Current.StartOffsetInBytes);
-        Assert.True(alias.MoveNext());
-        Assert.Equal(cursor.Current.StartOffsetInBytes, alias.Current.StartOffsetInBytes);
-        Pcre2MatchException? failure = null;
-        try { while (cursor.MoveNext()) { } }
-        catch (Pcre2MatchException error) { failure = error; }
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        failure = null;
-        try { _ = alias.MoveNext(); }
-        catch (Pcre2MatchException error) { failure = error; }
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        Assert.Equal("A", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
-        Assert.True(regex.Match("A"u8).Success);
     }
 
     [Theory]
@@ -225,22 +166,15 @@ public sealed class Pcre2ProfileResourceTests
     [Fact]
     public void ExtendedNativeTemplatesRetainGrammarAndFiniteControls()
     {
-        const string template = @"\Ué\E$0";
-        Assert.Equal("Éx", System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("x").Replace("x"u8, "\\Ué\\E$0"u8, 0, Pcre2SubstitutionOptions.Extended)));
-        foreach (var heap in new[] { false, true })
+        Assert.Equal("Éx", System.Text.Encoding.UTF8.GetString(
+            new Utf8Pcre2Regex("x").Replace("x"u8, "\\Ué\\E$0"u8, 0, Pcre2SubstitutionOptions.Extended)));
+        var limited = new Utf8Pcre2Regex("x", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
-            var limited = new Utf8Pcre2Regex("x", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-            {
-                ResourcePolicy = new Utf8ResourcePolicy
-                {
-                    MaxWorkSteps = (heap ? 0u : 1u) == 0 ? null : (heap ? 0u : 1u),
-                    MaxWorkingBytes = (heap ? 1UL : 0UL) == 0 ? null : (heap ? 1UL : 0UL)
-                },
-                MatchTimeout = Timeout.InfiniteTimeSpan
-            });
-            Assert.Equal(heap ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.MatchLimit,
-                Assert.Throws<Pcre2MatchException>(() => System.Text.Encoding.UTF8.GetString(limited.Replace("x"u8, "\\Ué\\E$0"u8, 0, Pcre2SubstitutionOptions.Extended))).ErrorKind);
-        }
+            ResourcePolicy = new Utf8ResourcePolicy { MaxWorkingBytes = 1 },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
+        Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
+            limited.Replace("x"u8, "\\Ué\\E$0"u8, 0, Pcre2SubstitutionOptions.Extended)).ErrorKind);
     }
 
     [Fact]

@@ -54,7 +54,6 @@ public sealed class PythonReConditionalNameAdmissionTests
         {
             var policy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000

@@ -97,7 +97,7 @@ internal static partial class Utf8SliceRunner
     private static Utf8ExecutionLimitKind ScreenFirstExactFamilyFollower(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, byte[][] prefixes, ref int position, ref Utf8SliceInvocation invocation)
     {
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         // A Boolean search can finish immediately at a plausible first byte.
         // Keep its forward search before inspecting any later follower.
@@ -141,7 +141,7 @@ internal static partial class Utf8SliceRunner
             var breach = TrySeekLeadingByte(input, ref suffix, follower[0], follower[0], false, ref invocation, follower);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             if (suffix < 0) { position = -1; return Utf8ExecutionLimitKind.None; }
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
 
             // A bare prefix ends outside whitespace. Any such match must
@@ -206,7 +206,7 @@ internal static partial class Utf8SliceRunner
         var index = 0;
         while (index < code.Length && index < 64)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (!PrecedesRequiredScalar(code[index])) break;
             index++;
         }
@@ -231,7 +231,7 @@ internal static partial class Utf8SliceRunner
         index++;
         while (index < code.Length && index < 64)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (!PrecedesRequiredScalar(code[index])) break;
             index++;
         }
@@ -256,7 +256,7 @@ internal static partial class Utf8SliceRunner
         var first = byte.MaxValue;
         for (var index = 0; index < ranges.Length; index += 2)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var low = ranges[index];
             var high = ranges[index + 1] - 1;
             if (low < 128 || !Rune.IsValid(low) || !Rune.IsValid(high)) return -1;
@@ -282,7 +282,7 @@ internal static partial class Utf8SliceRunner
         onlyEndpoints = false;
         while ((uint)index < (uint)code.Length && remaining > 0)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             --remaining;
             var entry = code[index];
             if (PrecedesRequiredScalar(entry)) { index++; continue; }
@@ -333,7 +333,7 @@ internal static partial class Utf8SliceRunner
         onlyEndpoints = first >= 0 && last - first <= 1;
         if (first >= 0 || atom is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }) return first;
 
-        budget.ChargeWork(1);
+        budget.Checkpoint();
         if (!program.TryGetUnfoldedAsciiSet(atom, out var set, out _) || !set.HasValue) return -1;
         onlyEndpoints = BitOperations.PopCount(set.Low) + BitOperations.PopCount(set.High) == 2;
         // The exact mask still decides whether a candidate in this interval matches.
@@ -485,7 +485,7 @@ internal static partial class Utf8SliceRunner
         var overlap = exactPrefix.IsEmpty ? 0 : exactPrefix.Length - 1;
         while (position < input.Length - overlap)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var length = Math.Min(2048, input.Length - position);
             var block = input.Slice(position, length);
@@ -506,7 +506,7 @@ internal static partial class Utf8SliceRunner
         {
             if (metered)
             {
-                var breach = invocation.TryChargeInputStep();
+                var breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
             }
             var end = metered ? position + Math.Min(2048, input.Length - position) : input.Length;
@@ -525,7 +525,7 @@ internal static partial class Utf8SliceRunner
                 {
                     // The current search step already covers checking its
                     // candidate. Charge again only before continuing.
-                    var breach = invocation.TryChargeStep();
+                    var breach = invocation.CheckProgress();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                 }
             }
@@ -708,7 +708,7 @@ internal static partial class Utf8SliceRunner
                 { Kind: Utf8SliceInstructionKind.Set, C: 0 } or { Kind: Utf8SliceInstructionKind.Shorthand } &&
             program.TryGetUnfoldedAsciiSet(code[leadingClass], out var repeated, out var asciiOnly) && asciiOnly)
         {
-            budget.ChargeWork((ulong)(code.Length - literalIndex));
+            budget.Checkpoint();
             foreach (var literalInstruction in code.AsSpan(literalIndex, literalLength))
                 if (literalInstruction is not { Kind: Utf8SliceInstructionKind.Literal, A: >= 0 and < 128, B: 0 } ||
                     !repeated.Contains((byte)literalInstruction.A))
@@ -731,7 +731,7 @@ internal static partial class Utf8SliceRunner
         var requiredRun = code[leadingClass - 1] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 };
         if (program.ReadsCaptures && (!capturesLeadingRun || !requiredRun)) return default;
 
-        budget.ChargeWork(1);
+        budget.Checkpoint();
         ref readonly var atom = ref code[leadingClass];
         // These masks include the ASCII members of unfolded shorthands.
         // Category tables and folded classes retain their invocation path.
@@ -754,7 +754,7 @@ internal static partial class Utf8SliceRunner
         var index = literalIndex + 1;
         for (; index < code.Length && index - literalIndex < 64; index++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (code[index] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 })
                 break;
         }
@@ -769,7 +769,7 @@ internal static partial class Utf8SliceRunner
                 : default;
         }
 
-        budget.ChargeWork(12);
+        budget.Checkpoint();
         var (first, second) = GetRequiredHybridSuffix(code, index);
         // A value-only call can also skip the capture markers around the
         // proved run. The initial guard excludes programs that read them.
@@ -778,11 +778,11 @@ internal static partial class Utf8SliceRunner
         var canAccept = false;
         if (canReuse && !capturesLeadingRun && second != 0 && second == first + 2 && code[second - 1].RepeatMinimum == 1)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             canAccept = code[second + 2].RepeatExitAcceptsEmptyTail;
             if (!canAccept)
             {
-                budget.ChargeWork((ulong)Math.Min(code.Length - second - 3, 32));
+                budget.Checkpoint();
                 canAccept = CanAcceptEmptyTail(code, second + 3);
             }
         }
@@ -790,7 +790,7 @@ internal static partial class Utf8SliceRunner
         if (canReuse && excludes == true && capturesLeadingRun && program.HasSingleCapturePerGroup &&
             program.GroupCount == 2 && code.Length - index == 7)
         {
-            budget.ChargeWork(7);
+            budget.Checkpoint();
             // The full delimiter leaves exactly one capture around a greedy class
             // repeat. Accept observes only its maximal extent and both captures.
             if (code[index] is { Kind: Utf8SliceInstructionKind.CaptureStart, A: var slot } &&
@@ -802,7 +802,7 @@ internal static partial class Utf8SliceRunner
         else if (canReuse && excludes == true && capturesLeadingRun && program.HasSingleCapturePerGroup &&
             program.GroupCount == 3 && code.Length - index == 14)
         {
-            budget.ChargeWork(14);
+            budget.Checkpoint();
             if (code.AsSpan(index) is
                 [
                     { Kind: Utf8SliceInstructionKind.CaptureStart, A: var openingSlot },
@@ -819,7 +819,7 @@ internal static partial class Utf8SliceRunner
         }
         else if (canReuse && !capturesLeadingRun && excludes == true && code.Length - index == 10)
         {
-            budget.ChargeWork(10);
+            budget.Checkpoint();
             if (code.AsSpan(index) is
             [
                 { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1, RepeatMaximum: long.MaxValue, HasSingleAtomBody: true },
@@ -855,7 +855,7 @@ internal static partial class Utf8SliceRunner
             if (firstEnd < 0 || seekBreach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, seekBreach);
         }
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.CheckInput();
         invocation.Budget.ThrowIfCancellationRequested();
         if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, breach);
 
@@ -881,7 +881,7 @@ internal static partial class Utf8SliceRunner
         Utf8ConstructionBudget budget)
     {
         if (program.IsNonBacktracking || program.IgnoreCase || needle.Length is < 1 or > 64) return default;
-        budget.ChargeWork(1);
+        budget.Checkpoint();
         var proof = program.LeadingClassWindowProof;
         var alignedWindow = proof is { CanReusePrefix: true, ExcludesDelimiter: true } &&
             needle.Length == proof.LiteralLength;
@@ -894,7 +894,7 @@ internal static partial class Utf8SliceRunner
             // markers for the suffix shape; the verifier still meters them.
             var code = program.Instructions;
             var visits = Math.Clamp(code.Length - continuation, 0, Utf8SliceInstruction.LeadingCaptureMarkerLimit);
-            budget.ChargeWork((ulong)visits);
+            budget.Checkpoint();
             if (!CanProveRepeatPrefix(program, Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, continuation))) return default;
         }
         else if (!alignedWindow)
@@ -911,7 +911,7 @@ internal static partial class Utf8SliceRunner
                     optionalRun = requiredRun;
             }
         }
-        budget.ChargeWork((ulong)needle.Length);
+        budget.Checkpoint();
         return LiteralStartsAtInstruction(program, literal, needle) ? (continuation, optionalRun) : default;
     }
 
@@ -923,7 +923,7 @@ internal static partial class Utf8SliceRunner
         var length = code.Length - suffixStart - 1;
         if (length is < 1 or > 16 || program.GroupCount != 0 || code[^1].Kind != Utf8SliceInstructionKind.Accept)
             return null;
-        budget.ChargeWork((ulong)(length * 2 + 3));
+        budget.Checkpoint();
         if (code[index] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0,
                 RepeatMaximum: long.MaxValue, HasSingleAtomBody: true } repeat ||
             repeat.A != suffixStart - 1 || !code[repeat.A].RepeatExitRejectsShorterEndpoints)
@@ -948,7 +948,7 @@ internal static partial class Utf8SliceRunner
 
         for (var next = optional.A + 1; next < code.Length && next - optional.A <= 8; next++)
         {
-            budget?.ChargeWork(1);
+            budget?.Checkpoint();
             var entry = code[next];
             if (entry is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }) continue;
             return entry is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 } &&
@@ -1075,7 +1075,7 @@ internal static partial class Utf8SliceRunner
                 return false;
             }
             // The tail proof can examine only its fixed bounded window.
-            var breach = invocation.TryChargeBoundedCheck();
+            var breach = invocation.CheckBoundedProgress();
             if (breach != Utf8ExecutionLimitKind.None)
             {
                 outcome = new(false, -1, -1, breach);
@@ -1090,7 +1090,7 @@ internal static partial class Utf8SliceRunner
                     invocation.Budget.CheckDeadline();
                     return false;
                 }
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 invocation.Budget.ThrowIfCancellationRequested();
                 outcome = breach == Utf8ExecutionLimitKind.None
                     ? new(true, position, end, breach) : new(false, -1, -1, breach);
@@ -1098,7 +1098,7 @@ internal static partial class Utf8SliceRunner
             }
             position++;
         }
-        outcome = new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+        outcome = new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
         invocation.Budget.ThrowIfCancellationRequested();
         return true;
     }
@@ -1109,7 +1109,7 @@ internal static partial class Utf8SliceRunner
         if (program.LeadingClassDelimiter is not { LeadingClass: >= 0, Literal: < 0, LiteralIndex: >= 0 and var index } ||
             search.ExactMultiLiterals is not { Length: >= 2 and <= 8 } literals ||
             program.Instructions[index].Kind != Utf8SliceInstructionKind.Fork) return false;
-        budget.ChargeWork(1);
+        budget.Checkpoint();
         foreach (var literal in literals)
             if (literal.Length is 0 or > 64) return false;
 
@@ -1149,7 +1149,7 @@ internal static partial class Utf8SliceRunner
             return Utf8ExecutionLimitKind.None;
 
         var prefix = program.LeadingClassDelimiter;
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
 
         var floor = position;
@@ -1222,7 +1222,7 @@ internal static partial class Utf8SliceRunner
             !HasOrderedClassFamilyPrefix(program, candidatePlan))
             return Utf8ExecutionLimitKind.None;
 
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
 
         breach = TryProveOrderedClassFamily(program, input, floor, screenedLiteral, ref invocation, out _, out var end, out _, out _);
@@ -1321,14 +1321,14 @@ internal static partial class Utf8SliceRunner
             proveMatch: true, BranchedPrefixInstructionLimit - prefix.LiteralIndex);
         if (acceptedEnd < 0) return Utf8ExecutionLimitKind.None;
         provedPrefix = (space, firstEnd, position);
-        return invocation.TryChargeInputStep();
+        return invocation.CheckInput();
     }
 
     internal static (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd, bool Terminal)
         PrepareRepeatPrefix(Utf8SliceProgram program, ReadOnlySpan<byte> needle, Utf8ConstructionBudget budget)
     {
         var code = program.Instructions.AsSpan();
-        budget.ChargeWork((ulong)(Math.Min(code.Length, 64) + needle.Length));
+        budget.Checkpoint();
         ulong low = 0, high = 0;
         var last = default(Utf8SearchAsciiSet);
         var previousCategories = 0u;
@@ -1387,7 +1387,7 @@ internal static partial class Utf8SliceRunner
         singleAttempt = false;
         if (program.LeadingClassWindowProof.ExcludesDelimiter is { } excluded)
         {
-            var admission = invocation.TryChargeStep();
+            var admission = invocation.CheckProgress();
             singleAttempt = admission == Utf8ExecutionLimitKind.None && excluded;
             return admission;
         }
@@ -1398,7 +1398,7 @@ internal static partial class Utf8SliceRunner
         // An excluded delimiter fixes the suffix entry for every start in the
         // run. When matching cannot read captures, later starts have the
         // same suffix decisions and fewer scalars available for the minimum.
-        var breach = invocation.TryChargeStep();
+        var breach = invocation.CheckProgress();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         breach = TryMatchScalarClass(program, program.Instructions[leadingClass], new Rune(delimiter),
             ref invocation, out var includesDelimiter);
@@ -1417,7 +1417,7 @@ internal static partial class Utf8SliceRunner
             code[leadingClass - 1].RepeatMaximum == long.MaxValue)
         {
             position = floor;
-            return invocation.TryChargeInputStep();
+            return invocation.CheckInput();
         }
         if (directClassLiteral && code[leadingClass - 1].RepeatMaximum == long.MaxValue &&
             (code[leadingClass - 1].RepeatMinimum == 1 || code[leadingClass].Kind == Utf8SliceInstructionKind.Dot) &&
@@ -1428,7 +1428,7 @@ internal static partial class Utf8SliceRunner
             // Keep literal discovery and VM verification: this is only a window.
             while (position > floor)
             {
-                var breach = invocation.TryChargeInputStep();
+                var breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var length = Math.Min(2048, position - floor);
                 var start = position - length;
@@ -1437,14 +1437,14 @@ internal static partial class Utf8SliceRunner
                 if (stop >= 0) { position = start + stop + 1; break; }
                 position = start;
             }
-            return invocation.TryChargeInputStep();
+            return invocation.CheckInput();
         }
         // Move by scalar count, not bytes. If this lands inside a valid prefix,
         // it lies in its class/whitespace runs; their conservative rewind then
         // covers the earliest start. Landing before the prefix only adds starts.
         for (long remaining = gapMaximum; remaining > 0 && position > floor; remaining--)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             // This gap needs only scalar width. Membership reads below still
             // decode values.
@@ -1456,7 +1456,7 @@ internal static partial class Utf8SliceRunner
         // class predicate below already includes any whitespace it can consume.
         while (!directClassLiteral && position > floor)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             // Admit a bounded block and finish any scalar crossing its edge.
             var blockFloor = Math.Max(floor, position - 64);
@@ -1478,7 +1478,7 @@ internal static partial class Utf8SliceRunner
                     !Utf8AsciiBytePredicates.IsDigit(delimiter) &&
                     FindShortAsciiDecimalStart(input, floor, windowEnd, (int)classMaximum) is >= 0 and var asciiStart)
                 {
-                    var breach = invocation.TryChargeInputStep();
+                    var breach = invocation.CheckInput();
                     if (breach == Utf8ExecutionLimitKind.None)
                         position = asciiStart < windowEnd ? asciiStart : windowEnd + 1;
                     return breach;
@@ -1499,7 +1499,7 @@ internal static partial class Utf8SliceRunner
         {
             for (var remaining = classMaximum; remaining > 0 && position > floor; remaining--)
             {
-                var breach = invocation.TryChargeInputStep();
+                var breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 if (hasAsciiMask && input[position - 1] < 128)
                 {
@@ -1535,7 +1535,7 @@ internal static partial class Utf8SliceRunner
         {
             while (position <= windowEnd)
             {
-                var breach = invocation.TryChargeInputStep();
+                var breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 if (!TryReadScalar(input, position, false, out var scalar, out var width)) break;
                 breach = TryMatchScalarClass(program, code[leadingClass], scalar, ref invocation, out var hit);
@@ -1554,7 +1554,7 @@ internal static partial class Utf8SliceRunner
         {
             // One charge admits 64 bytes and enough lookbehind to finish the
             // last scalar. Decoding never crosses the actual search floor.
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var blockFloor = Math.Max(floor, position - 64);
             var edge = position;
@@ -1632,7 +1632,7 @@ internal static partial class Utf8SliceRunner
             windowEnd = verifiedNextDelimiter;
             if (!invocation.IsUnmetered || invocation.CheckpointHook is not null)
             {
-                var searchBreach = invocation.TryChargeInputStep();
+                var searchBreach = invocation.CheckInput();
                 if (searchBreach != Utf8ExecutionLimitKind.None) return searchBreach;
             }
         }
@@ -1665,7 +1665,7 @@ internal static partial class Utf8SliceRunner
                 ref position, ref invocation);
 
         // A reused delimiter already has its decimal run classified.
-        var rewindBreach = invocation.TryChargeInputStep();
+        var rewindBreach = invocation.CheckInput();
         if (rewindBreach == Utf8ExecutionLimitKind.None)
             position = reuseDelimiter ? Math.Max(floor, windowEnd - (int)program.Instructions[1].RepeatMaximum) : asciiStart;
         return rewindBreach;
@@ -1699,7 +1699,7 @@ internal static partial class Utf8SliceRunner
                 out var windowEnd, nextDelimiter, verifyFollowingWindow: true, out var followingEnd);
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
             if (position < 0)
-                return new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                return new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
             nextDelimiter = -1;
             if (position >= windowEnd)
             {
@@ -1707,7 +1707,7 @@ internal static partial class Utf8SliceRunner
                 continue;
             }
 
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
             invocation.Budget.ThrowIfCancellationRequested();
             // Rewind proved a decimal scalar at the start. Its right side
@@ -1747,7 +1747,7 @@ internal static partial class Utf8SliceRunner
 
             var outcome = provedEnd >= 0
                 ? new Utf8SliceMatchOutcome(true, provedEnd,
-                    countAll ? invocation.TryReserveWorking(0) : invocation.TryChargeInputStep())
+                    countAll ? invocation.TryReserveWorking(0) : invocation.CheckInput())
                 : TryMatchAt(program, input, position, [], [], false, false, true, ref workspace, ref invocation, existenceOnly);
             if (outcome.Breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, outcome.Breach);
             invocation.Budget.ThrowIfCancellationRequested();
@@ -1801,7 +1801,7 @@ internal static partial class Utf8SliceRunner
             floor = end;
             invocation.AnchorOriginByte = floor;
         }
-        return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+        return new(count, new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
     }
 
     internal static bool TryFindFixedDecimalMatch(ReadOnlySpan<byte> input, int floor,
@@ -1898,10 +1898,10 @@ internal static partial class Utf8SliceRunner
         }
 
         // A fresh one-byte seek can cover this fixed continuation window.
-        // Keep the work charge, direct checks on rewind and publication, and
+        // Keep the interruption checks on rewind and publication, and
         // the entry check for a candidate handed off by another search.
-        var breach = pair ? invocation.TryChargeStep()
-            : !classWindow || checkedBySeek ? invocation.TryChargeBoundedCheck() : invocation.TryChargeInputStep();
+        var breach = pair ? invocation.CheckProgress()
+            : !classWindow || checkedBySeek ? invocation.CheckBoundedProgress() : invocation.CheckInput();
         if (breach == Utf8ExecutionLimitKind.None && pair)
         {
             var (literal, leadingClass, _, _, _) = program.LeadingClassDelimiter;
@@ -1957,7 +1957,7 @@ internal static partial class Utf8SliceRunner
                     : TryRewindClassWhitespace(program, input, position, leadingClass, 0, true, ref start, ref invocation);
             }
             if (breach == Utf8ExecutionLimitKind.None && (!classWindow || start < screenedLiteral))
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
             if (breach == Utf8ExecutionLimitKind.None)
             {
                 invocation.Budget.ThrowIfCancellationRequested();
@@ -2113,7 +2113,7 @@ internal static partial class Utf8SliceRunner
         var scan = Math.Max(position, firstDelimiter);
         while (scan < input.Length)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
             var limit = scan + Math.Min(2048, input.Length - scan);
             var windowEnd = limit + Math.Min(delimiter.Length - 1, input.Length - limit);
@@ -2129,7 +2129,7 @@ internal static partial class Utf8SliceRunner
 
                 // An excluded delimiter fixes the end of the leading run.
                 // One preceding member suffices for Count, including at a block seam.
-                breach = invocation.TryChargeBoundedCheck();
+                breach = invocation.CheckBoundedProgress();
                 if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
                 if (at > position)
                 {
@@ -2155,7 +2155,7 @@ internal static partial class Utf8SliceRunner
             scan = Math.Max(scan, limit);
         }
         position = input.Length;
-        var outcome = invocation.TryChargeInputStep();
+        var outcome = invocation.CheckInput();
         invocation.Budget.ThrowIfCancellationRequested();
         return new(outcome == Utf8ExecutionLimitKind.None ? count : 0, outcome);
     }
@@ -2237,7 +2237,7 @@ internal static partial class Utf8SliceRunner
         screenedLiteral = -1;
         while (position <= last)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
             // Each window admits every prefix start once, including the
             // lookahead needed to recognize a literal across its right edge.
@@ -2253,7 +2253,7 @@ internal static partial class Utf8SliceRunner
                 }
 
                 position += relative;
-                breach = invocation.TryChargeBoundedCheck();
+                breach = invocation.CheckBoundedProgress();
                 if (breach == Utf8ExecutionLimitKind.None && invocation.Ledger.ReservedBytes != 0)
                     breach = invocation.TryReserveWorking(0);
                 if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
@@ -2281,7 +2281,7 @@ internal static partial class Utf8SliceRunner
             if (screenedLiteral >= 0) break;
         }
         if (screenedLiteral < 0) position = input.Length;
-        var outcome = invocation.TryChargeInputStep();
+        var outcome = invocation.CheckInput();
         invocation.Budget.ThrowIfCancellationRequested();
         return new(outcome == Utf8ExecutionLimitKind.None ? count : 0, outcome);
     }
@@ -2299,9 +2299,9 @@ internal static partial class Utf8SliceRunner
                 screenedDelimiter: screenedDelimiter, useNearestViableStart: true);
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
             if (position < 0)
-                return new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                return new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
 
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
             invocation.Budget.ThrowIfCancellationRequested();
             if (position < delimiterStart)
@@ -2318,7 +2318,7 @@ internal static partial class Utf8SliceRunner
                 }
                 if (width != 0)
                 {
-                    breach = invocation.TryChargeInputStep();
+                    breach = invocation.CheckInput();
                     invocation.Budget.ThrowIfCancellationRequested();
                     return breach == Utf8ExecutionLimitKind.None
                         ? new(true, position, suffix + width, breach)
@@ -2412,7 +2412,7 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
             if (requiredSuffix.Second == 0 || search is not { } aligned) break;
 
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var code = program.Instructions;
             if (!RejectsAdjacentHybridRuns(program, code[requiredSuffix.First], code[requiredSuffix.Second],
@@ -2444,7 +2444,7 @@ internal static partial class Utf8SliceRunner
             // earlier than the last verified floor and keep all wider scalars.
             while (position > floor)
             {
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var length = Math.Min(256, position - floor);
                 position -= length;
@@ -2454,10 +2454,10 @@ internal static partial class Utf8SliceRunner
                     var value = block[offset];
                     if (value >= 128 || repeatPrefix.Any.Contains(value)) continue;
                     position += offset + 1;
-                    return invocation.TryChargeInputStep();
+                    return invocation.CheckInput();
                 }
             }
-            return invocation.TryChargeInputStep();
+            return invocation.CheckInput();
         }
         if (!useNearestViableStart)
         {
@@ -2477,12 +2477,12 @@ internal static partial class Utf8SliceRunner
                 if (breach != Utf8ExecutionLimitKind.None || position >= 0) return breach;
             }
             position = windowEnd + 1;
-            return invocation.TryChargeInputStep();
+            return invocation.CheckInput();
         }
 
         // Boolean and Count callers can use the nearest valid start. The
         // excluded delimiter and the minimum of one make this scalar sufficient.
-        breach = invocation.TryChargeInputStep();
+        breach = invocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         if (position > floor && TryReadScalar(input, position, true, out var scalar, out var width))
         {
@@ -2507,7 +2507,7 @@ internal static partial class Utf8SliceRunner
         rejected = false;
         // One bounded probe, plus at most the remainder of a scalar at its
         // lower edge. Leave longer runs to the existing conservative search.
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         var stop = Math.Max(floor, position - 64);
         var code = program.Instructions.AsSpan();
@@ -2597,7 +2597,7 @@ internal static partial class Utf8SliceRunner
                     if (canFinish)
                     {
                         var after = position + proof.LiteralLength;
-                        breach = invocation.TryChargeInputStep();
+                        breach = invocation.CheckInput();
                         if (breach != Utf8ExecutionLimitKind.None) return breach;
                         if (!TryReadScalar(input, after, false, out var follower, out var followerWidth))
                             break;
@@ -2790,7 +2790,7 @@ internal static partial class Utf8SliceRunner
         Utf8SliceProgram program, int start = 0)
     {
         var end = Math.Min(start + 32, program.Instructions.Length);
-        Utf8ConstructionScope.ChargeWork((ulong)(end - start));
+        Utf8ConstructionScope.Checkpoint();
         var window = FindRequiredAsciiWindow(program, start, end, out var instruction);
         if (window.Min == 0 || program.Instructions[instruction] is not
             { Kind: Utf8SliceInstructionKind.Literal, A: >= 0 and < 128 and var value, B: 0 })
@@ -2954,7 +2954,7 @@ internal static partial class Utf8SliceRunner
         {
             if (metered)
             {
-                var breach = invocation.TryChargeInputStep();
+                var breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
             }
             // Keep both proved offsets inside the same charged input block.
@@ -3057,8 +3057,7 @@ internal static partial class Utf8SliceRunner
     {
         var code = program.Instructions;
         // Admit the bounded marker walk before inspecting the instructions.
-        budget.ChargeWork(program.GroupCount == 0 || program.ReadsCaptures ? 1UL :
-            (ulong)Math.Min(code.Length, 1 + Utf8SliceInstruction.LeadingCaptureMarkerLimit));
+        budget.Checkpoint();
         if (program.GroupCount == 0 && program.SkipsTerminalRewind(1) && code[1].RepeatMaximum <= 4)
             return 1;
         if (program.ReadsCaptures) return 0;
@@ -3070,7 +3069,7 @@ internal static partial class Utf8SliceRunner
             code[index] is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0 or 2, C: 0 } or
                            { Kind: Utf8SliceInstructionKind.Set, B: 0 })
         {
-            budget.ChargeWork((ulong)Math.Min(code.Length - index, 2 + Utf8SliceInstruction.LeadingCaptureMarkerLimit));
+            budget.Checkpoint();
             var afterClass = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, index + 1);
             if (afterClass < code.Length && code[afterClass] is { Kind: Utf8SliceInstructionKind.RepeatGreedy } captured &&
                 code[captured.A].RepeatExitUnobservedDecimal)
@@ -3078,7 +3077,7 @@ internal static partial class Utf8SliceRunner
         }
         if (index < code.Length && code[index] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: not 0 })
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             index++;
         }
         if ((uint)index >= (uint)code.Length || code[index] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy } repeat)

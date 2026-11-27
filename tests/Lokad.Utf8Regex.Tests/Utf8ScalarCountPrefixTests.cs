@@ -40,7 +40,6 @@ public sealed class Utf8ScalarCountPrefixTests
                 MatchTimeout = Timeout.InfiniteTimeSpan,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 8192,
                     MaxWorkingBytes = 1048576,
                     MaxResultBytes = 1048576
@@ -65,7 +64,7 @@ public sealed class Utf8ScalarCountPrefixTests
         using var ordinary = new Utf8Regex(pattern, options);
         using var funded = new Utf8Regex(pattern, options, new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxDepth = 128, MaxWorkingBytes = 1 << 16 }
+            ResourcePolicy = new() { MaxDepth = 128, MaxWorkingBytes = 1 << 16 }
         });
         using var source = new CancellationTokenSource();
         Assert.Equal(3, ordinary.Count(input));
@@ -84,7 +83,7 @@ public sealed class Utf8ScalarCountPrefixTests
         using var ordinary = new Utf8Regex(pattern, options);
         using var finite = new Utf8Regex(pattern, options, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxDepth = 128, MaxWorkingBytes = 1 << 16 }
+            ResourcePolicy = new() { MaxDepth = 128, MaxWorkingBytes = 1 << 16 }
         });
         using var source = new CancellationTokenSource();
 
@@ -105,7 +104,7 @@ public sealed class Utf8ScalarCountPrefixTests
         using var ordinary = new Utf8Regex(pattern, options);
         using var finite = new Utf8Regex(pattern, options, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxDepth = 128, MaxWorkingBytes = 1 << 16 }
+            ResourcePolicy = new() { MaxDepth = 128, MaxWorkingBytes = 1 << 16 }
         });
         using var source = new CancellationTokenSource();
         Assert.Equal(expectedCount, ordinary.Count(bytes));
@@ -126,7 +125,7 @@ public sealed class Utf8ScalarCountPrefixTests
         using var ordinary = new Utf8Regex(pattern, options);
         using var finite = new Utf8Regex(pattern, options, new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxDepth = 128, MaxWorkingBytes = 1 << 16 }
+            ResourcePolicy = new() { MaxDepth = 128, MaxWorkingBytes = 1 << 16 }
         });
         using var source = new CancellationTokenSource();
 
@@ -142,7 +141,7 @@ public sealed class Utf8ScalarCountPrefixTests
             string.Concat(Enumerable.Repeat("sealed class | ", 8));
         using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var source = new CancellationTokenSource();
 
@@ -165,7 +164,6 @@ public sealed class Utf8ScalarCountPrefixTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576
@@ -195,7 +193,7 @@ public sealed class Utf8ScalarCountPrefixTests
         var regex = new Utf8Regex("a\\G", options: RegexOptions.RightToLeft | (compiled ? RegexOptions.Compiled : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var input = Encoding.UTF8.GetBytes(new string('x', 32768));
-        var invocation = new Utf8SliceInvocation(new(16, 64, 8192, 1), Timeout.InfiniteTimeSpan, default);
+        var invocation = new Utf8SliceInvocation(new(64, 8192, 1), Timeout.InfiniteTimeSpan, default);
         var result = Utf8SliceRunner.CountFromBytes(program, input, input.Length,
             new int[program.GroupCount], new int[program.GroupCount], ref invocation);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
@@ -215,7 +213,6 @@ public sealed class Utf8ScalarCountPrefixTests
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10000000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576
@@ -248,14 +245,11 @@ public sealed class Utf8ScalarCountPrefixTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input)).ResourceKind);
     }
 
     [Theory]
@@ -266,31 +260,6 @@ public sealed class Utf8ScalarCountPrefixTests
     {
         var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(subject)));
-    }
-
-    [Fact]
-    public void BothCandidateSearchesSkipImpossibleStartsAndEnforceEveryCutoff()
-    {
-        var regex = new Utf8Regex("(ab|cd)+", options: RegexOptions.CultureInvariant);
-        var program = regex.Inspection.AvailableOwnedSliceProgram;
-        var plan = regex.Inspection.SearchPlan;
-        var input = Encoding.UTF8.GetBytes(new string('x', 4097) + "abcd xx cd");
-        var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
-        foreach (var candidatePlan in new[] { default, plan })
-        {
-            var funded = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Timeout.InfiniteTimeSpan, default);
-            Assert.Equal(2, Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref funded, candidatePlan).Count);
-            Assert.InRange(funded.Budget.Steps, 1UL, 256UL);
-            for (ulong limit = 1; limit <= funded.Budget.Steps; limit++)
-            {
-                var invocation = new Utf8SliceInvocation(new(limit, 0, 0), Timeout.InfiniteTimeSpan, default);
-                Assert.True(invocation.Ledger.TryReserve(13));
-                var result = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation, candidatePlan);
-                Assert.Equal(limit == funded.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, result.Breach);
-                if (result.Breach == Utf8ExecutionLimitKind.None) Assert.Equal(2, result.Count);
-                Assert.Equal(13ul, invocation.Ledger.ReservedBytes);
-            }
-        }
     }
 
     [Theory]

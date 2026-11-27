@@ -19,7 +19,7 @@ public sealed class Pcre2PrimaryMarkTests
         var input = Encoding.UTF8.GetBytes(text);
         using var regex = new Utf8Pcre2Regex(pattern, compileSettings: new()
         { BackslashC = Pcre2BackslashCPolicy.Allow, AllowLookaroundBackslashK = true }, policy: new()
-        { ResourcePolicy = new() { MaxWorkSteps = 1_000_000, MaxDepth = 512, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } });
+        { ResourcePolicy = new() { MaxDepth = 512, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } });
         ReadOnlySpan<byte> expected1Input = input;
         var expected1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
         var expected = regex.Match(expected1Input, captures: expected1Captures);
@@ -49,7 +49,7 @@ public sealed class Pcre2PrimaryMarkTests
     {
         var account = new Account();
         using var regex = new Utf8Pcre2Regex("(*MARK:é😀)(?<x>a)", policy: new()
-        { ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxWorkSteps = 100000, MaxResultBytes = 1 } });
+        { ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxResultBytes = 1 } });
         Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[2];
         var retained = regex.Match("πa"u8, 2, captures, Pcre2MatchOptions.Anchored);
         Assert.True(retained.Success); Assert.Equal("é😀", retained.Mark); Assert.Equal((2, 3), (retained.StartOffsetInBytes, retained.EndOffsetInBytes));

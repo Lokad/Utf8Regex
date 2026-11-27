@@ -32,7 +32,7 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
         const string pattern = @"[\w.+-]+@[\w-]+\.[\w.-]+";
         using var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 2048 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var missed = string.Concat(Enumerable.Repeat("é", 512)) + "@b! ";
         var input = Encoding.UTF8.GetBytes(missed + (appendMatch ? "yes@b.cd" : ""));
@@ -55,7 +55,7 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
         const string pattern = @"([\w.+-]+)@([\w-]+\.)+([\w-]+)";
         using var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4096 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var missed = string.Concat(Enumerable.Repeat("é", 512)) + "@b! ";
         var input = Encoding.UTF8.GetBytes(missed + "yes@b.cd.é");

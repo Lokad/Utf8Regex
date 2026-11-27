@@ -134,7 +134,7 @@ internal static class Utf8BackendInstructionExecutor
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
             start = candidate + search.Length;
         }
-        var terminal = invocation.TryChargeInputStep();
+        var terminal = invocation.CheckInput();
         invocation.Budget.ThrowIfCancellationRequested();
         if (terminal == Utf8ExecutionLimitKind.None) count = foundCount;
         return terminal;

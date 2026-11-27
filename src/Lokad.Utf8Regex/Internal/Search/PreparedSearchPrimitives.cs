@@ -45,7 +45,7 @@ internal readonly struct PreparedByteSearch
         try
         {
             var owned = budget.AllocateArray<byte>(values.Length, false);
-            budget.ChargeWork((ulong)values.Length);
+            budget.Checkpoint();
             values.CopyTo(owned);
             var result = FromOwnedValues(owned, owned.Length > 5 ? PreparedByteSet.CreateOwned(owned) : null);
             scope.Complete();
@@ -117,7 +117,7 @@ internal readonly struct PreparedSubstringSearch
         {
             if (!ignoreCase)
             {
-                owner.ChargeWork(3ul * (ulong)needle.Length);
+                owner.Checkpoint();
                 if (needle.Length <= 16 && AsciiSearch.TryGetDotNetLikeAsciiAnchorSelection(needle, false, out var anchors))
                     _exactAnchors = anchors;
                 else if (needle.Length > 16)
@@ -135,12 +135,12 @@ internal readonly struct PreparedSubstringSearch
 
             // The caller already owns the immutable needle. A canonical folded
             // needle can be borrowed; uppercase ASCII needs one final owned copy.
-            owner.ChargeWork((ulong)needle.Length);
+            owner.Checkpoint();
             var foldedNeedle = needle;
             if (needle.AsSpan().IndexOfAnyInRange((byte)'A', (byte)'Z') >= 0)
             {
                 foldedNeedle = owner.AllocateArray<byte>(needle.Length, false);
-                owner.ChargeWork((ulong)needle.Length);
+                owner.Checkpoint();
                 for (var i = 0; i < needle.Length; i++)
                     foldedNeedle[i] = AsciiSearch.FoldCase(needle[i]);
             }
@@ -151,9 +151,9 @@ internal readonly struct PreparedSubstringSearch
             if (needle.Length >= 9)
             {
                 var shifts = owner.AllocateArray<int>(256, false);
-                owner.ChargeWork(256);
+                owner.Checkpoint();
                 shifts.AsSpan().Fill(needle.Length);
-                owner.ChargeWork((ulong)needle.Length - 1);
+                owner.Checkpoint();
                 for (var i = 0; i < needle.Length - 1; i++)
                     shifts[foldedNeedle[i]] = needle.Length - 1 - i;
                 _ignoreCaseShiftTable = shifts;
@@ -814,17 +814,17 @@ internal readonly struct PreparedSubstringSearch
     private static int GetPreferredCompareIndex(ReadOnlySpan<byte> foldedNeedle, byte firstFolded, int lastIndex,
         Utf8ConstructionBudget owner)
     {
-        owner.ChargeWork(3ul * (ulong)foldedNeedle.Length);
+        owner.Checkpoint();
         if (AsciiSearch.TryGetDotNetLikeAsciiAnchorSelection(foldedNeedle, ignoreCase: true, out var anchors) &&
             anchors.Anchor2 > 0)
         {
             return anchors.Anchor2;
         }
 
-        owner.ChargeWork(256);
+        owner.Checkpoint();
         Span<int> counts = stackalloc int[256];
         counts.Clear();
-        owner.ChargeWork((ulong)foldedNeedle.Length);
+        owner.Checkpoint();
         for (var i = 0; i < foldedNeedle.Length; i++)
         {
             counts[foldedNeedle[i]]++;
@@ -833,7 +833,7 @@ internal readonly struct PreparedSubstringSearch
         var compareIndex = -1;
         var rarestCount = int.MaxValue;
         var bestRarityScore = int.MinValue;
-        owner.ChargeWork((ulong)foldedNeedle.Length - 1);
+        owner.Checkpoint();
         for (var i = 1; i < foldedNeedle.Length; i++)
         {
             if (foldedNeedle[i] == firstFolded)

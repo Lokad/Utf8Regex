@@ -36,7 +36,7 @@ public sealed class PythonReGreedyEmptyRetryTests
         using var token = new CancellationTokenSource();
         foreach (var policy in new[] { Utf8ResourcePolicy.Unlimited, new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 1_000_000,MaxDepth = 1024,            MaxWorkingBytes = 1 << 20,MaxResultBytes = 1 << 20        } })
+            MaxDepth = 1024,            MaxWorkingBytes = 1 << 20,MaxResultBytes = 1 << 20        } })
         {
             var regex = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
             {

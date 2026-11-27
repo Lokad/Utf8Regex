@@ -70,6 +70,7 @@ public sealed class Utf8ProgramContinuationTests
     [MemberData(nameof(ResourceCases))]
     public void EveryDeniedScalarContinuationReleasesStorageAndRecovers(int depth, int shape, int family)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         // The overlapping last digit needs actual mutable repeat state.
         var pattern = family == 0 ? Patterns[family] : "ab[0-9]{1,2}[0-9]";
         var program = Utf8ScalarCaptureWitness.Lower(pattern, RegexOptions.CultureInvariant, depth, shape);
@@ -79,17 +80,14 @@ public sealed class Utf8ProgramContinuationTests
         Assert.True(Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref baseline).IsMatch);
         Assert.True(baseline.Budget.PeakWorkingBytes > 0);
         Assert.Equal(0UL, baseline.Ledger.ReservedBytes);
-        var work = depth == 65 ? Enumerable.Range(1, checked((int)baseline.Budget.Steps - 1)).Select(static value => (ulong)value)
-            : new[] { 1UL, 2UL, baseline.Budget.Steps - 1 };
         var depths = Enumerable.Range(1, Math.Max(0, checked((int)baseline.Budget.PeakDepth) - 1)).Select(static value => (uint)value);
-        foreach (var limits in work.Select(static limit => new Utf8ExecutionLimits(limit, 0, 0))
-            .Concat(depths.Select(static limit => new Utf8ExecutionLimits(0, limit, 0)))
-            .Concat(new[] { new Utf8ExecutionLimits(0, 0, 1), new Utf8ExecutionLimits(0, 0, baseline.Budget.PeakWorkingBytes - 1) }))
+        foreach (var limits in depths.Select(static limit => new Utf8ExecutionLimits(limit, 0))
+            .Concat(new[] { new Utf8ExecutionLimits(0, 1), new Utf8ExecutionLimits(0, baseline.Budget.PeakWorkingBytes - 1) }))
         {
             var denied = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, CancellationToken.None);
             var outcome = Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref denied);
             Assert.False(outcome.IsMatch);
-            Assert.Equal(limits.MaxWorkSteps != 0 ? Utf8ExecutionLimitKind.WorkSteps : limits.MaxDepth != 0 ? Utf8ExecutionLimitKind.Depth : Utf8ExecutionLimitKind.WorkingBytes, outcome.Breach);
+            Assert.Equal(limits.MaxDepth != 0 ? Utf8ExecutionLimitKind.Depth : Utf8ExecutionLimitKind.WorkingBytes, outcome.Breach);
             Assert.Equal(0UL, denied.Ledger.ReservedBytes);
         }
         using var source = new CancellationTokenSource();
@@ -109,7 +107,7 @@ public sealed class Utf8ProgramContinuationTests
     [Fact]
     public void AggregateDenialSkipsAllocationAndFiniteStorageDoesNotGrowRetainedPools()
     {
-        var limits = new Utf8ExecutionLimits(0, 0, 1);
+        var limits = new Utf8ExecutionLimits(0, 1);
         var buffer = new Utf8InvocationStateBuffer<long>();
         var pending = buffer.PendingGrowthBytes;
         var warmup = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, CancellationToken.None);

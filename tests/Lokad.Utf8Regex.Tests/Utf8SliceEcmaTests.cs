@@ -168,6 +168,7 @@ public sealed class Utf8SliceEcmaTests
     [InlineData(true)]
     public void EcmaReferencesRetainBudgetCancellationAndRecovery(bool compiled)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const string pattern = @"\A(?<x>(a|aa)+b)?\1c\b";
         var options = RegexOptions.ECMAScript | RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
@@ -181,22 +182,11 @@ public sealed class Utf8SliceEcmaTests
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.False(Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
             collectHistory: false, ref baseline).Found);
-        Assert.True(baseline.Budget.Steps > 128);
+        Assert.True(baseline.Budget.DiagnosticCheckpoints > 128);
         Assert.Equal(0UL, baseline.Ledger.ReservedBytes);
-        for (ulong work = 1; work < baseline.Budget.Steps; work++)
-        {
-            Array.Fill(starts, -1);
-            Array.Fill(ends, -1);
-            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(work, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-            var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
-                collectHistory: false, ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, outcome.Breach);
-            Assert.False(outcome.Found);
-            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        }
         Array.Fill(starts, -1);
         Array.Fill(ends, -1);
-        var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
+        var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
             Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes,
             Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,

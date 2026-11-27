@@ -47,7 +47,7 @@ internal sealed class Utf8RegexProgram
             if (captureCatalog is null)
                 throw new InvalidOperationException("Owned preparation must produce capture metadata.");
             budget.CheckBytes(ObjectBytes);
-            budget.ChargeWork(2);
+            budget.Checkpoint();
             budget.ReserveBytes(ObjectBytes);
             var result = new Utf8RegexProgram(preparedRegex, compiledEngineKind, compiledEngineRuntime, captureCatalog);
             scope.Complete();

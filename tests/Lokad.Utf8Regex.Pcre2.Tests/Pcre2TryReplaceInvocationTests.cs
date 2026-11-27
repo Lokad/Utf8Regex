@@ -42,31 +42,10 @@ public sealed class Pcre2TryReplaceInvocationTests
         }
     }
 
-    [Theory] [MemberData(nameof(InterruptionRoutes))]
-    public void WorkLimitLeavesDestinationUnchangedForLongInputOrTemplate(string pattern, string text, string template)
-    {
-        var longSubject = Encoding.UTF8.GetBytes(new string('x', 16380) + "😀");
-        byte[] malformedTemplate = [.. longSubject, 0xff];
-        var destination = new byte[64]; destination.AsSpan().Fill(0xcc);
-        using var regex = Policy(pattern, 3);
-        var cases = new[]
-        {
-            (Encoding.UTF8.GetBytes(text), malformedTemplate),
-            (longSubject, Encoding.UTF8.GetBytes(template)),
-        };
-        foreach (var (input, replacement) in cases)
-        {
-            var error = Assert.Throws<Pcre2MatchException>(() =>
-            { _ = regex.TryReplace(input, replacement, destination, out _); });
-            Assert.Equal(Pcre2ErrorKind.MatchLimit, error.ErrorKind);
-            Assert.All(destination, value => Assert.Equal((byte)0xcc, value));
-        }
-    }
-
     [Theory] [MemberData(nameof(Routes))]
     public void ScalarOffsetsCapacityAndFreshCallsKeepOutput(string pattern, string text, string template, string expected)
     {
-        var regex = Policy(pattern, 100000);
+        var regex = Policy(pattern);
         var input = Encoding.UTF8.GetBytes("😀" + text);
         var replacement = Encoding.UTF8.GetBytes(template);
         var expectedBytes = Encoding.UTF8.GetBytes("😀" + expected);
@@ -87,7 +66,7 @@ public sealed class Pcre2TryReplaceInvocationTests
     public void NoMatchOverlappingCopyKeepsMemmoveSemantics()
     {
         var storage = new byte[16385]; storage.AsSpan(0, 16384).Fill((byte)'x'); storage[^1] = 0xcc;
-        var regex = Policy("abc", 100000);
+        var regex = Policy("abc");
         Assert.Equal(OperationStatus.Done, regex.TryReplace(storage.AsSpan(0, 16384), "Z"u8,
             storage.AsSpan(1), out var written));
         Assert.Equal(16384, written);
@@ -116,7 +95,7 @@ public sealed class Pcre2TryReplaceInvocationTests
         foreach (var shift in new[] { -1, 0, 1 })
         {
             using var source = new CancellationTokenSource();
-            var regex = finite ? Policy(pattern, 1000000) : new Utf8Pcre2Regex(pattern);
+            var regex = finite ? Policy(pattern) : new Utf8Pcre2Regex(pattern);
             var storage = new byte[128];
             input.CopyTo(storage.AsSpan(16));
             Assert.Equal(OperationStatus.Done, regex.TryReplace(storage.AsSpan(16, input.Length), replacement,
@@ -135,7 +114,7 @@ public sealed class Pcre2TryReplaceInvocationTests
         {
             var storage = new byte[64]; "a😀z"u8.CopyTo(storage);
             var before = storage.ToArray();
-            Assert.Equal(OperationStatus.DestinationTooSmall, Policy("a", 100000).TryReplace(
+            Assert.Equal(OperationStatus.DestinationTooSmall, Policy("a").TryReplace(
                 storage.AsSpan(0, 6), "XYZ"u8, storage.AsSpan(0, size), out var written, 0,
                 reportLength ? Pcre2SubstitutionOptions.SubstituteOverflowLength : Pcre2SubstitutionOptions.None,
                 Pcre2MatchOptions.None));
@@ -148,7 +127,7 @@ public sealed class Pcre2TryReplaceInvocationTests
     public void InputTemplateAndDestinationCanShareStorage()
     {
         var storage = new byte[64]; "a😀z"u8.CopyTo(storage.AsSpan(16));
-        Assert.Equal(OperationStatus.Done, Policy("a", 100000).TryReplace(storage.AsSpan(16, 6),
+        Assert.Equal(OperationStatus.Done, Policy("a").TryReplace(storage.AsSpan(16, 6),
             storage.AsSpan(17, 4), storage.AsSpan(15, 9), out var written));
         Assert.Equal(9, written);
         Assert.Equal("😀😀z"u8.ToArray(), storage.AsSpan(15, written).ToArray());
@@ -158,7 +137,7 @@ public sealed class Pcre2TryReplaceInvocationTests
     public void OverlappingReplacementOnlyOmitsOriginalGaps()
     {
         var storage = new byte[64]; "za😀a"u8.CopyTo(storage);
-        Assert.Equal(OperationStatus.Done, Policy("a", 100000).TryReplace(storage.AsSpan(0, 7), "$0$0"u8,
+        Assert.Equal(OperationStatus.Done, Policy("a").TryReplace(storage.AsSpan(0, 7), "$0$0"u8,
             storage.AsSpan(1, 4), out var written, substitutionOptions: Pcre2SubstitutionOptions.SubstituteReplacementOnly));
         Assert.Equal(4, written);
         Assert.Equal("aaaa"u8.ToArray(), storage.AsSpan(1, written).ToArray());
@@ -171,7 +150,6 @@ public sealed class Pcre2TryReplaceInvocationTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 4096,
                 MaxResultBytes = 1 << 20
@@ -199,7 +177,6 @@ public sealed class Pcre2TryReplaceInvocationTests
             {
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 256,
                     MaxWorkingBytes = (heap ? 1UL : 1UL << 20) == 0 ? null : (heap ? 1UL : 1UL << 20),
                     MaxResultBytes = (heap ? 1UL << 20 : 1UL) == 0 ? null : (heap ? 1UL << 20 : 1UL)
@@ -210,7 +187,7 @@ public sealed class Pcre2TryReplaceInvocationTests
                 Assert.Throws<Pcre2MatchException>(() => regex.TryReplace(input, replacement, destination, out _)).ErrorKind);
             Assert.All(destination, value => Assert.Equal((byte)0xcc, value));
         }
-        Assert.Equal(OperationStatus.Done, Policy(pattern, 100000).TryReplace(input, replacement, destination, out var written));
+        Assert.Equal(OperationStatus.Done, Policy(pattern).TryReplace(input, replacement, destination, out var written));
         Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, written)));
     }
 
@@ -233,11 +210,10 @@ public sealed class Pcre2TryReplaceInvocationTests
         Assert.All(input, value => Assert.Equal((byte)'x', value));
     }
 
-    private static Utf8Pcre2Regex Policy(string pattern, uint work) => new(pattern, options:         Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    private static Utf8Pcre2Regex Policy(string pattern) => new(pattern, options:         Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
     {
         ResourcePolicy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = (work) == 0 ? null : (work),
             MaxDepth = 256,
             MaxWorkingBytes = 1 << 20,
             MaxResultBytes = 1 << 20

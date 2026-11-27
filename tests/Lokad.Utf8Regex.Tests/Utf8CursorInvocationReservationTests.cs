@@ -27,7 +27,7 @@ public sealed class Utf8CursorInvocationReservationTests
     {
         var options = RegexOptions.CultureInvariant | RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0);
         var regex = new Utf8Regex("(?<x>😀|é)", options: options);
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 4096), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(0, 4096), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
         var arrays = ExerciseLinearCopies(Program(regex), ref invocation, out var held);
         Collect();
@@ -45,7 +45,7 @@ public sealed class Utf8CursorInvocationReservationTests
             Assert.Fail("The full same-invocation allowance must deny another map.");
         }
         catch (InvalidOperationException) { Assert.Equal(before, invocation.Ledger.ReservedBytes); }
-        var fresh = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 4096), Regex.InfiniteMatchTimeout, default);
+        var fresh = new Utf8SliceInvocation(new(0, 4096), Regex.InfiniteMatchTimeout, default);
         Assert.True(fresh.Ledger.TryReserve(7));
         fresh.ShareStorageForCursor();
         var cursor = new Utf8OperationMatchCursor(Program(regex), "😀é😀"u8, fresh);
@@ -89,7 +89,7 @@ public sealed class Utf8CursorInvocationReservationTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
         var regex = new Utf8Regex("(?<x>😀|é)", options: RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 4096),
+        var invocation = new Utf8SliceInvocation(new(0, 4096),
             deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         Utf8SliceBufferWork.Checkpoint(ref invocation);
@@ -104,35 +104,6 @@ public sealed class Utf8CursorInvocationReservationTests
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         cursor.AbortOwnedSplitSetup();
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-    }
-
-    [Fact]
-    public void CursorSetupWorkFailureReturnsOnlyUnpublishedPayloads()
-    {
-        var regex = new Utf8Regex("(?<x>😀|é)", options: RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
-        var input = "😀é😀"u8.ToArray();
-        // Cover every cutoff through map and table preparation. Denied setup
-        // restores the parent's seven bytes but never refunds spent work.
-        var success = false;
-        for (ulong cap = 1; cap <= 256 && !success; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 4096), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            try
-            {
-                invocation.ShareStorageForCursor();
-                _ = new Utf8OperationMatchCursor(Program(regex), input, invocation);
-                Assert.True(invocation.Ledger.ReservedBytes > 7);
-                success = true;
-            }
-            catch (InvalidOperationException)
-            {
-                Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.Budget.LimitBreach);
-                Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-                Assert.True(invocation.Budget.Steps >= cap);
-            }
-        }
-        Assert.True(success);
     }
 
     [Fact]

@@ -51,7 +51,7 @@ internal static class Pcre2PreparedReplacementParser
     {
         private readonly ReadOnlySpan<byte> text = source;
         private bool Extended => (options & Pcre2SubstitutionOptions.Extended) != 0;
-        private void Work() { Pcre2ReplacementPreparationControl.Check(); storage.Budget.ChargeWork(1); }
+        private void Work() { Pcre2ReplacementPreparationControl.Check(); storage.Budget.Checkpoint(); }
         private static Pcre2ReplacementInstruction Op(Pcre2ReplacementOpcode kind)
             => new(kind, default, 0, [], 0, 0, -1, -1);
         private static Pcre2ReplacementInstruction Error(Pcre2ErrorKind kind)
@@ -119,7 +119,7 @@ internal static class Pcre2PreparedReplacementParser
             var count = checked(end - start + 1);
             var normal = storage.Allocate<int>(count, false);
             var quoted = storage.Allocate<int>(count, false);
-            storage.Budget.ChargeWork(2UL * (ulong)count);
+            storage.Budget.Checkpoint();
             normal.AsSpan().Fill(-1); quoted.AsSpan().Fill(-1);
             var id = fragments.Count;
             fragments.Add(new(start, end, normal, quoted));
@@ -153,7 +153,7 @@ internal static class Pcre2PreparedReplacementParser
         {
             if (!Rune.TryCreate(value, out var scalar)) return Error(Pcre2ErrorKind.BadReplacementEscape);
             var bytes = storage.Allocate<byte>(scalar.Utf8SequenceLength);
-            storage.Budget.ChargeWork((ulong)bytes.Length);
+            storage.Budget.Checkpoint();
             scalar.EncodeToUtf8(bytes);
             return Op(Pcre2ReplacementOpcode.Literal) with { Payload = bytes };
         }
@@ -201,7 +201,7 @@ internal static class Pcre2PreparedReplacementParser
                 case '{': return Braced(next, end, out next);
                 case '<': return Angle(next, end, false, out next);
                 case '*' when position + 6 <= end && text[(position + 1)..].StartsWith("*MARK"u8):
-                    storage.Budget.ChargeWork(5); next = position + 6;
+                    storage.Budget.Checkpoint(); next = position + 6;
                     return Op(Pcre2ReplacementOpcode.Reference) with { Selector = Pcre2ReplacementSelectorKind.Mark };
             }
             if (char.IsAsciiDigit(ch))
@@ -298,7 +298,7 @@ internal static class Pcre2PreparedReplacementParser
         private Pcre2ReplacementInstruction Selector(int start, int length, Pcre2ReplacementOpcode kind)
         {
             if (length == 5 && text[start..].StartsWith("*MARK"u8))
-            { storage.Budget.ChargeWork((ulong)length); return Op(kind) with { Selector = Pcre2ReplacementSelectorKind.Mark }; }
+            { storage.Budget.Checkpoint(); return Op(kind) with { Selector = Pcre2ReplacementSelectorKind.Mark }; }
             var number = 0; var digits = length != 0; var overflow = false;
             for (var index = start; index < start + length; index++)
             {

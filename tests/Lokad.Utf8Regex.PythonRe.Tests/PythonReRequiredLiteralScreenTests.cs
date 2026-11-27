@@ -23,7 +23,6 @@ public sealed class PythonReRequiredLiteralScreenTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -77,7 +76,7 @@ public sealed class PythonReRequiredLiteralScreenTests
         using var regex = new Utf8PythonRegex("(?>ab+)c", policy: new()
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new() { MaxWorkSteps = 10 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
 
         Assert.False(regex.Match(input, cancellationToken: source.Token, mode: Utf8PythonMatchMode.Search).Success);
@@ -180,22 +179,5 @@ public sealed class PythonReRequiredLiteralScreenTests
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         }
         finally { session.Complete(); }
-    }
-
-    [Fact]
-    public void SearchCannotOutrunFiniteWork()
-    {
-        var input = Enumerable.Repeat((byte)'a', 32768).ToArray();
-        var limited = new Utf8PythonRegex("a+b", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 2,
-                MaxWorkingBytes = 1
-            }
-        });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input, mode: Utf8PythonMatchMode.Search)).ResourceKind);
     }
 }

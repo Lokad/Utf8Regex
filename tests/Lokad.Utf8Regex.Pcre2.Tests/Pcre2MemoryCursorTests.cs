@@ -10,7 +10,7 @@ public sealed class Pcre2MemoryCursorTests
     {
         using var regex = new Utf8Pcre2Regex(@"[a-z]+@(?<tail>[a-z]+)", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256, MaxWorkingBytes = 4096 },
+            ResourcePolicy = new() { MaxWorkingBytes = 4096 },
         });
         var prefix = "😀" + new string('a', 2048) + "@!𐐨";
         var input = Encoding.UTF8.GetBytes(prefix + "abc@tail!éxy@longer!");
@@ -349,7 +349,6 @@ public sealed class Pcre2MemoryCursorTests
     }
 
     [Theory]
-    [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
@@ -357,7 +356,6 @@ public sealed class Pcre2MemoryCursorTests
     {
         var policy = kind switch
         {
-            0 => new Utf8ResourcePolicy { MaxWorkSteps = 1 },
             1 => new Utf8ResourcePolicy { MaxDepth = 1 },
             2 => new Utf8ResourcePolicy { MaxWorkingBytes = 1 },
             _ => new Utf8ResourcePolicy { MaxResultBytes = 1 }
@@ -404,7 +402,7 @@ public sealed class Pcre2MemoryCursorTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 50000
+                MaxDepth = 4096
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         }).CreateMatchCursor(input);
@@ -484,7 +482,6 @@ public sealed class Pcre2MemoryCursorTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 512,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1

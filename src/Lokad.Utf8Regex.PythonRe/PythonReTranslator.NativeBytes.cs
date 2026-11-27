@@ -14,7 +14,7 @@ internal static partial class PythonReTranslator
     {
         if (value <= 0x7f)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             builder.Add((byte)value);
             return builder;
         }
@@ -24,11 +24,11 @@ internal static partial class PythonReTranslator
     private static ByteBuilder Append(this ByteBuilder builder, string text)
     {
         var budget = Utf8ConstructionScope.CurrentBudget;
-        budget.ChargeWork((ulong)text.Length);
+        budget.Checkpoint();
         Span<byte> encoded = stackalloc byte[4];
         for (var offset = 0; offset < text.Length;)
         {
-            if ((offset & 255) == 0) budget.ChargeWork(0);
+            if ((offset & 255) == 0) budget.Checkpoint();
             if (text[offset] <= 0x7f) { builder.Add((byte)text[offset++]); continue; }
             if (Rune.DecodeFromUtf16(text.AsSpan(offset), out var scalar, out var consumed) != OperationStatus.Done)
                 throw new InvalidOperationException("A rendered Python atom must contain complete Unicode scalars.");
@@ -41,7 +41,7 @@ internal static partial class PythonReTranslator
     private static ByteBuilder Append(this ByteBuilder builder, int value)
     {
         Span<byte> formatted = stackalloc byte[11];
-        Utf8ConstructionScope.ChargeWork((ulong)formatted.Length);
+        Utf8ConstructionScope.Checkpoint();
         if (!Utf8Formatter.TryFormat(value, formatted, out var written)) throw new InvalidOperationException("Integer formatting failed.");
         builder.AddRange(formatted[..written]);
         return builder;
@@ -50,7 +50,7 @@ internal static partial class PythonReTranslator
     private static ByteBuilder Append(this ByteBuilder builder, uint value)
     {
         Span<byte> formatted = stackalloc byte[11];
-        Utf8ConstructionScope.ChargeWork((ulong)formatted.Length);
+        Utf8ConstructionScope.Checkpoint();
         if (!Utf8Formatter.TryFormat(value, formatted, out var written)) throw new InvalidOperationException("Integer formatting failed.");
         builder.AddRange(formatted[..written]);
         return builder;
@@ -59,7 +59,7 @@ internal static partial class PythonReTranslator
     private static ByteBuilder AppendHex(this ByteBuilder builder, int value)
     {
         Span<byte> formatted = stackalloc byte[8];
-        Utf8ConstructionScope.ChargeWork((ulong)formatted.Length);
+        Utf8ConstructionScope.Checkpoint();
         if (!Utf8Formatter.TryFormat(value, formatted, out var written, new StandardFormat('X', 4)))
             throw new InvalidOperationException("Hex formatting failed.");
         builder.AddRange(formatted[..written]);

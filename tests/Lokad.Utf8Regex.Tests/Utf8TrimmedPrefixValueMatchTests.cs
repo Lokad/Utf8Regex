@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8TrimmedPrefixValueMatchTests
 {
     private const string Pattern = @"^\s*(\[\|\s*)?///\s?(?<doc>.*)$";
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     private static Utf8CaptureRange Scalar(Utf8Regex regex, byte[] input)
     {
@@ -93,31 +93,6 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
         Assert.Equal("text", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("doc"u8)).Span));
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: token.Token)).CancellationToken);
-    }
-
-    [Theory]
-    [InlineData("/// text", true)]
-    [InlineData("// text", false)]
-    public void WorkDenialNeverPublishesAnUnsuccessfulMatch(string text, bool success)
-    {
-        var input = Encoding.ASCII.GetBytes(text);
-        var succeeded = false;
-        for (ulong work = 1; work < 100; work++)
-        {
-            var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = Funded with
-                {
-                    MaxWorkSteps = work,
-                    MaxWorkingBytes = 8 << 20,
-                    MaxResultBytes = 1
-                }
-            });
-            try { Assert.Equal(success, regex.Match(input).Success); succeeded = true; break; }
-            catch (Utf8ResourceLimitExceededException error) { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
-        }
-        Assert.True(succeeded);
     }
 
     [Theory]

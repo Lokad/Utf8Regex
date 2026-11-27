@@ -48,7 +48,6 @@ public sealed class PythonReGlobalModeAdmissionTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000
@@ -68,12 +67,13 @@ public sealed class PythonReGlobalModeAdmissionTests
     [Fact]
     public void CombinedModeFailureUnwindsExistingConstructionOwner()
     {
-        using (var owner = new Utf8ConstructionScope(ulong.MaxValue, 1000000, 100000, 128))
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
+        using (var owner = new Utf8ConstructionScope(ulong.MaxValue, 1000000, 128))
         {
             var error = Assert.Throws<PythonRePatternException>(() =>
                 new PythonReParser("(?a)(?u)(?P<x>😀)").Parse(PythonReCompileOptions.None));
             Assert.Equal("ASCII and UNICODE flags are incompatible", error.Message);
-            Assert.True(owner.Budget.WorkSteps > 0);
+            Assert.True(owner.Budget.DiagnosticCheckpoints > 0);
             Assert.True(owner.Budget.PeakBytes > 0);
             Assert.Equal(0ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);

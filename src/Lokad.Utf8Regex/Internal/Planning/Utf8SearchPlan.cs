@@ -91,7 +91,7 @@ internal readonly struct Utf8SearchPlan
         budget.EnterDepth();
         try
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var plan = new Utf8SearchPlan(facts, scalarProgram, budget);
             scope.Complete();
             return plan;
@@ -298,7 +298,7 @@ internal readonly struct Utf8SearchPlan
 
     internal static Utf8AlternateLiteralOverlapKind GetLiteralOverlap(byte[][]? literals)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         if (literals is not { Length: > 1 })
         {
             return Utf8AlternateLiteralOverlapKind.None;
@@ -310,7 +310,7 @@ internal readonly struct Utf8SearchPlan
             var candidate = literals[i];
             for (var j = 0; j < literals.Length; j++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 var alternate = literals[j];
                 if ((overlap & Utf8AlternateLiteralOverlapKind.SameStartPrefix) == 0 &&
                     i != j &&
@@ -324,7 +324,7 @@ internal readonly struct Utf8SearchPlan
                 {
                     for (var offset = 1; offset < candidate.Length; offset++)
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         if (HaveCommonStart(candidate, offset, alternate))
                         {
                             overlap |= Utf8AlternateLiteralOverlapKind.ProperStart;
@@ -346,7 +346,7 @@ internal readonly struct Utf8SearchPlan
     private static bool HaveCommonStart(byte[] first, int offset, byte[] second)
     {
         // These are preparation-owned literals, never a subject input surface.
-        Utf8ConstructionScope.ChargeWork(2ul * (ulong)Math.Min(first.Length - offset, second.Length));
+        Utf8ConstructionScope.Checkpoint();
         var suffix = first.AsSpan(offset);
         return suffix.StartsWith(second) || second.AsSpan().StartsWith(suffix);
     }

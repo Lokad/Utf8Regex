@@ -63,7 +63,6 @@ public sealed class Utf8WideRepeatStateTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000
@@ -82,14 +81,11 @@ public sealed class Utf8WideRepeatStateTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count("😀a"u8)).ResourceKind);
         Assert.Equal(2, regex.Count("😀a"u8));
         Assert.Equal("😀a", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }
@@ -133,7 +129,7 @@ public sealed class Utf8WideRepeatStateTests
     [InlineData(4294967295L)] // The optional phase above the largest legal minimum.
     public void SavedRepeatCountsSurviveFrameAndJournalRollback(long count)
     {
-        var invocation = new Utf8SliceInvocation(new(100000, 128, 1000000), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(128, 1000000), Regex.InfiniteMatchTimeout, default);
         var stacks = new Utf8SliceRunner.ChunkedStacks();
         try
         {
@@ -181,7 +177,7 @@ public sealed class Utf8WideRepeatStateTests
 
     private static Utf8SliceMatchOutcome RunAtCount(Utf8SliceProgram program, long count, ReadOnlySpan<byte> input, bool nonempty, int start = 0)
     {
-        var invocation = new Utf8SliceInvocation(new(1000, 128, 1000000), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(128, 1000000), Regex.InfiniteMatchTimeout, default);
         var workspace = new Utf8SliceRunner.AttemptWorkspace
         {
             Counts = [unchecked((int)count)],

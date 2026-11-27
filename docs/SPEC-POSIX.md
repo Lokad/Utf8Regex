@@ -107,11 +107,11 @@ admission before allocation. [Shared construction rules](SPEC.md#construction-pr
 One original token and deadline cover each operation and all cursor advances
 and waits. Cooperative cancellation reports the original token. Expiry
 throws `RegexMatchTimeoutException` with empty `Input`. Refusal ends the
-operation without partial output. Work covers discovery, matching, capture
-selection and publication. Proved ASCII runs that need neither case folding
-nor line-end rewind charge one step and check the deadline before searching
-each block of at most 64 bytes. This includes brackets containing only ASCII
-digits or punctuation under `IgnoreCase`. Discovery can use the same bounded
+operation without partial output. Discovery, matching, capture selection and
+publication check for interruption. Proved ASCII runs that need neither case
+folding nor line-end rewind check cancellation and the deadline before
+searching each block of at most 64 bytes. This includes brackets containing
+only ASCII digits or punctuation under `IgnoreCase`. Discovery can use the same bounded
 scan to skip rejected ASCII starts when the first required atom proves their
 exclusion.
 Depth covers live alternatives and capture

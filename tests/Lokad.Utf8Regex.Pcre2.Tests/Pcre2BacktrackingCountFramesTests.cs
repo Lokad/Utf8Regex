@@ -12,7 +12,6 @@ public sealed class Pcre2BacktrackingCountFramesTests
     {
         var regex = Create(@"(?<s>\p{Xps}+)(?<x>\p{Xuc}{1,2})", new()
         {
-            MatchLimit = 10000000,
             DepthLimit = 256,
             HeapLimitInBytes = 1UL << 20,
             ResultLimitInBytes = 1
@@ -36,7 +35,6 @@ public sealed class Pcre2BacktrackingCountFramesTests
     {
         var regex = Create(@"(?<x>\p{Xuc}){3}!", new()
         {
-            MatchLimit = 10000,
             DepthLimit = 1,
             HeapLimitInBytes = 1,
             ResultLimitInBytes = 1
@@ -68,15 +66,14 @@ public sealed class Pcre2BacktrackingCountFramesTests
     }
 
     [Theory]
-    [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
     public void DenialReleasesExclusiveCapacityWithoutRefundingWork(int deniedLimit)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = Create("(?i)(a+)(b)", new()
         {
-            MatchLimit = deniedLimit == 0 ? 30U : 1000000U,
             DepthLimit = deniedLimit == 1 ? 1U : 256U,
             HeapLimitInBytes = deniedLimit == 2 ? 1UL : 1UL << 20,
             ResultLimitInBytes = deniedLimit == 3 ? 1UL : 1UL << 20
@@ -85,7 +82,7 @@ public sealed class Pcre2BacktrackingCountFramesTests
         var invocation = Pcre2SliceDriver.CreateExclusiveInvocation(regex.DebugCompiledProgram.Request, default);
         Pcre2Runner.AdmitStart(bytes, 0, ref invocation);
         ReadOnlySpan<byte> input = bytes;
-        var validated = invocation.Budget.Steps;
+        var validated = invocation.Budget.DiagnosticCheckpoints;
         Exception? failure = null;
         try
         {
@@ -95,11 +92,10 @@ public sealed class Pcre2BacktrackingCountFramesTests
         }
         catch (Exception error) { failure = error; }
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        Assert.True(invocation.Budget.Steps > validated);
+        Assert.True(invocation.Budget.DiagnosticCheckpoints > validated);
         if (deniedLimit == 3) Assert.Null(failure); // Count retains no result payload.
         else Assert.Equal(deniedLimit switch
         {
-            0 => Pcre2ErrorKind.MatchLimit,
             1 => Pcre2ErrorKind.DepthLimit,
             _ => Pcre2ErrorKind.HeapLimit,
         }, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
@@ -111,6 +107,7 @@ public sealed class Pcre2BacktrackingCountFramesTests
     [InlineData(true)]
     public void InterruptionAndRetainedCapturesKeepTheirOriginalAuthority(bool cancel)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         long ticks = 0;
         using var token = new CancellationTokenSource();
         var armed = false;
@@ -128,7 +125,7 @@ public sealed class Pcre2BacktrackingCountFramesTests
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 3000)));
         Pcre2Runner.AdmitStart(bytes, 0, ref invocation);
         ReadOnlySpan<byte> input = bytes;
-        var validated = invocation.Budget.Steps;
+        var validated = invocation.Budget.DiagnosticCheckpoints;
         armed = true;
         Exception? failure = null;
         try
@@ -137,7 +134,7 @@ public sealed class Pcre2BacktrackingCountFramesTests
                 new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _);
         }
         catch (Exception error) { failure = error; }
-        Assert.True(reads >= 100 && invocation.Budget.Steps > validated);
+        Assert.True(reads >= 100 && invocation.Budget.DiagnosticCheckpoints > validated);
         Assert.True(invocation.Budget.PeakWorkingBytes > 0);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         if (cancel) Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
@@ -149,79 +146,13 @@ public sealed class Pcre2BacktrackingCountFramesTests
     }
 
     private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits? limits = null,
-        TimeSpan? timeout = null) => new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        TimeSpan? timeout = null)
+    {
+        var selected = limits ?? new() { DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 };
+        return new(pattern, Pcre2CompileOptions.None, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                )).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                )).MatchLimit,
-                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                )).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                )).DepthLimit,
-                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                )).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                )).HeapLimitInBytes,
-                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                )).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                )).ResultLimitInBytes
-            },
+            ResourcePolicy = selected.ToSliceLimits().ToResourcePolicy(),
             MatchTimeout = timeout ?? Timeout.InfiniteTimeSpan
         });
+    }
 }

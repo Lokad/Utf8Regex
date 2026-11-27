@@ -53,36 +53,6 @@ public sealed class PythonReReplacementPreparationAdmissionTests
 
     [Theory]
     [MemberData(nameof(Shapes))]
-    public void EveryWorkCutoffPreservesParentCapacityAndSpentWork(string template)
-    {
-        ulong work;
-        using (var measured = Utf8ConstructionScope.Enter()) { _ = Parse(template); work = measured.Budget.WorkSteps; }
-        for (var cap = 0ul; cap <= work; cap++)
-        {
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cap + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            using (var child = Utf8ConstructionScope.Enter())
-            {
-                var failure = Record.Exception(() => Parse(template));
-                if (cap < work)
-                {
-                    var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
-                    Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, breach.ResourceKind);
-                    Assert.Equal(cap + 2, breach.Limit);
-                }
-                else Assert.Null(failure);
-                Assert.True(owner.Budget.WorkSteps <= cap + 2);
-            }
-            AssertParent(owner.Budget, checkpoint, parent);
-            var spent = owner.Budget.WorkSteps;
-            using (var child = Utf8ConstructionScope.Enter()) { }
-            Assert.Equal(spent, owner.Budget.WorkSteps);
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(Shapes))]
     public void ByteAndDepthDenialsPreserveParentLoansAndFundedRecovery(string template)
     {
         ulong peak, depth, recovery;
@@ -90,7 +60,7 @@ public sealed class PythonReReplacementPreparationAdmissionTests
         using (var measured = Utf8ConstructionScope.Enter()) { _ = Parse(""); recovery = measured.Budget.PeakBytes; }
         foreach (var cap in new[] { 0ul, 1ul, 256ul, 1024ul, peak / 2, peak - 1, peak, peak + 128 }.Distinct())
         {
-            using var owner = new Utf8ConstructionScope(0, 128 + cap, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(0, 128 + cap, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
@@ -113,7 +83,7 @@ public sealed class PythonReReplacementPreparationAdmissionTests
         }
         for (var cap = 0ul; cap <= depth; cap++)
         {
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, cap);
+            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cap);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
@@ -137,7 +107,7 @@ public sealed class PythonReReplacementPreparationAdmissionTests
             var template = (string)shape[0];
             var checkpoints = 0;
             using (var measured = Utf8ConstructionScope.Enter())
-            { measured.Budget.CheckpointHook = _ => checkpoints++; _ = Parse(template); }
+            { measured.Budget.CheckpointHook = () => checkpoints++; _ = Parse(template); }
             for (var target = 1; target <= checkpoints; target++)
             {
                 using var owner = Utf8ConstructionScope.Enter();
@@ -149,12 +119,11 @@ public sealed class PythonReReplacementPreparationAdmissionTests
                 owner.Budget.Deadline = timeout ? Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(1)) : Utf8ExecutionDeadline.Infinite;
                 owner.Budget.CancellationToken = token.Token;
                 var calls = 0;
-                owner.Budget.CheckpointHook = _ => { if (++calls == target) { if (timeout) clock++; else token.Cancel(); } };
+                owner.Budget.CheckpointHook = () => { if (++calls == target) { if (timeout) clock++; else token.Cancel(); } };
                 var failure = Record.Exception(() => Parse(template));
                 if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
                 else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
                 AssertParent(owner.Budget, checkpoint, parent);
-                Assert.True(owner.Budget.WorkSteps >= 2);
                 owner.Budget.CheckpointHook = null;
                 owner.Budget.Deadline = Utf8ExecutionDeadline.Infinite;
                 owner.Budget.CancellationToken = default;
@@ -179,6 +148,7 @@ public sealed class PythonReReplacementPreparationAdmissionTests
     [InlineData(@"\777", @"octal escape value \777 outside of range 0-0o377", 0)]
     public void GrammarErrorsKeepTheirMessagePositionAndParentState(string template, string message, int position)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var owner = Utf8ConstructionScope.Enter();
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
@@ -186,7 +156,7 @@ public sealed class PythonReReplacementPreparationAdmissionTests
         Assert.Equal(message, error.Message);
         Assert.Equal(position, error.Position);
         AssertParent(owner.Budget, checkpoint, parent);
-        Assert.True(owner.Budget.WorkSteps > 2);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > 2);
         using (var recovery = Utf8ConstructionScope.Enter()) { _ = Parse(""); }
         AssertParent(owner.Budget, checkpoint, parent);
     }
@@ -207,7 +177,6 @@ public sealed class PythonReReplacementPreparationAdmissionTests
         {
             var policy = finite ? new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576

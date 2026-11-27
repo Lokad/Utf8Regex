@@ -20,7 +20,7 @@ public sealed class Utf8PositiveCategoryRepeatTests
         using var ordinary = new Utf8Regex(pattern);
         using var funded = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256, MaxWorkingBytes = 4096 },
+            ResourcePolicy = new() { MaxWorkingBytes = 4096 },
         });
         using var live = new CancellationTokenSource();
         Assert.Equal(expected, ordinary.IsMatch(input));
@@ -89,25 +89,17 @@ public sealed class Utf8PositiveCategoryRepeatTests
     [Fact]
     public void EveryPositiveWorkCutoffKeepsTheParentLoan()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex(@"([a\p{L}]{2,4})@");
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var input = "aaé@ Aaa@"u8.ToArray();
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
-        var baseline = new Utf8SliceInvocation(new(100000, 16, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var baseline = new Utf8SliceInvocation(new(16, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         var result = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref baseline);
         Assert.Equal((2, Utf8ExecutionLimitKind.None), (result.Count, result.Breach));
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
-        for (ulong limit = 1; limit <= baseline.Budget.Steps; limit++)
-        {
-            var invocation = new Utf8SliceInvocation(new(limit, 16, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var actual = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation);
-            Assert.Equal(limit == baseline.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps,
-                actual.Breach);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]
@@ -127,7 +119,7 @@ public sealed class Utf8PositiveCategoryRepeatTests
             entered = true;
             if (timeout) ticks = 25; else token.Cancel();
         });
-        var invocation = new Utf8SliceInvocation(new(1000000, 16, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
+        var invocation = new Utf8SliceInvocation(new(16, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         try
         {

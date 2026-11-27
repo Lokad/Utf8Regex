@@ -61,7 +61,6 @@ public sealed class Pcre2AnchoredEmptyIterationTests
         {
             ResourcePolicy = finite ? new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20,

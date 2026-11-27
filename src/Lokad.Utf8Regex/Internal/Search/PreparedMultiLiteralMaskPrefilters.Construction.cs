@@ -35,7 +35,7 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             MaskLength = MaskOffsets.Length;
             LowMaskVectors = budget.AllocateArray<Vector256<byte>>(MaskLength, false);
             HighMaskVectors = budget.AllocateArray<Vector256<byte>>(MaskLength, false);
-            budget.ChargeWork(256);
+            budget.Checkpoint();
             Span<bool> firstSeen = stackalloc bool[256];
             firstSeen.Clear();
             Span<byte> firstBytes = stackalloc byte[256];
@@ -44,12 +44,12 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             var firstCount = 0;
             for (var offset = 0; offset < MaskLength; offset++)
             {
-                budget.ChargeWork(32);
+                budget.Checkpoint();
                 lowTable.Clear();
                 highTable.Clear();
                 for (var literalIndex = 0; literalIndex < literals.Length; literalIndex++)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     var bit = (byte)(1 << literalIndex);
                     var value = literals[literalIndex][MaskOffsets[offset]];
                     AddMaskValue(lowTable, highTable, value, bit);
@@ -59,7 +59,7 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
                         Utf8InvariantCyrillicCase.TryGetCounterpartByte(literals[literalIndex], MaskOffsets[offset], out var counterpart))
                         AddMaskValue(lowTable, highTable, counterpart, bit);
                 }
-                budget.ChargeWork(32);
+                budget.Checkpoint();
                 var lowMask = Vector128.Create(
                     lowTable[0], lowTable[1], lowTable[2], lowTable[3],
                     lowTable[4], lowTable[5], lowTable[6], lowTable[7],
@@ -75,7 +75,7 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             }
             for (var literalIndex = 0; literalIndex < literals.Length; literalIndex++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var first = literals[literalIndex][0];
                 if (!firstSeen[first]) { firstSeen[first] = true; firstBytes[firstCount++] = first; }
                 if (asciiIgnoreCase && IsFoldedAsciiLetter(first))
@@ -96,7 +96,7 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
     private static int[] CreateSequentialOffsets(int shortestLength, Utf8ConstructionBudget budget)
     {
         var offsets = budget.AllocateArray<int>(Math.Min(MaxMaskLen, shortestLength), false);
-        budget.ChargeWork((ulong)offsets.Length);
+        budget.Checkpoint();
         for (var offset = 0; offset < offsets.Length; offset++) offsets[offset] = offset;
         return offsets;
     }
@@ -107,7 +107,7 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
         if (threeScalars)
             foreach (var literal in literals)
             {
-                budget.ChargeWork(9);
+                budget.Checkpoint();
                 if (!(literal[0] is >= 0xE0 and < 0xF0 && literal[1] is >= 0x80 and < 0xC0 && literal[2] is >= 0x80 and < 0xC0 &&
                     literal[3] is >= 0xE0 and < 0xF0 && literal[4] is >= 0x80 and < 0xC0 && literal[5] is >= 0x80 and < 0xC0 &&
                     literal[6] is >= 0xE0 and < 0xF0 && literal[7] is >= 0x80 and < 0xC0 && literal[8] is >= 0x80 and < 0xC0))
@@ -115,7 +115,7 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             }
         if (!threeScalars) return CreateSequentialOffsets(shortestLength, budget);
         var offsets = budget.AllocateArray<int>(3, false);
-        budget.ChargeWork(3);
+        budget.Checkpoint();
         offsets[0] = 2; offsets[1] = 5; offsets[2] = 8;
         return offsets;
     }
@@ -124,7 +124,7 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
     {
         const int selectedCount = 3;
         var offsets = budget.AllocateArray<int>(selectedCount, false);
-        budget.ChargeWork((ulong)literals.Length);
+        budget.Checkpoint();
         Span<long> weights = stackalloc long[literals.Length]; // Eligibility bounds this extent to eight.
         weights.Fill(1);
         for (var pick = 0; pick < selectedCount; pick++)
@@ -133,22 +133,22 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             var bestScore = long.MaxValue;
             for (var offset = 0; offset < shortestLength; offset++)
             {
-                budget.ChargeWork((ulong)(pick + 1));
+                budget.Checkpoint();
                 // At most three offsets are selected; no length-sized bitmap is needed.
                 if (offsets.AsSpan(0, pick).Contains(offset)) continue;
                 long score = 0;
                 for (var literalIndex = 0; literalIndex < literals.Length; literalIndex++)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     score += weights[literalIndex] * (AsciiSearch.GetAsciiFrequencyRank(literals[literalIndex][offset]) + 1L);
                 }
                 if (score < bestScore) { bestScore = score; bestOffset = offset; }
             }
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             offsets[pick] = bestOffset;
             for (var literalIndex = 0; literalIndex < literals.Length; literalIndex++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 weights[literalIndex] *= AsciiSearch.GetAsciiFrequencyRank(literals[literalIndex][bestOffset]) + 1L;
             }
         }

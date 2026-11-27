@@ -73,7 +73,7 @@ internal sealed class Utf8ReplacementPattern
         var special = false;
         foreach (var token in tokens)
         {
-            storage.Budget.ChargeWork(1);
+            storage.Budget.Checkpoint();
             substitutions |= token.Kind != Utf8ReplacementTokenKind.Literal;
             groups |= token.Kind == Utf8ReplacementTokenKind.Group;
             names |= token.Kind == Utf8ReplacementTokenKind.Group && token.GroupNumber < 0 && token.Name is not null;
@@ -93,14 +93,14 @@ internal sealed class Utf8ReplacementPattern
         var position = 0;
         while (position < replacement.Length)
         {
-            storage.Budget.ChargeWork(1);
+            storage.Budget.Checkpoint();
             var current = replacement[position];
             if (current != '$')
             {
                 var block = replacement.Slice(position, Math.Min(2048, replacement.Length - position));
                 var dollar = block.IndexOf((byte)'$');
                 var length = dollar < 0 ? block.Length : dollar;
-                storage.Budget.ChargeWork((ulong)(length - 1));
+                storage.Budget.Checkpoint();
                 literal.AddRange(block[..length]);
                 position += length; continue;
             }
@@ -140,7 +140,7 @@ internal sealed class Utf8ReplacementPattern
         for (var offset = 0; offset < length;)
         {
             var count = Math.Min(2048, length - offset);
-            storage.Budget.ChargeWork((ulong)count);
+            storage.Budget.Checkpoint();
             source.Slice(start + offset, count).CopyTo(result.AsSpan(offset, count));
             offset += count;
         }
@@ -174,7 +174,7 @@ internal sealed class Utf8ReplacementPattern
         var matchedNumber = -1;
         while (end < replacement.Length && IsAsciiDigit((char)replacement[end]))
         {
-            storage.Budget.ChargeWork(1);
+            storage.Budget.Checkpoint();
             value = value * 10 + (replacement[end] - '0');
             if (value > int.MaxValue)
             {
@@ -202,7 +202,7 @@ internal sealed class Utf8ReplacementPattern
         var close = position + 2;
         while (close < replacement.Length)
         {
-            storage.Budget.ChargeWork(1);
+            storage.Budget.Checkpoint();
             if (replacement[close] == '}') break;
             close++;
         }
@@ -243,7 +243,7 @@ internal sealed class Utf8ReplacementPattern
         var value = 0L;
         for (var index = start; index < start + length; index++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var c = (char)source[index];
             if (!IsAsciiDigit(c)) return false;
             value = value * 10 + (c - '0');
@@ -261,7 +261,7 @@ internal sealed class Utf8ReplacementPattern
     {
         foreach (var number in numbers)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (number == candidate) return true;
         }
         return false;
@@ -277,7 +277,7 @@ internal sealed class Utf8ReplacementPattern
         Utf8ConstructionBuffer<byte>? merged = null;
         foreach (var token in Tokens)
         {
-            storage.Budget.ChargeWork(1);
+            storage.Budget.Checkpoint();
             var normalized = NormalizeGroupReference(storage, token, validGroupNumbers, validGroupNames);
             if (normalized.Kind == Utf8ReplacementTokenKind.Literal)
             {
@@ -306,7 +306,7 @@ internal sealed class Utf8ReplacementPattern
         ref Utf8ReplacementToken? pending, ref Utf8ConstructionBuffer<byte>? merged)
     {
         if (pending is not { } literal) return;
-        storage.Budget.ChargeWork(1);
+        storage.Budget.Checkpoint();
         resolved.Add(merged is null ? literal : new(Utf8ReplacementTokenKind.Literal, storage.Copy(merged), -1, false));
         pending = null;
         if (merged is not null) { merged.Clear(); merged = null; }
@@ -324,7 +324,7 @@ internal sealed class Utf8ReplacementPattern
         {
             for (var i = 0; i < validGroupNames.Length && i < validGroupNumbers.Length; i++)
             {
-                storage.Budget.ChargeWork(1 + (ulong)Math.Min(validGroupNames[i]?.Length ?? 0, name.Length));
+                storage.Budget.Checkpoint();
                 if (string.Equals(validGroupNames[i], name, StringComparison.Ordinal))
                     return new Utf8ReplacementToken(Utf8ReplacementTokenKind.Group, null, validGroupNumbers[i], token.IsBraceEnclosed);
             }

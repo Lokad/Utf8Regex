@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ExactLiteralSetAdmissionTests
 {
     public static IEnumerable<object[]> Families() => Enumerable.Range(0, 19).Select(i => new object[] { i });
-    public static IEnumerable<object[]> Cutoffs() => from kind in Enumerable.Range(0, 3) from bytes in new[] { false, true } select new object[] { kind, bytes };
+    public static IEnumerable<object[]> Cutoffs() => from kind in Enumerable.Range(0, 3) select new object[] { kind };
     public static IEnumerable<object[]> Depths() => from kind in Enumerable.Range(0, 3) from depth in Enumerable.Range(0, 5) select new object[] { kind, depth };
     private static byte[][] Bytes(params string[] values) => values.Select(Encoding.UTF8.GetBytes).ToArray();
     private static byte[][] Family(int id) => id switch
@@ -77,7 +77,7 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     public void ExactBucketsFollowIndependentOrderPrefixAndMembershipModelsWithExactLoans(int family)
     {
         var literals = Family(family); var groups = Groups(literals);
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
         var data = AsciiSearch.CreateExactLiteralSearchData(literals);
         Assert.Equal(literals.Length == 0 ? int.MaxValue : literals.Min(v => v.Length), data.ShortestLength);
@@ -107,7 +107,7 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     public void OnlySelectedStrategiesAcquireAnchorsOrTries(int family)
     {
         var values = Family(family);
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
         var search = new PreparedLiteralSetSearch(values);
         Assert.Equal(Strategy(values), search.Strategy);
@@ -127,31 +127,30 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     }
     [Theory]
     [MemberData(nameof(Cutoffs))]
-    public void EveryByteAndWorkCutoffRefundsChildrenAndPreservesFundedParentAndSpentWork(int kind, bool bytes)
+    public void ByteCutoffsPreserveFundedParents(int kind)
     {
         var values = CutoffFamily(kind);
-        const ulong parentLoan = 128, parentWork = 2;
-        ulong peak, work;
-        using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        const ulong parentLoan = 128;
+        ulong peak;
+        using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue))
         {
             _ = funded.Budget.AllocateObject(17, static value => new Box(value));
-            _ = Prepare(kind, values); peak = funded.Budget.PeakBytes - parentLoan; work = funded.Budget.WorkSteps - parentWork;
+            _ = Prepare(kind, values); peak = funded.Budget.PeakBytes - parentLoan;
         }
         var successes = 0;
-        for (var allowance = 0ul; allowance <= (bytes ? peak : work); allowance++)
+        for (var allowance = 0ul; allowance <= peak; allowance++)
         {
-            using var owner = new Utf8ConstructionScope(0, bytes ? parentLoan + allowance : ulong.MaxValue,
-                bytes ? ulong.MaxValue : parentWork + allowance, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(0, parentLoan + allowance,
+                ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
             var loan = 0ul; var error = Record.Exception(() => loan = Prepare(kind, values));
             if (error is null) { successes++; Assert.Equal(parentLoan + loan, owner.Budget.ReservedBytes); }
             else
             {
-                Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
+                Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes,
                     Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
                 Assert.Equal(parentLoan, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             }
-            Assert.InRange(owner.Budget.WorkSteps, parentWork, bytes ? ulong.MaxValue : parentWork + allowance);
             Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
         }
         Assert.Equal(1, successes);
@@ -164,7 +163,7 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
         var values = kind == 0 ? Family(13) : kind == 1 ? Family(7) : Family(9);
         // Four-byte search membership no longer acquires a nested set owner.
         var required = 3;
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, (ulong)depth);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Record.Exception(() => { if (kind == 0) _ = AsciiSearch.CreateExactLiteralSearchData(values); else _ = new PreparedLiteralSetSearch(values); });
         if (depth < required)
@@ -180,10 +179,10 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     [Fact]
     public void EmptyFamiliesBorrowEveryExtentWithoutAnAllowance()
     {
-        using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var owner = new Utf8ConstructionScope(0, 0, 0);
         var data = AsciiSearch.CreateExactLiteralSearchData([]); Assert.Empty(data.Buckets); Assert.Empty(data.BucketIndexMap);
         Assert.Equal(PreparedLiteralSetStrategy.Empty, new PreparedLiteralSetSearch(Array.Empty<byte[]>()).Strategy);
-        Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakDepth);
+        Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
     }
 
     [Theory]
@@ -192,7 +191,7 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     public void SharedPrefixSelectionDoesNotBuildUnusedAnchorsOrTriesAsFamilyGrows(int count)
     {
         var values = Enumerable.Range(0, count).Select(i => Encoding.UTF8.GetBytes("prefix" + i)).ToArray();
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         var search = new PreparedLiteralSetSearch(values);
         Assert.Equal(PreparedLiteralSetStrategy.SingleBucketPrefix, search.Strategy);
         Assert.Null(Property(search, "UniqueAnchor"));

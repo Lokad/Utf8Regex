@@ -17,7 +17,6 @@ public sealed class Utf8ScalarOnlyPreparationTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 512,
                 MaxWorkingBytes = 2 << 20,
                 MaxResultBytes = 1 << 20

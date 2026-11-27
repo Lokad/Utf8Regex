@@ -73,40 +73,9 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
 
     [Theory]
     [MemberData(nameof(Shapes))]
-    public void EveryWorkCutoffRestoresParentAndNeverRefundsSpentWork(string template, bool ecma)
-    {
-        ulong work;
-        using (var measured = Utf8ConstructionScope.Enter())
-        {
-            Create(template, ecma);
-            work = measured.Budget.WorkSteps;
-        }
-        for (var cutoff = 0ul; cutoff <= work; cutoff++)
-        {
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            using (var discarded = Utf8ConstructionScope.Enter())
-            {
-                var failure = Record.Exception(() => Create(template, ecma));
-                if (cutoff < work)
-                {
-                    var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
-                    Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, breach.ResourceKind);
-                    Assert.Equal(cutoff + 2, breach.Limit);
-                    Assert.True(breach.Requested > breach.Limit);
-                }
-                else Assert.Null(failure);
-            }
-            AssertParent(owner.Budget, checkpoint, parent);
-            Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2);
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(Shapes))]
     public void CapacityAndDepthCutoffsRecoverWithoutLosingParentLoans(string template, bool ecma)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         ulong peak, depth, recoveryPeak;
         using (var measured = Utf8ConstructionScope.Enter())
         {
@@ -123,7 +92,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         }
         foreach (var cap in new[] { 128ul, 224ul, 512ul, 1024ul, peak / 2, peak - 1, peak }.Distinct().Order())
         {
-            using var owner = new Utf8ConstructionScope(0, cap, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(0, cap, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             using (var discarded = Utf8ConstructionScope.Enter())
@@ -142,15 +111,15 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
             Assert.True(owner.Budget.PeakBytes <= cap);
             if (cap >= recoveryPeak)
             {
-                var spent = owner.Budget.WorkSteps;
+                var spent = owner.Budget.DiagnosticCheckpoints;
                 using (var discarded = Utf8ConstructionScope.Enter()) Create("a", false);
-                Assert.True(owner.Budget.WorkSteps > spent);
+                Assert.True(owner.Budget.DiagnosticCheckpoints > spent);
                 AssertParent(owner.Budget, checkpoint, parent);
             }
         }
         for (var cap = 0ul; cap < depth; cap++)
         {
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, cap);
+            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cap);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             var breach = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(template, ecma));
@@ -177,7 +146,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         var count = 0;
         using (var measured = Utf8ConstructionScope.Enter())
         {
-            measured.Budget.CheckpointHook = _ => count++;
+            measured.Budget.CheckpointHook = () => count++;
             Create(template, ecma);
         }
         Assert.True(count > 0);
@@ -193,7 +162,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
             owner.Budget.Deadline = deadline;
             owner.Budget.CancellationToken = cancellation.Token;
             var current = 0;
-            owner.Budget.CheckpointHook = _ =>
+            owner.Budget.CheckpointHook = () =>
             {
                 if (++current != target) return;
                 if (timeout) ticks = 30000;
@@ -247,38 +216,23 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
     [InlineData("literal-text")]
     public void StandaloneFactoriesKeepEveryWorkCutoffAndInterruptionInTheParentOwner(string stage)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var operation = Stage(stage);
         ulong work, peak, depth;
         var checkpoints = 0;
         using (var measured = Utf8ConstructionScope.Enter())
         {
             measured.Budget.AllocateObject(17, static value => new ParentValue(value));
-            measured.Budget.CheckpointHook = _ => checkpoints++;
+            measured.Budget.CheckpointHook = () => checkpoints++;
             operation();
-            work = measured.Budget.WorkSteps - 2;
+            work = measured.Budget.DiagnosticCheckpoints - 2;
             peak = measured.Budget.PeakBytes;
             depth = measured.Budget.PeakDepth;
         }
         Assert.True(work > 0);
-        for (var cap = 0ul; cap <= work; cap++)
-        {
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cap + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            using (var discarded = Utf8ConstructionScope.Enter())
-            {
-                var failure = Record.Exception(() => operation());
-                if (cap < work)
-                    Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
-                        Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                else Assert.Null(failure);
-            }
-            AssertParent(owner.Budget, checkpoint, parent);
-            Assert.InRange(owner.Budget.WorkSteps, 2ul, cap + 2);
-        }
         foreach (var cap in new[] { 128ul, 224ul, 512ul, peak / 2, peak - 1, peak }.Distinct().Order())
         {
-            using var owner = new Utf8ConstructionScope(0, cap, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(0, cap, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             using (var discarded = Utf8ConstructionScope.Enter())
@@ -294,7 +248,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         }
         for (var cap = 0ul; cap < depth; cap++)
         {
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, cap);
+            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cap);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth,
@@ -313,7 +267,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
             owner.Budget.Deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromSeconds(30));
             owner.Budget.CancellationToken = cancellation.Token;
             var current = 0;
-            owner.Budget.CheckpointHook = _ =>
+            owner.Budget.CheckpointHook = () =>
             {
                 if (++current != target) return;
                 if (timeout) ticks = 30000;

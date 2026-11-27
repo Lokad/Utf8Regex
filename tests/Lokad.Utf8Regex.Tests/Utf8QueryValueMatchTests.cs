@@ -14,7 +14,7 @@ public sealed class Utf8QueryValueMatchTests
     private const string Hex = @"^(?<before>.*)(https://go(\.testing)?\.lokad.com|~)(?<trigram>/[a-zA-Z0-9]+)?/gateway/BigFiles/Browse/Download\?hash=(?<hash>[a-fA-F0-9]*)(?<optPath>[?&]path=[^& \n]+)?[?&]name=(?<name>[^& ]+)(?<optPath2>[?&]path=[^& \n]+)?(?<rest>.*)$";
     private const string Route = "/gateway/BigFiles/Browse/Download?hash=";
     private const RegexOptions Fold = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 20000000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 8 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 8 << 20 };
 
     [Theory]
     [InlineData(false)] [InlineData(true)]

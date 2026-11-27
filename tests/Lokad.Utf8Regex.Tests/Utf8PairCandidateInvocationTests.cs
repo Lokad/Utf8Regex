@@ -23,7 +23,7 @@ public sealed class Utf8PairCandidateInvocationTests
         var input = storage.AsSpan(3, bytes.Length);
         foreach (var end in new[] { firstOffset + 1, firstOffset + second.Length - 1, input.Length })
         {
-            var invocation = new Utf8SliceInvocation(new(100000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(new(1, 7, 1), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
             Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
                 literals, false, input, 0, end, false, ref invocation, out var match, out var found));
@@ -75,7 +75,7 @@ public sealed class Utf8PairCandidateInvocationTests
                     if (relative >= 0 && (expected < 0 || start + relative < expected))
                     { expected = start + relative; ordinal = id; }
                 }
-                var invocation = new Utf8SliceInvocation(new(1000000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+                var invocation = new Utf8SliceInvocation(new(1, 7, 1), Regex.InfiniteMatchTimeout, default);
                 Assert.True(invocation.Ledger.TryReserve(7));
                 var finder = new PreparedSearcher(new PreparedMultiLiteralSearch(literals, false));
                 var breach = prepared ? finder.TryFindMatch(input, start, end, false,
@@ -107,7 +107,7 @@ public sealed class Utf8PairCandidateInvocationTests
             input.AsSpan(0, padding).Fill((byte)'x');
             longer.CopyTo(input, padding);
             var finder = new PreparedSearcher(new PreparedMultiLiteralSearch(["abc"u8.ToArray(), longer], false));
-            var invocation = new Utf8SliceInvocation(new(1000000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(new(1, 7, 1), Regex.InfiniteMatchTimeout, default);
             Assert.Equal(Utf8ExecutionLimitKind.None, finder.TryFindMatch(input, 0, input.Length, false,
                 ref invocation, out var match, out var found));
             Assert.True(found);
@@ -120,21 +120,10 @@ public sealed class Utf8PairCandidateInvocationTests
     {
         var input = Encoding.UTF8.GetBytes(new string('x', 5000) + (hit ? "needle" : "needlx"));
         var finder = new PreparedSearcher(new PreparedMultiLiteralSearch(["needle"u8.ToArray(), "target"u8.ToArray()], false));
-        var reference = new Utf8SliceInvocation(new(1000000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+        var reference = new Utf8SliceInvocation(new(1, 7, 1), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, finder.TryFindMatch(input, 0, input.Length, false,
             ref reference, out _, out var expected));
         Assert.Equal(hit, expected);
-        for (ulong cap = 1; cap < reference.Budget.Steps; cap++)
-        {
-            var limited = new Utf8SliceInvocation(new(cap, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
-            Assert.True(limited.Ledger.TryReserve(7));
-            for (var attempt = 0; attempt < 2; attempt++)
-            {
-                Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, finder.TryFindMatch(input, 0, input.Length, false,
-                    ref limited, out var match, out var found));
-                Assert.False(found); Assert.Equal(default, match); Assert.Equal(7UL, limited.Ledger.ReservedBytes);
-            }
-        }
     }
 
     [Fact]
@@ -146,7 +135,7 @@ public sealed class Utf8PairCandidateInvocationTests
         foreach (var longFirst in new[] { false, true })
         {
             byte[][] literals = longFirst ? [longNeedle, shortNeedle] : [shortNeedle, longNeedle];
-            var invocation = new Utf8SliceInvocation(new(1000000, 0, 0), Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
             Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
                 literals, false, input, 0, input.Length, false, ref invocation, out var match, out var found));
             Assert.True(found);
@@ -161,23 +150,10 @@ public sealed class Utf8PairCandidateInvocationTests
     {
         byte[][] literals = ["abcd"u8.ToArray(), "bc"u8.ToArray()];
         var input = Encoding.UTF8.GetBytes(new string('x', 5000) + "abxx " + (hit ? "abcd" : "abx"));
-        var funded = new Utf8SliceInvocation(new(ulong.MaxValue, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+        var funded = new Utf8SliceInvocation(new(1, 7, 1), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
             literals, false, input, 0, input.Length, false, ref funded, out _, out var expected));
         Assert.Equal(hit, expected);
-        for (ulong cap = 1; cap < funded.Budget.Steps; cap++)
-        {
-            var limited = new Utf8SliceInvocation(new(cap, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
-            Assert.True(limited.Ledger.TryReserve(7));
-            for (var attempt = 0; attempt < 2; attempt++)
-            {
-                Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
-                    literals, false, input, 0, input.Length, false, ref limited, out var match, out var found));
-                Assert.False(found);
-                Assert.Equal(default, match);
-                Assert.Equal(7UL, limited.Ledger.ReservedBytes);
-            }
-        }
     }
 
     [Theory]
@@ -193,7 +169,7 @@ public sealed class Utf8PairCandidateInvocationTests
             ? [Encoding.UTF8.GetBytes(new string('a', 200000) + "z"), "b"u8.ToArray()]
             : ["needle"u8.ToArray(), "target"u8.ToArray()];
         var input = Encoding.UTF8.GetBytes(new string(compare ? 'a' : 'x', 320000));
-        var invocation = new Utf8SliceInvocation(new(1000000, 1, 7, 1),
+        var invocation = new Utf8SliceInvocation(new(1, 7, 1),
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         var entered = false;

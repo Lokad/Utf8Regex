@@ -24,7 +24,7 @@ internal sealed partial class PosixProgram
         nodes.Add(default); frames.Push(new(root, 0));
         while (frames.TryPop(out var frame))
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             ChartKind kind;
             var a = 0; var b = 0; var left = -1; var right = -1; var maximum = 0;
             Utf8SliceNode? first = null; Utf8SliceNode? second = null;
@@ -58,7 +58,7 @@ internal sealed partial class PosixProgram
         }
         for (var index = nodes.Count - 1; index >= 0; index--)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var node = nodes[index]; var last = node.LastGroup; var maximum = node.MaximumBytes;
             if (node.Left >= 0) last = Math.Max(last, nodes[node.Left].LastGroup);
             if (node.Right >= 0) last = Math.Max(last, nodes[node.Right].LastGroup);

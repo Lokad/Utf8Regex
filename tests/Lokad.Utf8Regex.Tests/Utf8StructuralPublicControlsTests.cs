@@ -16,7 +16,7 @@ public sealed class Utf8StructuralPublicControlsTests
     public void StructuralPatternsPreserveScalarResultsAndInvocationControls(bool compiled, string pattern, string value)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 2048,
+        var policy = new Utf8ResourcePolicy { MaxDepth = 2048,
             MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 };
         foreach (var limits in new Utf8ResourcePolicy?[] { null, policy })
         {
@@ -50,7 +50,7 @@ public sealed class Utf8StructuralPublicControlsTests
     public void SelectingPreparedEngineDoesNotAcquireDiscardedKernelBuffers(string pattern)
     {
         var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 0, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 0, ulong.MaxValue);
         var engine = Utf8CompiledEngineSelector.Select(regex.Inspection.PreparedRegex);
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
     }

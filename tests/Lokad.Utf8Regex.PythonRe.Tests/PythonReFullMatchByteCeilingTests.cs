@@ -16,7 +16,6 @@ public sealed class PythonReFullMatchByteCeilingTests
                 MatchTimeout = Timeout.InfiniteTimeSpan,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 10000,
                     MaxDepth = 1,
                     MaxWorkingBytes = maximum,
                     MaxResultBytes = 4096
@@ -39,7 +38,6 @@ public sealed class PythonReFullMatchByteCeilingTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10000,
                 MaxDepth = 1,
                 MaxWorkingBytes = allow ? 256UL : 1UL,
                 MaxResultBytes = 4096
@@ -64,7 +62,6 @@ public sealed class PythonReFullMatchByteCeilingTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 128,
                 MaxDepth = 16,
                 // The capture storage alone exceeds this limit, even if
                 // empty optional atoms need no backtracking frames.
@@ -73,7 +70,6 @@ public sealed class PythonReFullMatchByteCeilingTests
             },
             ConstructionPolicy = new()
             {
-                MaxWorkSteps = 16000000,
                 MaxDepth = 4096,
                 MaxInstructionCapacity = 1048576,
                 MaxBytes = 8 << 20

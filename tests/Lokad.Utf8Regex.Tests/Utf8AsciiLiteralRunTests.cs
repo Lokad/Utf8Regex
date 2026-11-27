@@ -34,30 +34,22 @@ public sealed class Utf8AsciiLiteralRunTests
     [InlineData(65)] [InlineData(127)] [InlineData(128)]
     public void EveryLiteralRetainsItsChargeAndEveryWorkCutoffReleasesParentLoan(int length)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex(new string('a', length));
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var input = Encoding.ASCII.GetBytes(new string('a', length));
-        var measured = new Utf8SliceInvocation(new(100000, 8, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var measured = new Utf8SliceInvocation(new(8, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(measured.Ledger.TryReserve(13));
         var outcome = Utf8SliceRunner.TryMatchAt(program, input, 0, [], [], true, ref measured);
         Assert.True(outcome.IsMatch);
-        Assert.Equal((ulong)length + 1, measured.Budget.Steps); // Each literal, then Accept.
+        Assert.Equal((ulong)length + 1, measured.Budget.DiagnosticCheckpoints); // Each literal, then Accept.
         Assert.Equal(13ul, measured.Ledger.ReservedBytes);
-        for (ulong limit = 1; limit < measured.Budget.Steps; limit++)
-        {
-            var invocation = new Utf8SliceInvocation(new(limit, 8, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var denied = Utf8SliceRunner.TryMatchAt(program, input, 0, [], [], true, ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
-            Assert.False(denied.IsMatch);
-            Assert.Equal(13ul, invocation.Ledger.ReservedBytes);
-        }
         for (var available = 0; available < length; available++)
         {
-            var invocation = new Utf8SliceInvocation(new(100000, 8, 1 << 20), Timeout.InfiniteTimeSpan, default);
+            var invocation = new Utf8SliceInvocation(new(8, 1 << 20), Timeout.InfiniteTimeSpan, default);
             var missing = Utf8SliceRunner.TryMatchAt(program, input.AsSpan(0, available), 0, [], [], true, ref invocation);
             Assert.False(missing.IsMatch);
-            Assert.Equal((ulong)available + 1, invocation.Budget.Steps);
+            Assert.Equal((ulong)available + 1, invocation.Budget.DiagnosticCheckpoints);
         }
     }
 
@@ -75,7 +67,7 @@ public sealed class Utf8AsciiLiteralRunTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var session = Utf8SearchDiagnosticsSession.Start(_ => { if (timeout) ticks = 25; else source.Cancel(); });
-        var invocation = new Utf8SliceInvocation(new(100000, 8, 1 << 20), TimeSpan.FromMilliseconds(20), source.Token);
+        var invocation = new Utf8SliceInvocation(new(8, 1 << 20), TimeSpan.FromMilliseconds(20), source.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         try
         {

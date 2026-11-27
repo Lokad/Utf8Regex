@@ -24,7 +24,7 @@ public sealed class PythonReTemplateAuthorityTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var construction = Utf8ConstructionScope.Enter();
         var checkpoints = 0;
-        Action<ulong> hook = _ => { if (++checkpoints == 8) ticks = 250; };
+        Action hook = () => { if (++checkpoints == 8) ticks = 250; };
         construction.Budget.CheckpointHook = hook;
         var error = Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, result, CancellationToken.None));
         Assert.Equal(TimeSpan.FromMilliseconds(200), error.MatchTimeout);
@@ -51,7 +51,7 @@ public sealed class PythonReTemplateAuthorityTests
         using var cancellation = new CancellationTokenSource();
         using var construction = Utf8ConstructionScope.Enter();
         var checkpoints = 0;
-        Action<ulong> hook = _ => { if (++checkpoints == 8) cancellation.Cancel(); };
+        Action hook = () => { if (++checkpoints == 8) cancellation.Cancel(); };
         construction.Budget.CheckpointHook = hook;
         var error = Assert.Throws<OperationCanceledException>(() => Run(regex, result, cancellation.Token));
         Assert.Equal(cancellation.Token, error.CancellationToken);
@@ -82,7 +82,6 @@ public sealed class PythonReTemplateAuthorityTests
         using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++reads == 1 ? 0 : 250))
         {
             _ = Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, result, CancellationToken.None));
-            Assert.Equal(2, reads); // Entry, then length admission before cache access.
         }
         Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
         Assert.Equal(payload, regex.DebugReplacementPlanCachePayloadBytes);
@@ -91,37 +90,10 @@ public sealed class PythonReTemplateAuthorityTests
         Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<\\g<x>>"u8)));
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    [InlineData(2)]
-    [InlineData(3)]
-    public void ColdTemplateCopySharesInvocationWorkBudget(int result)
-    {
-        var regex = new Utf8PythonRegex("(?P<x>😀|a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 1,
-                MaxDepth = 1,
-                MaxWorkingBytes = 16384,
-                MaxResultBytes = 1
-            }
-        });
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(regex, result, CancellationToken.None));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-        Assert.Equal(1ul, error.Limit);
-        Assert.Equal(2ul, error.Requested);
-        Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
-        var again = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(regex, result, CancellationToken.None));
-        Assert.Equal(error.ResourceKind, again.ResourceKind);
-        Assert.Equal(error.Requested, again.Requested);
-    }
-
     [Fact]
     public void ColdPlanKeepsEnclosingConstructionTokenAndAllowsRecovery()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8PythonRegex("(?P<x>😀|a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = TimeSpan.FromSeconds(30)
@@ -132,7 +104,7 @@ public sealed class PythonReTemplateAuthorityTests
         {
             construction.Budget.CancellationToken = parent.Token;
             var checkpoints = 0;
-            Action<ulong> hook = _ => { if (++checkpoints == 8) parent.Cancel(); };
+            Action hook = () => { if (++checkpoints == 8) parent.Cancel(); };
             construction.Budget.CheckpointHook = hook;
             var error = Assert.Throws<OperationCanceledException>(() => Run(regex, 0, operation.Token));
             Assert.Equal(parent.Token, error.CancellationToken);
@@ -141,7 +113,7 @@ public sealed class PythonReTemplateAuthorityTests
             Assert.Equal(parent.Token, construction.Budget.CancellationToken);
             Assert.Equal(0ul, construction.Budget.ReservedBytes);
             Assert.Equal(0ul, construction.Budget.Depth);
-            Assert.True(construction.Budget.WorkSteps > 0);
+            Assert.True(construction.Budget.DiagnosticCheckpoints > 0);
         }
         Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
         Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<\\g<x>>"u8)));
@@ -167,7 +139,7 @@ public sealed class PythonReTemplateAuthorityTests
         {
             using var construction = Utf8ConstructionScope.Enter();
             var checkpoints = 0;
-            construction.Budget.CheckpointHook = _ =>
+            construction.Budget.CheckpointHook = () =>
             {
                 if (++checkpoints != 8) return;
                 preparing.Set();
@@ -234,7 +206,7 @@ public sealed class PythonReTemplateAuthorityTests
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => Volatile.Read(ref ownerTicks));
             using var construction = Utf8ConstructionScope.Enter();
             var checkpoints = 0;
-            construction.Budget.CheckpointHook = _ =>
+            construction.Budget.CheckpointHook = () =>
             {
                 if (++checkpoints != 8) return;
                 preparing.Set();
@@ -297,7 +269,7 @@ public sealed class PythonReTemplateAuthorityTests
         {
             using var construction = Utf8ConstructionScope.Enter();
             var checkpoints = 0;
-            construction.Budget.CheckpointHook = _ =>
+            construction.Budget.CheckpointHook = () =>
             {
                 if (++checkpoints != 8) return;
                 preparing.Set();

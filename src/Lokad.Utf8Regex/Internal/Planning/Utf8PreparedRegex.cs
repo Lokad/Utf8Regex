@@ -43,7 +43,7 @@ internal sealed class Utf8PreparedRegex
         byte[]? literalUtf8, Utf8AnchoredLiteralPlan anchoredLiteral, Utf8ConstructionBudget budget)
     {
         budget.CheckBytes(ObjectBytes);
-        budget.ChargeWork(2);
+        budget.Checkpoint();
         ref readonly var prefilter = ref searchPlan.RequiredPrefilterSearcher;
         var requiredLiteralProvesMatch = false;
         var requiredLiteralContinuation = 0;

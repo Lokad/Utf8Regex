@@ -7,24 +7,6 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2PartialProbeAuthorityTests
 {
-    [Theory]
-    [InlineData("(a)b+", "abbbb")]
-    [InlineData("(a)b+", "zzzz")]
-    public void SpecializedProbeDiscoveryCannotBypassWork(string pattern, string text)
-    {
-        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        Assert.NotEqual(Pcre2PartialProbeProgramKind.None, regex.DebugCompiledProgram.PartialProbe.Kind);
-        var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = regex.Probe(input, Pcre2PartialMode.Soft); }).ErrorKind);
-    }
 
     [Fact]
     public void SpecializedFullProbeAdmitsItsOwnedArray()
@@ -89,7 +71,6 @@ public sealed class Pcre2PartialProbeAuthorityTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 10000,
                 MaxWorkingBytes = 4096
             },
             MatchTimeout = Timeout.InfiniteTimeSpan

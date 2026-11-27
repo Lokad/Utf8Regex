@@ -86,7 +86,7 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
         {
             Check();
             var count = Math.Min(BlockLength, source.Length - offset);
-            storage.Budget.ChargeWork((ulong)count);
+            storage.Budget.Checkpoint();
             source.Slice(offset, count).CopyTo(result.AsSpan(offset, count));
             offset += count;
         }
@@ -100,7 +100,7 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
         {
             Check();
             // A work unit admits one bounded span search, including a miss.
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var count = Math.Min(BlockLength, source.Length - offset);
             var block = source.Slice(offset, count);
             var hit = first == second ? block.IndexOf(first) : block.IndexOfAny(first, second);
@@ -133,7 +133,7 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
         try
         {
             if (s_current.HasInvocation)
-                Pcre2SliceDriver.ThrowIfSliceBreached(s_current.Invocation.TryChargeInputStep());
+                Pcre2SliceDriver.ThrowIfSliceBreached(s_current.Invocation.CheckInput());
             else s_current.Deadline.CheckNow();
             s_current.Token.ThrowIfCancellationRequested();
         }

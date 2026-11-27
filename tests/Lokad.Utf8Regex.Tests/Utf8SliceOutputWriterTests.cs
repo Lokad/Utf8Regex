@@ -13,10 +13,10 @@ public sealed class Utf8SliceOutputWriterTests
 {
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_buffer")]
     private static extern ref byte[]? Buffer(ref Utf8SliceOutputWriter writer);
-    private static Utf8SliceInvocation Invoke(ulong work, uint depth, ulong bytes)
+    private static Utf8SliceInvocation Invoke(uint depth, ulong bytes)
     {
         return new Utf8SliceInvocation(
-            new Utf8ExecutionLimits(work, depth, bytes),
+            new Utf8ExecutionLimits(depth, bytes),
             Regex.InfiniteMatchTimeout,
             CancellationToken.None);
     }
@@ -24,7 +24,7 @@ public sealed class Utf8SliceOutputWriterTests
     [Fact]
     public void AsciiAndAstralRoundTrip()
     {
-        var invocation = Invoke(0, 0, 0);
+        var invocation = Invoke(0, 0);
         Assert.True(Utf8SliceOutputWriter.Rent(16, ref invocation, out var writer));
         Assert.True(writer.Append("ab"u8, ref invocation));
         Assert.True(writer.AppendUtf16("caf\u00E9\U0001F600Z".AsSpan(), ref invocation));
@@ -36,7 +36,7 @@ public sealed class Utf8SliceOutputWriterTests
     [Fact]
     public void GrowthKeepsContentAndBalances()
     {
-        var invocation = Invoke(0, 0, 0);
+        var invocation = Invoke(0, 0);
         Assert.True(Utf8SliceOutputWriter.Rent(4, ref invocation, out var writer));
         var payload = new byte[100];
         Array.Fill(payload, (byte)120);
@@ -53,7 +53,7 @@ public sealed class Utf8SliceOutputWriterTests
     [Fact]
     public void FiniteHeapFailClosesGrowthKeepingOldBuffer()
     {
-        var invocation = Invoke(0, 0, 96);
+        var invocation = Invoke(0, 96);
         Assert.True(Utf8SliceOutputWriter.Rent(8, ref invocation, out var writer));
         Assert.True(writer.Append("abcd"u8, ref invocation));
         var original = Buffer(ref writer);
@@ -71,7 +71,7 @@ public sealed class Utf8SliceOutputWriterTests
     [Fact]
     public void RentBeyondHeapFailsWithoutReservation()
     {
-        var invocation = Invoke(0, 0, 47);
+        var invocation = Invoke(0, 47);
         Assert.False(Utf8SliceOutputWriter.Rent(8, ref invocation, out var writer));
         Assert.False(writer.Append("x"u8, ref invocation));
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
@@ -80,7 +80,7 @@ public sealed class Utf8SliceOutputWriterTests
     [Fact]
     public void EmptyAppendsSucceedWithoutGrowth()
     {
-        var invocation = Invoke(0, 0, 0);
+        var invocation = Invoke(0, 0);
         Assert.True(Utf8SliceOutputWriter.Rent(0, ref invocation, out var writer));
         Assert.True(writer.Append(ReadOnlySpan<byte>.Empty, ref invocation));
         Assert.True(writer.AppendUtf16(ReadOnlySpan<char>.Empty, ref invocation));
@@ -93,7 +93,7 @@ public sealed class Utf8SliceOutputWriterTests
     [Fact]
     public void ReleaseIsIdempotent()
     {
-        var invocation = Invoke(0, 0, 0);
+        var invocation = Invoke(0, 0);
         Assert.True(Utf8SliceOutputWriter.Rent(8, ref invocation, out var writer));
         Assert.True(writer.Append("ab"u8, ref invocation));
         Assert.True(writer.TryToArrayAndRelease(ref invocation, out var result));
@@ -110,7 +110,7 @@ public sealed class Utf8SliceOutputWriterTests
             new string('x', 2048), new string('x', 2049), new string('x', 2047) + "😀" })
         foreach (var capacity in new[] { 64, 8192 })
         {
-            var invocation = Invoke(100000, 64, 1 << 20);
+            var invocation = Invoke(64, 1 << 20);
             Assert.True(Utf8SliceOutputWriter.Rent(capacity, ref invocation, out var writer));
             try
             {
@@ -127,38 +127,14 @@ public sealed class Utf8SliceOutputWriterTests
     [Fact]
     public void EveryShortEncodingWorkCutoffKeepsThePriorLogicalOutput()
     {
-        var measured = Invoke(100000, 64, 1 << 20);
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
+        var measured = Invoke(64, 1 << 20);
         Assert.True(Utf8SliceOutputWriter.Rent(64, ref measured, out var baseline));
         Assert.True(baseline.Append("seed:"u8, ref measured));
-        var seed = measured.Budget.Steps;
+        var seed = measured.Budget.DiagnosticCheckpoints;
         Assert.True(baseline.AppendUtf16("é😀", ref measured));
-        var work = measured.Budget.Steps - seed;
+        var work = measured.Budget.DiagnosticCheckpoints - seed;
         baseline.Release(ref measured);
         Assert.True(work > 0);
-        for (ulong cutoff = 0; cutoff <= work; cutoff++)
-        {
-            var invocation = Invoke(seed + cutoff, 64, 1 << 20);
-            Assert.True(Utf8SliceOutputWriter.Rent(64, ref invocation, out var writer));
-            try
-            {
-                Assert.True(writer.Append("seed:"u8, ref invocation));
-                var reserved = invocation.Ledger.ReservedBytes;
-                var failure = Record.Exception(() => writer.AppendUtf16("é😀", ref invocation));
-                if (cutoff == work)
-                {
-                    Assert.Null(failure);
-                    Assert.Equal("seed:é😀"u8.ToArray(), writer.WrittenBytes.ToArray());
-                }
-                else
-                {
-                    Assert.IsAssignableFrom<InvalidOperationException>(failure);
-                    Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.Budget.LimitBreach);
-                    Assert.Equal("seed:"u8.ToArray(), writer.WrittenBytes.ToArray());
-                }
-                Assert.Equal(reserved, invocation.Ledger.ReservedBytes);
-            }
-            finally { writer.Release(ref invocation); }
-            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        }
     }
 }

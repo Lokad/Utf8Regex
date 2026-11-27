@@ -102,23 +102,15 @@ public sealed class Utf8SliceAssertionDirectionTests
         Assert.True(Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
             collectHistory: false, ref baseline).Found);
         Assert.Equal(0UL, baseline.Ledger.ReservedBytes);
-        for (ulong work = 1; work < baseline.Budget.Steps; work++)
-        {
-            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(work, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps,
-                Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
-                    collectHistory: false, ref invocation).Breach);
-            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        }
         for (uint depth = 1; depth < baseline.Budget.PeakDepth; depth++)
         {
-            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, depth, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(depth, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
             Assert.Equal(Utf8ExecutionLimitKind.Depth,
                 Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
                     collectHistory: false, ref invocation).Breach);
             Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         }
-        var denied = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, (ulong)Utf8SliceRunner.BalanceReserveBytes - 1),
+        var denied = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, (ulong)Utf8SliceRunner.BalanceReserveBytes - 1),
             Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes,
             Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
@@ -164,11 +156,11 @@ public sealed class Utf8SliceAssertionDirectionTests
         Assert.NotNull(program);
         var starts = Array.Empty<int>();
         var ends = Array.Empty<int>();
-        var denied = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 2, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var denied = new Utf8SliceInvocation(new Utf8ExecutionLimits(2, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.Depth,
             Utf8SliceRunner.TryMatchAt(program, "ab"u8, 1, starts, ends, true, ref denied).Breach);
         Assert.Equal(0UL, denied.Ledger.ReservedBytes);
-        var admitted = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 3, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var admitted = new Utf8SliceInvocation(new Utf8ExecutionLimits(3, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(Utf8SliceRunner.TryMatchAt(program, "ab"u8, 1, starts, ends, true, ref admitted).IsMatch);
         Assert.Equal(3U, admitted.Budget.PeakDepth);
         Assert.Equal(0UL, admitted.Ledger.ReservedBytes);
@@ -189,7 +181,7 @@ public sealed class Utf8SliceAssertionDirectionTests
     {
         using var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 1, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         var input = Encoding.UTF8.GetBytes(text);
         var match = regex.Match(input, options == RegexOptions.RightToLeft ? input.Length : start, []);

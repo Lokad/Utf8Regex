@@ -50,7 +50,7 @@ internal sealed class Utf8NonBacktrackingSearchState
         Span<byte> colors = wide ? colorStorage : stackalloc byte[instructions.Length];
         if (!wide)
         {
-            budget.ChargeWork((ulong)instructions.Length);
+            budget.Checkpoint();
             colors.Clear();
         }
         try
@@ -64,7 +64,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                 var last = instructions.Length - 1;
                 for (var pc = last; pc >= 0; pc--)
                 {
-                    if (((last - pc) & 63) == 0) budget.ChargeWork((ulong)Math.Min(64, pc + 1));
+                    if (((last - pc) & 63) == 0) budget.Checkpoint();
                     var instruction = instructions[pc];
                     if (IsEpsilonInstruction(instruction.Kind)) orderLength++;
                     else colors[pc] = 2;
@@ -74,7 +74,7 @@ internal sealed class Utf8NonBacktrackingSearchState
             }
             var result = wide ? budget.AllocateArray<int>(orderLength, false) : [];
             Span<int> order = wide ? result : stackalloc int[instructions.Length];
-            if (!wide) budget.ChargeWork((ulong)instructions.Length);
+            if (!wide) budget.Checkpoint();
             var written = 0;
             using var frames = new Utf8ConstructionBuffer<(int Pc, bool Complete)>(budget);
             for (var pc = 0; pc < instructions.Length; pc++)
@@ -119,7 +119,7 @@ internal sealed class Utf8NonBacktrackingSearchState
             {
                 ordered = Utf8SliceRunner.BuildOrderedRegularClosures(instructions, order, budget);
                 ancestors = budget.AllocateArray<ulong>(instructions.Length, false);
-                budget.ChargeWork(3UL * (ulong)instructions.Length);
+                budget.Checkpoint();
                 for (var pc = 0; pc < instructions.Length; pc++) ancestors[pc] = 1UL << pc;
                 // Parents precede their children in this reverse order.
                 for (var index = order.Length - 1; index >= 0; index--)
@@ -141,7 +141,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                             break;
                     }
                 }
-                budget.ChargeWork((ulong)order.Length);
+                budget.Checkpoint();
                 var kept = 0;
                 foreach (var pc in order)
                     if (instructions[pc].Kind is Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.Boundary)
@@ -182,7 +182,7 @@ internal sealed class Utf8NonBacktrackingSearchState
         var scalars = 0;
         for (var edge = first; edge < end;)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var block = input.Slice(edge, Math.Min(64, end - edge));
             var firstNonAscii = block.IndexOfAnyExceptInRange((byte)0, (byte)0x7f);
@@ -211,7 +211,7 @@ internal sealed class Utf8NonBacktrackingSearchState
         var published = false;
         try
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var boundaries = new int[(int)count];
             var bits = new ulong[(int)cells];
@@ -288,7 +288,7 @@ internal sealed class Utf8NonBacktrackingSearchState
     {
         current = program.NonBacktrackingAcceptClosure;
         // At most 64 distinct cells; atom predicates retain their own direct charges.
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         var candidates = (following >> 1) & program.NonBacktrackingConsumerMask;
         while (candidates != 0)
@@ -412,7 +412,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                 var startEnd = commit;
                 if (starts.Count != 0)
                 {
-                    var scan = invocation.TryChargeInputStep();
+                    var scan = invocation.CheckInput();
                     if (scan != Utf8ExecutionLimitKind.None) return new(false, -1, -1, scan);
                     // The first byte at position is a candidate. Stop admitting
                     // starts after the last candidate, but skip the whole window.
@@ -433,7 +433,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                     if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
                     try
                     {
-                        admission = invocation.TryChargeInputStep();
+                        admission = invocation.CheckInput();
                         if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
                         window = new(new int[capacity], new ulong[capacity], 1, bytes);
                     }
@@ -551,7 +551,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                 // A candidate lookup reads one already prepared viability bit.
                 if ((visited++ & 63) == 0)
                 {
-                    var breach = invocation.TryChargeInputStep();
+                    var breach = invocation.CheckInput();
                     if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 }
                 if (CanMatch(boundary, 0)) break;
@@ -569,7 +569,7 @@ internal sealed class Utf8NonBacktrackingSearchState
             var admission = invocation.TryReserveWorking(bytes);
             if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
             reservation = bytes;
-            admission = invocation.TryChargeInputStep();
+            admission = invocation.CheckInput();
             if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
             var useStack = openingCount is > 0 and <= 32;
             Span<int> openings = useStack ? stackalloc int[openingCount]
@@ -600,7 +600,7 @@ internal sealed class Utf8NonBacktrackingSearchState
         var pc = 0;
         while (true)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
             var instruction = program.Instructions[pc];
             switch (instruction.Kind)

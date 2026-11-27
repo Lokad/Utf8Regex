@@ -66,7 +66,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100_000,
                     MaxDepth = 4096,
                     MaxWorkingBytes = 1 << 20,
                     MaxResultBytes = 1
@@ -111,7 +110,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100_000,
                     MaxDepth = 4096,
                     MaxWorkingBytes = 1 << 20,
                     MaxResultBytes = 1
@@ -149,7 +147,7 @@ public sealed class PosixRepeatedCaptureSelectionTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100_000
+                    MaxDepth = 4096
                 }
             });
             var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(scalar, count)) + "é😀");
@@ -183,7 +181,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100_000,
                 MaxDepth = 4096,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -244,7 +241,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100_000,
                     MaxWorkingBytes = 1 << 20,
                     MaxDepth = 4096
                 }
@@ -298,7 +294,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100_000,
                     MaxDepth = 4096,
                     MaxWorkingBytes = 1 << 20,
                     MaxResultBytes = 1
@@ -352,7 +347,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
                 {
                     ResourcePolicy = new()
                     {
-                        MaxWorkSteps = 100_000,
                         MaxDepth = 4096,
                         MaxWorkingBytes = 1 << 20,
                         MaxResultBytes = 1
@@ -408,7 +402,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
                 {
                     ResourcePolicy = new()
                     {
-                        MaxWorkSteps = 100_000,
                         MaxDepth = 4096,
                         MaxWorkingBytes = 1 << 20,
                         MaxResultBytes = 1
@@ -451,7 +444,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100_000,
                 MaxDepth = 4096,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -491,7 +483,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100_000,
                 MaxDepth = 4096,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -527,7 +518,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -574,7 +564,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -830,7 +819,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100_000,
                     MaxDepth = 4096,
                     MaxWorkingBytes = 1 << 20,
                     MaxResultBytes = 1
@@ -897,7 +885,6 @@ public sealed class PosixRepeatedCaptureSelectionTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100_000,
                     MaxDepth = 4096,
                     MaxWorkingBytes = 1 << 20,
                     MaxResultBytes = 1

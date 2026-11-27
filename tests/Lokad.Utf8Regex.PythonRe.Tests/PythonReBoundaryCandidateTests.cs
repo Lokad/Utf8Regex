@@ -44,16 +44,16 @@ public sealed class PythonReBoundaryCandidateTests
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.IsMatch(later, cancellationToken: source.Token)).CancellationToken);
         using var funded = new Utf8PythonRegex(pattern, policy: new() { ProgramMemoryAllowance = new Allowance(1 << 24) });
-        using var limited = new Utf8PythonRegex(pattern, policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1 } });
+        using var limited = new Utf8PythonRegex(pattern, policy: new() { ResourcePolicy = new() { MaxDepth = 4096 } });
         using var timed = new Utf8PythonRegex(pattern, policy: new() { MatchTimeout = TimeSpan.FromMinutes(1) });
         using var constructionLimited = new Utf8PythonRegex(pattern,
-            policy: new() { ConstructionPolicy = new() { MaxWorkSteps = 1_000_000 } });
+            policy: new() { ConstructionPolicy = new() { MaxDepth = 128 } });
         Assert.False(funded.ScalarProgram.ObservesProofWork);
         Assert.False(limited.ScalarProgram.ObservesProofWork);
         Assert.False(timed.ScalarProgram.ObservesProofWork);
         Assert.False(constructionLimited.ScalarProgram.ObservesProofWork);
         Assert.True(funded.IsMatch(later));
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.IsMatch(later));
+        Assert.True(limited.IsMatch(later));
     }
 
     [Theory]
@@ -89,7 +89,6 @@ public sealed class PythonReBoundaryCandidateTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -115,7 +114,7 @@ public sealed class PythonReBoundaryCandidateTests
     {
         using var regex = new Utf8PythonRegex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 16, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         using var source = new CancellationTokenSource();
         Assert.False(regex.IsMatch("Today is 11 18 2019 and tomorrow is 11 19 2019."u8, cancellationToken: source.Token));
@@ -126,7 +125,7 @@ public sealed class PythonReBoundaryCandidateTests
     {
         using var regex = new Utf8PythonRegex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 85, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         using var source = new CancellationTokenSource();
         Assert.False(regex.IsMatch("Today is 11/18/201A and tomorrow is 11/19/201A."u8, cancellationToken: source.Token));
@@ -140,7 +139,6 @@ public sealed class PythonReBoundaryCandidateTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -154,7 +152,6 @@ public sealed class PythonReBoundaryCandidateTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
@@ -190,7 +187,6 @@ public sealed class PythonReBoundaryCandidateTests
                 MatchTimeout = TimeSpan.FromMilliseconds(20),
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1000000,
                     MaxDepth = 1024,
                     MaxWorkingBytes = 1 << 20,
                     MaxResultBytes = 1 << 20
@@ -288,7 +284,6 @@ public sealed class PythonReBoundaryCandidateTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxWorkingBytes = 1
             }
         });
@@ -305,38 +300,20 @@ public sealed class PythonReBoundaryCandidateTests
     [InlineData(@"\b", 4)]
     public void EveryWorkCutoffRefundsOnlyOwnedScratch(string pattern, int expectedCount)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var program = PythonReScalarCompiler.Compile(new PythonReParser(pattern).Parse(default));
         var input = "a111A 22X"u8.ToArray();
         ulong required;
         var probe = new PythonReScalarMatchCursor(input, program, 0, Timeout.InfiniteTimeSpan,
-            null, pattern, new(new(1_000_000, 1024, 1 << 20), Timeout.InfiniteTimeSpan, default));
+            null, pattern, new(new(1024, 1 << 20), Timeout.InfiniteTimeSpan, default));
         try
         {
             var count = 0;
             while (probe.MoveNext()) count++;
             Assert.Equal(expectedCount, count);
-            required = probe.WorkingInvocation.Budget.Steps;
+            required = probe.WorkingInvocation.Budget.DiagnosticCheckpoints;
         }
         finally { probe.Dispose(); }
-        for (ulong cap = 1; cap <= required; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 1024, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            PythonReScalarMatchCursor cursor = default;
-            var constructed = false;
-            try
-            {
-                cursor = new(input, program, 0, Timeout.InfiniteTimeSpan, null, pattern, invocation);
-                constructed = true;
-                var count = 0;
-                while (cursor.MoveNext()) count++;
-                Assert.Equal(expectedCount, count);
-                Assert.Equal(required, cap);
-            }
-            catch (Utf8ResourceLimitExceededException error)
-            { Assert.True(cap < required); Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
-            finally { if (constructed) cursor.Dispose(); Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13); }
-        }
     }
 
     [Theory]

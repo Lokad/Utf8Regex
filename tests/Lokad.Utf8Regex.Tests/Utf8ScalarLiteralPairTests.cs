@@ -52,7 +52,6 @@ public sealed class Utf8ScalarLiteralPairTests
     {
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 1_000_000,
             MaxDepth = 1,
             MaxWorkingBytes = 1,
             MaxResultBytes = 1
@@ -68,11 +67,9 @@ public sealed class Utf8ScalarLiteralPairTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count("東京，大阪,尾"u8)).ResourceKind);
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count("，"u8, token.Token)).CancellationToken);
     }

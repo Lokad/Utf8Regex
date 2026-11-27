@@ -9,13 +9,12 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ReplacementLiteralGuidanceTests
 {
     private static Utf8Regex Create(string pattern, RegexOptions options = RegexOptions.None,
-        ulong work = 1000000, TimeSpan? timeout = null) =>
+TimeSpan? timeout = null) =>
         new(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
         {
             MatchTimeout = timeout ?? Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = work,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -28,7 +27,7 @@ public sealed class Utf8ReplacementLiteralGuidanceTests
     public void LongLiteralMissAndLateCapturesFitBoundedWork(bool compiled)
     {
         var options = compiled ? RegexOptions.Compiled : RegexOptions.None;
-        var regex = Create("(cat)", options, 1024);
+        var regex = Create("(cat)", options);
         var miss = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("dog fox bird ", 512)));
         Assert.Equal(0, regex.Count(miss));
         Assert.Equal(Encoding.UTF8.GetString(miss), Encoding.UTF8.GetString(regex.Replace(miss, "[$1]"u8)));
@@ -76,7 +75,7 @@ public sealed class Utf8ReplacementLiteralGuidanceTests
     public void SupplementaryLiteralKeepsScalarStartsAndUnmatchedPrefixes()
     {
         var gap = new string('é', 2048);
-        var regex = Create("(😀)", work: 1024);
+        var regex = Create("(😀)");
         Assert.Equal(gap + "[😀]" + gap, Encoding.UTF8.GetString(regex.Replace(Encoding.UTF8.GetBytes(gap + "😀" + gap), "[$1]"u8)));
     }
 

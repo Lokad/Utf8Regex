@@ -55,22 +55,11 @@ public sealed class PythonReClassUnionTests
             {
                 MaxDepth = 1,
                 MaxWorkingBytes = 1 << 20,
-                MaxResultBytes = 1 << 20,
-                MaxWorkSteps = 100000
+                MaxResultBytes = 1 << 20
             }
         });
         Assert.Equal(2, regex.Count("é²𐐀._+-@ word@"u8));
         Assert.Equal(0, regex.Count("é²𐐀._+- no-at"u8));
-        var denied = new Utf8PythonRegex(@"[\w.+-]+@", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count("abc@"u8));
-
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count("abc@"u8, 0, token.Token)).CancellationToken);
     }

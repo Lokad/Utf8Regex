@@ -21,7 +21,7 @@ public sealed class PythonReResultExtentTests
         var input = Encoding.UTF8.GetBytes(new string('é', 1025));
         PythonReScalarMatchState.Initialize(out var cursor, input, program, 0,
             Regex.InfiniteMatchTimeout,
-            "(.)", new(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None), null);
+            "(.)", new(new(0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None), null);
         try
         {
             Assert.True(cursor.MoveNext(input));
@@ -57,6 +57,7 @@ public sealed class PythonReResultExtentTests
     [InlineData(true)]
     public void CanonicalLiteralPublicationContinuesTheCountInvocation(bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
@@ -68,13 +69,13 @@ public sealed class PythonReResultExtentTests
         Assert.NotNull(field);
         var core = Assert.IsType<global::Lokad.Utf8Regex.Utf8Regex>(field.GetValue(regex));
         var input = Encoding.UTF8.GetBytes(new string('é', 20000));
-        var invocation = new Utf8SliceInvocation(new(0, 0, 1UL << 24), timeout, CancellationToken.None);
+        var invocation = new Utf8SliceInvocation(new(0, 1UL << 24), timeout, CancellationToken.None);
         invocation.CheckpointHook = _ =>
         {
         };
         var count = core.CountForResult(input, 0, ref invocation);
         Assert.Equal(20000, count);
-        var countSteps = invocation.Budget.Steps;
+        var countSteps = invocation.Budget.DiagnosticCheckpoints;
         var publicationHook = ((countSteps / 64) + 1) * 64;
         var entered = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>

@@ -495,7 +495,7 @@ internal partial struct PosixWorkspace
         while (consumed < input.Length)
         {
             // Admit a bounded input block and check its deadline before searching.
-            Check(invocation.TryChargeInputStep(), ref invocation);
+            Check(invocation.CheckInput(), ref invocation);
             var block = input.Slice(consumed, Math.Min(AsciiScanBlockSize, input.Length - consumed));
             if (literal >= 0)
             {
@@ -656,7 +656,7 @@ internal partial struct PosixWorkspace
     }
 
     internal static void Charge(ref Utf8SliceInvocation invocation)
-        => Check(invocation.TryChargeStep(), ref invocation);
+        => Check(invocation.CheckProgress(), ref invocation);
 
     internal static void Finish(ref Utf8SliceInvocation invocation)
     { invocation.Budget.ThrowIfCancellationRequested(); invocation.Budget.CheckDeadline(); }

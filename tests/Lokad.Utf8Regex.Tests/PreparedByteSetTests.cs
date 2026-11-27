@@ -88,10 +88,9 @@ public sealed class PreparedByteSetTests
     public void SetOwnershipIsIndependentOfCallerMutationAndAdmitsEveryInstanceField()
     {
         byte[] values = [0, 64, 128, 255];
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         var set = PreparedByteSet.CreateOwned(values); Array.Fill(values, (byte)17);
         Assert.True(set.Contains(0)); Assert.True(set.Contains(255)); Assert.False(set.Contains(17));
-        Assert.Equal(262ul, owner.Budget.WorkSteps);
         Assert.Equal(Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()), owner.Budget.ReservedBytes);
         Assert.NotNull(set);
         Assert.Equal(0ul, owner.Budget.Depth);
@@ -101,23 +100,22 @@ public sealed class PreparedByteSetTests
     public void SharedEmptySetHasNoAcquisitionAndAsciiComplementsExcludeNonAscii()
     {
         var full = new AsciiCharClass(ulong.MaxValue, ulong.MaxValue, negated: true);
-        using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var owner = new Utf8ConstructionScope(0, 0, 0);
         Assert.Same(PreparedByteSet.Empty, PreparedByteSet.CreateOwned(Array.Empty<byte>()));
         Assert.Same(PreparedByteSet.Empty, PreparedByteSet.CreateOwned(full.ActualLowMask, full.ActualHighMask, 0, 0));
-        Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
+Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
     }
 
     [Fact]
     public void NestedObjectDenialPreservesParentLoanAndCheckpoint()
     {
         var setBytes = Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>());
-        using var owner = new Utf8ConstructionScope(0, 128 + setBytes - 1, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, 128 + setBytes - 1, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
         var checkpoint = owner.Budget.ReservedBytes;
         Assert.Throws<Utf8ResourceLimitExceededException>(() => PreparedByteSet.CreateOwned(new byte[] { 0, 128, 255 }));
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Equal(261ul, owner.Budget.WorkSteps);
     }
 
     [Fact]

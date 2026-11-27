@@ -80,7 +80,7 @@ public sealed class Utf8OwnedReplacementInteropTests
     public void OutputGrowthAndFinalMaterializationAdmitOverlapAndBalanceAfterDenial()
     {
         const ulong controls = 2 * Utf8SliceByteOutputScope.ControlBytes;
-        var scope = Utf8SliceByteOutputScope.Enter(new Utf8SliceInvocation(new(0, 0, controls + 111), Regex.InfiniteMatchTimeout, CancellationToken.None));
+        var scope = Utf8SliceByteOutputScope.Enter(new Utf8SliceInvocation(new(0, controls + 111), Regex.InfiniteMatchTimeout, CancellationToken.None));
         var writer = scope.CreateBuffer();
         try
         {
@@ -104,7 +104,7 @@ public sealed class Utf8OwnedReplacementInteropTests
         foreach (var exact in new[] { false, true })
         {
             var finalBytes = 48UL;
-            scope = Utf8SliceByteOutputScope.Enter(new Utf8SliceInvocation(new(0, 0, controls + 48 + finalBytes - (exact ? 0UL : 1UL)),
+            scope = Utf8SliceByteOutputScope.Enter(new Utf8SliceInvocation(new(0, controls + 48 + finalBytes - (exact ? 0UL : 1UL)),
                 Regex.InfiniteMatchTimeout, CancellationToken.None));
             writer = scope.CreateBuffer();
             try

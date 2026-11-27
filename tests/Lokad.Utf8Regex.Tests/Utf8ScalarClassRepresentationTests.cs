@@ -71,36 +71,20 @@ public sealed class Utf8ScalarClassRepresentationTests
     [Fact]
     public void CanonicalParserClassProducersRecoverEveryWorkCutoffAndRootDenial()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         foreach (var pattern in new[] { ".", "(?s:.)", @"\w", @"\P{IsSpecials}", @"\p{L}", @"(?i:K)", @"[x\P{IsBasicLatin}-[\d]]" })
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.ECMAScript })
         {
             ulong work;
-            using (var measured = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+            using (var measured = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
             {
                 Assert.NotNull(Utf8OwnedTreeParser.TryParse(pattern, options));
-                work = measured.Budget.WorkSteps;
+                work = measured.Budget.DiagnosticCheckpoints;
             }
             Assert.InRange(work, 1ul, 20_000ul);
-            for (ulong cutoff = 0; cutoff <= work; cutoff++)
-            {
-                using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
-                var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-                var checkpoint = owner.Budget.ReservedBytes;
-                if (cutoff < work)
-                {
-                    var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedTreeParser.TryParse(pattern, options));
-                    Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
-                    Assert.Equal(128ul, owner.Budget.ReservedBytes);
-                    Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-                }
-                else Assert.NotNull(Utf8OwnedTreeParser.TryParse(pattern, options));
-                Assert.Equal(17, parent.Value);
-                Assert.Equal(0ul, owner.Budget.Depth);
-                Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2);
-            }
             foreach (var depth in new[] { false, true })
             {
-                using var owner = new Utf8ConstructionScope(ulong.MaxValue, depth ? ulong.MaxValue : 128, ulong.MaxValue, depth ? 0ul : ulong.MaxValue);
+                using var owner = new Utf8ConstructionScope(ulong.MaxValue, depth ? ulong.MaxValue : 128, depth ? 0ul : ulong.MaxValue);
                 var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
                 var checkpoint = owner.Budget.ReservedBytes;
                 var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedTreeParser.TryParse(pattern, options));
@@ -253,36 +237,33 @@ public sealed class Utf8ScalarClassRepresentationTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
     public void ClassAcquisitionDenialRestoresTheParentAndKeepsWork(bool workLimit)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var pattern = "[" + SparseMembers + "]";
         using var owner = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity,
             workLimit ? Utf8ConstructionScope.DefaultBufferBytes : 8192,
-            workLimit ? 4096ul : Utf8ConstructionScope.DefaultWorkSteps, Utf8ConstructionScope.DefaultDepth);
+            Utf8ConstructionScope.DefaultDepth);
         var held = owner.Budget.AllocateArray<byte>(16, false);
         var before = owner.Budget.ReservedBytes;
         var checkpoint = owner.Budget.ReservedBytes;
         var breach = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.None));
-        Assert.Equal(workLimit ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes, breach.ResourceKind);
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, breach.ResourceKind);
         Assert.True(breach.Requested > breach.Limit);
         Assert.Equal(before, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Reserved); Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        Assert.True(owner.Budget.WorkSteps > 0);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > 0);
         Assert.True(owner.Budget.PeakBytes <= owner.Budget.MaximumBytes);
         if (workLimit)
         {
             // A denied buffer-copy batch has not run and can leave unused
             // work. Admitted work stays spent after rollback. Consume the
             // remainder explicitly before checking the exhausted owner.
-            var spent = owner.Budget.WorkSteps;
+            var spent = owner.Budget.DiagnosticCheckpoints;
             Assert.InRange(spent, 1ul, 4096ul);
-            owner.Budget.ChargeWork(4096ul - spent);
-            Assert.Equal(4096ul, owner.Budget.WorkSteps);
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                    Utf8OwnedTreeParser.TryParse("[a]", RegexOptions.None)).ResourceKind);
+            owner.Budget.Checkpoint();
             Assert.Equal(before, owner.Budget.ReservedBytes);
         }
         else Assert.NotNull(Utf8OwnedTreeParser.TryParse("[a]", RegexOptions.None));

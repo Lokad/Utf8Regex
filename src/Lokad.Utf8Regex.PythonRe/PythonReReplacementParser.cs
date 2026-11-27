@@ -21,7 +21,7 @@ internal static class PythonReReplacementParser
         {
             while (index < replacement.Length)
             {
-                storage.Budget.ChargeWork(1);
+                storage.Budget.Checkpoint();
                 var ch = replacement[index++];
                 if (ch != '\\')
                 {
@@ -31,7 +31,7 @@ internal static class PythonReReplacementParser
                     var block = replacement.Slice(start, Math.Min(2048, replacement.Length - start));
                     var escape = block.IndexOf((byte)'\\');
                     var length = escape < 0 ? block.Length : escape;
-                    storage.Budget.ChargeWork((ulong)(length - 1));
+                    storage.Budget.Checkpoint();
                     literal.AddRange(block[..length]);
                     index = start + length;
                     continue;
@@ -80,7 +80,7 @@ internal static class PythonReReplacementParser
             var position = 0;
             for (var offset = 0; offset < error.Position;)
             {
-                storage.Budget.ChargeWork(1);
+                storage.Budget.Checkpoint();
                 _ = Rune.DecodeFromUtf8(replacement[offset..], out var scalar, out var consumed);
                 offset += consumed;
                 position += scalar.Utf16SequenceLength;
@@ -92,12 +92,12 @@ internal static class PythonReReplacementParser
     private static PythonReReplacementToken ParseNamedOrNumberedGroup(Utf8ConstructionSession storage,
         ReadOnlySpan<byte> replacement, ref int index, int captureGroupCount, IReadOnlyDictionary<string, int> namedGroups)
     {
-        storage.Budget.ChargeWork(1);
+        storage.Budget.Checkpoint();
         if (index >= replacement.Length || replacement[index] != '<')
             throw new PythonRePatternException("missing <", index, PythonReErrorSource.Replacement);
         var start = ++index;
         while (index < replacement.Length && replacement[index] != '>')
-        { storage.Budget.ChargeWork(1); index++; }
+        { storage.Budget.Checkpoint(); index++; }
         if (index >= replacement.Length)
             throw new PythonRePatternException(index == start ? "missing group name" : "missing >, unterminated name",
                 start, PythonReErrorSource.Replacement);
@@ -107,7 +107,7 @@ internal static class PythonReReplacementParser
         var numeric = true;
         for (var offset = start; offset < start + length; offset++)
         {
-            storage.Budget.ChargeWork(1);
+            storage.Budget.Checkpoint();
             if (!char.IsAsciiDigit((char)replacement[offset])) { numeric = false; break; }
         }
         if (numeric)
@@ -116,7 +116,7 @@ internal static class PythonReReplacementParser
             {
                 var errorStart = start;
                 while (length > 0 && replacement[start] == '0')
-                { storage.Budget.ChargeWork(1); start++; length--; }
+                { storage.Budget.Checkpoint(); start++; length--; }
                 throw new PythonRePatternException(storage.Text().Append("invalid group reference ")
                     .Append(storage.Budget.DecodeUtf8(replacement.Slice(start, length), Encoding.UTF8)).ToText(), errorStart, PythonReErrorSource.Replacement);
             }
@@ -127,7 +127,7 @@ internal static class PythonReReplacementParser
         if (!PythonReGroupNameValidator.IsValid(lookup))
             throw new PythonRePatternException(storage.Text().Append("bad character in group name '").Append(lookup).Append('\'').ToText(),
                 start, PythonReErrorSource.Replacement);
-        storage.Budget.ChargeWork((ulong)length + 1);
+        storage.Budget.Checkpoint();
         if (!namedGroups.TryGetValue(lookup, out var groupNumber))
             throw new IndexOutOfRangeException(storage.Text().Append("unknown group name '").Append(lookup).Append('\'').ToText());
         return PythonReReplacementToken.ForGroupNumber(groupNumber);
@@ -137,26 +137,26 @@ internal static class PythonReReplacementParser
     {
         var value = firstDigit - '0';
         for (var digits = 0; digits < 2 && index < replacement.Length && replacement[index] is >= (byte)'0' and <= (byte)'7'; digits++)
-        { storage.Budget.ChargeWork(1); value = value * 8 + replacement[index++] - '0'; }
+        { storage.Budget.Checkpoint(); value = value * 8 + replacement[index++] - '0'; }
         return (char)value;
     }
 
     private static PythonReReplacementToken ParseNumberedGroupOrOctalEscape(Utf8ConstructionSession storage,
         ReadOnlySpan<byte> replacement, ref int index, char firstDigit, int captureGroupCount)
     {
-        storage.Budget.ChargeWork(1);
+        storage.Budget.Checkpoint();
         var start = index - 1;
         var number = firstDigit - '0';
         if (index < replacement.Length && char.IsAsciiDigit((char)replacement[index]))
         {
             var second = (char)replacement[index++];
-            storage.Budget.ChargeWork(1);
+            storage.Budget.Checkpoint();
             number = number * 10 + second - '0';
             if (firstDigit is >= '0' and <= '7' && second is >= '0' and <= '7' &&
                 index < replacement.Length && replacement[index] is >= (byte)'0' and <= (byte)'7')
             {
                 var value = (firstDigit - '0') * 64 + (second - '0') * 8 + replacement[index++] - '0';
-                storage.Budget.ChargeWork(1);
+                storage.Budget.Checkpoint();
                 if (value > 0xff)
                     throw new PythonRePatternException(storage.Text().Append("octal escape value \\").Append(storage.Budget.DecodeUtf8(replacement.Slice(start, 3), Encoding.UTF8)).Append(" outside of range 0-0o377").ToText(),
                         start - 1, PythonReErrorSource.Replacement);
@@ -171,7 +171,7 @@ internal static class PythonReReplacementParser
 
     private static void ValidateGroupReference(Utf8ConstructionSession storage, int number, int captureGroupCount, int position)
     {
-        storage.Budget.ChargeWork(1);
+        storage.Budget.Checkpoint();
         if (number > captureGroupCount)
             throw new PythonRePatternException(storage.Text().Append("invalid group reference ").Append(number).ToText(),
                 position, PythonReErrorSource.Replacement);
@@ -197,7 +197,7 @@ internal static class PythonReReplacementParser
         var length = 0;
         foreach (var token in tokens)
         {
-            storage.Budget.ChargeWork(1);
+            storage.Budget.Checkpoint();
             if (token.Kind != PythonReReplacementTokenKind.Literal) return null;
             length = checked(length + token.RequiredUtf8.Length);
         }
@@ -207,7 +207,7 @@ internal static class PythonReReplacementParser
         foreach (var token in tokens)
         {
             var bytes = token.RequiredUtf8;
-            storage.Budget.ChargeWork((ulong)bytes.Length + 1);
+            storage.Budget.Checkpoint();
             bytes.CopyTo(result, offset);
             offset += bytes.Length;
         }

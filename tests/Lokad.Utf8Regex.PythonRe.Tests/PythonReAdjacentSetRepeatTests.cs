@@ -10,7 +10,7 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 [Collection(PythonReGlobalSettingsCollection.Name)]
 public sealed class PythonReAdjacentSetRepeatTests
 {
-    private static Utf8ResourcePolicy Generous => new() { MaxWorkSteps = 1_000_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 24, MaxResultBytes = 1 << 24 };
+    private static Utf8ResourcePolicy Generous => new() { MaxDepth = 1024, MaxWorkingBytes = 1 << 24, MaxResultBytes = 1 << 24 };
 
     [Theory]
     [InlineData(@"item \s+ [0-9]+", "item   12345", PythonReCompileOptions.Verbose)]
@@ -96,11 +96,9 @@ public sealed class PythonReAdjacentSetRepeatTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Match("item   12345"u8, mode: Utf8PythonMatchMode.Search)).ResourceKind);
         var results = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,

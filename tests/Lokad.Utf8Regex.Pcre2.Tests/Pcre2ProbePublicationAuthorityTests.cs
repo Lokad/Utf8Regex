@@ -8,20 +8,19 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2ProbePublicationAuthorityTests
 {
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+[InlineData(true)]
     public void LiteralFullProbeFundsProjectionAndItsResultArray(bool heap)
     {
         var regex = new Utf8Pcre2Regex("A", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (heap ? 0u : 1u) == 0 ? null : (heap ? 0u : 1u),
                 MaxWorkingBytes = (heap ? 1UL : 0UL) == 0 ? null : (heap ? 1UL : 0UL)
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         Assert.IsType<Pcre2LiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
-        Assert.Equal(heap ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.MatchLimit,
+        Assert.Equal(Pcre2ErrorKind.HeapLimit,
             Assert.Throws<Pcre2MatchException>(() => { _ = regex.Probe("A"u8, Pcre2PartialMode.None); }).ErrorKind);
     }
 
@@ -81,7 +80,6 @@ public sealed class Pcre2ProbePublicationAuthorityTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000,
                 MaxWorkingBytes = 4096
             },
             MatchTimeout = Timeout.InfiniteTimeSpan

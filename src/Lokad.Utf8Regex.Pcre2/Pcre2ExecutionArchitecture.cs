@@ -40,7 +40,6 @@ internal readonly record struct Pcre2CompileRequest(
     // borrows the PCRE2 invocation and retains its route-specific units/errors.
     internal Utf8ResourcePolicy CoreResourcePolicy => new()
     {
-        MaxWorkSteps = DefaultLimits.MatchLimit == 0 ? null : DefaultLimits.MatchLimit,
         MaxDepth = DefaultLimits.DepthLimit == 0 ? null : DefaultLimits.DepthLimit,
         MaxWorkingBytes = DefaultLimits.HeapLimitInBytes == 0 ? null : DefaultLimits.HeapLimitInBytes,
         MaxResultBytes = DefaultLimits.ResultLimitInBytes == 0 ? null : DefaultLimits.ResultLimitInBytes
@@ -231,7 +230,7 @@ internal sealed class Pcre2FiniteLiteralBooleanSearch
             var covered = false;
             foreach (var candidate in alternatives)
             {
-                budget.ChargeWork((ulong)Math.Min(candidate.Length, alternative.Length) + 1);
+                budget.Checkpoint();
                 if (!ReferenceEquals(candidate, alternative) && candidate.Length <= alternative.Length &&
                     alternative.AsSpan().StartsWith(candidate))
                 { covered = true; break; }
@@ -247,7 +246,7 @@ internal sealed class Pcre2FiniteLiteralBooleanSearch
         var count = 0;
         foreach (var alternative in _alternatives)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (!leading[..count].Contains(alternative[0])) leading[count++] = alternative[0];
         }
         _leadingBytes = budget.AllocateArray<byte>(count, false);
@@ -482,7 +481,7 @@ internal sealed class Pcre2CompiledProgram
         NameEntriesUtf8 = budget.AllocateArray<byte[]>(nameEntries.Length, false);
         for (var index = 0; index < nameEntries.Length; index++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             NameEntriesUtf8[index] = budget.EncodeUtf8(nameEntries[index].Name.AsSpan());
         }
     }
@@ -625,7 +624,7 @@ internal static class Pcre2CompiledProgramOverlay
             !Utf8SliceRunner.CanCountTerminalScalar(sliceProgram))) return operations;
         // PCRE2's multiline caret rejects EOF after a final newline. Core's
         // caret accepts it; nullable programs therefore keep profile execution.
-        Utf8ConstructionScope.ChargeWork((ulong)sliceProgram.Instructions.Length);
+        Utf8ConstructionScope.Checkpoint();
         if (sliceProgram.CanMatchEmpty && sliceProgram.Instructions.Any(static instruction =>
             instruction.Kind == Utf8SliceInstructionKind.Anchor &&
             instruction.A == (int)Utf8SliceAnchorKind.Beginning && instruction.B != 0))
@@ -670,7 +669,7 @@ internal static class Pcre2CompiledProgramOverlay
         if (!countOnly && candidateKind is
             (Pcre2CandidateSearchKind.LeadingRunThenLiteral or Pcre2CandidateSearchKind.LeadingAsciiSet))
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             delimiter = Pcre2SliceDriver.GetDisjointClassDelimiter(sliceProgram);
         }
         var shared = new Pcre2SliceDirectProgram(sliceProgram, fallback, booleanLiteral, delimiter);
@@ -1028,7 +1027,7 @@ internal static class Pcre2CandidateSearchAnalyzer
                } &&
                IsRetreatableRunToken(runToken))
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (childIndex != 0 && !AreKnownDisjoint(previous, runToken))
             {
                 return false;
@@ -1044,10 +1043,10 @@ internal static class Pcre2CandidateSearchAnalyzer
         }
 
         var runTokens = budget.AllocateArray<Pcre2CharacterToken>(childIndex, false);
-        budget.ChargeWork((ulong)childIndex);
+        budget.Checkpoint();
         for (var i = 0; i < runTokens.Length; i++)
         {
-            if ((i & 255) == 0) budget.ChargeWork(0);
+            if ((i & 255) == 0) budget.Checkpoint();
             runTokens[i] = ((Pcre2TokenBacktrackingNode)((Pcre2RepeatBacktrackingNode)sequence.Children[i]).Body).Token;
         }
         plan = Pcre2CandidateSearchProgram.FromLeadingRunThenLiteral(runTokens, literal);
@@ -1153,7 +1152,7 @@ internal static class Pcre2CandidateSearchAnalyzer
         var budget = Utf8ConstructionScope.CurrentBudget;
         for (var childIndex = 0; childIndex < sequence.Children.Length; childIndex++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var child = sequence.Children[childIndex];
             if (minimumOffset > 0 &&
                 TryEncodeLeadingLiteral(sequence.Children.AsSpan(childIndex), 1, budget, out var literal))
@@ -1327,7 +1326,7 @@ internal static class Pcre2CandidateSearchAnalyzer
         var index = 0;
         while (index < children.Length && IsSkippableZeroWidthPrefix(children[index]))
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             index++;
         }
         return TryEncodeLeadingLiteral(children[index..], 2, budget, out literal);
@@ -1343,7 +1342,7 @@ internal static class Pcre2CandidateSearchAnalyzer
                token.Kind == Pcre2CharacterTokenKind.Literal &&
                token.Options == Pcre2CharacterOptions.None)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             length = checked(length + token.Literal.Utf8SequenceLength);
             count++;
         }
@@ -1361,7 +1360,7 @@ internal static class Pcre2CandidateSearchAnalyzer
 
     private static bool ContainsUnsafeCandidateSemantics(IPcre2BacktrackingNode node, ref bool containsCodeUnit)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         switch (node)
         {
             // Later backreferences leave necessary leading bytes intact.
@@ -1893,7 +1892,6 @@ internal static class Pcre2GlobalOperationDriver
 
     internal static bool HasUnmeteredExecution(Pcre2CompileRequest request) =>
         request.MatchTimeout == Timeout.InfiniteTimeSpan &&
-        request.DefaultLimits.MatchLimit == 0 &&
         request.DefaultLimits.DepthLimit == 0 &&
         request.DefaultLimits.HeapLimitInBytes == 0 &&
         request.DefaultLimits.ResultLimitInBytes == 0;
@@ -2519,7 +2517,7 @@ internal static class Pcre2MatchPublication
     internal static Pcre2GroupData Publish(int start, int end,
         ReadOnlySpan<byte> input, scoped Pcre2ResultControl control)
     {
-        control.ChargeWorkspaceStep();
+        control.CheckWorkspace();
         return new Pcre2GroupData
         {
             Number = 0,
@@ -2806,7 +2804,7 @@ internal struct Pcre2ResourceBudget : IUtf8InvocationBufferControl
             BacktrackingSteps = BacktrackingSteps,
         };
 
-    internal bool RequiresCandidateMetering => !_invocation.Budget.IsInfiniteDeadline || Limits.MatchLimit != 0;
+    internal bool HasDeadline => !_invocation.Budget.IsInfiniteDeadline;
 
     internal bool IsUnmetered => _invocation.Budget.IsUnmetered;
 
@@ -2824,7 +2822,7 @@ internal struct Pcre2ResourceBudget : IUtf8InvocationBufferControl
     internal void ChargeCandidate()
     {
         if (_diagnostics is not null) CandidateSteps++;
-        Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeStep());
+        Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.CheckProgress());
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2835,7 +2833,7 @@ internal struct Pcre2ResourceBudget : IUtf8InvocationBufferControl
             BacktrackingSteps++;
             diagnostics.RecordBacktrackingInstruction(instruction.Kind, instruction.Token.Kind);
         }
-        var breach = _invocation.Budget.TryChargeStep();
+        var breach = _invocation.Budget.CheckProgress();
         if (breach != Utf8ExecutionLimitKind.None) Pcre2SliceDriver.ThrowIfSliceBreached(breach);
     }
 
@@ -2871,13 +2869,13 @@ internal struct Pcre2ResourceBudget : IUtf8InvocationBufferControl
         => Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None
             ? _invocation.Budget.LimitBreach : Utf8ExecutionLimitKind.WorkingBytes);
 
-    internal void ChargeWorkspaceStep()
+    internal void CheckWorkspace()
     {
         if (_invocation.Budget.IsUnmetered) return;
         try
         {
             _invocation.Budget.CheckDeadline();
-            Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeStep());
+            Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.CheckProgress());
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -2895,15 +2893,15 @@ internal struct Pcre2ResourceBudget : IUtf8InvocationBufferControl
 
     void IUtf8InvocationBufferControl.ReleaseWorking(ulong bytes) => ReleaseWorking(bytes);
 
-    Utf8ExecutionLimitKind IUtf8InvocationBufferControl.TryChargeWorkspaceStep()
+    Utf8ExecutionLimitKind IUtf8InvocationBufferControl.CheckWorkspace()
     {
-        ChargeWorkspaceStep();
+        CheckWorkspace();
         return Utf8ExecutionLimitKind.None;
     }
 
-    Utf8ExecutionLimitKind IUtf8InvocationBufferControl.TryChargeWorkspaceStepAfterReservation()
+    Utf8ExecutionLimitKind IUtf8InvocationBufferControl.CheckWorkspaceAfterReservation()
     {
-        ChargeWorkspaceStep();
+        CheckWorkspace();
         return Utf8ExecutionLimitKind.None;
     }
 

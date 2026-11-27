@@ -154,7 +154,6 @@ public sealed class Pcre2LiteralBoundaryProbeTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = bytes
@@ -174,23 +173,6 @@ public sealed class Pcre2LiteralBoundaryProbeTests
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(1).Probe(""u8, Pcre2PartialMode.Soft).Kind);
     }
 
-    [Fact]
-    public void FailedBoundaryCandidatesCannotBypassFiniteWork()
-    {
-        var regex = new Utf8Pcre2Regex(@"abc\b", options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 20
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("abcx ", 100)) + "abc!");
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = regex.Probe(input, Pcre2PartialMode.Soft); }).ErrorKind);
-        Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("abc!"u8, Pcre2PartialMode.Soft).Kind);
-    }
-
     [Theory]
     [InlineData(4094)] [InlineData(4095)] [InlineData(4096)]
     public void ControlledLiteralSearchKeepsChunkBoundaryAndPartialTail(int offset)
@@ -199,7 +181,6 @@ public sealed class Pcre2LiteralBoundaryProbeTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxWorkingBytes = 4096,
                 MaxResultBytes = 4096
             },

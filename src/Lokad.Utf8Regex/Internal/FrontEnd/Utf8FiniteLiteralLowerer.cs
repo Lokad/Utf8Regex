@@ -30,7 +30,7 @@ internal static partial class Utf8FiniteLiteralLowerer
         var branches = storage.Allocate<AsciiPatternToken[]>(lowered.Count, false);
         for (var index = 0; index < lowered.Count; index++)
         {
-            storage.Budget.ChargeWork(1);
+            storage.Budget.Checkpoint();
             var branch = lowered[index];
             if (branch.Tokens.Count == 0)
                 return false;
@@ -63,10 +63,10 @@ internal static partial class Utf8FiniteLiteralLowerer
             if (!budget.TryReserve(bytes.Length, bytes.Length)) return false;
             foreach (var value in bytes)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (value > 0x7f) return false;
             }
-            foreach (var value in bytes) { Utf8ConstructionScope.ChargeWork(1); tokens.Add(new AsciiPatternToken(value)); }
+            foreach (var value in bytes) { Utf8ConstructionScope.Checkpoint(); tokens.Add(new AsciiPatternToken(value)); }
             return true;
         }
         var text = node.Str;
@@ -77,11 +77,11 @@ internal static partial class Utf8FiniteLiteralLowerer
 
         foreach (var ch in text)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (ch > 0x7F) return false;
         }
 
-        foreach (var ch in text) { Utf8ConstructionScope.ChargeWork(1); tokens.Add(new AsciiPatternToken((byte)ch)); }
+        foreach (var ch in text) { Utf8ConstructionScope.Checkpoint(); tokens.Add(new AsciiPatternToken((byte)ch)); }
 
         return true;
     }

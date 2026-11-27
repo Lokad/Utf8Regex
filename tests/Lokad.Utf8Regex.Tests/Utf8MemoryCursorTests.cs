@@ -115,7 +115,7 @@ public sealed class Utf8MemoryCursorTests
         var working = new Account(new Root());
         using var regex = new Utf8Regex(@"[\w.+-]+@[\w-]+\.[\w.-]+", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 64 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var cursor = regex.CreateMatchCursor(subject, startOffsetInBytes: "earlier@x.y 😀"u8.Length,
             workingMemoryAllowance: working);
@@ -132,7 +132,7 @@ public sealed class Utf8MemoryCursorTests
         var input = "😀walking Sherlock Holmes and Watson were quietly outside 😀starting! kingpin"u8.ToArray();
         using var regex = new Utf8Regex(@"\b[a-zA-Z]{0,12}ing\b", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var cursor = regex.CreateMatchCursor(input, startOffsetInBytes: "😀wa"u8.Length);
 
@@ -148,7 +148,7 @@ public sealed class Utf8MemoryCursorTests
         var working = new Account(new Root());
         using var regex = new Utf8Regex(@"(\w+)\s+(Holmes|Watson)", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var cursor = regex.CreateMatchCursor(input, startOffsetInBytes: "😀"u8.Length,
             workingMemoryAllowance: working);
@@ -417,13 +417,12 @@ public sealed class Utf8MemoryCursorTests
         Assert.Equal(0UL, root.Used); Assert.Equal("aaa"u8.ToArray(), first.GetValueMemory().ToArray());
     }
 
-    [Theory] [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [Theory] [InlineData(1)] [InlineData(2)] [InlineData(3)]
     public void FinitePolicyDenialRefundsAndNeverPublishes(int kind)
     {
         var root = new Root(); var working = new Account(root);
         var policy = kind switch
         {
-            0 => new Utf8ResourcePolicy { MaxWorkSteps = 1 },
             1 => new Utf8ResourcePolicy { MaxWorkingBytes = 1 },
             2 => new Utf8ResourcePolicy { MaxResultBytes = 1 },
             _ => new Utf8ResourcePolicy { MaxDepth = 1 }
@@ -469,7 +468,7 @@ public sealed class Utf8MemoryCursorTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 50000
+                MaxDepth = 4096
             }
         }).CreateMatchCursor(input);
         for (var index = 0; index < 8; index++) Assert.True(bounded.MoveNext(out _));

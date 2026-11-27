@@ -6,7 +6,6 @@ public sealed class PythonReShortFoldedPrefixTests
 {
     private static Utf8ResourcePolicy Generous => new()
     {
-        MaxWorkSteps = 1_000_000,
         MaxDepth = 1024,
         MaxWorkingBytes = 1 << 20,
         MaxResultBytes = 1 << 20
@@ -87,7 +86,6 @@ public sealed class PythonReShortFoldedPrefixTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1

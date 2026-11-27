@@ -10,7 +10,7 @@ internal static class Utf8SliceBufferWork
     internal static Utf8ExecutionLimitKind TryCreateMatchRange(int start, int end, ref Utf8SliceInvocation invocation, out Utf8CaptureRange match)
     {
         match = default;
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         invocation.Budget.ThrowIfCancellationRequested();
         match = new Utf8CaptureRange(start, end);

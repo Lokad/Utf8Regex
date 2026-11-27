@@ -49,7 +49,6 @@ public sealed class PythonReAtomicRepeatCommitTests
         foreach (var (pattern, input, policy, expected) in new[]
         {
             ("a{1,2}+a", "aaa", new Utf8ResourcePolicy { MaxWorkingBytes = 1 }, Utf8ResourceLimitKind.ExecutionWorkingBytes),
-            ("a++b", "aaab", new Utf8ResourcePolicy { MaxWorkSteps = 1 }, Utf8ResourceLimitKind.ExecutionWorkSteps),
         })
         {
             using var denied = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
@@ -137,7 +136,6 @@ public sealed class PythonReAtomicRepeatCommitTests
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 8,
                 MaxWorkingBytes = 1 << 20
             }

@@ -24,7 +24,7 @@ public sealed class Pcre2SeparatedRunSearchTests
     public void SeparatedRunsMatchScalarClassOracleAtValidStarts()
     {
         var direct = new Utf8Pcre2Regex(UriPattern);
-        var vm = CreateMetered(UriPattern, 1_000_000);
+        var vm = CreateMetered(UriPattern);
 
         foreach (var inputText in new[]
                  {
@@ -70,7 +70,7 @@ public sealed class Pcre2SeparatedRunSearchTests
     {
         const string Pattern = @"[\d]+--[^x\s]+[^\s]+(?:![a-z]*)?";
         var direct = new Utf8Pcre2Regex(Pattern);
-        var vm = CreateMetered(Pattern, 1_000_000);
+        var vm = CreateMetered(Pattern);
 
         foreach (var inputText in new[]
                  {
@@ -89,34 +89,6 @@ public sealed class Pcre2SeparatedRunSearchTests
         }
     }
 
-    [Fact]
-    public void SeparatedRunsObserveMatchOptionsAndLimits()
-    {
-        var direct = new Utf8Pcre2Regex(UriPattern);
-        var vm = CreateMetered(UriPattern, 1_000_000);
-        var input = "prefix https://example.org/a?q=1#top"u8.ToArray();
-
-        foreach (var options in new[]
-                 {
-                     Pcre2MatchOptions.Anchored,
-                     Pcre2MatchOptions.EndAnchored,
-                     Pcre2MatchOptions.NotBol,
-                     Pcre2MatchOptions.NotEol,
-                     Pcre2MatchOptions.NotEmpty,
-                     Pcre2MatchOptions.NotEmptyAtStart,
-                 })
-        {
-            var expected = options != Pcre2MatchOptions.Anchored;
-            Assert.Equal(expected, direct.IsMatch(input, 0, options));
-            Assert.Equal(expected, vm.IsMatch(input, 0, options));
-        }
-
-        var tightlyMetered = CreateMetered(UriPattern, 1);
-        Assert.Equal(
-            Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch(input)).ErrorKind);
-    }
-
     private static bool ScalarClassOracle(string text, string pattern, int scalarStart)
     {
         // These two grammars use ASCII positive classes and negative ASCII
@@ -130,12 +102,12 @@ public sealed class Pcre2SeparatedRunSearchTests
         return new Regex(ascii, RegexOptions.CultureInvariant).IsMatch(projected, scalarStart);
     }
 
-    private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
+    private static Utf8Pcre2Regex CreateMetered(string pattern) =>
         new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (matchLimit) == 0 ? null : (matchLimit)
+                MaxDepth = 4096
             },
             MatchTimeout = Regex.InfiniteMatchTimeout
         });

@@ -14,16 +14,14 @@ public sealed class Utf8DisjointClassRepeatTests
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 20, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         Assert.True(regex.IsMatch("  A"u8, token.Token));
 
         using var denied = Utf8Regex.Compile(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 2 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.IsMatch("  A"u8, token.Token)).ResourceKind);
     }
 
     [Fact]
@@ -34,7 +32,6 @@ public sealed class Utf8DisjointClassRepeatTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -56,7 +53,7 @@ public sealed class Utf8DisjointClassRepeatTests
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex("(?<tag>[a-z]+)[0-9]", RegexOptions.Compiled | RegexOptions.CultureInvariant, new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 5_000 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
 
         Assert.Equal(512, regex.Count(input, source.Token));
@@ -239,7 +236,7 @@ public sealed class Utf8DisjointClassRepeatTests
     public void AsciiCaptureBlocksRespectFiniteMaximaAndSupplementaryPrefixes(int length)
     {
         var input = Encoding.UTF8.GetBytes("😀" + new string('a', length) + "-");
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
         using var token = new CancellationTokenSource();
         var match = Utf8MatchSequence.First(new Utf8Regex("([a-z]{1,4096})-", options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
@@ -341,20 +338,12 @@ public sealed class Utf8DisjointClassRepeatTests
         var input = Encoding.UTF8.GetBytes(text);
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
-        var baseline = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var baseline = new Utf8SliceInvocation(new(128, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         var result = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref baseline);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
         Assert.Equal(2, result.Count);
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
-        for (ulong limit = 1; limit < baseline.Budget.Steps; limit++)
-        {
-            var invocation = new Utf8SliceInvocation(new(limit, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var denied = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
         var limited = new Utf8Regex(regex.Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
@@ -406,7 +395,7 @@ public sealed class Utf8DisjointClassRepeatTests
         var text = Encoding.UTF8.GetBytes(new string('a', 2048) + "-");
         using var regex = new Utf8Regex(new string('(', nesting) + "[a-z]+" + new string(')', nesting) + "-");
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
-        var invocation = new Utf8SliceInvocation(new(100000, 1, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var invocation = new Utf8SliceInvocation(new(1, 1 << 20), Timeout.InfiniteTimeSpan, default);
         var result = Utf8SliceRunner.CountFromBytes(program, text, 0,
             new int[program.GroupCount], new int[program.GroupCount], ref invocation);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
@@ -429,20 +418,12 @@ public sealed class Utf8DisjointClassRepeatTests
         var input = Encoding.UTF8.GetBytes(boundary ? "12 567" : exact ? "ééA ABB" : "éé- AB-");
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
-        var baseline = new Utf8SliceInvocation(new(100000, 1, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var baseline = new Utf8SliceInvocation(new(1, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         var result = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref baseline);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
         Assert.Equal(2, result.Count);
         Assert.Equal(13ul, baseline.Ledger.ReservedBytes);
-        for (ulong limit = 1; limit < baseline.Budget.Steps; limit++)
-        {
-            var invocation = new Utf8SliceInvocation(new(limit, 1, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var denied = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
-            Assert.Equal(13ul, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]
@@ -456,6 +437,7 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData(true, 1, false, true)]
     public void OriginalInterruptionInsideScanReleasesScratch(bool timeout, int nesting, bool exact, bool ascii)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex(new string('(', nesting) + (ascii ? "[a-z]+" : exact ? @"\p{L}{2048}" : @"\p{L}+") +
             new string(')', nesting) + (exact ? "." : "-"));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
@@ -464,7 +446,7 @@ public sealed class Utf8DisjointClassRepeatTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var session = Utf8SearchDiagnosticsSession.Start(_ => { if (timeout) ticks = 25; else token.Cancel(); });
-        var invocation = new Utf8SliceInvocation(new(100000, 1, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
+        var invocation = new Utf8SliceInvocation(new(1, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         try
         {
@@ -474,7 +456,7 @@ public sealed class Utf8DisjointClassRepeatTests
             if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.Equal(13ul, invocation.Ledger.ReservedBytes);
-            Assert.True(invocation.Budget.Steps >= 64);
+            Assert.True(invocation.Budget.DiagnosticCheckpoints >= 64);
         }
         finally { session.Complete(); }
     }
@@ -496,7 +478,7 @@ public sealed class Utf8DisjointClassRepeatTests
         byte[] input = [.. prefix, .. Encoding.ASCII.GetBytes(new string('a', length)), .. "😀#"u8];
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
-        var invocation = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var invocation = new Utf8SliceInvocation(new(128, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(invocation.Ledger.TryReserve(17));
         var actual = Utf8SliceRunner.TryMatchAt(program, input, prefix.Length, starts, ends, true, ref invocation);
         Assert.True(actual.IsMatch);
@@ -515,19 +497,11 @@ public sealed class Utf8DisjointClassRepeatTests
         var input = Encoding.ASCII.GetBytes(new string('a', 4097));
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
-        var baseline = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var baseline = new Utf8SliceInvocation(new(128, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(17));
         var result = Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref baseline);
         Assert.True(result.IsMatch);
         Assert.Equal(17UL, baseline.Ledger.ReservedBytes);
-        for (ulong work = 1; work < baseline.Budget.Steps; work++)
-        {
-            var invocation = new Utf8SliceInvocation(new(work, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(17));
-            var denied = Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
-            Assert.Equal(17UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     [Theory]
@@ -545,7 +519,7 @@ public sealed class Utf8DisjointClassRepeatTests
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var invocation = new Utf8SliceInvocation(new(10000000, 128, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
+        var invocation = new Utf8SliceInvocation(new(128, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
         Assert.True(invocation.Ledger.TryReserve(17));
         var entered = false;
         invocation.CheckpointHook = _ =>

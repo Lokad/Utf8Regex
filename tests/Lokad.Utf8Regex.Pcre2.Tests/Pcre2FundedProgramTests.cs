@@ -138,12 +138,11 @@ public sealed class Pcre2FundedProgramTests
         Assert.Equal(0UL, account.Used);
     }
 
-    [Theory] [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [Theory] [InlineData(1)] [InlineData(2)]
     public void NumericDenialsRetainPcre2ErrorVocabulary(int kind)
     {
         var policy = kind switch
         {
-            0 => new Utf8ResourcePolicy { MaxWorkSteps = 1 },
             1 => new Utf8ResourcePolicy { MaxWorkingBytes = 1 },
             _ => new Utf8ResourcePolicy { MaxDepth = 1 }
         };
@@ -455,14 +454,14 @@ public sealed class Pcre2FundedProgramTests
         programs.Release(13); Assert.Equal(0UL, root.Used);
     }
 
-    [Theory] [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [Theory] [InlineData(1)] [InlineData(2)]
     public void FundedTemplateOtherNumericControlsRemainEnforceable(int control)
     {
         var root = new Root(); var programs = new Account(root); var working = new Account(root);
-        var policy = control switch { 0 => new Utf8ResourcePolicy { MaxWorkSteps = 1 },
+        var policy = control switch { 0 => new Utf8ResourcePolicy { MaxDepth = 4096 },
             1 => new Utf8ResourcePolicy { MaxDepth = 1 }, _ => new Utf8ResourcePolicy { MaxResultBytes = 1 } };
         using var owner = Compile("(?=(?=(a)))a", programs, policy: policy); var held = programs.Used;
-        Assert.Equal(control switch { 0 => Pcre2ErrorKind.MatchLimit, 1 => Pcre2ErrorKind.DepthLimit,
+        Assert.Equal(control switch { 1 => Pcre2ErrorKind.DepthLimit,
             _ => Pcre2ErrorKind.ResultLimit }, Assert.Throws<Pcre2MatchException>(() => owner.TryReplace(
             "a"u8, "[$1]"u8, new byte[16], out _, workingMemoryAllowance: working)).ErrorKind);
         Assert.Equal(0UL, working.Used); Assert.Equal(held, programs.Used);

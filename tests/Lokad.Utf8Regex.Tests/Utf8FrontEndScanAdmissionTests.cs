@@ -27,17 +27,17 @@ public sealed class Utf8FrontEndScanAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(1)]
     public void RootDenialPrecedesFrameAcquisition(int denial)
     {
         var input = Make(0);
         using var owner = new Utf8ConstructionScope(0, denial == 0 ? 128ul : ulong.MaxValue,
-            denial == 2 ? 2ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
+            denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Assert.Null(Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(input)));
         Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
-            1 => Utf8ResourceLimitKind.ConstructionDepth, _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, failure.ResourceKind);
+            1 => Utf8ResourceLimitKind.ConstructionDepth}, failure.ResourceKind);
         Assert.Equal(128ul, owner.Budget.PeakBytes);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
@@ -48,9 +48,10 @@ public sealed class Utf8FrontEndScanAdmissionTests
     [Fact]
     public void ChildDepthDenialRestoresParentAndAllowsRecovery()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var input = Make(32);
         var recovered = Make(0);
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 8);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 8);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Assert.Null(Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(input)));
@@ -60,9 +61,9 @@ public sealed class Utf8FrontEndScanAdmissionTests
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        var spent = owner.Budget.WorkSteps;
+        var spent = owner.Budget.DiagnosticCheckpoints;
         Assert.Null(Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(recovered));
-        Assert.True(owner.Budget.WorkSteps > spent);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > spent);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
@@ -71,7 +72,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
     public void ArrayGrowthDenialReleasesEveryScratchLoan()
     {
         var input = Make(128);
-        using var owner = new Utf8ConstructionScope(0, 2048, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, 2048, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Assert.Null(Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(input)));
@@ -87,35 +88,16 @@ public sealed class Utf8FrontEndScanAdmissionTests
     [Fact]
     public void EveryWorkCutoffRestoresScratchWithoutRefundingWork()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var input = Make(3);
         ulong work;
-        using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue))
         {
             Assert.Null(Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(input));
-            work = measure.Budget.WorkSteps;
+            work = measure.Budget.DiagnosticCheckpoints;
             Assert.Equal(0ul, measure.Budget.ReservedBytes);
         }
         Assert.InRange(work, 1ul, 10000ul);
-        for (var cutoff = 0ul; cutoff <= work; cutoff++)
-        {
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            var failure = Record.Exception(() => Assert.Null(Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(input)));
-            if (cutoff < work)
-            {
-                var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
-                Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, breach.ResourceKind);
-                Assert.True(breach.Requested > cutoff + 2);
-            }
-            else Assert.Null(failure);
-            Assert.Equal(128ul, owner.Budget.ReservedBytes);
-            Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Equal(0ul, owner.Budget.Reserved);
-            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-            Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2);
-            Assert.Equal(17, parent.Value);
-        }
     }
 
     [Fact]

@@ -44,14 +44,14 @@ internal static partial class PythonReTranslator
             coreNumbersByPython = arena.Allocate<int>(checked(parseResult.CaptureGroupCount + 1), false);
             foreach (var number in parseResult.NamedGroups.Values)
             {
-                construction.Budget.ChargeWork(1);
+                construction.Budget.Checkpoint();
                 coreNumbersByPython[number] = -1;
             }
             var nextUnnamed = 1;
             var nextNamed = parseResult.CaptureGroupCount - namedGroupCount + 1;
             for (var pythonGroup = 1; pythonGroup <= parseResult.CaptureGroupCount; pythonGroup++)
             {
-                construction.Budget.ChargeWork(1);
+                construction.Budget.Checkpoint();
                 coreNumbersByPython[pythonGroup] = coreNumbersByPython[pythonGroup] < 0 ? nextNamed++ : nextUnnamed++;
             }
         }
@@ -180,7 +180,7 @@ internal static partial class PythonReTranslator
         for (var branchIndex = 0; branchIndex < alternation.Branches.Count; branchIndex++)
         {
             var branch = alternation.Branches[branchIndex];
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (!TryGetExactLiteral(branch, out var literal) || literal.Length == 0)
             {
                 return false;
@@ -193,13 +193,13 @@ internal static partial class PythonReTranslator
         {
             for (var j = 0; j < literals.Count; j++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (i == j)
                 {
                     continue;
                 }
 
-                Utf8ConstructionScope.ChargeWork((ulong)literals[i].Length);
+                Utf8ConstructionScope.Checkpoint();
                 if (literals[j].AsSpan().StartsWith(literals[i]))
                 {
                     return false;
@@ -225,7 +225,7 @@ internal static partial class PythonReTranslator
         var complete = false;
         for (var index = 0; index < node.Items.Count; index++)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (node.Items[index] is PythonReCharacterClassRangeItem { StartScalar: 0, EndScalar: 0x10ffff })
             { complete = true; break; }
         }
@@ -241,7 +241,7 @@ internal static partial class PythonReTranslator
         for (var itemIndex = 0; itemIndex < items.Count; itemIndex++)
         {
             var item = items[itemIndex];
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             switch (item)
             {
                 case PythonReCharacterClassLiteralItem literal:
@@ -271,7 +271,7 @@ internal static partial class PythonReTranslator
         if (hasRanges) AppendRangeCharacterClass(ranges, fragments, false, builder);
         for (var index = 0; index < branches.Count; index++)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (hasRanges || index != 0) builder.Append('|');
             builder.Append(branches[index]);
         }
@@ -292,7 +292,7 @@ internal static partial class PythonReTranslator
         if (negated) builder.Append('^');
         foreach (var fragment in fragments)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             builder.Append(fragment);
         }
 
@@ -303,7 +303,7 @@ internal static partial class PythonReTranslator
             var currentEnd = ranges[0].End;
             for (var index = 1; index < ranges.Count; index++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 var next = ranges[index];
                 if (next.Start <= currentEnd + 1) currentEnd = Math.Max(currentEnd, next.End);
                 else

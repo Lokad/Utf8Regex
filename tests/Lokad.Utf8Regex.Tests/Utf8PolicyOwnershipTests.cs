@@ -16,7 +16,7 @@ public sealed class Utf8PolicyOwnershipTests
     {
         var account = new Account { Maximum = 512 << 10 };
         var source = "(?<x>a+)"u8.ToArray();
-        var policy = new Utf8RegexPolicy { ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxWorkSteps = 100000 } };
+        var policy = new Utf8RegexPolicy { ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxDepth = 4096 } };
         using var regex = creation switch
         {
             0 => new Utf8Regex("(?<x>a+)", policy: policy),
@@ -54,7 +54,7 @@ public sealed class Utf8PolicyOwnershipTests
         var account = new Account();
         using var regex = new Utf8Regex(split ? "," : "a+", policy: new()
         {
-            ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxWorkSteps = 100000 }
+            ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var attempts = account.Attempts;
         if (split)
@@ -130,7 +130,7 @@ public sealed class Utf8PolicyOwnershipTests
         var account = new Account();
         using var regex = new Utf8Regex("(a+)", policy: new()
         {
-            ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxWorkSteps = 100000 }
+            ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var held = account.Used; var closed = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
@@ -152,7 +152,7 @@ public sealed class Utf8PolicyOwnershipTests
     }
 
     [Theory]
-    [InlineData(0)]
+
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
@@ -160,7 +160,7 @@ public sealed class Utf8PolicyOwnershipTests
     {
         var limit = kind switch
         {
-            0 => new Utf8ConstructionPolicy { MaxWorkSteps = 1 },
+
             1 => new Utf8ConstructionPolicy { MaxDepth = 1 },
             2 => new Utf8ConstructionPolicy { MaxInstructionCapacity = 1 },
             _ => new Utf8ConstructionPolicy { MaxBytes = 1 }
@@ -214,7 +214,7 @@ public sealed class Utf8PolicyOwnershipTests
         var account = new Account();
         using var regex = new Utf8Regex("(a|aa)+b", policy: new()
         {
-            ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxWorkSteps = 100000 }
+            ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var held = account.Used; var closed = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
@@ -236,12 +236,13 @@ public sealed class Utf8PolicyOwnershipTests
     [Fact]
     public void DefaultConstructorInheritsButExplicitConstructionCannotReplaceAnOwner()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var owner = Utf8ConstructionScope.Enter();
         using var regex = new Utf8Regex("a");
-        var work = owner.Budget.WorkSteps; Assert.True(work > 0);
+        var work = owner.Budget.DiagnosticCheckpoints; Assert.True(work > 0);
         Assert.Throws<InvalidOperationException>(() => Utf8Regex.Compile("a"));
-        Assert.Throws<InvalidOperationException>(() => new Utf8Regex("a", policy: new() { ConstructionPolicy = new() { MaxWorkSteps = 100000 } }));
-        Assert.Equal(work, owner.Budget.WorkSteps);
+        Assert.Throws<InvalidOperationException>(() => new Utf8Regex("a", policy: new() { ConstructionPolicy = new() { MaxDepth = 128 } }));
+        Assert.Equal(work, owner.Budget.DiagnosticCheckpoints);
     }
 
     [Fact]
@@ -292,7 +293,7 @@ public sealed class Utf8PolicyOwnershipTests
         var subject = Encoding.UTF8.GetBytes(new string('z', gap) + tail);
         using var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking | RegexOptions.CultureInvariant, new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 64 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var cancellation = new CancellationTokenSource();
         var account = new Account();
@@ -302,9 +303,9 @@ public sealed class Utf8PolicyOwnershipTests
     }
 
     [Theory]
-    [InlineData(0, false)] [InlineData(1, false)] [InlineData(2, false)]
-    [InlineData(0, true)] [InlineData(1, true)] [InlineData(2, true)]
-    public void PackedBooleanChargesAndRefundsOnInterruption(int interruption, bool skipStarts)
+    [InlineData(1, false)] [InlineData(2, false)]
+    [InlineData(1, true)] [InlineData(2, true)]
+    public void PackedBooleanRefundsOnInterruption(int interruption, bool skipStarts)
     {
         var input = Encoding.UTF8.GetBytes(skipStarts ? new string('z', 270000) : new string('a', 4096));
         using var cancellation = new CancellationTokenSource();
@@ -312,7 +313,7 @@ public sealed class Utf8PolicyOwnershipTests
         using var regex = new Utf8Regex(skipStarts ? "(?i:(?<x>😀|a)){1,2}" : "(?:a?b|c)*[d-f][xy]", RegexOptions.NonBacktracking, new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(20),
-            ResourcePolicy = new() { MaxWorkSteps = interruption == 0 ? 128UL : null }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var account = new Account();
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
@@ -322,13 +323,7 @@ public sealed class Utf8PolicyOwnershipTests
         });
         try
         {
-            if (interruption == 0)
-            {
-                var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input, cancellation.Token, account));
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-                Assert.Equal(129UL, error.Requested);
-            }
-            else if (interruption == 1)
+            if (interruption == 1)
                 Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, cancellation.Token, account)).CancellationToken);
             else
                 Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input, cancellation.Token, account));

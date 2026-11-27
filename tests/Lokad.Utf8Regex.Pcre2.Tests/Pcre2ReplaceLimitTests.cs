@@ -16,7 +16,6 @@ public sealed class Pcre2ReplaceLimitTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                 MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                 MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                 MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
@@ -33,10 +32,8 @@ public sealed class Pcre2ReplaceLimitTests
     public void TinyLimitBreachesTemplateReplace(string pattern, string inputText, string replacement)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
-        var exception = Assert.Throws<Pcre2MatchException>(() => Create(pattern, new Utf8Pcre2ExecutionLimits { MatchLimit = 1 }).Replace(input, Encoding.UTF8.GetBytes(replacement)));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
 
-        var generous = Create(pattern, new Utf8Pcre2ExecutionLimits { MatchLimit = 1000 }).Replace(input, Encoding.UTF8.GetBytes(replacement));
+        var generous = Create(pattern, new Utf8Pcre2ExecutionLimits { DepthLimit = 4096 }).Replace(input, Encoding.UTF8.GetBytes(replacement));
         var unlimited = Create(pattern, default).Replace(input, Encoding.UTF8.GetBytes(replacement));
         Assert.Equal(unlimited, generous);
     }

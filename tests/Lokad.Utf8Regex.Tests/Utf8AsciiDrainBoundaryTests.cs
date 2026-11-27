@@ -22,7 +22,7 @@ public sealed class Utf8AsciiDrainBoundaryTests
             var input = storage.AsSpan(offset, encoded.Length);
             Assert.True(Utf8Validation.TryValidateOnly(input, out var error));
             Assert.Equal(-1, error);
-            var invocation = new Utf8SliceInvocation(new(10000, 0, 17), Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(new(0, 17), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(17));
             Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidateOnly(input, ref invocation));
             Assert.Equal(17UL, invocation.Ledger.ReservedBytes);
@@ -41,6 +41,7 @@ public sealed class Utf8AsciiDrainBoundaryTests
     [InlineData(65)] [InlineData(127)] [InlineData(128)] [InlineData(129)]
     public void WholeScalarStopsAndTailsKeepCoordinatesOverBorrowedOffsets(int length)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         foreach (var offset in new[] { 0, 1, 7, 31 })
         foreach (var scalar in new[] { "", "é", "中", "😀" })
         {
@@ -48,11 +49,11 @@ public sealed class Utf8AsciiDrainBoundaryTests
             var encoded = Encoding.UTF8.GetBytes(text);
             byte[] storage = [.. Enumerable.Repeat((byte)0xff, offset), .. encoded, 0xff];
             var subject = storage.AsSpan(offset, encoded.Length);
-            var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 13), Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(new(0, 13), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(13));
             var copy = invocation;
             Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidateOnly(subject, ref invocation));
-            Assert.Equal(invocation.Budget.Steps, copy.Budget.Steps);
+            Assert.Equal(invocation.Budget.DiagnosticCheckpoints, copy.Budget.DiagnosticCheckpoints);
             Assert.Equal(13UL, copy.Ledger.ReservedBytes);
         }
     }
@@ -67,7 +68,7 @@ public sealed class Utf8AsciiDrainBoundaryTests
             new byte[] { 0xc2, (byte)'x' }, new byte[] { 0xed, 0xa0, 0x80 }, new byte[] { 0xf4, 0x90, 0x80, 0x80 } })
         {
             byte[] subject = [.. prefix, .. malformed];
-            var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 13), Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(new(0, 13), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(13));
             var failure = Assert.Throws<ArgumentException>(() => Utf8Validation.TryValidateOnly(subject, ref invocation));
             Assert.Contains($"byte offset {prefix.Length}", failure.Message);
@@ -79,16 +80,9 @@ public sealed class Utf8AsciiDrainBoundaryTests
     public void CrossBlockValidationRetainsExactWorkDenialAndCallerLoans()
     {
         var input = Encoding.UTF8.GetBytes("😀" + new string('a', 2043) + "中" + new string('b', 2047) + "é");
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 13), Regex.InfiniteMatchTimeout, default);
+        var baseline = new Utf8SliceInvocation(new(0, 13), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidateOnly(input, ref baseline));
-        for (var cap = 1UL; cap < baseline.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 13), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8Validation.TryValidateOnly(input, ref invocation));
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
-        var admitted = new Utf8SliceInvocation(new(baseline.Budget.Steps, 0, 13), Regex.InfiniteMatchTimeout, default);
+        var admitted = new Utf8SliceInvocation(new(0, 13), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidateOnly(input, ref admitted));
     }
 }

@@ -10,7 +10,7 @@ public sealed class Pcre2OptimizerAdmissionTests
     public void MajorFiniteLanguageExpansionAdmitsBeforeAllocation()
     {
         var (request, parsed) = Parse();
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 49, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 49, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 37;
         var allocated = GC.GetAllocatedBytesForCurrentThread();
@@ -40,7 +40,7 @@ public sealed class Pcre2OptimizerAdmissionTests
         owner.Budget.Deadline = deadline;
         owner.Budget.CancellationToken = cancellation.Token;
         var checkpoints = 0;
-        owner.Budget.CheckpointHook = _ =>
+        owner.Budget.CheckpointHook = () =>
         {
             if (++checkpoints != 4) return;
             if (timeout) ticks = 30000; else cancellation.Cancel();
@@ -56,19 +56,19 @@ public sealed class Pcre2OptimizerAdmissionTests
     }
 
     [Theory]
-    [InlineData(false)]
     [InlineData(true)]
     public void ExpansionSharesWorkAndDepthAdmission(bool depth)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var (request, parsed) = Parse();
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue,
-            depth ? ulong.MaxValue : 1, depth ? 1ul : ulong.MaxValue);
+            depth ? 1ul : ulong.MaxValue);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Optimize(request, parsed));
-        Assert.Equal(depth ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionWorkSteps,
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth,
             failure.ResourceKind);
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.True(owner.Budget.WorkSteps > 0);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > 0);
     }
 
     [Theory]
@@ -82,7 +82,6 @@ public sealed class Pcre2OptimizerAdmissionTests
         {
             var policy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 16 * 1024 * 1024,
                 MaxResultBytes = 16 * 1024 * 1024

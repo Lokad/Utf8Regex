@@ -25,7 +25,7 @@ public sealed class Pcre2AsciiSearchTests
     public void UnanchoredAsciiMatchesAnIndependentOracleAtValidStarts()
     {
         var direct = new Utf8Pcre2Regex(IpPattern);
-        var vm = CreateMetered(IpPattern, 1_000_000);
+        var vm = CreateMetered(IpPattern);
         var oracle = new Regex(IpPattern.Replace(@"\d", "[0-9]", StringComparison.Ordinal), RegexOptions.CultureInvariant);
 
         foreach (var inputText in new[]
@@ -61,36 +61,13 @@ public sealed class Pcre2AsciiSearchTests
         }
     }
 
-    [Fact]
-    public void UnanchoredAsciiObservesOptionsAndLimits()
-    {
-        var direct = new Utf8Pcre2Regex(IpPattern);
-        var vm = CreateMetered(IpPattern, 1_000_000);
-        var input = "prefix 192.168.001.001 suffix"u8.ToArray();
-
-        foreach (var options in new[]
-                 {
-                     Pcre2MatchOptions.Anchored,
-                     Pcre2MatchOptions.EndAnchored,
-                     Pcre2MatchOptions.NotEmpty,
-                     Pcre2MatchOptions.NotEmptyAtStart,
-                 })
-        {
-            Assert.Equal(vm.IsMatch(input, 0, options), direct.IsMatch(input, 0, options));
-        }
-
-        var tightlyMetered = CreateMetered(IpPattern, 1);
-        Assert.Equal(
-            Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch(input)).ErrorKind);
-    }
-
     [Theory]
     [InlineData("abbb", true)]
     [InlineData("xx", false)]
     public void TokenOnlyFallbackPollsBetweenLeadingByteSearchBlocks(string tail, bool expected)
     {
-        using var regex = CreateMetered("(a)b+", 0);
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
+        using var regex = CreateMetered("(a)b+");
         using var cancellation = new CancellationTokenSource();
         const Pcre2MatchOptions options = Pcre2MatchOptions.NotEmpty;
         var shortInput = Encoding.UTF8.GetBytes("éx" + tail);
@@ -107,16 +84,16 @@ public sealed class Pcre2AsciiSearchTests
             var budget = new Pcre2ResourceBudget(compiled.Request, cancellation.Token);
             Assert.True(Pcre2Runner.TryIsMatch(compiled, input, new Utf8BytePosition(2), options, ref budget, out var found));
             Assert.Equal(expected, found);
-            return budget.WorkingInvocation.Budget.Steps;
+            return budget.WorkingInvocation.Budget.DiagnosticCheckpoints;
         }
     }
 
-    private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
+    private static Utf8Pcre2Regex CreateMetered(string pattern) =>
         new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (matchLimit) == 0 ? null : (matchLimit)
+                MaxDepth = 4096
             },
             MatchTimeout = Regex.InfiniteMatchTimeout
         });

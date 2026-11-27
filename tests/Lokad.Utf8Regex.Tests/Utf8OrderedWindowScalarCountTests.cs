@@ -33,7 +33,6 @@ public sealed class Utf8OrderedWindowScalarCountTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 128,
                     MaxWorkingBytes = 1_048_576,
                     MaxResultBytes = 1_048_576

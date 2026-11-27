@@ -171,7 +171,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         where TControl : struct, IUtf8ConstructionTextControl
     {
         var scope = Utf8ConstructionScope.Enter(default, Timeout.InfiniteTimeSpan, default, allowance);
-        try { scope.Budget.CheckpointHook = _ => control.Check(); return scope; }
+        try { scope.Budget.CheckpointHook = control.Check; return scope; }
         catch { scope.Dispose(); throw; }
     }
 
@@ -192,7 +192,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                 // This immutable owner can never retain the key. Do not hash or
                 // compare its text before the factory's construction admission.
                 using var oversized = Utf8ConstructionScope.Enter();
-                oversized.Budget.ChargeWork(1);
+                oversized.Budget.Checkpoint();
                 return Complete(oversized, PrepareUncached(key, state, factory, control), funding, null, control, ref memoryUse);
             }
             var hash = _comparer.GetHashCode(key);
@@ -207,7 +207,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                 preparation = Utf8ConstructionScope.Enter();
                 cleanup = preparation;
                 control.Check();
-                preparation.Budget.ChargeWork(1);
+                preparation.Budget.Checkpoint();
                 if (CanAdd())
                 {
                     try
@@ -354,7 +354,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         where TControl : struct, IUtf8ConstructionTextControl
     {
         control.Check();
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         if (charge > _maximumPayloadBytes || _generation != generation ||
             replacing is not null && !Contains(replacing)) return false;
         var bytes = _payloadBytes - (replacing?.PayloadCharge ?? 0);
@@ -364,7 +364,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         {
             if (HasRoomForCharge(bytes, retained, charge)) break;
             control.Check();
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (!mayEvict || ReferenceEquals(entry, replacing) || entry.Status != 1) continue;
             bytes -= entry.PayloadCharge;
             retained--;

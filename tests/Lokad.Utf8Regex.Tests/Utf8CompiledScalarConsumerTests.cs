@@ -60,9 +60,10 @@ public sealed class Utf8CompiledScalarConsumerTests
     [InlineData(false)] [InlineData(true)]
     public void GeneralCompiledCursorOwnsReferencesAndEmptyScalarAdvancement(bool rtl)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var pattern = rtl ? @"\k<x>(?<x>.)|$" : @"(?<x>.)\k<x>|$";
         var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0),
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 } });
+            policy: new() { ResourcePolicy = new() { MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 } });
         var input = "é😀😀z"u8.ToArray();
         var cursor = regex.EnumerateMatches(input);
         var sibling = cursor;
@@ -70,20 +71,21 @@ public sealed class Utf8CompiledScalarConsumerTests
         while (cursor.MoveNext())
             ranges.Add((cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes));
         Assert.Equal(rtl ? [(11, 0), (2, 8)] : new List<(int, int)> { (2, 8), (11, 0) }, ranges);
-        Assert.Equal(cursor.DebugInvocationSteps, sibling.DebugInvocationSteps);
+        Assert.Equal(cursor.DiagnosticCheckpointCount, sibling.DiagnosticCheckpointCount);
         Assert.True(sibling.MoveNext());
         Assert.Equal(ranges[0], (sibling.Current.StartOffsetInBytes, sibling.Current.EndOffsetInBytes - sibling.Current.StartOffsetInBytes));
         while (sibling.MoveNext()) { }
-        Assert.Equal(cursor.DebugInvocationSteps, sibling.DebugInvocationSteps);
+        Assert.Equal(cursor.DiagnosticCheckpointCount, sibling.DiagnosticCheckpointCount);
     }
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void GeneralCursorOffsetRetainsFullAssertionContextAndNfaStart(bool nonBacktracking)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var pattern = nonBacktracking ? "😀|z" : @"(?<=é).|z";
         var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | (nonBacktracking ? RegexOptions.NonBacktracking : 0),
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 } });
+            policy: new() { ResourcePolicy = new() { MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 } });
         var input = "é😀z"u8.ToArray();
         var cursor = regex.EnumerateMatches(input, startOffsetInBytes: 2);
         var sibling = cursor;
@@ -92,11 +94,11 @@ public sealed class Utf8CompiledScalarConsumerTests
         Assert.True(cursor.MoveNext());
         Assert.Equal((6, 7), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
         Assert.False(cursor.MoveNext());
-        Assert.Equal(cursor.DebugInvocationSteps, sibling.DebugInvocationSteps);
+        Assert.Equal(cursor.DiagnosticCheckpointCount, sibling.DiagnosticCheckpointCount);
         Assert.True(sibling.MoveNext());
         Assert.Equal((2, 6), (sibling.Current.StartOffsetInBytes, sibling.Current.EndOffsetInBytes));
         while (sibling.MoveNext()) { }
-        Assert.Equal(cursor.DebugInvocationSteps, sibling.DebugInvocationSteps);
+        Assert.Equal(cursor.DiagnosticCheckpointCount, sibling.DiagnosticCheckpointCount);
     }
 
     [Theory]

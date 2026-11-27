@@ -16,7 +16,7 @@ public sealed class PythonReBoundaryRetryTests
         var input = "éA😀B _0"u8.ToArray();
         var expected = options == PythonReCompileOptions.Ascii
             ? new[] { 2, 3, 7, 8, 9, 11 } : new[] { 0, 3, 7, 8, 9, 11 };
-        var invocation = new Utf8SliceInvocation(new(1_000_000, 1024, 1UL << 20),
+        var invocation = new Utf8SliceInvocation(new(1024, 1UL << 20),
             Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
         var cursor = new Utf8PythonMatchCursor(input, program, 0,
@@ -70,6 +70,7 @@ public sealed class PythonReBoundaryRetryTests
     [InlineData(true)]
     public void FinalEmptyRetryKeepsOriginalInterruptionAndParentLoan(bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         Utf8PythonRangeMatch cursorRange = default;
         var program = PythonReScalarCompiler.Compile(new PythonReParser(@"\b").Parse(PythonReCompileOptions.Ascii));
         using var source = new CancellationTokenSource();
@@ -96,7 +97,7 @@ public sealed class PythonReBoundaryRetryTests
         try
         {
             var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
-            var invocation = new Utf8SliceInvocation(new(1_000_000, 1024, 1UL << 20), timeout, source.Token);
+            var invocation = new Utf8SliceInvocation(new(1024, 1UL << 20), timeout, source.Token);
             Assert.True(invocation.Ledger.TryReserve(13));
             var cursor = new Utf8PythonMatchCursor("a"u8.ToArray(), program, 0, timeout, @"\b", invocation, null);
             try
@@ -104,8 +105,8 @@ public sealed class PythonReBoundaryRetryTests
                 Assert.True(cursor.MoveNext(out cursorRange));
                 Assert.True(cursor.MoveNext(out cursorRange));
                 Assert.Equal(1, cursorRange.Value.StartOffsetInBytes);
-                while ((invocation.Budget.Steps & 63) != 63)
-                    invocation.TryChargeStep();
+                while ((invocation.Budget.DiagnosticCheckpoints & 63) != 63)
+                    invocation.CheckProgress();
                 armed = true;
                 if (expire)
                 {

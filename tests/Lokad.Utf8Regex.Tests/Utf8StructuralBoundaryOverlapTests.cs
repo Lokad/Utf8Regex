@@ -55,7 +55,6 @@ public sealed class Utf8StructuralBoundaryOverlapTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = controlled ? new()
                 {
-                    MaxWorkSteps = 1000000,
                     MaxDepth = 128,
                     MaxWorkingBytes = 1000000,
                     MaxResultBytes = 1000000

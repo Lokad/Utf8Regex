@@ -16,15 +16,6 @@ public sealed class Pcre2ReplacementEntryInvocationTests
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void SearchWorkDeniesBeforeUnvisitedTail(string pattern, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(new string('x', 16385) + text);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-            Policy(pattern, 3).Replace(input, "Z"u8)).ErrorKind);
-        Assert.Equal("xZ", Replace(Policy(pattern, 100000), Encoding.UTF8.GetBytes(text)));
-    }
-
-    [Theory] [MemberData(nameof(Routes))]
     public void OriginalTokenIsObservedAtEntryAndDuringReplacement(string pattern, string text)
     {
         foreach (var cancelAt in new[] { 2, 8 })
@@ -47,7 +38,7 @@ public sealed class Pcre2ReplacementEntryInvocationTests
     [Theory] [MemberData(nameof(Routes))]
     public void ScalarStartsAndFreshOutputRemainValid(string pattern, string text)
     {
-        var regex = Policy(pattern, 100000);
+        var regex = Policy(pattern);
         var input = Encoding.UTF8.GetBytes("😀" + text);
         Assert.Equal("😀xZ", Replace(regex, input, start: 4));
         Assert.Throws<ArgumentOutOfRangeException>(() => Replace(regex, input, start: 1));
@@ -62,15 +53,12 @@ public sealed class Pcre2ReplacementEntryInvocationTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         var malformed = new byte[16385]; malformed.AsSpan().Fill((byte)'x'); malformed[^1] = 0xff;
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-            Policy(pattern, 3).Replace(input, malformed)).ErrorKind);
         var template = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("$0", 8192)));
         var destination = new byte[1 + 8192 * (input.Length - 1)];
         var limited = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxWorkingBytes = 4096
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
@@ -81,11 +69,10 @@ public sealed class Pcre2ReplacementEntryInvocationTests
             limited.TryReplace(input, template, destination, out _)).ErrorKind);
     }
 
-    private static Utf8Pcre2Regex Policy(string pattern, uint work) => new(pattern, options:         Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    private static Utf8Pcre2Regex Policy(string pattern) => new(pattern, options:         Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
     {
         ResourcePolicy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = (work) == 0 ? null : (work),
             MaxDepth = 256,
             MaxWorkingBytes = 1 << 20,
             MaxResultBytes = 1 << 20

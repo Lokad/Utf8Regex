@@ -69,7 +69,7 @@ internal static partial class Utf8CompiledOperationCursorFactory
         // Public entry requires caller-valid bytes; the scalar cursor needs no
         // coordinate description or validity pass.
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, deadline, default);
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned cursor preparation exceeded {breach}.");
 
         var program = prepared.ScalarProgram ?? throw new InvalidOperationException("Owned cursor preparation requires its admitted scalar program.");

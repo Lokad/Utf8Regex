@@ -9,14 +9,12 @@ namespace Lokad.Utf8Regex.Benchmarks;
 
 // R02a focused cost controls: slice shapes measured under unlimited/no-token,
 // finite-limits/no-token and finite-limits/live-uncanceled-token lanes. Core and
-// PythonRe use all four accepted invocation controls. Lanes alternate with warmup; results
+// PythonRe exercise depth and byte limits. Lanes alternate with warmup; results
 // must agree within each profile before timing. Performance parity is not a
 // precondition; this records policy and token costs plus serving routes.
 internal static partial class BenchmarkInspectReporter
 {
     private const int SlicePolicyLaneDefaultIterations = 20000;
-
-    private const uint SlicePolicyLaneMatchLimit = 1000000;
 
     private sealed record SlicePolicyLaneCase(string Pattern, string InputText);
 
@@ -70,12 +68,11 @@ internal static partial class BenchmarkInspectReporter
         var core = new Utf8Regex(sliceCase.Pattern, options: RegexOptions.None);
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 1_000_000,
             MaxDepth = 1_024,
             MaxWorkingBytes = 1_048_576,
             MaxResultBytes = 1_048_576
         };
-        var coreFinite = new Utf8Regex(            sliceCase.Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        var coreFinite = new Utf8Regex(sliceCase.Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = policy
@@ -94,17 +91,14 @@ internal static partial class BenchmarkInspectReporter
         });
         Console.WriteLine("  PythonRe preparation: coreKind=" +
             (python.DebugUtf8ExecutionKind ?? "None"));
-        Console.WriteLine("  Core/PythonRe finite: work=1000000 depth=1024 working=1048576 result=1048576");
+        Console.WriteLine("  Finite limits: depth=1024 working=1048576 result=1048576");
         Console.WriteLine("  Finite preparation: core=" + coreFinite.Inspection.ExecutionKind +
             " pythonCore=" + (pythonFinite.DebugUtf8ExecutionKind ?? "None"));
 
         var pcre2 = new Utf8Pcre2Regex(sliceCase.Pattern, options: Pcre2CompileOptions.None);
-        var pcre2Finite = new Utf8Pcre2Regex(            sliceCase.Pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var pcre2Finite = new Utf8Pcre2Regex(sliceCase.Pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = SlicePolicyLaneMatchLimit
-            },
+            ResourcePolicy = policy,
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });
         Console.WriteLine("  Pcre2 plan: " + pcre2.DebugDescribeExecutionPlan());

@@ -8,8 +8,8 @@ namespace Lokad.Utf8Regex.Tests;
 [Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8FiniteBranchEnumerationTests
 {
-    private static Utf8ResourcePolicy Funded(ulong work = 1000000) => new()
-    { MaxWorkSteps = work, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
+    private static Utf8ResourcePolicy Funded() => new()
+    { MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
 
     [Fact]
     public void CaptureCursorsAdmitWorkingStorageBeforePublishing()
@@ -68,68 +68,6 @@ public sealed class Utf8FiniteBranchEnumerationTests
                 }
             }
         }
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void CumulativeWorkCutoffsAndAliasesKeepTheirOriginalAllowance(bool compiled)
-    {
-        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        var input = "abxx b12 ab34"u8.ToArray();
-        var funded = new Utf8Regex("a?b[0-9]{2}", options: options, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Funded()
-        });
-        var measured = funded.EnumerateMatches(input);
-        Assert.True(measured.MoveNext());
-        Assert.True(measured.MoveNext());
-        var twoMatches = measured.DebugInvocationSteps;
-        Assert.False(measured.MoveNext());
-        var complete = measured.DebugInvocationSteps;
-        for (ulong work = 1; work < complete; work++)
-        {
-            var regex = new Utf8Regex("a?b[0-9]{2}", options: options, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Regex.InfiniteMatchTimeout,
-                ResourcePolicy = Funded(work)
-            });
-            var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() => Drain(regex, input));
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, denied.ResourceKind);
-            Assert.Equal(work, denied.Limit);
-            Assert.True(denied.Requested > work);
-        }
-        var bounded = new Utf8Regex("a?b[0-9]{2}", options: options, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Funded(twoMatches)
-        });
-        var cursor = bounded.EnumerateMatches(input);
-        Assert.True(cursor.MoveNext());
-        var retained = cursor.Current;
-        var alias = cursor;
-        Assert.True(cursor.MoveNext());
-        var second = cursor.Current;
-        try { alias.MoveNext(); Assert.Fail("The alias must share the exhausted allowance."); }
-        catch (Utf8ResourceLimitExceededException error)
-        { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
-        Assert.Equal(retained, alias.Current);
-        Assert.Equal((5, 3), (retained.StartOffsetInBytes, (retained.EndOffsetInBytes - retained.StartOffsetInBytes)));
-        Assert.Equal((9, 4), (second.StartOffsetInBytes, (second.EndOffsetInBytes - second.StartOffsetInBytes)));
-        var independent = bounded.EnumerateMatches(input);
-        Assert.True(independent.MoveNext());
-        Assert.True(independent.MoveNext());
-        Assert.Equal(second, independent.Current);
-
-        var original = funded.EnumerateMatches(input);
-        Assert.True(original.MoveNext());
-        var copy = original;
-        Assert.True(original.MoveNext());
-        Assert.True(copy.MoveNext());
-        Assert.Equal(original.Current, copy.Current);
-        Assert.False(original.MoveNext());
-        Assert.False(copy.MoveNext());
-        Assert.Equal(retained, alias.Current);
     }
 
     [Theory]
@@ -215,7 +153,7 @@ public sealed class Utf8FiniteBranchEnumerationTests
     [InlineData("a?|b", "ab", RegexOptions.None)]
     public void OtherSemanticsKeepTheirCompleteResults(string pattern, string text, RegexOptions mode)
     {
-        var limits = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        var limits = new Utf8ResourcePolicy { MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
         var regex = new Utf8Regex(pattern, options: mode | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,

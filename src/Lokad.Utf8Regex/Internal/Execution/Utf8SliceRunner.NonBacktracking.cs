@@ -47,7 +47,7 @@ internal static partial class Utf8SliceRunner
                     if (breach != Utf8ExecutionLimitKind.None || position == input.Length) break;
                 }
                 // Cached transitions still spend a step at each scalar edge.
-                breach = invocation.TryChargeStep();
+                breach = invocation.CheckProgress();
                 if (breach != Utf8ExecutionLimitKind.None) break;
                 if (hasConditions)
                 {
@@ -108,7 +108,7 @@ internal static partial class Utf8SliceRunner
         {
             var pc = order[index];
             if ((program.NonBacktrackingEpsilonAncestors[pc] & states) == 0) continue;
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var instruction = program.Instructions[pc];
             var allows = instruction.Kind == Utf8SliceInstructionKind.Anchor
@@ -172,7 +172,7 @@ internal static partial class Utf8SliceRunner
             ref var next = ref workspace.Next;
             while (true)
             {
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 invocation.Budget.ThrowIfCancellationRequested();
                 if (bestStart < 0 && (!anchored || position == fromByte))
@@ -300,25 +300,25 @@ internal static partial class Utf8SliceRunner
             var breach = invocation.TryReserveWorking(bytes);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             Reserved = bytes;
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             Current = new(states, cells);
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             Next = new(states, cells);
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             Best = RegisterCount == 0 ? [] : new int[RegisterCount];
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             Scratch = RegisterCount == 0 ? [] : new int[RegisterCount];
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             PendingPcs = new int[states];
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             PendingRegisters = cells == 0 ? [] : new int[cells];
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             Visited = new bool[states];
             return Utf8ExecutionLimitKind.None;
@@ -334,7 +334,7 @@ internal static partial class Utf8SliceRunner
         {
             for (var offset = 0; offset < Visited.Length; offset += 4096)
             {
-                var breach = invocation.TryChargeInputStep();
+                var breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 Visited.AsSpan(offset, Math.Min(4096, Visited.Length - offset)).Clear();
             }
@@ -345,7 +345,7 @@ internal static partial class Utf8SliceRunner
         {
             for (var offset = 0; offset < source.Length; offset += 512)
             {
-                var breach = invocation.TryChargeInputStep();
+                var breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var count = Math.Min(512, source.Length - offset);
                 source.Slice(offset, count).CopyTo(destination.Slice(offset, count));
@@ -358,7 +358,7 @@ internal static partial class Utf8SliceRunner
         {
             for (var offset = 0; offset < Scratch.Length; offset += 512)
             {
-                var breach = invocation.TryChargeInputStep();
+                var breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 Scratch.AsSpan(offset, Math.Min(512, Scratch.Length - offset)).Fill(-1);
             }
@@ -376,7 +376,7 @@ internal static partial class Utf8SliceRunner
             {
                 // Each visit is fixed work. Bulk register copies check the
                 // deadline before each block, and the scan checks each edge.
-                breach = invocation.TryChargeStep();
+                breach = invocation.CheckProgress();
                 if (breach != Utf8ExecutionLimitKind.None)
                 {
                     invocation.Budget.CheckDeadline();
@@ -458,7 +458,7 @@ internal static partial class Utf8SliceRunner
             var groupCount = RegisterCount == 0 ? 0 : program.GroupCount;
             for (var group = 0; group < groupCount; group++)
             {
-                var breach = invocation.TryChargeInputStep();
+                var breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 captureStarts[group] = Best[group * 2];
                 captureEnds[group] = Best[group * 2 + 1];
@@ -486,13 +486,13 @@ internal static partial class Utf8SliceRunner
                 program.GetCompleteAsciiCategoryMask(instruction) != 0))
             {
                 // Lowering has already included every ASCII member in the mask.
-                breach = invocation.TryChargeBoundedCheck();
+                breach = invocation.CheckBoundedProgress();
                 return breach == Utf8ExecutionLimitKind.None &&
                     MatchesAsciiHybridClass(program.SetMasks[instruction.A], instruction.B != 0, (byte)scalar.Value);
             }
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
         }
-        else breach = invocation.TryChargeStep();
+        else breach = invocation.CheckProgress();
 
         if (breach != Utf8ExecutionLimitKind.None) return false;
         return MatchesRegularAtom(program, instruction, scalar, ref invocation, out breach);

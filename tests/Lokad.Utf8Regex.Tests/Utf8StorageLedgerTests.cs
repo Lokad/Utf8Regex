@@ -100,5 +100,5 @@ public sealed class Utf8StorageLedgerTests
     }
 
     private static Utf8SliceInvocation Capped()
-        => new(new(0, 0, 100), Timeout.InfiniteTimeSpan, default);
+        => new(new(0, 100), Timeout.InfiniteTimeSpan, default);
 }

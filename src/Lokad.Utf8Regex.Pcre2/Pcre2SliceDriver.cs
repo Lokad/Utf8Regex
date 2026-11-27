@@ -200,7 +200,7 @@ internal static class Pcre2SliceDriver
         firstAsciiStart = -1;
         if (program.RejectsByFinalAscii(input))
         {
-            ThrowIfSliceBreached(invocation.TryChargeInputStep());
+            ThrowIfSliceBreached(invocation.CheckInput());
             return true;
         }
         if (program.CanMatchEmpty || program.RightToLeft ||
@@ -315,7 +315,7 @@ internal static class Pcre2SliceDriver
         // Only capture markers may surround the run before its delimiter.
         // A later start in the same run reaches the same suffix with fewer
         // bytes. A different capture value cannot affect acceptance here.
-        Utf8ConstructionScope.ChargeWork((ulong)(window.LiteralIndex - 4));
+        Utf8ConstructionScope.Checkpoint();
         for (var pc = 0; pc < window.LiteralIndex; pc++)
         {
             if (pc == repeat) { pc += 3; continue; }
@@ -622,10 +622,6 @@ internal static class Pcre2SliceDriver
         {
             case Utf8ExecutionLimitKind.None:
                 return;
-            case Utf8ExecutionLimitKind.WorkSteps:
-                throw new Pcre2MatchException(
-                    "The PCRE2 match limit was exceeded.",
-                    Pcre2ErrorKind.MatchLimit);
             case Utf8ExecutionLimitKind.Depth:
                 throw new Pcre2MatchException(
                     "The PCRE2 depth limit was exceeded.",

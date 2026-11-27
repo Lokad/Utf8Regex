@@ -51,11 +51,11 @@ internal readonly ref struct Pcre2ResultControl : IUtf8InvocationBufferControl
         else _vm.ReleaseWorking(bytes);
     }
 
-    internal void ChargeWorkspaceStep()
+    internal void CheckWorkspace()
     {
-        if (!_isSlice) { _vm.ChargeWorkspaceStep(); return; }
+        if (!_isSlice) { _vm.CheckWorkspace(); return; }
         if (IsUnmetered) return;
-        Pcre2SliceDriver.ThrowIfSliceBreached(_slice.TryChargeInputStep());
+        Pcre2SliceDriver.ThrowIfSliceBreached(_slice.CheckInput());
     }
 
     public Utf8ExecutionLimitKind TryReserveWorking(ulong bytes)
@@ -64,12 +64,14 @@ internal readonly ref struct Pcre2ResultControl : IUtf8InvocationBufferControl
         return Utf8ExecutionLimitKind.None;
     }
 
-    public Utf8ExecutionLimitKind TryChargeWorkspaceStep()
+    Utf8ExecutionLimitKind IUtf8InvocationBufferControl.CheckWorkspace()
+        => CheckWorkspaceAfterReservation();
+
+    public Utf8ExecutionLimitKind CheckWorkspaceAfterReservation()
     {
         Pcre2ReplacementPreparationControl.Check();
-        ChargeWorkspaceStep();
+        CheckWorkspace();
         return Utf8ExecutionLimitKind.None;
     }
 
-    public Utf8ExecutionLimitKind TryChargeWorkspaceStepAfterReservation() => TryChargeWorkspaceStep();
 }

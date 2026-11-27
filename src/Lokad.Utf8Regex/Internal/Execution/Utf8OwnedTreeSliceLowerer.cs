@@ -54,7 +54,7 @@ internal static class Utf8OwnedTreeSliceLowerer
         frames.Push((root, 0, 0, 0, false));
         while (true)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             ref var frame = ref frames.Peek();
             var node = frame.Node;
             if (frame.NextChild < node.ChildCount)
@@ -98,14 +98,14 @@ internal static class Utf8OwnedTreeSliceLowerer
                         var nativeCount = 0;
                         foreach (var value in utf8)
                         {
-                            Utf8ConstructionScope.ChargeWork(1);
+                            Utf8ConstructionScope.Checkpoint();
                             if ((value & 0xc0) != 0x80) nativeCount++;
                         }
                         var nativeLiterals = arena.Allocate<int>(nativeCount, false);
                         var nativeNext = 0;
                         for (var offset = 0; offset < utf8.Length;)
                         {
-                            Utf8ConstructionScope.ChargeWork(1);
+                            Utf8ConstructionScope.Checkpoint();
                             if (System.Text.Rune.DecodeFromUtf8(utf8.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done)
                                 return null;
                             nativeLiterals[rightToLeft ? nativeCount - 1 - nativeNext : nativeNext] = scalar.Value;
@@ -117,7 +117,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     var count = 0;
                     for (var index = 0; index < text.Length; count++)
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         index += char.IsSurrogatePair(text, index) ? 2 : 1;
                     }
                     var literals = arena.Allocate<int>(count, false);
@@ -126,7 +126,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     long exactBytes = 0;
                     for (var index = 0; index < text.Length;)
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         var width = char.IsSurrogatePair(text, index) ? 2 : 1;
                         var value = width == 2 ? char.ConvertToUtf32(text, index) : text[index];
                         literals[rightToLeft ? count - 1 - next : next] = value;
@@ -143,7 +143,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     var children = arena.Allocate<Utf8SliceNode>(loweredChildren.Length, false);
                     for (var index = 0; index < children.Length; index++)
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         var child = loweredChildren[rightToLeft ? children.Length - 1 - index : index];
                         if (child is null) return null;
                         children[index] = child;
@@ -153,7 +153,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     var branches = arena.Allocate<Utf8SliceNode>(loweredChildren.Length, false);
                     for (var index = 0; index < branches.Length; index++)
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         var branch = loweredChildren[index];
                         if (branch is null) return null;
                         branches[index] = branch;
@@ -286,7 +286,7 @@ internal static class Utf8OwnedTreeSliceLowerer
             static Utf8SliceNode? DecodeSegment(ReadOnlySpan<int> data, ref int position, bool foldCase,
                 Utf8ScalarCaseBehavior caseBehavior, Utf8ConstructionArena arena)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (data.Length - position < 3) return null;
                 var followingSegment = position != 0;
                 var negated = data[position] != 0;
@@ -310,7 +310,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                 var pendingHigh = -1;
                 for (var index = 0; index < ranges.Length; index += 2)
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     var start = ranges[index];
                     if (index != 0 && start < ranges[index - 2]) return null;
                     var low = Math.Max(start, 128);
@@ -335,7 +335,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     {
                         if (unicode[covered + 1] != unicode[covered] + 1 ||
                             !Rune.TryCreate(unicode[covered], out var alias)) break;
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         if (!Utf8SliceScalarClasses.MatchesMask(alias, mask, true, caseBehavior)) break;
                     }
                 }
@@ -351,7 +351,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     var high = BinaryPrimitives.ReadUInt64LittleEndian(mask.AsSpan(8));
                     foreach (var member in members)
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         if (member == Utf8SliceShorthand.Space) low |= Utf8AsciiBytePredicates.WhitespaceMask;
                         else
                         {
@@ -383,7 +383,7 @@ internal static class Utf8OwnedTreeSliceLowerer
         {
             for (var index = 0; index < encoded.Length; index++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (encoded[index] == Utf8ScalarClass.RangePredicateCode)
                 {
                     if (index + 2 >= encoded.Length) return false;
@@ -392,7 +392,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     if (length < 0 || (length & 1) != 0 || length > encoded.Length - index - 1) return false;
                     var ranges = arena.Allocate<int>(length, true);
                     for (var range = 0; range < length; range++) {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         ranges[range] = encoded[++index];
                     }
                     for (var range = 0; range < length; range += 2)
@@ -410,14 +410,14 @@ internal static class Utf8OwnedTreeSliceLowerer
                 {
                     var close = index + 1;
                     while (close < encoded.Length && encoded[close] != 0) {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         close++;
                     }
                     if (close >= encoded.Length || close == index + 1) return false;
                     uint positive = 0, negative = 0;
                     for (var member = index + 1; member < close; member++)
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         var value = encoded[member];
                         var number = Math.Abs((int)value);
                         if (number is < 1 or > 30) return false;

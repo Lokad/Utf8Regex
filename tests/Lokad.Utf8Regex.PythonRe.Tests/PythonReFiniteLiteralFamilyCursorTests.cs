@@ -9,7 +9,6 @@ public sealed class PythonReFiniteLiteralFamilyCursorTests
 {
     private static Utf8ResourcePolicy Generous => new()
     {
-        MaxWorkSteps = 1_000_000,
         MaxDepth = 128,
         MaxWorkingBytes = 1 << 20,
         MaxResultBytes = 1 << 20
@@ -67,7 +66,6 @@ public sealed class PythonReFiniteLiteralFamilyCursorTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10_000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1024,
                 MaxResultBytes = 4096
@@ -89,18 +87,13 @@ public sealed class PythonReFiniteLiteralFamilyCursorTests
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("cat horse ", 16)));
         var expected = string.Join("|", Enumerable.Range(0, 16).SelectMany(_ => new[] { "cat", "horse" }));
-        foreach (var kind in new[] { Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Utf8ResourceLimitKind.ExecutionWorkingBytes, Utf8ResourceLimitKind.ExecutionResultBytes })
+        foreach (var kind in new[] {             Utf8ResourceLimitKind.ExecutionWorkingBytes, Utf8ResourceLimitKind.ExecutionResultBytes })
         {
             Utf8PythonRegex Create(ulong cap) => new("cat|horse", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
             {
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = kind switch
                 {
-                    Utf8ResourceLimitKind.ExecutionWorkSteps => new()
-                    {
-                        MaxWorkSteps = cap
-                    },
                     Utf8ResourceLimitKind.ExecutionWorkingBytes => new()
                     {
                         MaxWorkingBytes = cap
@@ -179,13 +172,11 @@ public sealed class PythonReFiniteLiteralFamilyCursorTests
     [Fact]
     public void CombinedLimitsCannotBypassCursorSnapshotAdmission()
     {
-        foreach (var kind in new[] { Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Utf8ResourceLimitKind.ExecutionWorkingBytes, Utf8ResourceLimitKind.ExecutionResultBytes })
+        foreach (var kind in new[] {             Utf8ResourceLimitKind.ExecutionWorkingBytes, Utf8ResourceLimitKind.ExecutionResultBytes })
         {
             var policy = Generous;
             policy = policy with
             {
-                MaxWorkSteps = kind == Utf8ResourceLimitKind.ExecutionWorkSteps ? 1UL : policy.MaxWorkSteps,
                 MaxWorkingBytes = kind == Utf8ResourceLimitKind.ExecutionWorkingBytes ? 1UL : policy.MaxWorkingBytes,
                 MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1UL : policy.MaxResultBytes,
             };

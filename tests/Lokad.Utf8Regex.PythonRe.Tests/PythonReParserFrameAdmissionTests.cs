@@ -16,23 +16,19 @@ public sealed class PythonReParserFrameAdmissionTests
         Assert.InRange(allocated, 1ul, owner.Budget.ReservedBytes);
         Assert.NotNull(parser);
         Assert.True(owner.Budget.ReservedBytes >= 128);
-        Assert.Equal(2ul, owner.Budget.WorkSteps);
     }
 
     [Theory]
     [InlineData(false)]
-    [InlineData(true)]
     public void ParserDescriptorDenialAcquiresNoObjectAndPreservesParentLoans(bool workDenial)
     {
         using var owner = new Utf8ConstructionScope(ulong.MaxValue,
-            workDenial ? ulong.MaxValue : 48, workDenial ? 2ul : ulong.MaxValue, ulong.MaxValue);
+            workDenial ? ulong.MaxValue : 48, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReParser.Create("(?P<x>😀)"));
-        Assert.Equal(workDenial ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(48ul, owner.Budget.PeakBytes);
-
-        Assert.Equal(1ul, owner.Budget.WorkSteps);
         owner.Budget.ReleaseArray(parent, false);
     }
 
@@ -51,7 +47,7 @@ public sealed class PythonReParserFrameAdmissionTests
         }
         foreach (var allowance in new[] { 0ul, 128ul, peak / 2, peak - 1, peak })
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 128, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 128, ulong.MaxValue);
             var parent = PythonReAstFactory.Literal('p');
             var checkpoint = owner.Budget.ReservedBytes;
             PythonReParseResult actual = default;
@@ -81,15 +77,13 @@ public sealed class PythonReParserFrameAdmissionTests
     {
         var parser = new PythonReParser("(?P<x>😀)"); // Caller-owned descriptor.
         using (var owner = new Utf8ConstructionScope(ulong.MaxValue,
-            depthDenial ? ulong.MaxValue : 48, ulong.MaxValue, depthDenial ? 0ul : ulong.MaxValue))
+            depthDenial ? ulong.MaxValue : 48, depthDenial ? 0ul : ulong.MaxValue))
         {
             var parent = owner.Budget.AllocateArray<byte>(1, false);
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => parser.Parse(PythonReCompileOptions.None));
             Assert.Equal(depthDenial ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
             Assert.Equal(48ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
-
-            Assert.Equal(1ul, owner.Budget.WorkSteps);
             owner.Budget.ReleaseArray(parent, false);
         }
         var result = parser.Parse(PythonReCompileOptions.None);

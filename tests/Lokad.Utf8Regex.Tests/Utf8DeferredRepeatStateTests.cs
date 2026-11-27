@@ -17,7 +17,7 @@ public sealed class Utf8DeferredRepeatStateTests
     {
         using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1000, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         var input = System.Text.Encoding.UTF8.GetBytes(text);
         Assert.True(regex.IsMatch(input));
@@ -51,7 +51,7 @@ public sealed class Utf8DeferredRepeatStateTests
     {
         using var funded = new Utf8Regex("(ab|cd)+", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1000, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         Assert.True(funded.IsMatch("xxabcdcdyy"u8));
         Assert.False(funded.IsMatch("xxaxcyy"u8));
@@ -68,7 +68,7 @@ public sealed class Utf8DeferredRepeatStateTests
     {
         using var regex = new Utf8Regex("(ab|cd)+", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1000, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         Assert.Equal(new Utf8CaptureRange(4, 10), regex.Match("😀abcdcdc"u8));
         Assert.Equal(2, regex.Count("😀abcdcdc ab"u8));
@@ -81,7 +81,7 @@ public sealed class Utf8DeferredRepeatStateTests
     {
         using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var prefix = new string('a', 4096);
         var hit = System.Text.Encoding.UTF8.GetBytes(prefix + "😀");
@@ -101,7 +101,7 @@ public sealed class Utf8DeferredRepeatStateTests
     {
         using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 6000 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var prefix = string.Concat(Enumerable.Repeat("éa", 2048));
         var hit = System.Text.Encoding.UTF8.GetBytes(prefix + "😀");
@@ -123,7 +123,7 @@ public sealed class Utf8DeferredRepeatStateTests
     {
         using var regex = new Utf8Regex(@"\A(\w+)\b", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 64 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var prefix = new string('a', asciiLength) + "é界";
         var hit = System.Text.Encoding.UTF8.GetBytes(prefix + "😀");
@@ -154,7 +154,7 @@ public sealed class Utf8DeferredRepeatStateTests
     [Fact]
     public void FusedImportCountNeedsNoLocalWorkingBuffers()
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10000, MaxDepth = 1,
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1,
             MaxWorkingBytes = 1, MaxResultBytes = 1 };
         var regex = new Utf8Regex("""^import\s+(?<shared>shared\s+)?"(?<path>(\.|[^\\"]*))".*$""", options:             RegexOptions.Multiline, policy: new Utf8RegexPolicy
         {
@@ -191,21 +191,6 @@ public sealed class Utf8DeferredRepeatStateTests
         }
         finally { workspace.Release(ref invocation); }
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-    }
-
-    [Fact]
-    public void WorkDenialDuringBalanceSetupRefundsThePartialWorkspace()
-    {
-        var program = Program(@"^(?<x>a)(?<-x>b)");
-        var invocation = new Utf8SliceInvocation(new(1, 128, 1024), Regex.InfiniteMatchTimeout, default);
-        Assert.True(invocation.Ledger.TryReserve(13));
-
-        var denied = Utf8SliceRunner.TryFindFirst(program, "ab"u8, 0, [], [], false, ref invocation);
-
-        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
-        Assert.True(invocation.Budget.PeakWorkingBytes > 13);
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        invocation.Ledger.Release(13);
     }
 
     [Fact]
@@ -259,23 +244,15 @@ public sealed class Utf8DeferredRepeatStateTests
     public void EveryWorkCutoffAndWorkingDenialRefundsTheEnclosingLoan(string pattern, string text)
     {
         var program = Program(pattern); var input = System.Text.Encoding.UTF8.GetBytes(text);
-        var baseline = new Utf8SliceInvocation(new(10000, 1000, 1 << 20), Regex.InfiniteMatchTimeout, default);
+        var baseline = new Utf8SliceInvocation(new(1000, 1 << 20), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         var result = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref baseline);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach); Assert.Equal(1, result.Count);
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
-        for (ulong work = 1; work < baseline.Budget.Steps; work++)
-        {
-            var invocation = new Utf8SliceInvocation(new(work, 1000, 1 << 20), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var denied = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
         var succeeded = false; var deniedWorking = false;
         foreach (ulong maximum in new ulong[] { 14, 32, 64, 96, 128, 512, 2048, 4096 })
         {
-            var invocation = new Utf8SliceInvocation(new(10000, 1000, maximum), Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(new(1000, maximum), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(13));
             var outcome = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation);
             if (outcome.Breach == Utf8ExecutionLimitKind.None) { Assert.Equal(1, outcome.Count); succeeded = true; }
@@ -294,7 +271,7 @@ public sealed class Utf8DeferredRepeatStateTests
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var invocation = new Utf8SliceInvocation(new(10000, 1000, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
+        var invocation = new Utf8SliceInvocation(new(1000, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
         invocation.CheckpointHook = _ => { if (expire) ticks = 25; else token.Cancel(); };
         Assert.True(invocation.Ledger.TryReserve(13));
         var failure = Record.Exception(() => Utf8SliceRunner.TryMatchAt(program, input, 0, [], [], true, ref invocation));
@@ -314,12 +291,12 @@ public sealed class Utf8DeferredRepeatStateTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(_ => { entered = true; if (expire) ticks = 25; else token.Cancel(); });
-        var invocation = new Utf8SliceInvocation(new(10000, 1000, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
+        var invocation = new Utf8SliceInvocation(new(1000, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         Assert.True(invocation.Ledger.TryReserve(13));
         try
         {
-            for (var i = 0; i < 60; i++) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeStep());
+            for (var i = 0; i < 60; i++) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckProgress());
             var failure = Record.Exception(() => Utf8SliceRunner.TryMatchAt(program, "aaaa"u8, 0, [], [], false, false, true,
                 ref workspace, ref invocation));
             if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);

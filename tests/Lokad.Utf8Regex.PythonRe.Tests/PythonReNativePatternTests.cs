@@ -179,19 +179,20 @@ public sealed class PythonReNativePatternTests
     [Fact]
     public void FailedNativeDiagnosticProjectionCanBeInterruptedWithoutPublishingAProgram()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var pattern = Encoding.UTF8.GetBytes(new string('é', 512) + ")");
         ulong totalWork;
         using (var measured = Utf8ConstructionScope.Enter())
         {
             Assert.Equal(512, Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex(pattern)).Position);
-            totalWork = measured.Budget.WorkSteps;
+            totalWork = measured.Budget.DiagnosticCheckpoints;
         }
         using var token = new CancellationTokenSource();
         using var scope = Utf8ConstructionScope.Enter();
         scope.Budget.CancellationToken = token.Token;
         // The final prefix projection visits 512 scalars after syntax fails.
         // Cancel halfway through that work, rather than during validation/parse.
-        scope.Budget.CheckpointHook = work => { if (work >= totalWork - 256) token.Cancel(); };
+        scope.Budget.CheckpointHook = () => { if (scope.Budget.DiagnosticCheckpoints >= totalWork - 256) token.Cancel(); };
         var failure = Assert.Throws<OperationCanceledException>(() => new Utf8PythonRegex(pattern));
         Assert.Equal(token.Token, failure.CancellationToken);
         Assert.Equal(0UL, scope.Budget.ReservedBytes);

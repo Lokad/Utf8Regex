@@ -142,14 +142,13 @@ public sealed class PythonReRetainedSubnTests
     }
 
     [Theory]
-    [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
     public void NumericWorkDepthAndWorkingLimitsRemainAuthoritative(int kind)
     {
         var policy = kind switch
         {
-            0 => new Utf8ResourcePolicy { MaxWorkSteps = 1 },
+            0 => new Utf8ResourcePolicy { MaxDepth = 4096 },
             1 => new Utf8ResourcePolicy { MaxDepth = 1 },
             _ => new Utf8ResourcePolicy { MaxWorkingBytes = 4096 },
         };
@@ -161,7 +160,6 @@ public sealed class PythonReRetainedSubnTests
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.SubnRetained(input, @"\g<1>"u8));
         Assert.Equal(kind switch
         {
-            0 => Utf8ResourceLimitKind.ExecutionWorkSteps,
             1 => Utf8ResourceLimitKind.ExecutionDepth,
             _ => Utf8ResourceLimitKind.ExecutionWorkingBytes
         }, failure.ResourceKind);

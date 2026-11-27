@@ -16,19 +16,6 @@ public sealed class Pcre2FullProbeInvocationAuthorityTests
 
     [Theory]
     [MemberData(nameof(Routes))]
-    public void SearchStopsAtWorkDenial(
-        string pattern, string text, string capture, string route)
-    {
-        Assert.NotEmpty(capture);
-        var regex = Create(pattern, 3);
-        Assert.Equal(route, regex.DebugCompiledProgram.Operations.Match.GetType().Name);
-        var input = Encoding.UTF8.GetBytes(new string('x', 16385) + text);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = regex.Probe(input, Pcre2PartialMode.None).GetMatch(); }).ErrorKind);
-    }
-
-    [Theory]
-    [MemberData(nameof(Routes))]
     public void SearchObservesOriginalInterruption(
         string pattern, string text, string capture, string route)
     {
@@ -62,18 +49,16 @@ public sealed class Pcre2FullProbeInvocationAuthorityTests
     public void OneAllowanceCoversDiscoveryAndPublication(
         string pattern, string text, string capture, string route)
     {
-        Assert.Equal(route, Create(pattern, 100000).DebugCompiledProgram.Operations.Match.GetType().Name);
+        Assert.Equal(route, Create(pattern).DebugCompiledProgram.Operations.Match.GetType().Name);
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = Create(pattern, 3).Probe(input, Pcre2PartialMode.None).GetMatch(); }).ErrorKind);
-        var retained = Create(pattern, 100000).Probe(input, Pcre2PartialMode.None).GetMatch();
+        var retained = Create(pattern).Probe(input, Pcre2PartialMode.None).GetMatch();
         Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.True(retained.TryGetGroup(1, out var named)); Assert.True(named.Success);
         Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = Create(pattern, 100000, result: 1).Probe(input, Pcre2PartialMode.None).GetMatch(); }).ErrorKind);
+        { _ = Create(pattern, result: 1).Probe(input, Pcre2PartialMode.None).GetMatch(); }).ErrorKind);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = Create(pattern, 100000, heap: 1).Probe(input, Pcre2PartialMode.None).GetMatch(); }).ErrorKind);
+        { _ = Create(pattern, heap: 1).Probe(input, Pcre2PartialMode.None).GetMatch(); }).ErrorKind);
         Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
     }
@@ -83,7 +68,7 @@ public sealed class Pcre2FullProbeInvocationAuthorityTests
     public void ScalarStartsFlagsNamesAndRetainedCoordinatesStayValid(
         string pattern, string text, string capture, string route)
     {
-        var regex = Create(pattern, 100000);
+        var regex = Create(pattern);
         Assert.Equal(route, regex.DebugCompiledProgram.Operations.Match.GetType().Name);
         foreach (var lead in new[] { 2046, 2047, 2048 })
             foreach (var flags in new[] { Pcre2MatchOptions.None, Pcre2MatchOptions.NotEmpty })
@@ -107,7 +92,7 @@ public sealed class Pcre2FullProbeInvocationAuthorityTests
     [InlineData(Pcre2PartialMode.Soft)]
     public void GenericFullProbeSeeksLateCapturesWithinTheOriginalBudget(Pcre2PartialMode mode)
     {
-        using var regex = Create("([a-z]+)@([a-z]+)(![0-9]+)?", 256);
+        using var regex = Create("([a-z]+)@([a-z]+)(![0-9]+)?");
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         Assert.Equal(Pcre2PartialProbeProgramKind.None, regex.DebugCompiledProgram.PartialProbe.Kind);
         Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSet, regex.DebugCompiledProgram.CandidateSearch.Kind);
@@ -132,7 +117,7 @@ public sealed class Pcre2FullProbeInvocationAuthorityTests
     [Fact]
     public void SliceMatchUsesTheProvedStartAcrossOutputWidths()
     {
-        using var regex = Create("([a-z]+)@([a-z]+)(![0-9]+)?", 256);
+        using var regex = Create("([a-z]+)@([a-z]+)(![0-9]+)?");
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         var input = Encoding.UTF8.GetBytes(new string('_', 2048) + "😀aa@!ab@tail");
@@ -151,12 +136,11 @@ public sealed class Pcre2FullProbeInvocationAuthorityTests
         Assert.False(output[3].Success);
     }
 
-    private static Utf8Pcre2Regex Create(string pattern, uint work, ulong heap = 1 << 20, ulong result = 1 << 20)
+    private static Utf8Pcre2Regex Create(string pattern, ulong heap = 1 << 20, ulong result = 1 << 20)
         => new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (work) == 0 ? null : (work),
                 MaxDepth = 256,
                 MaxWorkingBytes = (heap) == 0 ? null : (heap),
                 MaxResultBytes = (result) == 0 ? null : (result)

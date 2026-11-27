@@ -48,8 +48,9 @@ public sealed class PythonReAstObjectAdmissionTests
     [InlineData("(?i:[a-c😀])")]
     public void EveryParserByteTransitionPreservesParentAstObjectsAndAdmitsAtTheMeasuredPeak(string pattern)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         ulong peak;
-        using (var measured = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        using (var measured = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
             _ = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
             peak = measured.Budget.PeakBytes;
@@ -58,10 +59,10 @@ public sealed class PythonReAstObjectAdmissionTests
         for (var cutoff = 0ul; cutoff <= peak; cutoff += 16)
         foreach (var limit in new[] { cutoff, cutoff == 0 ? 0 : cutoff - 1 })
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, limit + 128, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, limit + 128, ulong.MaxValue);
             var parent = PythonReAstFactory.Literal('p');
             var checkpoint = owner.Budget.ReservedBytes;
-            var work = owner.Budget.WorkSteps;
+            var work = owner.Budget.DiagnosticCheckpoints;
             var failure = Record.Exception(() => new PythonReParser(pattern).Parse(PythonReCompileOptions.None));
             Assert.True(owner.Budget.PeakBytes <= limit + 128);
             Assert.Equal(0ul, owner.Budget.Depth);
@@ -80,7 +81,7 @@ public sealed class PythonReAstObjectAdmissionTests
                 Assert.True(owner.Budget.ReservedBytes > 128);
             }
             if (limit == peak) Assert.Null(failure);
-            Assert.True(owner.Budget.WorkSteps >= work);
+            Assert.True(owner.Budget.DiagnosticCheckpoints >= work);
         }
     }
 
@@ -90,17 +91,18 @@ public sealed class PythonReAstObjectAdmissionTests
     [InlineData("(?:a|b){2}", 1920ul)]
     public void DeniedChildParserCanBeFollowedByScalarConstructionInTheSameOwner(string pattern, ulong allowance)
     {
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 128, ulong.MaxValue, ulong.MaxValue);
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 128, ulong.MaxValue);
         var parent = PythonReAstFactory.Literal('p');
         var checkpoint = owner.Budget.ReservedBytes;
         Assert.Throws<Utf8ResourceLimitExceededException>(() => new PythonReParser(pattern).Parse(PythonReCompileOptions.None));
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        var spent = owner.Budget.WorkSteps;
+        var spent = owner.Budget.DiagnosticCheckpoints;
         var parsed = new PythonReParser("😀").Parse(PythonReCompileOptions.None);
         Assert.Equal("😀", Assert.IsType<PythonReRawNode>(parsed.Root).Text);
         Assert.NotNull(parent);
-        Assert.True(owner.Budget.WorkSteps > spent);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > spent);
     }
 
     private static object Create(int kind) => kind switch

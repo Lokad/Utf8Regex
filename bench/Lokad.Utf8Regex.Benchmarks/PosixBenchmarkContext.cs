@@ -22,7 +22,6 @@ internal sealed class PosixBenchmarkContext : IDisposable
         _case = benchmarkCase; _input = Encoding.UTF8.GetBytes(benchmarkCase.Input);
         var finite = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 10_000_000,
             MaxDepth = 4096,
             MaxWorkingBytes = 16 << 20,
             MaxResultBytes = 1

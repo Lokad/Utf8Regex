@@ -36,7 +36,7 @@ public sealed class Utf8ShortPreparedTrieTests
                 var relative = input[start..end].IndexOf(literal);
                 if (relative >= 0 && (expected < 0 || start + relative < expected)) expected = start + relative;
             }
-            var invocation = new Utf8SliceInvocation(new(1_000_000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+            var invocation = new Utf8SliceInvocation(new(1, 7, 1), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
             Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindExactLiteralFamilyCandidate(
                 plan, input, start, end, ref invocation, out var candidate));
@@ -49,32 +49,21 @@ public sealed class Utf8ShortPreparedTrieTests
     public void EveryWorkCutoffDeniesPublicationAndKeepsCallerLoan(bool hit)
     {
         var plan = Plan(); var input = hit ? "sxx SHE?"u8 : "prefix watson suffix"u8;
-        var funded = new Utf8SliceInvocation(new(1_000_000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+        var funded = new Utf8SliceInvocation(new(1, 7, 1), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindExactLiteralFamilyCandidate(
             plan, input, 0, input.Length, ref funded, out var found));
         Assert.Equal(hit, found >= 0);
-        for (ulong cap = 1; cap < funded.Budget.Steps; cap++)
-        {
-            var limited = new Utf8SliceInvocation(new(cap, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
-            Assert.True(limited.Ledger.TryReserve(7));
-            for (var attempt = 0; attempt < 2; attempt++)
-            {
-                Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8SearchExecutor.TryFindExactLiteralFamilyCandidate(
-                    plan, input, 0, input.Length, ref limited, out var candidate));
-                Assert.Equal(-1, candidate);
-                Assert.Equal(7UL, limited.Ledger.ReservedBytes);
-            }
-        }
     }
 
     [Theory] [InlineData(false)] [InlineData(true)]
     public void ShortLookupObservesOriginalInterruptionBeforePublishing(bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var clock = Utf8DeadlineTestClock.Start(); using var cancellation = new CancellationTokenSource();
-        var plan = Plan(); var invocation = new Utf8SliceInvocation(new(1_000_000, 1, 7, 1),
+        var plan = Plan(); var invocation = new Utf8SliceInvocation(new(1, 7, 1),
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, cancellation.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
-        for (var step = 0; step < 63; step++) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+        for (var step = 0; step < 63; step++) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckInput());
         var entered = false;
         invocation.CheckpointHook = _ => { entered = true; if (expire) clock.Advance(250); else cancellation.Cancel(); };
         Exception? failure = null; var candidate = -1;

@@ -64,31 +64,17 @@ public sealed class PythonReNativeReplacementParserTests
     [Fact]
     public void NativeConstructionDenialsAndCancellationRefundTheirParentLoans()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var template = "é😀\\g<𝒜>\\077\\g<1>\\377"u8.ToArray();
         ulong steps, peak;
         using (var probe = Utf8ConstructionScope.Enter())
         {
             _ = PythonReReplacementParser.Parse(template.AsSpan(), 2, Names);
-            steps = probe.Budget.WorkSteps; peak = probe.Budget.PeakBytes;
-        }
-        for (ulong cap = 0; cap <= steps; cap++)
-        {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cap, ulong.MaxValue);
-            owner.Budget.ReserveBytes(7);
-            using (var child = Utf8ConstructionScope.Enter())
-            {
-                var failure = Record.Exception(() => PythonReReplacementParser.Parse(template.AsSpan(), 2, Names));
-                if (cap < steps)
-                    Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
-                        Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                else Assert.Null(failure);
-            }
-            Assert.Equal(7UL, owner.Budget.ReservedBytes);
-            Assert.InRange(owner.Budget.WorkSteps, 0UL, cap);
+            steps = probe.Budget.DiagnosticCheckpoints; peak = probe.Budget.PeakBytes;
         }
         foreach (var cap in new[] { 0UL, 256UL, peak / 2, peak - 1, peak })
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 7 + cap, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 7 + cap, ulong.MaxValue);
             owner.Budget.ReserveBytes(7);
             using (var child = Utf8ConstructionScope.Enter())
             {
@@ -103,7 +89,7 @@ public sealed class PythonReNativeReplacementParserTests
         var checkpoints = 0;
         using (var probe = Utf8ConstructionScope.Enter())
         {
-            probe.Budget.CheckpointHook = _ => checkpoints++;
+            probe.Budget.CheckpointHook = () => checkpoints++;
             _ = PythonReReplacementParser.Parse(template.AsSpan(), 2, Names);
         }
         for (var target = 1; target <= checkpoints; target++)
@@ -111,7 +97,7 @@ public sealed class PythonReNativeReplacementParserTests
             using var owner = Utf8ConstructionScope.Enter(); owner.Budget.ReserveBytes(7);
             using var token = new CancellationTokenSource(); var calls = 0;
             owner.Budget.CancellationToken = token.Token;
-            owner.Budget.CheckpointHook = _ => { if (++calls == target) token.Cancel(); };
+            owner.Budget.CheckpointHook = () => { if (++calls == target) token.Cancel(); };
             var failure = Assert.Throws<OperationCanceledException>(() =>
                 PythonReReplacementParser.Parse(template.AsSpan(), 2, Names));
             Assert.Equal(token.Token, failure.CancellationToken);

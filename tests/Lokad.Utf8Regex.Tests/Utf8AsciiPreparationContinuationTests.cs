@@ -134,24 +134,20 @@ public sealed class Utf8AsciiPreparationContinuationTests
         Assert.Equal(["aa", "ab", "ba", "bb", "a", "b"], Literals(variants));
     }
     [Fact]
-    public void EveryContinuationWorkDepthAndStorageDenialReleasesScratchAndKeepsOtherLeases()
+    public void ContinuationDepthAndStorageDenialReleaseScratchAndKeepOtherLeases()
     {
         var tree = Wrap(Text("a"), Utf8TreeNodeKind.Concatenate, 60);
         var baseline = Compiler();
         Assert.True(Lower(baseline, tree, out _));
         var measured = Invocation(baseline);
         Assert.True(measured.PeakBytes > 0);
-        var limits = Enumerable.Range(0, checked((int)measured.WorkSteps))
-            .Select(value => (Bytes: ulong.MaxValue, Work: (ulong)value, Depth: ulong.MaxValue,
-                Kind: Utf8ResourceLimitKind.ConstructionWorkSteps))
-            .Concat(Enumerable.Range(0, checked((int)measured.PeakDepth)).Select(value =>
-                (Bytes: ulong.MaxValue, Work: ulong.MaxValue, Depth: (ulong)value,
-                    Kind: Utf8ResourceLimitKind.ConstructionDepth)))
-            .Concat(new[] { (Bytes: 7ul, Work: ulong.MaxValue, Depth: ulong.MaxValue, Kind: Utf8ResourceLimitKind.ConstructionBytes),
-                (Bytes: measured.PeakBytes + 6, Work: ulong.MaxValue, Depth: ulong.MaxValue, Kind: Utf8ResourceLimitKind.ConstructionBytes) });
+        var limits = Enumerable.Range(0, checked((int)measured.PeakDepth))
+            .Select(value => (Bytes: ulong.MaxValue, Depth: (ulong)value, Kind: Utf8ResourceLimitKind.ConstructionDepth))
+            .Concat(new[] { (Bytes: 7ul, Depth: ulong.MaxValue, Kind: Utf8ResourceLimitKind.ConstructionBytes),
+                (Bytes: measured.PeakBytes + 6, Depth: ulong.MaxValue, Kind: Utf8ResourceLimitKind.ConstructionBytes) });
         foreach (var limit in limits)
         {
-            using var owner = new Utf8ConstructionScope(0, limit.Bytes, limit.Work, limit.Depth);
+            using var owner = new Utf8ConstructionScope(0, limit.Bytes, limit.Depth);
             owner.Budget.ReserveBytes(7);
             var checkpoint = owner.Budget.ReservedBytes;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Lower(Compiler(), tree, out _));
@@ -184,7 +180,7 @@ public sealed class Utf8AsciiPreparationContinuationTests
         owner.Budget.Deadline = deadline;
         owner.Budget.CancellationToken = source.Token;
         var entered = false;
-        owner.Budget.CheckpointHook = _ => { entered = true; if (expire) clock.Advance(250); else source.Cancel(); };
+        owner.Budget.CheckpointHook = () => { entered = true; if (expire) clock.Advance(250); else source.Cancel(); };
         var failure = Record.Exception(() => Lower(compiler, tree, out _));
         if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
         else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);

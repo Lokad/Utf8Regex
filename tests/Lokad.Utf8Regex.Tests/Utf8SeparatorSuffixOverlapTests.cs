@@ -39,7 +39,7 @@ public sealed class Utf8SeparatorSuffixOverlapTests
         foreach (var finite in new[] { false, true })
         {
             var policy = finite
-                ? new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 }
+                ? new Utf8ResourcePolicy { MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 }
                 : default;
             var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
             {

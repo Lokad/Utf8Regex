@@ -46,7 +46,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
             var bytes = budget.AllocateArray<byte[]>(literals.Length, false);
             try
             {
-                budget.ChargeWork((ulong)literals.Length);
+                budget.Checkpoint();
                 for (var i = 0; i < literals.Length; i++) bytes[i] = literals[i].Bytes;
                 prefilter = PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateInvariantCyrillicIgnoreCase(bytes);
             }
@@ -58,7 +58,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         if (literals.Length == 1 || prefilter.HasValue) return state;
 
         var sharedAnchorByteOffset = literals[0].AnchorByteOffset;
-        budget.ChargeWork((ulong)literals.Length);
+        budget.Checkpoint();
         for (var i = 1; i < literals.Length; i++)
         {
             if (literals[i].AnchorByteOffset != sharedAnchorByteOffset)
@@ -67,13 +67,13 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
             }
         }
 
-        budget.ChargeWork(256);
+        budget.Checkpoint();
         Span<bool> seen = stackalloc bool[256];
         seen.Clear();
         Span<byte> anchorBytes = stackalloc byte[MaximumAlternatives * 2];
         var literalMasks = budget.AllocateArray<byte>(256, false);
         var anchorByteCount = 0;
-        budget.ChargeWork(2ul * (ulong)literals.Length);
+        budget.Checkpoint();
         for (var literalIndex = 0; literalIndex < literals.Length; literalIndex++)
         {
             ref readonly var literal = ref literals[literalIndex];
@@ -132,7 +132,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         var budget = scope.Budget; budget.EnterDepth();
         try
         {
-            budget.ChargeWork(2ul * (ulong)pattern.Length);
+            budget.Checkpoint();
             var count = 1;
             for (var i = 0; i < pattern.Length; i++) if (pattern[i] == '|') count++;
             if (count > MaximumAlternatives) return false;
@@ -169,7 +169,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         {
             unitCount = 0;
             for (var offset = start; offset < start + length; unitCount++)
-            { budget.ChargeWork(1); literal.ReadScalar(ref offset); }
+            { budget.Checkpoint(); literal.ReadScalar(ref offset); }
         }
         var units = budget.AllocateArray<Unit>(unitCount, false);
         var byteOffset = 0;
@@ -177,7 +177,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         var anchorByteOffset = -1;
         var anchorFirst = (byte)0;
         var anchorSecond = (byte)0;
-        budget.ChargeWork((ulong)length);
+        budget.Checkpoint();
         var sourceOffset = start;
         var previousValue = -1;
         for (var i = 0; i < units.Length; i++)
@@ -232,7 +232,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         }
 
         var bytes = literal.IsUtf8 ? budget.AllocateArray<byte>(length, false) : budget.EncodeUtf8(literal.Text.AsSpan(start, length));
-        if (literal.IsUtf8) { budget.ChargeWork((ulong)bytes.Length); literal.Utf8.Slice(start, length).CopyTo(bytes); }
+        if (literal.IsUtf8) { budget.Checkpoint(); literal.Utf8.Slice(start, length).CopyTo(bytes); }
         prepared = new Literal(
             units,
             bytes,

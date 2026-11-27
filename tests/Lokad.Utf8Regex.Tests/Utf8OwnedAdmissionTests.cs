@@ -95,9 +95,10 @@ public sealed class Utf8OwnedAdmissionTests
     [InlineData("(a)(?(1)b|c|d)")]
     public void PublicSyntaxFailureRestoresParentAdmissionAndSameOwnerRecovers(string pattern)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         foreach (var compiled in new[] { false, true })
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 65536, ulong.MaxValue, 128);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 65536, 128);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
@@ -105,7 +106,7 @@ public sealed class Utf8OwnedAdmissionTests
             Assert.Equal(128ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
             Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-            var spent = owner.Budget.WorkSteps;
+            var spent = owner.Budget.DiagnosticCheckpoints;
             Assert.True(spent > 2);
             using (var recovery = Utf8ConstructionScope.Enter())
             {
@@ -117,7 +118,7 @@ public sealed class Utf8OwnedAdmissionTests
             Assert.Equal(128ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
             Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-            Assert.True(owner.Budget.WorkSteps > spent);
+            Assert.True(owner.Budget.DiagnosticCheckpoints > spent);
             Assert.Equal(17, parent.Value);
         }
     }

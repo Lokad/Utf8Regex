@@ -52,11 +52,11 @@ public sealed class Utf8PosixRegex : IDisposable
                 {
                     var owner = construction.Budget.AllocateObject(account,
                         static allowance => new Utf8FundedStorage(allowance, nameof(Utf8PosixRegex)));
-                    construction.Budget.ChargeWork(0);
+                    construction.Budget.Checkpoint();
                     owner.Retain(construction.Budget.TransferFundedBytes());
                     _programMemory = owner;
                 }
-                else construction.Budget.ChargeWork(0);
+                else construction.Budget.Checkpoint();
                 construction.Complete();
             }
         }

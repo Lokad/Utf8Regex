@@ -35,7 +35,7 @@ internal static partial class Utf8SliceRunner
         {
             breach = TrySeekBeginning(program, input, ref position, ref invocation);
             if (breach != Utf8ExecutionLimitKind.None || position < 0) break;
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) break;
 
             var remaining = BranchedPrefixInstructionLimit - 4;
@@ -63,7 +63,7 @@ internal static partial class Utf8SliceRunner
                 position = AdvancePastScalar(input, whitespace.EndIndex, reverse: false);
             }
         }
-        if (breach == Utf8ExecutionLimitKind.None) breach = invocation.TryChargeInputStep();
+        if (breach == Utf8ExecutionLimitKind.None) breach = invocation.CheckInput();
         invocation.Budget.ThrowIfCancellationRequested();
         return new(count, breach);
     }
@@ -182,7 +182,7 @@ internal static partial class Utf8SliceRunner
         in Utf8SliceInstruction endAnchor, scoped ReadOnlySpan<byte> linePrefix, ref Utf8SliceInvocation invocation)
     {
         var count = 0;
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
         // No table or local scratch, but an enclosing working loan still applies.
         breach = invocation.TryReserveWorking(0);
@@ -203,7 +203,7 @@ internal static partial class Utf8SliceRunner
             {
                 while (position < input.Length)
                 {
-                    breach = invocation.TryChargeInputStep();
+                    breach = invocation.CheckInput();
                     if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
                     var block = input.Slice(position, Math.Min(2048, input.Length - position));
                     relative = block.IndexOf(first);
@@ -212,7 +212,7 @@ internal static partial class Utf8SliceRunner
                 }
                 if (relative < 0) break;
                 // At most 64 instructions, including transparent capture markers.
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
                 if (input.Length - position < prefixLength || !MatchesStraightAsciiPrefix(program, input, position, prefixStart))
                 { position++; continue; }
@@ -225,7 +225,7 @@ internal static partial class Utf8SliceRunner
                     {
                         if ((visited++ & 63) == 0)
                         {
-                            breach = invocation.TryChargeInputStep();
+                            breach = invocation.CheckInput();
                             if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
                         }
                         _ = Rune.DecodeLastFromUtf8(input[..start], out var scalar, out var width);
@@ -243,7 +243,7 @@ internal static partial class Utf8SliceRunner
             var dotStart = position;
             while (position < input.Length)
             {
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
                 var block = input.Slice(position, Math.Min(2048, input.Length - position));
                 relative = block.IndexOf((byte)'\n');

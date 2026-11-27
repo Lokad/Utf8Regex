@@ -473,7 +473,6 @@ internal static partial class BenchmarkInspectReporter
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 50_000_000,
                 MaxDepth = 4096,
                 MaxWorkingBytes = 16 << 20,
                 MaxResultBytes = 16 << 20

@@ -11,7 +11,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8NativeProjectionInvocationTests
 {
     private static Utf8SliceInvocation Metered()
-        => new(new Utf8ExecutionLimits(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        => new(new Utf8ExecutionLimits(0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
 
     public static IEnumerable<object[]> BoundaryCases()
     {
@@ -26,7 +26,6 @@ public sealed class Utf8NativeProjectionInvocationTests
         var input = Encoding.UTF8.GetBytes(text);
         var invocation = Metered();
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidateOnly(input, ref invocation));
-        Assert.True(invocation.Budget.Steps >= (ulong)input.Length / 2048);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
     public static IEnumerable<object[]> InvalidCases()

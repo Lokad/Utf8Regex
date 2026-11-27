@@ -10,7 +10,6 @@ public sealed class Utf8AnchoredLinePairTests
 {
     private static readonly Utf8ResourcePolicy Policy = new()
     {
-        MaxWorkSteps = 1_000_000,
         MaxDepth = 1024,
         MaxWorkingBytes = 1_000_000,
         MaxResultBytes = 1_000_000
@@ -107,7 +106,6 @@ public sealed class Utf8AnchoredLinePairTests
             input, 0, [], [], ref invocation);
         Assert.Equal(0, outcome.Count);
         Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
-        Assert.InRange(invocation.Budget.Steps, 1UL, 32UL);
         var hit = new Utf8Regex(pattern, options: RegexOptions.Multiline, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
@@ -118,15 +116,6 @@ public sealed class Utf8AnchoredLinePairTests
         });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => hit.Count("\ni7x\n"u8)).ResourceKind);
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern, options:                 RegexOptions.Multiline, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Regex.InfiniteMatchTimeout,
-                ResourcePolicy = Policy with
-                {
-                    MaxWorkSteps = 1
-                }
-            }).Count(input)).ResourceKind);
     }
 
     [Theory]
@@ -150,7 +139,7 @@ public sealed class Utf8AnchoredLinePairTests
                 TimeSpan.FromMilliseconds(20), source.Token);
             // Hooks fire every 64 steps. The seeker's entry consumes step63;
             // its first bounded search block consumes step64 and invokes it.
-            for (var step = 0; step < 62; step++) invocation.TryChargeStep();
+            for (var step = 0; step < 62; step++) invocation.CheckProgress();
             if (expire)
                 Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
                     Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation));

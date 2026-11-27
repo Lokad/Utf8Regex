@@ -65,7 +65,6 @@ public sealed class PythonReAnchoredStartTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 64,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -77,7 +76,7 @@ public sealed class PythonReAnchoredStartTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 64
+                MaxDepth = 4096
             }
         });
         Assert.False(strict.Match(input).Success);
@@ -90,7 +89,6 @@ public sealed class PythonReAnchoredStartTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 64,
                 MaxDepth = 64,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -109,7 +107,6 @@ public sealed class PythonReAnchoredStartTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000,
                 MaxDepth = 64,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20

@@ -42,36 +42,6 @@ public sealed class PythonReClassDelimiterCountTests
         Assert.Equal(3, new Utf8PythonRegex("x*|y").Count("y"u8));
     }
 
-    [Fact]
-    public void ScalarFloorsAndWorkAdmissionRemainRequired()
-    {
-        var regex = Create(@"\w+@");
-        var input = Encoding.UTF8.GetBytes(new string('!', 100000) + "é@");
-        Assert.Equal(1, regex.Count(input));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀é@"u8, 1));
-        var working = new Utf8PythonRegex(@"\w+@", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = Policy with
-            {
-                MaxWorkingBytes = 1
-            }
-        });
-        Assert.Equal(1, working.Count(input));
-        Assert.Equal(0, working.Count(Encoding.UTF8.GetBytes(new string('!', 100000))));
-        var work = new Utf8PythonRegex(@"\w+@", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = Policy with
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Count(input)).ResourceKind);
-    }
-
     [Theory]
     [InlineData(false, 0)]
     [InlineData(true, 0)]
@@ -111,7 +81,6 @@ public sealed class PythonReClassDelimiterCountTests
 
     private static Utf8ResourcePolicy Policy => new()
     {
-        MaxWorkSteps = 4_000_000,
         MaxDepth = 4096,
         MaxWorkingBytes = 16 << 20,
         MaxResultBytes = 16 << 20

@@ -83,12 +83,12 @@ internal static partial class Pcre2Runner
         var completed = false;
         try
         {
-            budget.ChargeWorkspaceStep();
+            budget.CheckWorkspace();
             budget.TryChargeResultBytes(groupBytes);
             groups ??= captureSlotCount == 0 ? [] : new Pcre2GroupData[captureSlotCount];
             for (var slot = 0; slot < captureSlotCount; slot++)
             {
-                if ((slot & 63) == 0) budget.ChargeWorkspaceStep();
+                if ((slot & 63) == 0) budget.CheckWorkspace();
                 if (!captureRanges.TryGetEdges(slot, matchStart, matchEnd, scalarRanges, out var start, out var end))
                 {
                     groups[slot] = new Pcre2GroupData { Number = slot };
@@ -103,7 +103,7 @@ internal static partial class Pcre2Runner
                     Utf8SliceIsWellFormed = Pcre2CaptureRanges.IsWellFormed(input, start, end, scalarRanges)
                 };
             }
-            budget.ChargeWorkspaceStep();
+            budget.CheckWorkspace();
             completed = true;
             return groups;
         }

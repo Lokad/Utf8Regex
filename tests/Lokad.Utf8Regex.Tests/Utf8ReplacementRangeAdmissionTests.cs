@@ -73,7 +73,7 @@ public sealed class Utf8ReplacementRangeAdmissionTests
         var peak = 7 + Bytes(count) + Bytes(next);
         foreach (var maximum in new[] { peak - 1, peak })
         {
-            var invocation = new Utf8SliceInvocation(new(0, 0, maximum), Regex.InfiniteMatchTimeout, CancellationToken.None);
+            var invocation = new Utf8SliceInvocation(new(0, maximum), Regex.InfiniteMatchTimeout, CancellationToken.None);
             Assert.True(invocation.Ledger.TryReserve(7));
             var control = new Utf8InvocationBufferControl(ref invocation);
             var ledger = new Utf8ReplacementRangeLedger();
@@ -100,49 +100,32 @@ public sealed class Utf8ReplacementRangeAdmissionTests
     [Fact]
     public void EveryCopyWorkCutoffKeepsOldStorageAndRecoversOnTheSameAuthority()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const int count = 4096;
         ulong seedSteps, totalSteps;
-        var baseline = new Utf8SliceInvocation(new(0, 0, 1024 * 1024), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var baseline = new Utf8SliceInvocation(new(0, 1024 * 1024), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(baseline.Ledger.TryReserve(13));
         var baselineControl = new Utf8InvocationBufferControl(ref baseline);
         var baselineLedger = new Utf8ReplacementRangeLedger();
         for (var i = 0; i < count; i++) baselineLedger.Add(new(i, 1), baselineControl);
-        seedSteps = baseline.Budget.Steps;
+        seedSteps = baseline.Budget.DiagnosticCheckpoints;
         baselineLedger.Add(new(count, 1), baselineControl);
-        totalSteps = baseline.Budget.Steps;
+        totalSteps = baseline.Budget.DiagnosticCheckpoints;
         baselineLedger.Dispose(baselineControl);
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
         baseline.Ledger.Release(13);
         Assert.True(totalSteps > seedSteps + 2);
-        for (var cutoff = seedSteps; cutoff <= totalSteps; cutoff++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cutoff, 0, 1024 * 1024), Regex.InfiniteMatchTimeout, CancellationToken.None);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var control = new Utf8InvocationBufferControl(ref invocation);
-            var ledger = new Utf8ReplacementRangeLedger();
-            try
-            {
-                for (var i = 0; i < count; i++) ledger.Add(new(i, 1), control);
-                Assert.Equal(cutoff == totalSteps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps,
-                    ledger.TryAdd(new(count, 1), control));
-                Assert.Equal(cutoff == totalSteps ? count + 1 : count, ledger.Count);
-                for (var i = 0; i < count; i++) Assert.Equal(new(i, 1), ledger[i]);
-                Assert.Equal(13 + Bytes(cutoff == totalSteps ? count * 2 : count), invocation.Ledger.ReservedBytes);
-            }
-            finally { ledger.Dispose(control); }
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-            invocation.Ledger.Release(13);
-        }
     }
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void CancellationAndDeadlineDuringCopyRestoreTheOldArray(bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var source = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var invocation = new Utf8SliceInvocation(new(0, 0, 1024 * 1024),
+        var invocation = new Utf8SliceInvocation(new(0, 1024 * 1024),
             expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         var ledger = new Utf8ReplacementRangeLedger();
@@ -150,7 +133,7 @@ public sealed class Utf8ReplacementRangeAdmissionTests
         try
         {
             for (var i = 0; i < 4096; i++) ledger.Add(new(i, 1), control);
-            while ((invocation.Budget.Steps & 63) != 61) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+            while ((invocation.Budget.DiagnosticCheckpoints & 63) != 61) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckInput());
             var entered = false;
             invocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else source.Cancel(); };
             // Ref-struct borrowed controls cannot be captured by an assertion lambda.

@@ -17,7 +17,7 @@ public sealed class Utf8SliceSlotAdmissionTests
         foreach (var allow in new[] { false, true })
         {
             var limit = 7 + bytes - (allow || groups == 0 ? 0UL : 1UL);
-            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, limit), Timeout.InfiniteTimeSpan, default);
+            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, limit), Timeout.InfiniteTimeSpan, default);
             Assert.True(invocation.Ledger.TryReserve(7));
             if (!allow && groups != 0)
             {

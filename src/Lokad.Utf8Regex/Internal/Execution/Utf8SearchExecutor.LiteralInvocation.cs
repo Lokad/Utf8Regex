@@ -43,7 +43,7 @@ internal static partial class Utf8SearchExecutor
         // before even the unmetered finder; empty plans retain their checkpoint.
         if (invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None ||
             plan.LiteralSearch is not { Length: > 0 } search)
-            return invocation.TryChargeInputStep();
+            return invocation.CheckInput();
 
         var breach = Utf8ExecutionLimitKind.None;
         var low = start;
@@ -63,7 +63,7 @@ internal static partial class Utf8SearchExecutor
             }
             if (accepted)
             {
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 invocation.Budget.ThrowIfCancellationRequested();
                 index = candidate;
@@ -75,7 +75,7 @@ internal static partial class Utf8SearchExecutor
             else low = candidate + 1;
         }
 
-        breach = invocation.TryChargeInputStep();
+        breach = invocation.CheckInput();
         invocation.Budget.ThrowIfCancellationRequested();
         return breach;
     }
@@ -111,7 +111,7 @@ internal static partial class Utf8SearchExecutor
         var last = stopAtKelvin ? input.Length - 1 : high;
         while (low <= last)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var count = Math.Min(2048 - lookahead, last - low + 1);
             var blockStart = reverse ? last - count + 1 : low;
@@ -183,7 +183,7 @@ internal static partial class Utf8SearchExecutor
         if (input.Length < literal.Length) return Utf8ExecutionLimitKind.None;
         for (var offset = 0; offset < literal.Length;)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var count = Math.Min(2048, literal.Length - offset);
             var start = reverse ? literal.Length - offset - count : offset;
@@ -217,7 +217,7 @@ internal static partial class Utf8SearchExecutor
         accepted = false;
         // At most four scalar neighbors. Search windows, a trailing literal
         // comparison and the final outcome retain their direct clock checks.
-        var breach = invocation.TryChargeBoundedCheck();
+        var breach = invocation.CheckBoundedProgress();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         // Inspect neighbors on the original subject, including after a reverse
         // cursor's end floor. Enumeration bounds do not invent word boundaries.

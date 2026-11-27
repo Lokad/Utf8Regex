@@ -11,14 +11,15 @@ public sealed class Utf8OwnedParserFrameAdmissionTests
     [Fact]
     public void RawScalarPipelineDeclineRestoresTheCompletedParserLoan()
     {
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 65536, ulong.MaxValue, 128);
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 65536, 128);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         Assert.Null(Utf8SliceParser.TryParse("(a)\\1", RegexOptions.NonBacktracking));
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        Assert.True(owner.Budget.WorkSteps > 2);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > 2);
         Assert.Equal(17, parent.Value);
         using (var recovery = Utf8ConstructionScope.Enter())
             Assert.NotNull(Utf8SliceParser.TryParse("a", RegexOptions.None));
@@ -27,12 +28,11 @@ public sealed class Utf8OwnedParserFrameAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(1)]
     public void RootDenialPrecedesParserStateAndFrameStorage(int denial)
     {
         using var owner = new Utf8ConstructionScope(ulong.MaxValue,
             denial == 0 ? 128ul : ulong.MaxValue,
-            denial == 2 ? 2ul : ulong.MaxValue,
             denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
@@ -42,11 +42,9 @@ public sealed class Utf8OwnedParserFrameAdmissionTests
         {
             0 => Utf8ResourceLimitKind.ConstructionBytes,
             1 => Utf8ResourceLimitKind.ConstructionDepth,
-            _ => Utf8ResourceLimitKind.ConstructionWorkSteps,
         }, failure.ResourceKind);
         Assert.Equal(128ul, owner.Budget.PeakBytes);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
-        Assert.Equal(2ul, owner.Budget.WorkSteps);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
@@ -61,6 +59,7 @@ public sealed class Utf8OwnedParserFrameAdmissionTests
     [InlineData("(?(?=a)", "|x)")]
     public void ChildFrameByteDenialRestoresParentAndTheSameOwnerRecovers(string open, string close)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var pattern = string.Concat(Enumerable.Repeat(open, 32)) + "a" + string.Concat(Enumerable.Repeat(close, 32));
         ulong recoveryPeak;
         using (var measured = Utf8ConstructionScope.Enter())
@@ -72,7 +71,7 @@ public sealed class Utf8OwnedParserFrameAdmissionTests
         // Lexical storage is now admitted. Use the measured complete small
         // parser footprint, while dedicated lexical controls retain 1024-byte denials.
         var cap = Math.Max(1024ul, recoveryPeak);
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, cap, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, cap, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
@@ -84,14 +83,14 @@ public sealed class Utf8OwnedParserFrameAdmissionTests
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        var spent = owner.Budget.WorkSteps;
+        var spent = owner.Budget.DiagnosticCheckpoints;
         Assert.True(spent > 2);
         using (var recovery = Utf8ConstructionScope.Enter())
         {
             Assert.NotNull(Utf8OwnedTreeParser.TryParse("a", RegexOptions.CultureInvariant));
             Assert.Equal(0ul, owner.Budget.Depth);
         }
-        Assert.True(owner.Budget.WorkSteps > spent);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > spent);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
@@ -103,14 +102,15 @@ public sealed class Utf8OwnedParserFrameAdmissionTests
     [InlineData("(?i:a")] [InlineData("(a)(?(1)b|c|d)")]
     public void PrivateGrammarDeclineRestoresParentAndDoesNotRefundWork(string pattern)
     {
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 65536, ulong.MaxValue, 128);
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 65536, 128);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        var spent = owner.Budget.WorkSteps;
+        var spent = owner.Budget.DiagnosticCheckpoints;
         Assert.True(spent > 2);
         using (var recovery = Utf8ConstructionScope.Enter())
         {
@@ -121,7 +121,7 @@ public sealed class Utf8OwnedParserFrameAdmissionTests
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        Assert.True(owner.Budget.WorkSteps > spent);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > spent);
         Assert.Equal(17, parent.Value);
     }
 }

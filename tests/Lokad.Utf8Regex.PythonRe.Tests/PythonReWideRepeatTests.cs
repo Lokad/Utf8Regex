@@ -35,7 +35,6 @@ public sealed class PythonReWideRepeatTests
             {
                 var policy = finite ? new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 256,
                     MaxWorkingBytes = 1000000,
                     MaxResultBytes = 1000000
@@ -89,27 +88,6 @@ public sealed class PythonReWideRepeatTests
     }
 
     [Theory]
-    [InlineData("(?:){2147483648}")]
-    [InlineData("(?:){4294967294,}")]
-    [InlineData("(?P<g>a?){2147483648,4294967294}")]
-    public void LargeMandatoryNullableWorkRemainsBounded(string pattern)
-    {
-        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 1000,
-                MaxDepth = 256,
-                MaxWorkingBytes = 1000000,
-                MaxResultBytes = 1000000
-            }
-        });
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(""u8));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-    }
-
-    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void WideMandatoryIterationsKeepOriginalInterruption(bool expire)
@@ -120,7 +98,6 @@ public sealed class PythonReWideRepeatTests
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000
@@ -160,7 +137,6 @@ public sealed class PythonReWideRepeatTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1000000

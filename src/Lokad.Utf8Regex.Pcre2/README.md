@@ -75,12 +75,12 @@ byte[] redacted = regex.Replace(input, "<$host>"u8);
 
 ## Resource controls and ownership
 
-`Utf8RegexPolicy` sets match timeouts and optional work, depth, working-byte
+`Utf8RegexPolicy` sets match timeouts and optional depth, working-byte
 and result-byte limits. Construction has separate limits and a deadline.
 `Compile` also accepts a construction token. Operations check the original
 cancellation token. Match timeouts and numeric denials throw
 `Pcre2MatchException` with a specific error kind. The limits cover modeled
-engine work and storage capacities.
+engine depth and storage capacities.
 [Interruption and resource controls](../../docs/SPEC-PCRE2.md#interruption-and-resource-controls)
 
 Dispose a funded regex when finished. Admitted calls and memory cursors

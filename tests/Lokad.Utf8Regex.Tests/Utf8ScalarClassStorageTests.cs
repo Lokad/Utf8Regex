@@ -14,6 +14,7 @@ public sealed class Utf8ScalarClassStorageTests
     [InlineData(4098, false)] [InlineData(4098, true)]
     public void CompleteSubtractionStateLivesInItsAdmittedArray(int count, bool compiled)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var pattern = new StringBuilder();
         for (var index = 1; index < count; index++) pattern.Append(@"[\p{L}\d-");
         pattern.Append("[A]").Append(']', count - 1);
@@ -47,7 +48,7 @@ public sealed class Utf8ScalarClassStorageTests
             var expected = value == 'A' ? (count & 1) == 1 : value != 0x1f600 && (count & 1) == 0;
             Assert.Equal(expected, predicate.TryMatch(new Rune(value), Utf8ScalarCaseBehavior.Invariant, ref invocation, out var breach));
             Assert.Equal(Utf8ExecutionLimitKind.None, breach);
-            Assert.Equal((ulong)count, invocation.Budget.Steps);
+            Assert.Equal((ulong)count, invocation.Budget.DiagnosticCheckpoints);
             Assert.Equal(0ul, invocation.Ledger.ReservedBytes);
         }
     }
@@ -56,6 +57,7 @@ public sealed class Utf8ScalarClassStorageTests
     [InlineData(2)] [InlineData(65)]
     public void ArrayDenialPrecedesSegmentAcquisitionAndPreservesBorrowedOperands(int count)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const ulong maximum = 16384;
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, maximum);
         using var operands = Utf8ConstructionBuffer<Utf8SliceNode>.Create(owner.Budget);
@@ -89,6 +91,6 @@ public sealed class Utf8ScalarClassStorageTests
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal((count & 1) == 1, predicate.TryMatch(new Rune('a'), Utf8ScalarCaseBehavior.Invariant, ref invocation, out var breach));
         Assert.Equal(Utf8ExecutionLimitKind.None, breach);
-        Assert.Equal((ulong)count, invocation.Budget.Steps);
+        Assert.Equal((ulong)count, invocation.Budget.DiagnosticCheckpoints);
     }
 }

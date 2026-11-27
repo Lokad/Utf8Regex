@@ -21,7 +21,7 @@ public sealed class Utf8SingleCategoryCountTests
         using var regex = Utf8Regex.Compile(pattern, policy: new()
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new() { MaxWorkSteps = 32, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
         });
         using var source = new CancellationTokenSource();
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(subject), source.Token));
@@ -42,7 +42,7 @@ public sealed class Utf8SingleCategoryCountTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         foreach (var finite in new[] { false, true })
         {
-                var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 } : default;
+                var policy = finite ? new Utf8ResourcePolicy { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 } : default;
                 var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
                 {
                     MatchTimeout = Timeout.InfiniteTimeSpan,
@@ -181,7 +181,6 @@ public sealed class Utf8SingleCategoryCountTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 8 << 20,
                 MaxResultBytes = 1
@@ -194,11 +193,9 @@ public sealed class Utf8SingleCategoryCountTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(new byte[8192])).ResourceKind);
     }
 
     [Theory]
@@ -209,7 +206,7 @@ public sealed class Utf8SingleCategoryCountTests
         var input = Encoding.UTF8.GetBytes(text);
         var expected = text.EnumerateRunes().Count(rune => pattern == @"\p{L}" ? Rune.IsLetter(rune)
             : Rune.GetUnicodeCategory(rune) == (pattern == @"\p{Sm}" ? UnicodeCategory.MathSymbol : UnicodeCategory.UppercaseLetter));
-        var limits = new Utf8ResourcePolicy { MaxWorkSteps = 100000000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 };
+        var limits = new Utf8ResourcePolicy { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 };
         var trusted = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
@@ -253,36 +250,6 @@ public sealed class Utf8SingleCategoryCountTests
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         }
         finally { session.Complete(); }
-    }
-
-    [Theory] [InlineData(@"\p{Sm}")] [InlineData(@"\p{L}")]
-    public void ScalarCountingCannotOutrunFiniteWork(string pattern)
-    {
-        var input = new byte[4096 * 128]; ulong firstNative = 0;
-        var reference = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 100000000
-            }
-        });
-        var session = Utf8SearchDiagnosticsSession.Start(steps =>
-        {
-            if (firstNative == 0 && steps >= 64) firstNative = steps;
-        });
-        try { Assert.Equal(0, reference.Count(input)); } finally { session.Complete(); }
-        Assert.True(firstNative > 1);
-        var limited = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = firstNative - 1
-            }
-        });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input)).ResourceKind);
     }
 
     [Theory]

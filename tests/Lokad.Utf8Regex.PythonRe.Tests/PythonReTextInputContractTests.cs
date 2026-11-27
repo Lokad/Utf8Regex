@@ -83,7 +83,6 @@ public sealed class PythonReTextInputContractTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 64,
                 MaxWorkingBytes = 1 << 20
             }
         });

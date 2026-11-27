@@ -95,7 +95,6 @@ public sealed class PosixTerminalRepeatTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100_000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 4096,
                 MaxResultBytes = 1
@@ -108,14 +107,6 @@ public sealed class PosixTerminalRepeatTests
             (groups[1].StartOffsetInBytes, (groups[1].EndOffsetInBytes - groups[1].StartOffsetInBytes)));
         Assert.Equal((input.Length, 0),
             (groups[2].StartOffsetInBytes, (groups[2].EndOffsetInBytes - groups[2].StartOffsetInBytes)));
-        var limited = new Utf8PosixRegex("Z(" + scalar + "+)()", policy: new Utf8RegexPolicy()
-        {
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input));
     }
 
     [Theory]
@@ -127,7 +118,7 @@ public sealed class PosixTerminalRepeatTests
         var input = Encoding.UTF8.GetBytes(string.Concat(scalar, scalar, scalar, scalar));
         using var regex = new Utf8PosixRegex(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 1024 }
+            ResourcePolicy = new() { MaxDepth = 64, MaxWorkingBytes = 1024 }
         });
         var captures = new Utf8CaptureRange[4];
         var whole = new Utf8CaptureRange(0, 4 * width);
@@ -152,7 +143,6 @@ public sealed class PosixTerminalRepeatTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1

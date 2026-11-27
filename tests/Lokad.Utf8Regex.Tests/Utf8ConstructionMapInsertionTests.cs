@@ -39,35 +39,6 @@ public sealed class Utf8ConstructionMapInsertionTests
         Assert.Equal(-1, map[64]); Assert.Equal(65, map.Count);
     }
 
-    [Fact]
-    public void EveryInsertionWorkCutoffReleasesUnpublishedGrowth()
-    {
-        var measured = new Utf8ConstructionBudget(1000, 1000000);
-        using var reference = new Utf8ConstructionMap<int, int>(measured, new Collisions());
-        reference.Add(0, 10); reference.Add(1, 11);
-        var initialWork = measured.WorkSteps;
-        reference.Add(2, 12);
-        var total = measured.WorkSteps;
-        for (var cap = initialWork; cap <= total; cap++)
-        {
-            var budget = new Utf8ConstructionBudget(1000, 1000000, cap, 1000);
-            budget.ReserveBytes(13);
-            var map = new Utf8ConstructionMap<int, int>(budget, new Collisions());
-            map.Add(0, 10); map.Add(1, 11);
-            var held = budget.ReservedBytes; var storage = map.StorageBytes;
-            if (cap < total)
-            {
-                var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => map.Add(2, 12));
-                Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
-                Assert.Equal(2, map.Count); Assert.Equal(storage, map.StorageBytes);
-                Assert.Equal(held, budget.ReservedBytes);
-            }
-            else { map.Add(2, 12); Assert.Equal(3, map.Count); }
-            map.Dispose();
-            Assert.Equal(13UL, budget.ReservedBytes);
-        }
-    }
-
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void GrowthFailureKeepsOldTableAndParentLoan(bool cancel)
@@ -95,7 +66,7 @@ public sealed class Utf8ConstructionMapInsertionTests
         }
         var entered = false;
         if (cancel)
-            budget.CheckpointHook = _ =>
+            budget.CheckpointHook = () =>
             {
                 if (budget.ReservedBytes > held && comparer.EqualityCalls >= targetEquality)
                 { entered = true; token.Cancel(); }
@@ -109,9 +80,8 @@ public sealed class Utf8ConstructionMapInsertionTests
         Assert.Equal(10, map[0]); Assert.Equal(11, map[1]);
         map.Dispose(); Assert.Equal(13UL, budget.ReservedBytes);
     }
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void CoarseCollisionBlocksStillDenyOrCancelBeforeAnUnboundedChain(bool cancel)
+    [Fact]
+    public void CoarseCollisionBlocksCheckCancellation()
     {
         Utf8ConstructionReadOnlyMap<int, int> snapshot;
         var comparer = new Collisions();
@@ -125,19 +95,18 @@ public sealed class Utf8ConstructionMapInsertionTests
         }
         comparer.EqualityCalls = 0;
         using var cancellation = new CancellationTokenSource();
-        using (var operation = new Utf8ConstructionScope(ulong.MaxValue, 0, 2, ulong.MaxValue))
+        using (var operation = new Utf8ConstructionScope(ulong.MaxValue, 0, ulong.MaxValue))
         {
             operation.Budget.CancellationToken = cancellation.Token;
-            if (cancel) operation.Budget.CheckpointHook = spent => { if (spent == 2) cancellation.Cancel(); };
+            var checkpoints = 0;
+            operation.Budget.CheckpointHook = () => { if (checkpoints++ == 2) cancellation.Cancel(); };
             var failure = Record.Exception(() => snapshot.ContainsKey(-1));
-            if (cancel) Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-            else Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
+            Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.InRange(comparer.EqualityCalls, 1, 127);
             Assert.Equal(0ul, operation.Budget.ReservedBytes);
         }
         Assert.Equal(0, snapshot[0]); Assert.Equal(159, snapshot[159]);
-        using var funded = new Utf8ConstructionScope(ulong.MaxValue, 0, 3, ulong.MaxValue);
+        using var funded = new Utf8ConstructionScope(ulong.MaxValue, 0, ulong.MaxValue);
         Assert.False(snapshot.ContainsKey(-1));
-        Assert.Equal(3ul, funded.Budget.WorkSteps);
     }
 }

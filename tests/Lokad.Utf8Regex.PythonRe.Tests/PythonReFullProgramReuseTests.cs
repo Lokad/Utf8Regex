@@ -11,13 +11,12 @@ public sealed class PythonReFullProgramReuseTests
     {
         using var regex = new Utf8PythonRegex("[A-Z]{3}[0-9]{3}", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkingBytes = 1, MaxWorkSteps = 64 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         using var cancellation = new CancellationTokenSource();
-        using var unrelated = new Utf8ConstructionScope(1, 1, 1, 1);
+        using var unrelated = new Utf8ConstructionScope(1, 1, 1);
         Assert.True(regex.Match("ABC123"u8, cancellationToken: cancellation.Token, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.False(regex.Match("ABC123x"u8, cancellationToken: cancellation.Token, mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.Equal(0UL, unrelated.Budget.WorkSteps);
         Assert.Equal(0UL, unrelated.Budget.ReservedBytes);
     }
 

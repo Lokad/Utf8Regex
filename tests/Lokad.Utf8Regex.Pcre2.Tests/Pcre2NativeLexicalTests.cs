@@ -82,7 +82,7 @@ public sealed class Pcre2NativeLexicalTests
         owner.Budget.Deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromSeconds(30));
         owner.Budget.CancellationToken = cancellation.Token;
         var checkpoints = 0;
-        owner.Budget.CheckpointHook = _ =>
+        owner.Budget.CheckpointHook = () =>
         {
             if (++checkpoints != 4) return;
             if (timeout) ticks = 30000; else cancellation.Cancel();
@@ -101,7 +101,7 @@ public sealed class Pcre2NativeLexicalTests
     public void NativeLexicalGroupsAdmitBeforeAllocatingTheirScopeStack(int entry)
     {
         var pattern = Encoding.UTF8.GetBytes(new string('(', 8192) + "😀" + new string(')', 8192));
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 49, ulong.MaxValue, 1);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 49, 1);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Validate(entry, pattern));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);

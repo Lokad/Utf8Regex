@@ -71,27 +71,25 @@ public sealed class Utf8SliceAssertionContinuationTests
     [InlineData(4097)]
     public void WorkDepthAndAggregateStorageDenialsReleaseEveryChildAndKeepCallerLeases(int depth)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var program = Deep(depth, repeats: true);
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(Utf8SliceRunner.TryMatchAt(program, "a"u8, 1, starts, ends, true, ref baseline).IsMatch);
         Assert.Equal(0UL, baseline.Ledger.ReservedBytes);
-        var work = depth == 65 ? Enumerable.Range(1, checked((int)baseline.Budget.Steps - 1)).Select(static x => (ulong)x)
-            : new[] { 1UL, 63UL, 64UL, 4095UL, 4096UL, baseline.Budget.Steps / 2, baseline.Budget.Steps - 1 };
         var depths = depth == 65 ? Enumerable.Range(1, checked((int)baseline.Budget.PeakDepth - 1)).Select(static x => (uint)x)
             : new[] { 1U, 63U, 64U, 4096U, baseline.Budget.PeakDepth - 1 };
-        var limits = work.Select(static x => new Utf8ExecutionLimits(x, 0, 0))
-            .Concat(depths.Select(static x => new Utf8ExecutionLimits(0, x, 0)))
-            .Concat(new[] { new Utf8ExecutionLimits(0, 0, 1),
-                new Utf8ExecutionLimits(0, 0, (ulong)Utf8SliceRunner.FrameReserveBytes - 1),
-                new Utf8ExecutionLimits(0, 0, baseline.Budget.PeakWorkingBytes - 1) });
+        var limits = depths.Select(static x => new Utf8ExecutionLimits(x, 0))
+            .Concat(new[] { new Utf8ExecutionLimits(0, 1),
+                new Utf8ExecutionLimits(0, (ulong)Utf8SliceRunner.FrameReserveBytes - 1),
+                new Utf8ExecutionLimits(0, baseline.Budget.PeakWorkingBytes - 1) });
         foreach (var limit in limits)
         {
             var denied = new Utf8SliceInvocation(limit, Regex.InfiniteMatchTimeout, CancellationToken.None);
             var result = Utf8SliceRunner.TryMatchAt(program, "a"u8, 1, starts, ends, true, ref denied);
             Assert.False(result.IsMatch);
-            Assert.Equal(limit.MaxWorkSteps != 0 ? Utf8ExecutionLimitKind.WorkSteps : limit.MaxDepth != 0
+            Assert.Equal(limit.MaxDepth != 0
                 ? Utf8ExecutionLimitKind.Depth : Utf8ExecutionLimitKind.WorkingBytes, result.Breach);
             Assert.Equal(0UL, denied.Ledger.ReservedBytes);
             Assert.All(starts, static value => Assert.Equal(-1, value));
@@ -183,14 +181,14 @@ public sealed class Utf8SliceAssertionContinuationTests
         var existingBytes = chunkBytes * 4 + 64;
         var peak = existingBytes + 96 + chunkBytes;
         var limit = allow ? peak : peak - 1;
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, limit), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, limit), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(invocation.Ledger.TryReserve(existingBytes));
         var reserved = existingBytes;
         // Warm reflection/delegate dispatch before measuring an allocation denial.
         var warmTables = Array.Empty<Utf8SliceFrame[]>();
         var warmCount = 0;
         var warmReserved = 0UL;
-        var warm = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 1), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var warm = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 1), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.False(push(ref warmTables, ref warmCount, 64, default, ref warm, ref warmReserved, out _));
         var before = GC.GetAllocatedBytesForCurrentThread();
         var accepted = push(ref tables, ref count, chunkCapacity, default, ref invocation, ref reserved, out var breach);
@@ -219,46 +217,11 @@ public sealed class Utf8SliceAssertionContinuationTests
         ?.GetMethod("Push", BindingFlags.NonPublic | BindingFlags.Static)?.MakeGenericMethod(typeof(Utf8SliceFrame))
         ?? throw new InvalidOperationException()).CreateDelegate<PushFrame>();
 
-    [Fact]
-    public void EveryTableCopyWorkCutoffLeavesTheOriginalStackAndLoanIntact()
-    {
-        var push = GrowthPush();
-        // 512 references take two bounded copy checkpoints, plus acquisition
-        // checkpoints before the new table and before its new leaf.
-        for (ulong cap = 1; cap <= 4; cap++)
-        {
-            var tables = Enumerable.Range(0, 512).Select(_ => new Utf8SliceFrame[1]).ToArray();
-            var original = tables;
-            var count = 512;
-            var reserved = 13UL + 4128 + 512 * 64;
-            var parent = reserved;
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(parent));
-            Assert.Equal(cap == 4, push(ref tables, ref count, 1, default, ref invocation, ref reserved, out var breach));
-            Assert.Equal(cap == 4 ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, breach);
-            if (cap != 4)
-            {
-                Assert.Same(original, tables);
-                Assert.Equal(512, count);
-                Assert.Equal(parent, reserved);
-                Assert.Equal(parent, invocation.Ledger.ReservedBytes);
-            }
-            else
-            {
-                Assert.Equal(513, count);
-                Assert.Equal(parent + 8224 + 64 - 4128, reserved);
-                Assert.Equal(parent + 8224 + 64, invocation.Budget.PeakWorkingBytes);
-                for (var index = 0; index < original.Length; index++) Assert.Same(original[index], tables[index]);
-            }
-            invocation.Ledger.Release(reserved);
-            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        }
-    }
-
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void TableCopyCancellationAndDeadlineRollBackGrowth(bool deadline)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var push = GrowthPush();
         var tables = Enumerable.Range(0, 512).Select(_ => new Utf8SliceFrame[1]).ToArray();
         var original = tables;
@@ -268,11 +231,11 @@ public sealed class Utf8SliceAssertionContinuationTests
         using var source = new CancellationTokenSource();
         var reads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++reads < 3 ? 0 : 1);
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0),
+        var invocation = new Utf8SliceInvocation(new(0, 0),
             deadline ? TimeSpan.FromMilliseconds(1) : Regex.InfiniteMatchTimeout, source.Token);
         if (!deadline)
         {
-            for (var padding = 0; padding < 63; padding++) invocation.TryChargeStep();
+            for (var padding = 0; padding < 63; padding++) invocation.CheckProgress();
             invocation.CheckpointHook = _ => source.Cancel();
         }
         Assert.True(invocation.Ledger.TryReserve(parent));
@@ -297,7 +260,7 @@ public sealed class Utf8SliceAssertionContinuationTests
         var push = GrowthPush();
         var tables = Array.Empty<Utf8SliceFrame[]>();
         var count = int.MaxValue;
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
         var reserved = 13UL;
         Assert.False(push(ref tables, ref count, 1, default, ref invocation, ref reserved, out var breach));
@@ -305,7 +268,6 @@ public sealed class Utf8SliceAssertionContinuationTests
         Assert.Equal(int.MaxValue, count);
         Assert.Empty(tables);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal(0UL, invocation.Budget.Steps);
     }
 
     public static IEnumerable<object[]> PublicCases()

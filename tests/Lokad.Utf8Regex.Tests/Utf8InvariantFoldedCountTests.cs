@@ -144,35 +144,13 @@ public sealed class Utf8InvariantFoldedCountTests
     {
         var options = Invariant | (compiled ? RegexOptions.Compiled : 0);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é Sherlock Holmes John Watson ", 256)));
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
         var finite = new Utf8Regex("Sherlock Holmes|John Watson", options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = policy
         });
         Assert.Equal(512, finite.Count(input));
-        var trusted = new Utf8Regex("Sherlock Holmes|John Watson", options: options, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = policy
-        });
-        Assert.Equal(512, trusted.Count(input));
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(            "Sherlock Holmes|John Watson", options: options, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = policy with
-            {
-                MaxWorkSteps = 1
-            }
-        }).Count(input));
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(            "Sherlock Holmes|John Watson", options: options, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = policy with
-            {
-                MaxWorkSteps = 1
-            }
-        }).Count(input));
         var tiny = new Utf8Regex("Sherlock Holmes|John Watson", options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
@@ -192,8 +170,7 @@ public sealed class Utf8InvariantFoldedCountTests
         tokens.Cancel();
         var ordinary = new Utf8Regex("Sherlock Holmes|John Watson", options: options);
         Assert.Throws<OperationCanceledException>(() => ordinary.Count(input, tokens.Token));
-        Assert.Throws<OperationCanceledException>(() => finite.Count(input, tokens.Token));
-        Assert.Equal(tokens.Token, Assert.Throws<OperationCanceledException>(() => trusted.Count(input, tokens.Token)).CancellationToken);
+        Assert.Equal(tokens.Token, Assert.Throws<OperationCanceledException>(() => finite.Count(input, tokens.Token)).CancellationToken);
 
         var clockReads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => clockReads++ == 0 ? 0 : 25);
@@ -209,7 +186,7 @@ public sealed class Utf8InvariantFoldedCountTests
     public void KelvinScreeningHandlesWindowEdgesAndRetainsFallback(int offset)
     {
         var text = new string('x', offset) + "K K k";
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
         var regex = new Utf8Regex("k|kit", options: Invariant, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
@@ -232,7 +209,7 @@ public sealed class Utf8InvariantFoldedCountTests
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é Kit k ", 512)));
         using var tokens = new CancellationTokenSource();
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
         var regex = new Utf8Regex("kit|k", options: Invariant | (compiled ? RegexOptions.Compiled : 0), policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
@@ -262,7 +239,7 @@ public sealed class Utf8InvariantFoldedCountTests
         var text = new string('j', padding) + "é JOHN ABC ! ? @ 😀 inspector ab B professor";
         var expected = new Regex(pattern, Invariant).Count(text);
         var bytes = Encoding.UTF8.GetBytes(text);
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
         foreach (var compiled in new[] { false, true })
         {
             var options = Invariant | (compiled ? RegexOptions.Compiled : 0);

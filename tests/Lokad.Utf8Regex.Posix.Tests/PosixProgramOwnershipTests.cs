@@ -15,7 +15,7 @@ public sealed class PosixProgramOwnershipTests
         var policy = new Utf8RegexPolicy
         {
             ProgramMemoryAllowance = account,
-            ResourcePolicy = new() { MaxWorkSteps = 100000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }
         };
         using var regex = factory ? Utf8PosixRegex.Compile("(a|aa)", policy: policy) : new Utf8PosixRegex("(a|aa)", policy: policy);
         Assert.True(account.Used > 0);
@@ -200,7 +200,6 @@ public sealed class PosixProgramOwnershipTests
     }
 
     [Theory]
-    [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
@@ -208,7 +207,7 @@ public sealed class PosixProgramOwnershipTests
     {
         var limits = kind switch
         {
-            0 => new Utf8ConstructionPolicy { MaxWorkSteps = 1 },
+            0 => new Utf8ConstructionPolicy {  },
             1 => new Utf8ConstructionPolicy { MaxDepth = 1 },
             2 => new Utf8ConstructionPolicy { MaxInstructionCapacity = 1 },
             _ => new Utf8ConstructionPolicy { MaxBytes = 1 }
@@ -217,7 +216,6 @@ public sealed class PosixProgramOwnershipTests
             new Utf8PosixRegex("((a|aa)*)b", policy: new() { ConstructionPolicy = limits }));
         Assert.Equal(kind switch
         {
-            0 => Utf8ResourceLimitKind.ConstructionWorkSteps,
             1 => Utf8ResourceLimitKind.ConstructionDepth,
             2 => Utf8ResourceLimitKind.ConstructionInstructionCapacity,
             _ => Utf8ResourceLimitKind.ConstructionBytes
@@ -228,12 +226,13 @@ public sealed class PosixProgramOwnershipTests
     [Fact]
     public void ExplicitScopeCannotReplaceParentButDefaultConstructorInherits()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var owner = Utf8ConstructionScope.Enter();
         using var regex = new Utf8PosixRegex("(a|aa)");
-        var spent = owner.Budget.WorkSteps; Assert.True(spent > 0);
+        var spent = owner.Budget.DiagnosticCheckpoints; Assert.True(spent > 0);
         Assert.Throws<InvalidOperationException>(() => Utf8PosixRegex.Compile("a"));
         Assert.Throws<InvalidOperationException>(() => new Utf8PosixRegex("a", policy: new() { ConstructionPolicy = new() { MaxBytes = 10000 } }));
-        Assert.Equal(spent, owner.Budget.WorkSteps);
+        Assert.Equal(spent, owner.Budget.DiagnosticCheckpoints);
     }
 
     [Theory]

@@ -36,7 +36,7 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
     public void PublishedAutomatonKeepsMajorStorageAdmitted(int family)
     {
         var literals = Literals(family);
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 0xa5;
         var held = owner.Budget.ReservedBytes;
@@ -55,30 +55,31 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+[InlineData(true)]
     public void FinalMatrixCopyDenialReleasesScratchAndPreservesTheParent(bool byteLimit)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         byte[][] literals = ["ab"u8.ToArray()]; ulong peak, work;
-        using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue))
         {
             var search = PreparedMultiLiteralAutomatonSearch.Create(literals);
-            peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps;
+            peak = funded.Budget.PeakBytes; work = funded.Budget.DiagnosticCheckpoints;
             Assert.True(peak > funded.Budget.ReservedBytes + Utf8ConstructionBudget.ArrayBytes<int>(search.Transitions.Length));
         }
         using var owner = new Utf8ConstructionScope(0, byteLimit ? peak + 111 : ulong.MaxValue,
-            byteLimit ? ulong.MaxValue : work + 1, ulong.MaxValue);
+            ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => PreparedMultiLiteralAutomatonSearch.Create(literals));
-        Assert.Equal(byteLimit ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, error.ResourceKind);
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value); Assert.True(owner.Budget.WorkSteps > 2);
+        Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value); Assert.True(owner.Budget.DiagnosticCheckpoints > 2);
     }
 
     [Theory]
     [InlineData(0)] [InlineData(1)]
     public void RootDepthIsAdmittedBeforeScratchAcquisitionAndDoesNotGrowWithPrefixLength(int depth)
     {
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, (ulong)depth);
         var parent = owner.Budget.AllocateArray<byte>(1, false); parent[0] = 0xa5;
         var error = Record.Exception(() => PreparedMultiLiteralAutomatonSearch.Create(Literals(9)));
         if (depth == 0)
@@ -93,12 +94,12 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
     [Fact]
     public void EmptyAutomatonBorrowsAllStateWithoutAnyAllowance()
     {
-        using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var owner = new Utf8ConstructionScope(0, 0, 0);
         var search = PreparedMultiLiteralAutomatonSearch.Create([]);
         Assert.Empty(search.Transitions); Assert.Empty(search.BestOutputOrders); Assert.Empty(search.BestOutputLengths); Assert.Empty(search.ShortestOutputLengths);
         Assert.Equal(0, search.StateCount); Assert.Equal(0, search.RootFanout); Assert.Equal(0, search.OutputStateCount);
         Assert.Equal(-1, search.IndexOf("😀"u8)); Assert.Equal(-1, search.LastIndexOf("😀"u8));
-        Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
+Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
     }
 
     [Theory]
@@ -135,6 +136,7 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
     [Fact]
     public void BorrowedTrieAvoidsGrowthAndFinalMatrixCopy()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var literals = Literals(4);
         var trie = PreparedMultiLiteralTrieSearch.Create(literals);
         var (grown, grownPeak, grownWork) = Build(default);
@@ -148,7 +150,7 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
         {
             using var owner = Utf8ConstructionScope.Enter();
             var search = PreparedMultiLiteralAutomatonSearch.Create(literals, prepared);
-            return (search, owner.Budget.PeakBytes, owner.Budget.WorkSteps);
+            return (search, owner.Budget.PeakBytes, owner.Budget.DiagnosticCheckpoints);
         }
     }
 

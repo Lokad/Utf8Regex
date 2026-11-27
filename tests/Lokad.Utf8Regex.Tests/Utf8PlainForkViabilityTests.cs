@@ -45,7 +45,7 @@ public sealed class Utf8PlainForkViabilityTests
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 1, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         var input = Encoding.UTF8.GetBytes(subject);
         Assert.Equal(count, regex.Count(input, token.Token));
@@ -65,7 +65,7 @@ public sealed class Utf8PlainForkViabilityTests
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 16, MaxWorkingBytes = 1024 }
+            ResourcePolicy = new() { MaxDepth = 16, MaxWorkingBytes = 1024 }
         });
         Assert.Equal(3, new Regex(pattern).Count(text));
         Assert.Equal(3, regex.Count(input, token.Token));
@@ -81,7 +81,6 @@ public sealed class Utf8PlainForkViabilityTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100_000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 256,
                 MaxResultBytes = 1

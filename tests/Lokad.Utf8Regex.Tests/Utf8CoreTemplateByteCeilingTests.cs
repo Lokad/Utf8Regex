@@ -14,6 +14,7 @@ public sealed class Utf8CoreTemplateByteCeilingTests
     [InlineData(true)]
     public void EmptyInputCannotPrepareAnOversizedTemplate(bool liveToken)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = Create("a", 4096);
         var text = new string('x', 65536);
         var template = Encoding.UTF8.GetBytes(text);
@@ -22,11 +23,11 @@ public sealed class Utf8CoreTemplateByteCeilingTests
         var held = parent.Budget.AllocateArray<byte>(17, false);
         var reserved = parent.Budget.ReservedBytes;
         var maximum = parent.Budget.MaximumBytes;
-        Action<ulong> hook = _ => { };
+        Action hook = () => { };
         parent.Budget.CheckpointHook = hook;
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var spent = parent.Budget.WorkSteps;
+            var spent = parent.Budget.DiagnosticCheckpoints;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
                 regex.Replace([], template, liveToken ? token.Token : default));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
@@ -36,7 +37,7 @@ public sealed class Utf8CoreTemplateByteCeilingTests
             Assert.Equal(maximum, parent.Budget.MaximumBytes);
             Assert.Equal(0ul, parent.Budget.Depth);
             Assert.Same(hook, parent.Budget.CheckpointHook);
-            Assert.True(parent.Budget.WorkSteps > spent);
+            Assert.True(parent.Budget.DiagnosticCheckpoints > spent);
             Assert.Equal(17, held.Length);
         }
         Assert.Empty(regex.Replace([], ""u8));
@@ -79,41 +80,6 @@ public sealed class Utf8CoreTemplateByteCeilingTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void ValidationWorkIsAdmittedBeforeRejectingMalformedTemplate(bool destination)
-    {
-        var regex = Create("a", 4096);
-        var template = new byte[257]; template[^1] = 255;
-        var output = Enumerable.Repeat((byte)0x5a, 16).ToArray();
-        using var parent = new Utf8ConstructionScope(0, 4096, 8, 128);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-        {
-            if (destination) regex.TryReplace("a"u8, template, output, out _);
-            else _ = regex.Replace("a"u8, template);
-        });
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-        Assert.Equal(8ul, failure.Limit);
-        Assert.Equal((ulong)template.Length, failure.Requested);
-        Assert.Equal(0ul, parent.Budget.WorkSteps);
-        Assert.Equal(0ul, parent.Budget.ReservedBytes);
-        Assert.Equal(0, Cache(regex).Count);
-        Assert.All(output, value => Assert.Equal((byte)0x5a, value));
-    }
-
-    [Fact]
-    public void StandaloneValidationKeepsItsFixedBackstopBeforeTheMalformedTail()
-    {
-        var regex = Create("a", 4096);
-        var template = new byte[checked((int)Utf8ConstructionScope.DefaultWorkSteps + 1)];
-        template[^1] = 255;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace([], template));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-        Assert.Equal(Utf8ConstructionScope.DefaultWorkSteps, failure.Limit);
-        Assert.Equal((ulong)template.Length, failure.Requested);
-        Assert.Equal(0, Cache(regex).Count);
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
     public void BoundedPreparationPreservesOriginalInterruptionAndParent(bool cancel)
     {
         long ticks = 0;
@@ -123,7 +89,6 @@ public sealed class Utf8CoreTemplateByteCeilingTests
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -133,7 +98,7 @@ public sealed class Utf8CoreTemplateByteCeilingTests
         using var parent = Utf8ConstructionScope.Enter();
         var maximum = parent.Budget.MaximumBytes;
         var checkpoints = 0;
-        Action<ulong> hook = _ =>
+        Action hook = () =>
         {
             if (++checkpoints != 8) return;
             if (cancel) token.Cancel(); else ticks = 25;
@@ -186,7 +151,7 @@ public sealed class Utf8CoreTemplateByteCeilingTests
         var parentDeadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20));
         parent.Budget.Deadline = parentDeadline;
         var checkpoints = 0;
-        Action<ulong> hook = _ =>
+        Action hook = () =>
         {
             if (++checkpoints != 8) return;
             if (authority == 0) caller.Cancel();
@@ -222,7 +187,6 @@ public sealed class Utf8CoreTemplateByteCeilingTests
         MatchTimeout = Regex.InfiniteMatchTimeout,
         ResourcePolicy = new()
         {
-            MaxWorkSteps = 1000000,
             MaxDepth = 256,
             MaxWorkingBytes = working,
             MaxResultBytes = 1 << 20

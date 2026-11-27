@@ -18,7 +18,7 @@ public sealed class Utf8SliceLookaroundTests
     {
         using var regex = new Utf8Regex(@"(?<=\s)[A-Z][a-z]+(?=\s)", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 64 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var prefix = " A" + new string('a', 4095);
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(prefix + "! 😀")));
@@ -217,7 +217,7 @@ public sealed class Utf8SliceLookaroundTests
         var input = Encoding.UTF8.GetBytes(text);
         using var regex = new Utf8Regex(@"\p{L}+(?=:)", RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
 
         Assert.True(regex.IsMatch(input));

@@ -38,12 +38,12 @@ internal readonly ref struct Utf8ConstructionPattern
         var budget = Utf8ConstructionScope.CurrentBudget;
         for (var position = 0; position < Utf8.Length;)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (Rune.DecodeFromUtf8(Utf8[position..], out _, out var consumed) != OperationStatus.Done)
                 throw Utf8Validation.CreateInvalidUtf8Exception(position);
             position += consumed;
         }
-        budget.ChargeWork(0);
+        budget.Checkpoint();
     }
 
     internal int ReadScalar(ref int position)

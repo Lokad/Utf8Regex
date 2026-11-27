@@ -12,6 +12,7 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
     [Fact]
     public void BorrowedAnchoredCursorReusesItsFiniteInvocationWithoutAllocatingAnotherOwner()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var literal = "abc"u8.ToArray();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, TimeSpan.FromSeconds(20), default);
         Utf8SliceBufferWork.Checkpoint(ref invocation);
@@ -23,7 +24,7 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.True(found);
         Assert.Equal(0, allocated);
-        Assert.Equal(cursor.DebugInvocationSteps, invocation.Budget.Steps);
+        Assert.Equal(cursor.DiagnosticCheckpointCount, invocation.Budget.DiagnosticCheckpoints);
     }
 
     [Fact]

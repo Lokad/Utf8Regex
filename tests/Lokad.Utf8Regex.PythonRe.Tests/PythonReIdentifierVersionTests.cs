@@ -31,7 +31,6 @@ public sealed class PythonReIdentifierVersionTests
 
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000,
             MaxDepth = 128,
             MaxWorkingBytes = 1_048_576,
             MaxResultBytes = 1_048_576

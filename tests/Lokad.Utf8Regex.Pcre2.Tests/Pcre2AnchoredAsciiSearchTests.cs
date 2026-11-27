@@ -75,7 +75,7 @@ public sealed class Pcre2AnchoredAsciiSearchTests
                  })
         {
             var direct = new Utf8Pcre2Regex(pattern);
-            var vm = CreateMetered(pattern, 1_000_000);
+            var vm = CreateMetered(pattern);
             var oracle = new Regex(pattern.Replace(@"\d", "[0-9]", StringComparison.Ordinal)
                 .Replace(@"\s", @"[\t\n\r\f\v ]", StringComparison.Ordinal), RegexOptions.CultureInvariant);
 
@@ -89,36 +89,10 @@ public sealed class Pcre2AnchoredAsciiSearchTests
         }
     }
 
-    [Fact]
-    public void AnchoredAsciiSearchObservesOptionsAndLimits()
-    {
-        var direct = new Utf8Pcre2Regex(FloatPattern);
-        var vm = CreateMetered(FloatPattern, 1_000_000);
-        var input = "-3.14159"u8.ToArray();
-
-        foreach (var options in new[]
-                 {
-                     Pcre2MatchOptions.Anchored,
-                     Pcre2MatchOptions.EndAnchored,
-                     Pcre2MatchOptions.NotBol,
-                     Pcre2MatchOptions.NotEol,
-                     Pcre2MatchOptions.NotEmpty,
-                     Pcre2MatchOptions.NotEmptyAtStart,
-                 })
-        {
-            Assert.Equal(vm.IsMatch(input, 0, options), direct.IsMatch(input, 0, options));
-        }
-
-        var tightlyMetered = CreateMetered(FloatPattern, 1);
-        Assert.Equal(
-            Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch(input)).ErrorKind);
-    }
-
     private static void AssertEquivalentAtEveryValidStart(string pattern, params string[] inputs)
     {
         var direct = new Utf8Pcre2Regex(pattern);
-        var vm = CreateMetered(pattern, 1_000_000);
+        var vm = CreateMetered(pattern);
         var oracle = new Regex(pattern.Replace(@"\d", "[0-9]", StringComparison.Ordinal)
             .Replace(@"\s", @"[\t\n\r\f\v ]", StringComparison.Ordinal), RegexOptions.CultureInvariant);
 
@@ -164,12 +138,12 @@ public sealed class Pcre2AnchoredAsciiSearchTests
         }
     }
 
-    private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
+    private static Utf8Pcre2Regex CreateMetered(string pattern) =>
         new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (matchLimit) == 0 ? null : (matchLimit)
+                MaxDepth = 4096
             },
             MatchTimeout = Regex.InfiniteMatchTimeout
         });

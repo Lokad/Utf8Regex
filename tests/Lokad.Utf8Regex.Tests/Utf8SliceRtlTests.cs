@@ -23,7 +23,7 @@ public sealed class Utf8SliceRtlTests
         const RegexOptions options = RegexOptions.RightToLeft | RegexOptions.CultureInvariant;
         using var regex = new Utf8Regex(pattern, options, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 8_192, MaxWorkingBytes = 4_096 },
+            ResourcePolicy = new() { MaxWorkingBytes = 4_096 },
         });
         using var source = new CancellationTokenSource();
         var trailing = new string('c', 384) + "😀";

@@ -79,7 +79,7 @@ public sealed class Pcre2ReplacementByteExpansionTests
     public void GrowingOutputAdmitsOldAndNewWorkingBuffersAndAlwaysReleases()
     {
         var writer = new Pcre2ReplacementTemplateWriter("😀"u8, [],
-            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 96),
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 96),
                 Timeout.InfiniteTimeSpan, default));
         try
         {
@@ -95,7 +95,7 @@ public sealed class Pcre2ReplacementByteExpansionTests
         Assert.Equal(0ul, writer.ReservedWorkingBytes);
 
         var limited = new Pcre2ReplacementTemplateWriter("😀"u8, [],
-            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 95),
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 95),
                 Timeout.InfiniteTimeSpan, default));
         try
         {
@@ -118,7 +118,7 @@ public sealed class Pcre2ReplacementByteExpansionTests
         long clock = 10000;
         using var clockScope = Utf8ExecutionDeadline.UseClockForDiagnostics(() => clock);
         var writer = new Pcre2ReplacementTemplateWriter("😀"u8, [],
-            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0),
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0),
                 deadline ? TimeSpan.FromMilliseconds(1) : Timeout.InfiniteTimeSpan, token.Token));
         if (deadline) clock++;
         else token.Cancel();

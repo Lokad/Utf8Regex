@@ -19,11 +19,10 @@ public sealed class Pcre2NativeTemplatePreparationTests
         var subject = Encoding.UTF8.GetBytes(input); var source = Encoding.UTF8.GetBytes(template);
         var expected = regex.Replace(subject, source, 0, options);
         Assert.Equal(1, regex.DebugReplacementCacheEntryCount);
-        using (var owner = new Utf8ConstructionScope(0, 0, 0, 0))
+        using (var owner = new Utf8ConstructionScope(0, 0, 0))
         {
             Assert.Equal(expected, regex.Replace(subject, source, 0, options));
-            Assert.Equal(0UL, owner.Budget.ReservedBytes); Assert.Equal(0UL, owner.Budget.WorkSteps);
-        }
+            Assert.Equal(0UL, owner.Budget.ReservedBytes);         }
         Assert.Equal(1, regex.DebugReplacementCacheEntryCount);
     }
 
@@ -97,7 +96,7 @@ public sealed class Pcre2NativeTemplatePreparationTests
     public void NativeKeyAndParserLoansShareTheOriginalInvocationAndRefundOnFailure()
     {
         var regex = new Utf8Pcre2Regex("(?<x>a)");
-        var invocation = new Utf8SliceInvocation(new(1_000_000, 1024, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var invocation = new Utf8SliceInvocation(new(1024, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
         var source = "é${x}😀"u8.ToArray();
         // Public operations establish their own invocation. Borrow the production
@@ -110,7 +109,7 @@ public sealed class Pcre2NativeTemplatePreparationTests
             Assert.Equal(plan, prepare(source, default)); Assert.Equal(held, invocation.Ledger.ReservedBytes);
         }
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13);
-        var denied = new Utf8SliceInvocation(new(1_000_000, 1024, 32), Timeout.InfiniteTimeSpan, default);
+        var denied = new Utf8SliceInvocation(new(1024, 32), Timeout.InfiniteTimeSpan, default);
         using (var control = Pcre2ReplacementPreparationControl.Borrow(denied, default))
             Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
                 prepare("another${x}"u8, default)).ErrorKind);

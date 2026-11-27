@@ -9,7 +9,7 @@ public sealed class Pcre2LexicalAdmissionTests
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void LexicalGroupsCannotAllocatePastTheParentByteAllowance(int entry)
     {
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 49, ulong.MaxValue, 1);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 49, 1);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 37;
         var pattern = new string('(', 100_000) + "a" + new string(')', 100_000);
@@ -62,7 +62,7 @@ public sealed class Pcre2LexicalAdmissionTests
         owner.Budget.Deadline = deadline;
         owner.Budget.CancellationToken = cancellation.Token;
         var checkpoints = 0;
-        owner.Budget.CheckpointHook = _ =>
+        owner.Budget.CheckpointHook = () =>
         {
             if (++checkpoints != 4) return;
             if (timeout) ticks = 30000; else cancellation.Cancel();

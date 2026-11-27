@@ -123,7 +123,7 @@ public sealed partial class Utf8Regex
 
     private void FinishFundedInvocation(ref Utf8SliceInvocation invocation)
     {
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.CheckInput();
         invocation.Budget.ThrowIfCancellationRequested();
         if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
     }

@@ -5,17 +5,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
-using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
 [Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8CursorCopyWorkTests
 {
-    private static Utf8PreparedRegex Prepared(Utf8Regex regex) =>
-        (Utf8PreparedRegex)typeof(Utf8Regex).GetProperty("PreparedRegex", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
-
     private static Utf8SliceProgram Program(Utf8Regex regex) =>
         (Utf8SliceProgram)typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
 
@@ -41,23 +36,20 @@ public sealed class Utf8CursorCopyWorkTests
         (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
 
     [Theory]
-    [InlineData(64UL, 0U, 0UL, false)]
-    [InlineData(0UL, 7U, 0UL, false)]
-    [InlineData(0UL, 0U, 64UL, false)]
-    [InlineData(0UL, 0U, 0UL, true)]
-    public void ControlledScopesShareCounterUpdatesAndSeparateInvocationsRemainIndependent(ulong work, uint depth, ulong bytes, bool deadline)
+    [InlineData(7U, 0UL, false)]
+    [InlineData(0U, 64UL, false)]
+    [InlineData(0U, 0UL, true)]
+    public void ControlledScopesShareCounterUpdatesAndSeparateInvocationsRemainIndependent(uint depth, ulong bytes, bool deadline)
     {
         var timeout = deadline ? TimeSpan.FromHours(1) : Regex.InfiniteMatchTimeout;
-        var original = new Utf8SliceInvocation(new(work, depth, bytes), timeout, default);
+        var original = new Utf8SliceInvocation(new(depth, bytes), timeout, default);
         var copy = original;
-        Assert.Equal(Utf8ExecutionLimitKind.None, original.TryChargeInputStep());
-        Assert.Equal(1UL, copy.Budget.Steps);
+        Assert.Equal(Utf8ExecutionLimitKind.None, original.CheckInput());
         Assert.Equal(Utf8ExecutionLimitKind.None, copy.Budget.TryNoteDepth(7));
         Assert.Equal(7U, original.Budget.PeakDepth);
         Assert.Equal(Utf8ExecutionLimitKind.None, original.Budget.TryNoteWorkingBytes(64));
         Assert.Equal(64UL, copy.Budget.PeakWorkingBytes);
-        var independent = new Utf8SliceInvocation(new(work, depth, bytes), timeout, default);
-        Assert.Equal(0UL, independent.Budget.Steps);
+        var independent = new Utf8SliceInvocation(new(depth, bytes), timeout, default);
         Assert.Equal(0U, independent.Budget.PeakDepth);
         Assert.Equal(0UL, independent.Budget.PeakWorkingBytes);
     }
@@ -78,13 +70,14 @@ public sealed class Utf8CursorCopyWorkTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static long MeasureInvocationMetadata(out ulong steps)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         steps = 0;
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var i = 0; i < 512; i++)
         {
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
-            _ = invocation.TryChargeInputStep();
-            steps += invocation.Budget.Steps;
+            _ = invocation.CheckInput();
+            steps += invocation.Budget.DiagnosticCheckpoints;
         }
         return GC.GetAllocatedBytesForCurrentThread() - before;
     }
@@ -103,36 +96,14 @@ public sealed class Utf8CursorCopyWorkTests
             published = invocation;
         };
         for (var i = 0; i < 64; i++)
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckInput());
 
         Assert.Equal(new[] { 64UL }, checkpoints);
-        Assert.Equal(64UL, published.Budget.Steps);
         Assert.Equal(13UL, published.Ledger.ReservedBytes);
-        Assert.Equal(Utf8ExecutionLimitKind.None, published.TryChargeInputStep());
-        Assert.Equal(65UL, invocation.Budget.Steps);
+        Assert.Equal(Utf8ExecutionLimitKind.None, published.CheckInput());
         published.Ledger.Release(13);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         Assert.Equal(new[] { 64UL }, checkpoints);
-    }
-
-    [Theory]
-    [InlineData(63UL)]
-    [InlineData(64UL)]
-    public void DenialAtCheckpointBoundaryKeepsSharedWorkAndSuppressesLaterHooks(ulong cap)
-    {
-        var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
-        var checkpoints = new List<ulong>();
-        invocation.CheckpointHook = checkpoints.Add;
-        var alias = invocation;
-        for (ulong i = 0; i < cap; i++)
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
-
-        Assert.Equal(cap == 64 ? new[] { 64UL } : Array.Empty<ulong>(), checkpoints);
-        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, alias.TryChargeInputStep());
-        Assert.Equal(cap + 1, invocation.Budget.Steps);
-        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.TryChargeInputStep());
-        Assert.Equal(cap + 2, alias.Budget.Steps);
-        Assert.Equal(cap == 64 ? new[] { 64UL } : Array.Empty<ulong>(), checkpoints);
     }
 
     [Theory]
@@ -144,7 +115,7 @@ public sealed class Utf8CursorCopyWorkTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var deadline = expire ? Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20)) : Utf8ExecutionDeadline.Infinite;
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), deadline, token.Token);
+        var invocation = new Utf8SliceInvocation(new(0, 0), deadline, token.Token);
         var alias = invocation;
         var checkpoints = new List<ulong>();
         invocation.CheckpointHook = steps =>
@@ -155,16 +126,15 @@ public sealed class Utf8CursorCopyWorkTests
             else token.Cancel();
         };
         for (var i = 0; i < 63; i++)
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckInput());
 
         if (expire)
-            Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => invocation.TryChargeInputStep());
+            Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => invocation.CheckInput());
         else
         {
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
-            Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => alias.TryChargeInputStep()).CancellationToken);
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckInput());
+            Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => alias.CheckInput()).CancellationToken);
         }
-        Assert.Equal(64UL, alias.Budget.Steps);
         Assert.Same(deadline, alias.Budget.Deadline);
         Assert.Equal(new[] { 64UL }, checkpoints);
         Assert.Equal(Utf8ExecutionLimitKind.None, alias.Budget.LimitBreach);
@@ -174,22 +144,23 @@ public sealed class Utf8CursorCopyWorkTests
     [MemberData(nameof(Routes))]
     public void PublicCopiesKeepIndependentPositionsAndOneCumulativeWorkCounter(string pattern, string text, bool compiled, bool rtl)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex(pattern, options: Options(compiled, rtl));
         using var source = new CancellationTokenSource();
         var original = regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), cancellationToken: source.Token);
         var copy = original.GetEnumerator();
-        var entrySteps = copy.DebugInvocationSteps;
+        var entrySteps = copy.DiagnosticCheckpointCount;
         var expected = new Regex(pattern, Options(compiled, rtl)).Matches(text).Cast<Match>()
             .Where(match => (match.Index == 0 || match.Index == text.Length || !char.IsLowSurrogate(text[match.Index])) &&
                 (match.Index + match.Length == 0 || match.Index + match.Length == text.Length ||
                  !char.IsLowSurrogate(text[match.Index + match.Length]))).ToArray();
         Assert.NotEmpty(expected);
         Assert.True(original.MoveNext());
-        Assert.True(original.DebugInvocationSteps > entrySteps);
-        Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
+        Assert.True(original.DiagnosticCheckpointCount > entrySteps);
+        Assert.Equal(original.DiagnosticCheckpointCount, copy.DiagnosticCheckpointCount);
         Assert.True(copy.MoveNext());
         Assert.Equal(original.Current, copy.Current);
-        Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
+        Assert.Equal(original.DiagnosticCheckpointCount, copy.DiagnosticCheckpointCount);
         var retained = copy.Current;
         var index = 1;
         while (original.MoveNext())
@@ -197,7 +168,7 @@ public sealed class Utf8CursorCopyWorkTests
             Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[index].Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected[index].Index, expected[index].Length))),
                 (original.Current.StartOffsetInBytes, (original.Current.EndOffsetInBytes - original.Current.StartOffsetInBytes)));
             Assert.Equal(retained, copy.Current);
-            Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
+            Assert.Equal(original.DiagnosticCheckpointCount, copy.DiagnosticCheckpointCount);
             index++;
         }
         Assert.Equal(expected.Length, index);
@@ -207,7 +178,7 @@ public sealed class Utf8CursorCopyWorkTests
         {
             Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[index].Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected[index].Index, expected[index].Length))),
                 (copy.Current.StartOffsetInBytes, (copy.Current.EndOffsetInBytes - copy.Current.StartOffsetInBytes)));
-            Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
+            Assert.Equal(original.DiagnosticCheckpointCount, copy.DiagnosticCheckpointCount);
             index++;
         }
         Assert.Equal(expected.Length, index);
@@ -218,6 +189,7 @@ public sealed class Utf8CursorCopyWorkTests
     [MemberData(nameof(Routes))]
     public void RepeatedFreshCopiesCannotRestartTheCancellationCheckpointCadence(string pattern, string text, bool compiled, bool rtl)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var regex = new Utf8Regex(pattern, options: Options(compiled, rtl));
         using var source = new CancellationTokenSource();
         var active = false;
@@ -231,7 +203,7 @@ public sealed class Utf8CursorCopyWorkTests
         try
         {
             var original = regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), cancellationToken: source.Token);
-            var entrySteps = original.DebugInvocationSteps;
+            var entrySteps = original.DiagnosticCheckpointCount;
             active = true;
             var canceled = false;
             for (var attempt = 0; attempt < 128 && !canceled; attempt++)
@@ -247,45 +219,10 @@ public sealed class Utf8CursorCopyWorkTests
             Assert.True(canceled, "Fresh value copies restarted the checkpoint cadence.");
             Assert.True(checkpoint > entrySteps);
             Assert.Equal(0UL, checkpoint & 63);
-            Assert.True(original.DebugInvocationSteps >= checkpoint);
+            Assert.True(original.DiagnosticCheckpointCount >= checkpoint);
             Assert.False(original.Current.Success);
         }
         finally { session.Complete(); }
-    }
-
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void ACopyCannotSpendTheSameFiniteWorkAllowanceTwice(bool owned, bool compiled)
-    {
-        var regex = new Utf8Regex(owned ? @"(ab)\1" : "target", options: Options(compiled, false));
-        var input = owned ? "abab abab"u8.ToArray() : "target target"u8.ToArray();
-        var baseline = Create(regex, input, ulong.MaxValue, owned);
-        Assert.True(baseline.MoveNext());
-        var cap = baseline.DebugInvocationSteps;
-        var original = Create(regex, input, cap, owned);
-        var copy = original;
-        Assert.True(original.MoveNext());
-        var retained = original.CurrentValueMatch;
-        var denied = false;
-        try { _ = copy.MoveNext(); }
-        catch (InvalidOperationException) { denied = true; }
-        Assert.True(denied, "The copied cursor reused the original work allowance.");
-        Assert.Equal(cap + 1, original.DebugInvocationSteps);
-        Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
-        Assert.Equal(retained, original.CurrentValueMatch);
-        Assert.False(copy.CurrentValueMatch.Success);
-    }
-
-    private static Utf8OperationMatchCursor Create(Utf8Regex regex, byte[] input, ulong cap, bool owned)
-    {
-        var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
-        Utf8SliceBufferWork.Checkpoint(ref invocation);
-        invocation.ShareStorageForCursor();
-        return owned ? new Utf8OperationMatchCursor(Program(regex), input, invocation)
-            : new Utf8OperationMatchCursor(input, Prepared(regex), false, invocation);
     }
 
     [Theory]
@@ -303,25 +240,26 @@ public sealed class Utf8CursorCopyWorkTests
     [InlineData(2, true, true)]
     public void SplitCopiesAccumulateWorkThroughTailAndEofWhileRetainingExistingViews(int count, bool compiled, bool rtl)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const string text = "é😀 abab abab tail";
         var regex = new Utf8Regex(@"(ab)\1", options: Options(compiled, rtl));
         using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, source.Token);
+        var invocation = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, source.Token);
         var original = Utf8OwnedSplitPreparation.Create(Program(regex), Encoding.UTF8.GetBytes(text), count, ref invocation);
         var copy = original.GetEnumerator();
         Assert.True(original.MoveNext());
-        Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
+        Assert.Equal(original.DiagnosticCheckpointCount, copy.DiagnosticCheckpointCount);
         Assert.True(copy.MoveNext());
         var retained = copy.Current;
         var retainedValue = Encoding.UTF8.GetString(retained.GetValueBytes());
         // EnumerateSplits excludes captured delimiters; compare copies directly.
         var originalValues = new List<string> { Encoding.UTF8.GetString(original.Current.GetValueBytes()) };
         while (original.MoveNext()) originalValues.Add(Encoding.UTF8.GetString(original.Current.GetValueBytes()));
-        Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
+        Assert.Equal(original.DiagnosticCheckpointCount, copy.DiagnosticCheckpointCount);
         var copyValues = new List<string> { Encoding.UTF8.GetString(copy.Current.GetValueBytes()) };
         while (copy.MoveNext()) copyValues.Add(Encoding.UTF8.GetString(copy.Current.GetValueBytes()));
         Assert.Equal(originalValues, copyValues);
-        Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
+        Assert.Equal(original.DiagnosticCheckpointCount, copy.DiagnosticCheckpointCount);
         source.Cancel();
         Assert.Equal(retainedValue, Encoding.UTF8.GetString(retained.GetValueBytes()));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

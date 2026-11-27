@@ -43,10 +43,9 @@ public sealed class Pcre2AsciiIpv4CountTests
         source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.Count(input, cancellationToken: source.Token)).CancellationToken);
-        using var limited = new Utf8Pcre2Regex(Pattern, policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1 } });
+        using var limited = new Utf8Pcre2Regex(Pattern, policy: new() { ResourcePolicy = new() { MaxDepth = 4096 } });
         var limitedSlice = Assert.IsType<Pcre2SliceDirectProgram>(limited.DebugCompiledProgram.Operations.Count).SliceProgram;
         Assert.False(limitedSlice.ObservesProofWork);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => limited.Count(input)).ErrorKind);
     }
 
     [Fact]
@@ -100,33 +99,6 @@ public sealed class Pcre2AsciiIpv4CountTests
     }
 
     [Fact]
-    public void WorkIsCumulativeAndScalarFloorsArePreserved()
-    {
-        uint firstSuccess = 0;
-        for (uint cap = 1; cap <= 512; cap++)
-        {
-            try
-            {
-                Assert.Equal(1, Create(work: cap).Count("00.11.22.255"u8));
-                if (firstSuccess == 0) firstSuccess = cap;
-            }
-            catch (Pcre2MatchException error)
-            {
-                Assert.Equal(0u, firstSuccess);
-                Assert.Equal(Pcre2ErrorKind.MatchLimit, error.ErrorKind);
-            }
-        }
-        Assert.InRange(firstSuccess, 2u, 512u);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-            Create(work: firstSuccess).Count("00.11.22.255 00.11.22.255"u8)).ErrorKind);
-        Assert.Throws<ArgumentOutOfRangeException>(() => Create().Count("😀00.11.22.255"u8, 1));
-        var invalid = "00.11.22.255😀"u8.ToArray().Append((byte)255).ToArray();
-        var lateInvalid = Encoding.UTF8.GetBytes(new string('x', 200000)).Append((byte)255).ToArray();
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => Create(work: 1).Count(lateInvalid)).ErrorKind);
-    }
-
-    [Fact]
     public void CapturesAndExplicitOptionsKeepScalarResultsAndAdmission()
     {
         var captured = Create("(" + Pattern + ")");
@@ -153,11 +125,12 @@ public sealed class Pcre2AsciiIpv4CountTests
     [InlineData(true, true)]
     public void BoundedSearchKeepsTheOriginalTokenDeadlineAndRetainedResults(bool denseDots, bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var input = Encoding.UTF8.GetBytes(new string(denseDots ? '.' : 'x', 200000) + "00.11.22.255");
         var regex = Create(timeout: expire ? TimeSpan.FromMilliseconds(20) : null);
         var calibration = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
         Pcre2Runner.AdmitStart(input, 0, ref calibration);
-        var threshold = ((calibration.Budget.Steps / 64) + 1) * 64;
+        var threshold = ((calibration.Budget.DiagnosticCheckpoints / 64) + 1) * 64;
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -186,12 +159,11 @@ public sealed class Pcre2AsciiIpv4CountTests
             Assert.Throws<OperationCanceledException>(() => regex.Count(input, 0, Pcre2MatchOptions.None, canceled.Token)).CancellationToken);
     }
 
-    private static Utf8Pcre2Regex Create(string pattern = Pattern, uint work = 1000000, TimeSpan? timeout = null)
+    private static Utf8Pcre2Regex Create(string pattern = Pattern, TimeSpan? timeout = null)
         => new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (work) == 0 ? null : (work),
                 MaxDepth = 4096,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1

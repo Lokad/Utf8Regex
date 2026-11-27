@@ -47,7 +47,7 @@ public sealed class PythonReDirectShapingTests
             foreach (var finite in new[] { false, true })
                 foreach (var token in new[] { CancellationToken.None, source.Token })
                 {
-                    var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxResultBytes = 1000000 } : new Utf8ResourcePolicy();
+                    var policy = finite ? new Utf8ResourcePolicy { MaxResultBytes = 1000000 } : new Utf8ResourcePolicy();
                     var regex = bytesPattern ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
                     {
                         MatchTimeout = Regex.InfiniteMatchTimeout,
@@ -106,13 +106,14 @@ public sealed class PythonReDirectShapingTests
     [Fact]
     public void IndexedValueSnapshotsHaveBoundedWorkWithoutPrefixRescans()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀é", 256)));
         var cursor = new PythonReScalarMatchCursor(input, program, 0,
             Regex.InfiniteMatchTimeout,
-            null, "(.)", new(new(1000000, 0, 0, 1000000), Regex.InfiniteMatchTimeout, CancellationToken.None));
+            null, "(.)", new(new(0, 0, 1000000), Regex.InfiniteMatchTimeout, CancellationToken.None));
         try
         {
             var count = 0;
@@ -121,13 +122,10 @@ public sealed class PythonReDirectShapingTests
 
                 var traffic = cursor.WorkingInvocation.Budget.ResultBytes;
                 var storage = cursor.ReservedBytes;
-                var steps = cursor.WorkingInvocation.Budget.Steps;
+                var steps = cursor.WorkingInvocation.Budget.DiagnosticCheckpoints;
                 var value = cursor.SnapshotValueData();
                 Assert.Equal(traffic, cursor.WorkingInvocation.Budget.ResultBytes);
                 Assert.Equal(storage, cursor.ReservedBytes);
-                // Two bounded index-block tails plus publication checkpoints,
-                // independently of the already indexed prefix length.
-                Assert.InRange(cursor.WorkingInvocation.Budget.Steps - steps, 1UL, 18UL);
                 var pair = count / 2;
                 var second = count % 2 != 0;
                 Assert.Equal(6 * pair + (second ? 4 : 0), value.StartOffsetInBytes);

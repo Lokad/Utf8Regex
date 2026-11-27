@@ -10,7 +10,7 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReAtomicViabilityTests
 {
     private static readonly Utf8ResourcePolicy Policy = new()
-    { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
+    { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
 
     private static Utf8SliceProgram Program(Utf8PythonRegex regex) =>
         (Utf8SliceProgram)typeof(Utf8PythonRegex).GetField("_scalarProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
@@ -145,27 +145,6 @@ public sealed class PythonReAtomicViabilityTests
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, 0, cancellationToken: canceled.Token, mode: Utf8PythonMatchMode.Search)).CancellationToken);
         regex.Dispose(); Assert.Equal(0UL, allowance.Used);
-    }
-
-    [Fact]
-    public void WorkRefusalCannotPublishProvedFailure()
-    {
-        var denied = false; var admitted = false;
-        for (ulong work = 1; work < 30; work++)
-        {
-            var regex = new Utf8PythonRegex("a++a", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = Policy with
-                {
-                    MaxWorkSteps = work
-                }
-            });
-            try { Assert.False(regex.Match("aaaa"u8, mode: Utf8PythonMatchMode.Search).Success); admitted = true; break; }
-            catch (Utf8ResourceLimitExceededException error)
-            { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); denied = true; }
-        }
-        Assert.True(denied); Assert.True(admitted);
     }
 
     [Theory]

@@ -23,18 +23,18 @@ internal readonly partial struct PreparedMultiLiteralTrieSearch
             var shortestLength = int.MaxValue;
             for (var order = 0; order < literals.Length; order++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var literal = literals[order];
                 shortestLength = Math.Min(shortestLength, literal.Length);
                 var nodeIndex = 0;
                 foreach (var key in literal)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     var parent = nodes[nodeIndex];
                     var edgeIndex = parent.FirstEdge;
                     while (edgeIndex >= 0)
                     {
-                        budget.ChargeWork(1);
+                        budget.Checkpoint();
                         if (edges[edgeIndex].Key == key) break;
                         edgeIndex = edges[edgeIndex].Next;
                     }
@@ -48,30 +48,30 @@ internal readonly partial struct PreparedMultiLiteralTrieSearch
                     }
                     nodeIndex = edges[edgeIndex].Child;
                 }
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var terminal = nodes[nodeIndex];
                 if (terminal.TerminalOrder < 0 || order < terminal.TerminalOrder)
                     nodes[nodeIndex] = terminal with { TerminalOrder = order, TerminalLength = literal.Length };
             }
 
             var flattened = budget.AllocateArray<PreparedMultiLiteralTrieNode>(nodes.Count, false);
-            budget.ChargeWork(256);
+            budget.Checkpoint();
             Span<ConstructionChild> ordered = stackalloc ConstructionChild[256];
             for (var index = 0; index < nodes.Count; index++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var node = nodes[index];
                 var keys = budget.AllocateArray<byte>(node.EdgeCount, false);
                 var children = budget.AllocateArray<int>(node.EdgeCount, false);
                 var count = 0;
                 for (var edgeIndex = node.FirstEdge; edgeIndex >= 0; edgeIndex = edges[edgeIndex].Next)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     var edge = edges[edgeIndex];
                     ordered[count++] = new(edge.Key, edge.Child);
                 }
                 Utf8ConstructionSort.Sort(ordered[..count], static (left, right) => left.Key.CompareTo(right.Key), budget);
-                budget.ChargeWork((ulong)count);
+                budget.Checkpoint();
                 for (var child = 0; child < count; child++)
                 {
                     keys[child] = ordered[child].Key;
@@ -82,7 +82,7 @@ internal readonly partial struct PreparedMultiLiteralTrieSearch
 
             var root = flattened[0];
             var rootMap = budget.AllocateArray<int>(256, false);
-            budget.ChargeWork(256 + (ulong)root.Keys.Length);
+            budget.Checkpoint();
             Array.Fill(rootMap, -1);
             for (var index = 0; index < root.Keys.Length; index++) rootMap[root.Keys[index]] = root.Children[index];
             var result = new PreparedMultiLiteralTrieSearch(PreparedByteSearch.Create(root.Keys), rootMap, flattened, shortestLength);

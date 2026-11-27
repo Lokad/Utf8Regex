@@ -64,7 +64,7 @@ internal struct PythonReScalarMatchState
             Checkpoint();
             if (program.RejectsByFinalAscii(input))
             {
-                if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+                if (_invocation.CheckInput() != Utf8ExecutionLimitKind.None) throw ResourceFailure();
                 _finished = true;
                 return;
             }
@@ -196,7 +196,7 @@ internal struct PythonReScalarMatchState
 
     internal void Checkpoint()
     {
-        if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
+        if (_invocation.CheckInput() != Utf8ExecutionLimitKind.None)
             throw ResourceFailure();
         _invocation.Budget.ThrowIfCancellationRequested();
     }
@@ -225,7 +225,7 @@ internal struct PythonReScalarMatchState
         {
             // Inspect existing bounded program storage without retaining another
             // descriptor. Major matching work remains in the original verifier.
-            if ((index & 255) == 0 && invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
+            if ((index & 255) == 0 && invocation.CheckInput() != Utf8ExecutionLimitKind.None)
                 throw invocation.Budget.CreateResourceFailure();
             var atom = code[index];
             if (atom.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
@@ -587,7 +587,7 @@ internal struct PythonReScalarMatchState
             if (_leadingAsciiLow < 0) return true;
             while (_position < input.Length)
             {
-                if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+                if (_invocation.CheckInput() != Utf8ExecutionLimitKind.None) throw ResourceFailure();
                 var length = Math.Min(2048, input.Length - _position);
                 var block = input.Slice(_position, length);
                 // Scan only bytes considered by this candidate search.

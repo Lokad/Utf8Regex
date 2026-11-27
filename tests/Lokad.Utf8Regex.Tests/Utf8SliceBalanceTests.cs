@@ -21,7 +21,7 @@ public sealed class Utf8SliceBalanceTests
         Assert.Equal(1, new Regex(pattern).Count(text));
         using var regex = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 85000, MaxWorkingBytes = 32768, MaxDepth = 128 }
+            ResourcePolicy = new() { MaxWorkingBytes = 32768, MaxDepth = 128 }
         });
         using var token = new CancellationTokenSource();
         Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes(text), token.Token));
@@ -53,7 +53,7 @@ public sealed class Utf8SliceBalanceTests
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkingBytes = 32768, MaxDepth = 128, MaxWorkSteps = 66000 }
+            ResourcePolicy = new() { MaxWorkingBytes = 32768, MaxDepth = 128 }
         });
         var expected = new Regex(pattern, RegexOptions.Compiled).Match(text);
         Assert.Equal(closed, expected.Success);
@@ -72,7 +72,7 @@ public sealed class Utf8SliceBalanceTests
         Assert.True(expected.Success);
         using var regex = Utf8Regex.Compile(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1000 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var input = Encoding.UTF8.GetBytes(text);
         using var token = new CancellationTokenSource();
@@ -106,7 +106,6 @@ public sealed class Utf8SliceBalanceTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 128,
                     MaxWorkingBytes = 1000000,
                     MaxResultBytes = 1000000

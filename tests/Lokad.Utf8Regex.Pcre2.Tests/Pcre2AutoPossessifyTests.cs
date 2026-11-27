@@ -39,7 +39,7 @@ public sealed class Pcre2AutoPossessifyTests
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout,
-            ResourcePolicy = controlled ? new() { MaxWorkSteps = 16_384, MaxDepth = 64, MaxWorkingBytes = 64 * 1024 } : new()
+            ResourcePolicy = controlled ? new() { MaxDepth = 64, MaxWorkingBytes = 64 * 1024 } : new()
         });
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         var expected = oracle.Match(inputText);
@@ -92,7 +92,7 @@ public sealed class Pcre2AutoPossessifyTests
         const string pattern = @"(\d{4}[- ]){3}(\d{3,4})";
         using var regex = new Utf8Pcre2Regex(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256, MaxWorkingBytes = 768 }
+            ResourcePolicy = new() { MaxWorkingBytes = 768 }
         });
         using var source = new CancellationTokenSource();
         var options = Pcre2MatchOptions.Anchored | Pcre2MatchOptions.EndAnchored | Pcre2MatchOptions.NotEmptyAtStart;
@@ -144,7 +144,7 @@ public sealed class Pcre2AutoPossessifyTests
     {
         using var regex = new Utf8Pcre2Regex(@"\A(?P<run>[a-z]+)[Z!]\z", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 2, MaxWorkingBytes = 1024 }
+            ResourcePolicy = new() { MaxDepth = 2, MaxWorkingBytes = 1024 }
         });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
         Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyClassRepeat);
@@ -165,7 +165,7 @@ public sealed class Pcre2AutoPossessifyTests
         using var regex = new Utf8Pcre2Regex(@"\A(?P<run>[a-z]+)[Z!]\z", policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromSeconds(10),
-            ResourcePolicy = new() { MaxWorkSteps = 512, MaxDepth = 2, MaxWorkingBytes = 1024 }
+            ResourcePolicy = new() { MaxDepth = 2, MaxWorkingBytes = 1024 }
         });
         var input = new byte[256 * 1024 + 1];
         input.AsSpan(0, input.Length - 1).Fill((byte)'a');
@@ -186,7 +186,7 @@ public sealed class Pcre2AutoPossessifyTests
     {
         using var regex = new Utf8Pcre2Regex(@"\A(?P<run>[a-z😀]+)[a-z]!\z", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 64, MaxDepth = 1, MaxWorkingBytes = 128 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 128 }
         });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch).Program;
         Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyClassRepeat);
@@ -201,7 +201,7 @@ public sealed class Pcre2AutoPossessifyTests
     {
         using var regex = new Utf8Pcre2Regex(@"\A(?P<run>[a😀]+)a{8}!\z", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 512, MaxDepth = 2, MaxWorkingBytes = 1024 }
+            ResourcePolicy = new() { MaxDepth = 2, MaxWorkingBytes = 1024 }
         });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
         Assert.Equal(0, program.RepeatCount);
@@ -222,7 +222,7 @@ public sealed class Pcre2AutoPossessifyTests
         const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
         using var regex = new Utf8Pcre2Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 8, MaxWorkingBytes = 768 }
+            ResourcePolicy = new() { MaxDepth = 8, MaxWorkingBytes = 768 }
         });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch).Program;
         Assert.Equal(0, program.RepeatCount);
@@ -261,7 +261,6 @@ public sealed class Pcre2AutoPossessifyTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100_000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1
             },
@@ -285,7 +284,7 @@ public sealed class Pcre2AutoPossessifyTests
     {
         using var regex = new Utf8Pcre2Regex(pattern, options: options, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 64, MaxDepth = 32, MaxWorkingBytes = commits ? 128UL : 4096UL }
+            ResourcePolicy = new() { MaxDepth = 32, MaxWorkingBytes = commits ? 128UL : 4096UL }
         });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
         Assert.Equal(commits ? 1 : 0, program.AutoPossessiveRepeatCount);
@@ -305,7 +304,7 @@ public sealed class Pcre2AutoPossessifyTests
     public void TerminalDigitRunsPreserveFinalLfAndUnicodeMode(Pcre2CompileOptions options, string input, int end)
     {
         using var regex = new Utf8Pcre2Regex(@"^[-+]?\d*\.?\d*$", options: options,
-            policy: new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkSteps = 100_000 } });
+            policy: new Utf8RegexPolicy { ResourcePolicy = new() { MaxDepth = 4096 } });
         var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
         Assert.Equal(0, direct.Program.RepeatCount);
 
@@ -339,7 +338,7 @@ public sealed class Pcre2AutoPossessifyTests
     {
         using var regex = new Utf8Pcre2Regex(@"\b\d+\b", options: options, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 1, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         var match = regex.Match(Encoding.UTF8.GetBytes(input));
         Assert.Equal(expected.Length != 0, match.Success);

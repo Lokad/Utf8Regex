@@ -67,10 +67,10 @@ internal static partial class Utf8SearchExecutor
             ArgumentOutOfRangeException.ThrowIfNegative(start);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(end, input.Length);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var relative = search.IndexOf(input[start..end]);
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach == Utf8ExecutionLimitKind.None && relative >= 0) candidate = start + relative;
             return breach;
@@ -91,7 +91,7 @@ internal static partial class Utf8SearchExecutor
             var verified = prefixLength == discriminator.Offset ? prefixLength + 1 : prefixLength;
             for (var low = start; low < end;)
             {
-                var breach = invocation.TryChargeInputStep();
+                var breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var starts = Math.Min(2049 - prefixLength, end - low);
                 var block = input.Slice(low, Math.Min(starts + prefixLength - 1, end - low));
@@ -110,7 +110,7 @@ internal static partial class Utf8SearchExecutor
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     if (equal)
                     {
-                        breach = invocation.TryChargeInputStep();
+                        breach = invocation.CheckInput();
                         invocation.Budget.ThrowIfCancellationRequested();
                         if (breach == Utf8ExecutionLimitKind.None) candidate = at;
                         return breach;
@@ -118,7 +118,7 @@ internal static partial class Utf8SearchExecutor
                 }
                 low = at + 1;
             }
-            var completion = invocation.TryChargeInputStep();
+            var completion = invocation.CheckInput();
             invocation.Budget.ThrowIfCancellationRequested();
             return completion;
         }
@@ -164,7 +164,7 @@ internal static partial class Utf8SearchExecutor
             // entry check before reading the subject window.
             if (!confirmBoundaries)
             {
-                var eligibility = invocation.TryChargeInputStep();
+                var eligibility = invocation.CheckInput();
                 if (eligibility != Utf8ExecutionLimitKind.None) return eligibility;
             }
         }
@@ -175,7 +175,7 @@ internal static partial class Utf8SearchExecutor
             {
                 if (!confirmBoundaries)
                 {
-                    var eligibility = invocation.TryChargeInputStep();
+                    var eligibility = invocation.CheckInput();
                     if (eligibility != Utf8ExecutionLimitKind.None) return eligibility;
                 }
                 if (literal.Length is 0 or > 1024)
@@ -231,7 +231,7 @@ internal static partial class Utf8SearchExecutor
                 // The same checked search used by ordinary execution runs
                 // wholly inside this admitted window. Charge the combined
                 // primitive once; original authority also gates publication.
-                var breach = invocation.TryChargeInputStep();
+                var breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 if (sharedEndpoints)
                 {
@@ -266,7 +266,7 @@ internal static partial class Utf8SearchExecutor
             }
             if (firstUnsearched < starts) for (var id = 0; id < literals.Length; id++)
             {
-                var breach = invocation.TryChargeInputStep();
+                var breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var literal = literals[id];
                 // A later needle must start strictly before the current
@@ -297,7 +297,7 @@ internal static partial class Utf8SearchExecutor
                             ref invocation, out match, out found);
                     }
                 }
-                var publication = invocation.TryChargeInputStep();
+                var publication = invocation.CheckInput();
                 invocation.Budget.ThrowIfCancellationRequested();
                 if (publication != Utf8ExecutionLimitKind.None) return publication;
                 match = new PreparedSearchMatch(index, length, ordinal);
@@ -307,7 +307,7 @@ internal static partial class Utf8SearchExecutor
             }
             low += starts;
         }
-        var completion = invocation.TryChargeInputStep();
+        var completion = invocation.CheckInput();
         invocation.Budget.ThrowIfCancellationRequested();
         return completion;
     }
@@ -325,7 +325,7 @@ internal static partial class Utf8SearchExecutor
         ArgumentOutOfRangeException.ThrowIfGreaterThan(end, input.Length);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
         // The first window and the final outcome each check the deadline.
-        var breach = invocation.TryChargeBoundedCheck();
+        var breach = invocation.CheckBoundedProgress();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         var candidateBoundary = confirm && !reverse ? leadingBoundary : Utf8BoundaryRequirement.None;
         var matchBoundary = reverse ? leadingBoundary : Utf8BoundaryRequirement.None;
@@ -346,12 +346,12 @@ internal static partial class Utf8SearchExecutor
             {
                 var count = wholeSpan ? end - low : Math.Min(2048 - lookahead, end - low);
                 var length = wholeSpan ? count : Math.Min(count + lookahead, end - low);
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var relative = IndexOfShortExactPair(input.Slice(low, length), count, literals[0], literals[1], out var id);
                 if (relative >= 0)
                 {
-                    breach = invocation.TryChargeInputStep();
+                    breach = invocation.CheckInput();
                     invocation.Budget.ThrowIfCancellationRequested();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     match = new PreparedSearchMatch(low + relative, literals[id].Length, id);
@@ -378,7 +378,7 @@ internal static partial class Utf8SearchExecutor
                 {
                     // False candidates resume within the same admitted window.
                     // Each seek still charges work and checks cancellation.
-                    breach = reusesWindow ? invocation.TryChargeBoundedCheck() : invocation.TryChargeInputStep();
+                    breach = reusesWindow ? invocation.CheckBoundedProgress() : invocation.CheckInput();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     admittedEnd = low + count;
                     // Borrow the prepared union instead of rescanning this
@@ -390,7 +390,7 @@ internal static partial class Utf8SearchExecutor
                         var at = admittedEnd - block.Length + relative;
                         if (candidateBoundary != Utf8BoundaryRequirement.None)
                         {
-                            breach = invocation.TryChargeBoundedCheck();
+                            breach = invocation.CheckBoundedProgress();
                             if (breach != Utf8ExecutionLimitKind.None) return breach;
                             if (!Utf8ScalarWordBoundary.MatchesRequirement(candidateBoundary, input, at))
                             {
@@ -398,7 +398,7 @@ internal static partial class Utf8SearchExecutor
                                 // work and interruption check for each seek.
                                 block = block[(relative + 1)..];
                                 if (block.IsEmpty) break;
-                                breach = invocation.TryChargeBoundedCheck();
+                                breach = invocation.CheckBoundedProgress();
                                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                                 continue;
                             }
@@ -419,13 +419,13 @@ internal static partial class Utf8SearchExecutor
                         var longest = Math.Max(literals[0].Length, literals[1].Length);
                         count = Math.Min(2049 - longest, high - low + 1);
                         var pairBlock = input.Slice(blockStart, Math.Min(count + longest - 1, end - blockStart));
-                        breach = invocation.TryChargeInputStep();
+                        breach = invocation.CheckInput();
                         if (breach != Utf8ExecutionLimitKind.None) return breach;
                         var relative = pairBlock.IndexOf(literals[0]);
                         if (relative >= count) relative = -1;
                         if (relative != 0)
                         {
-                            breach = invocation.TryChargeInputStep();
+                            breach = invocation.CheckInput();
                             if (breach != Utf8ExecutionLimitKind.None) return breach;
                             // Only an earlier start can beat the first branch.
                             // Include that last start's complete second needle;
@@ -440,7 +440,7 @@ internal static partial class Utf8SearchExecutor
                     else
                     {
                         // Long comparisons retain their original split checkpoints.
-                        breach = invocation.TryChargeInputStep();
+                        breach = invocation.CheckInput();
                         if (breach != Utf8ExecutionLimitKind.None) return breach;
                         var relative = block.IndexOfAny(literals[0][0], literals[1][0]);
                         if (relative >= 0) candidateByte = blockStart + relative;
@@ -450,7 +450,7 @@ internal static partial class Utf8SearchExecutor
                 {
                     for (var id = 0; id < literals.Length; id++)
                     {
-                        breach = invocation.TryChargeInputStep();
+                        breach = invocation.CheckInput();
                         if (breach != Utf8ExecutionLimitKind.None) return breach;
                         var literal = literals[id];
                         if (literal.Length == 0)
@@ -476,7 +476,7 @@ internal static partial class Utf8SearchExecutor
                 {
                     // Forward candidates are UTF-8 lead bytes. Every branch at
                     // this start has the same leading boundary requirement.
-                    breach = invocation.TryChargeBoundedCheck();
+                    breach = invocation.CheckBoundedProgress();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     if (!Utf8ScalarWordBoundary.MatchesRequirement(candidateBoundary, input, candidateByte))
                     {
@@ -492,7 +492,7 @@ internal static partial class Utf8SearchExecutor
                     // The charged candidate search also covers up to eight
                     // exact head checks. Matching heads keep branch admission.
                     if (boundedExactHeads && head != literal[0]) continue;
-                    breach = invocation.TryChargeBoundedCheck();
+                    breach = invocation.CheckBoundedProgress();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     var candidate = reverse && confirm ? candidateByte + 1 - literal.Length : candidateByte;
                     if (candidate < start || candidate > end - literal.Length) continue;
@@ -500,9 +500,9 @@ internal static partial class Utf8SearchExecutor
                     var candidateBytes = input.Slice(candidate, literal.Length);
                     if (boundedExactHeads && literal.Length <= 32)
                     {
-                        // One work step covers this bounded probe. The next
+                        // This checkpoint covers one bounded probe. The next
                         // window or outcome checks the clock directly.
-                        breach = invocation.TryChargeBoundedCheck();
+                        breach = invocation.CheckBoundedProgress();
                         if (breach != Utf8ExecutionLimitKind.None) return breach;
                         if (!candidateBytes.SequenceEqual(literal)) continue;
                     }
@@ -520,7 +520,7 @@ internal static partial class Utf8SearchExecutor
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     if (accepted)
                     {
-                        breach = invocation.TryChargeInputStep();
+                        breach = invocation.CheckInput();
                         if (breach != Utf8ExecutionLimitKind.None) return breach;
                         invocation.Budget.ThrowIfCancellationRequested();
                         match = new PreparedSearchMatch(candidate, literal.Length, id);
@@ -533,7 +533,7 @@ internal static partial class Utf8SearchExecutor
                 else low = candidateByte + 1;
             }
         }
-        breach = invocation.TryChargeInputStep();
+        breach = invocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         invocation.Budget.ThrowIfCancellationRequested();
         return Utf8ExecutionLimitKind.None;

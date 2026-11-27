@@ -15,7 +15,7 @@ internal static class PythonReScalarNodeFactory
     {
         for (var index = 1; index < children.Length; index++)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (children[index - 1] is not Utf8SliceNode.AtomicNode atomic ||
                 children[index] is not Utf8SliceNode.LiteralNode { FoldCase: false } next ||
                 GetAtomicLiteralTail(atomic.Body) is not { Lazy: false,
@@ -41,7 +41,7 @@ internal static class PythonReScalarNodeFactory
         // The prefix must have one endpoint and no effects or alternatives.
         foreach (var prefix in sequence.Children.AsSpan(0, sequence.Children.Length - 1))
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (prefix is not Utf8SliceNode.LiteralNode { FoldCase: false }) return null;
         }
         return tail;

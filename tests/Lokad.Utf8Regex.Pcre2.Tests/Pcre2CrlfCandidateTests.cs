@@ -134,7 +134,6 @@ public sealed class Pcre2CrlfCandidateTests
     {
         ResourcePolicy = finite ? new()
         {
-            MaxWorkSteps = 1_000_000,
             MaxDepth = 1024,
             MaxWorkingBytes = 16 << 20,
             MaxResultBytes = 16 << 20,

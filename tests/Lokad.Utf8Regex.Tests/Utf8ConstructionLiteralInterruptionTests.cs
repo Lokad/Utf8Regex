@@ -11,6 +11,7 @@ public sealed class Utf8ConstructionLiteralInterruptionTests
     [InlineData(true, false)] [InlineData(true, true)]
     public void LiteralPassesObserveOriginalInterruptionAndReleaseOnlyTheirCapacity(bool encoding, bool timeout)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var input = new string('a', 2047) + "😀" + new string('é', 3000);
         using var owner = Utf8ConstructionScope.Enter();
         var parent = owner.Budget.AllocateArray<byte>(1, false);
@@ -22,7 +23,7 @@ public sealed class Utf8ConstructionLiteralInterruptionTests
         owner.Budget.Deadline = deadline;
         owner.Budget.CancellationToken = cancellation.Token;
         var reads = 0;
-        owner.Budget.CheckpointHook = _ =>
+        owner.Budget.CheckpointHook = () =>
         {
             if (++reads != (encoding ? 6 : 3)) return;
             if (timeout) ticks = 25; else cancellation.Cancel();
@@ -33,17 +34,16 @@ public sealed class Utf8ConstructionLiteralInterruptionTests
         else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         Assert.Same(deadline, owner.Budget.Deadline);
         Assert.Equal(held, owner.Budget.ReservedBytes);
-        Assert.True(owner.Budget.WorkSteps >= (ulong)input.Length);
         if (encoding) Assert.True(owner.Budget.PeakBytes > held);
         else Assert.Equal(held, owner.Budget.PeakBytes); // Refuse before byte acquisition.
 
         owner.Budget.CheckpointHook = null;
         owner.Budget.Deadline = Utf8ExecutionDeadline.Infinite;
         owner.Budget.CancellationToken = default;
-        var spent = owner.Budget.WorkSteps;
+        var spent = owner.Budget.DiagnosticCheckpoints;
         var recovered = owner.Budget.EncodeUtf8(input);
         Assert.Equal(input, Encoding.UTF8.GetString(recovered));
-        Assert.True(owner.Budget.WorkSteps > spent);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > spent);
         owner.Budget.ReleaseArray(recovered, false);
         Assert.Equal(held, owner.Budget.ReservedBytes);
         owner.Budget.ReleaseArray(parent, false);
@@ -52,13 +52,12 @@ public sealed class Utf8ConstructionLiteralInterruptionTests
     [Theory]
     [InlineData(0)] [InlineData(2046)] [InlineData(2047)]
     [InlineData(2048)] [InlineData(4095)]
-    public void ChunkBoundariesPreserveScalarsAndSuccessfulWork(int prefixLength)
+    public void ChunkBoundariesPreserveEncodedScalarsAndCapacity(int prefixLength)
     {
         var input = new string('a', prefixLength) + "😀é" + new string('b', 2050);
         using var owner = Utf8ConstructionScope.Enter();
         var encoded = owner.Budget.EncodeUtf8(input);
         Assert.Equal(Encoding.UTF8.GetBytes(input), encoded);
-        Assert.Equal(2UL * ((ulong)input.Length + (ulong)encoded.Length), owner.Budget.WorkSteps);
         Assert.Equal(Utf8ConstructionBudget.ArrayBytes<byte>(encoded.Length), owner.Budget.ReservedBytes);
     }
 
@@ -76,7 +75,7 @@ public sealed class Utf8ConstructionLiteralInterruptionTests
     {
         using var owner = Utf8ConstructionScope.Enter();
         var checkpoints = 0;
-        owner.Budget.CheckpointHook = _ => checkpoints++;
+        owner.Budget.CheckpointHook = () => checkpoints++;
         _ = owner.Budget.EncodeUtf8(new string('a', length));
         Assert.Equal(3, checkpoints);
     }

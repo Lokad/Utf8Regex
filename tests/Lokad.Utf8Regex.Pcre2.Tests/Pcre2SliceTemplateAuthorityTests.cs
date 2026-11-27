@@ -16,7 +16,7 @@ public sealed class Pcre2SliceTemplateAuthorityTests
     {
         var input = new byte[1024]; input.AsSpan().Fill(42);
         var extent = Utf8ConstructionBudget.ArrayBytes<byte>(input.Length);
-        var invocation = new Utf8SliceInvocation(new(0, 0, extent + 7 - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var invocation = new Utf8SliceInvocation(new(0, extent + 7 - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.None, new Utf8InvocationBufferControl(ref invocation).TryReserveWorking(7));
         if (allow)
         {
@@ -35,9 +35,9 @@ public sealed class Pcre2SliceTemplateAuthorityTests
     public void LargeUnchangedRootIsDeniedBeforeAcquisition()
     {
         var input = new byte[1000000];
-        var warm = new Utf8SliceInvocation(new(0, 0, 4096), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var warm = new Utf8SliceInvocation(new(0, 4096), Regex.InfiniteMatchTimeout, CancellationToken.None);
         try { _ = Pcre2ReplacementTemplateWriter.CopyUnchanged(input, ref warm); } catch (Pcre2MatchException) { }
-        var invocation = new Utf8SliceInvocation(new(0, 0, 4096), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var invocation = new Utf8SliceInvocation(new(0, 4096), Regex.InfiniteMatchTimeout, CancellationToken.None);
         var before = GC.GetAllocatedBytesForCurrentThread();
         Pcre2MatchException? failure = null;
         try { _ = Pcre2ReplacementTemplateWriter.CopyUnchanged(input, ref invocation); }
@@ -52,7 +52,7 @@ public sealed class Pcre2SliceTemplateAuthorityTests
     public void BorrowedWriterSharesHeapOverlapAndReleasesOnlyItsOwnLoans()
     {
         var extent = Utf8ConstructionBudget.ArrayBytes<byte>(2);
-        var invocation = new Utf8SliceInvocation(new(0, 0, 2 * extent + 7), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var invocation = new Utf8SliceInvocation(new(0, 2 * extent + 7), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.None, new Utf8InvocationBufferControl(ref invocation).TryReserveWorking(7));
         var writer = new Pcre2ReplacementTemplateWriter("ab"u8, [], invocation);
         byte[] result;
@@ -71,21 +71,19 @@ public sealed class Pcre2SliceTemplateAuthorityTests
     [Fact]
     public void BorrowedWorkCannotResetAtWriterCreationOrInsideCopying()
     {
-        var spent = new Utf8SliceInvocation(new(6, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-        for (var i = 0; i < 6; i++) Assert.Equal(Utf8ExecutionLimitKind.None, spent.TryChargeInputStep());
+        var spent = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        for (var i = 0; i < 6; i++) Assert.Equal(Utf8ExecutionLimitKind.None, spent.CheckInput());
         Pcre2MatchException? failure = null;
         try { var denied = new Pcre2ReplacementTemplateWriter("ab"u8, [], spent); denied.Release(); }
         catch (Pcre2MatchException error) { failure = error; }
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        Assert.Equal(7UL, spent.Budget.Steps); Assert.Equal(0UL, spent.Ledger.ReservedBytes);
-        var partial = new Utf8SliceInvocation(new(3, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+Assert.Equal(0UL, spent.Ledger.ReservedBytes);
+        var partial = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
         var writer = new Pcre2ReplacementTemplateWriter(new byte[8192], [], partial);
         failure = null;
         try { writer.AppendGap(0, 8192); }
         catch (Pcre2MatchException error) { failure = error; }
         finally { writer.Release(); }
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        Assert.Equal(4UL, partial.Budget.Steps); Assert.Equal(0UL, partial.Ledger.ReservedBytes);
+Assert.Equal(0UL, partial.Ledger.ReservedBytes);
     }
 
     [Theory]
@@ -129,7 +127,7 @@ public sealed class Pcre2SliceTemplateAuthorityTests
     public void OriginalCancellationPrecedesCloneHeapDenial()
     {
         using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(0, 0, 1), Regex.InfiniteMatchTimeout, source.Token);
+        var invocation = new Utf8SliceInvocation(new(0, 1), Regex.InfiniteMatchTimeout, source.Token);
         source.Cancel();
         var failure = Assert.Throws<OperationCanceledException>(() => Pcre2ReplacementTemplateWriter.CopyUnchanged(new byte[10000], ref invocation));
         Assert.Equal(source.Token, failure.CancellationToken);
@@ -142,7 +140,6 @@ public sealed class Pcre2SliceTemplateAuthorityTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                 MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                 MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                 MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
@@ -169,7 +166,7 @@ public sealed class Pcre2SliceTemplateAuthorityTests
         using var source = new CancellationTokenSource();
         foreach (var token in new[] { CancellationToken.None, source.Token })
         {
-            var regex = Create(new() { MatchLimit = 1000000, HeapLimitInBytes = 1000000 }, pattern: pattern);
+            var regex = Create(new() { HeapLimitInBytes = 1000000 }, pattern: pattern);
             var bytes = Encoding.UTF8.GetBytes(input);
             var result = regex.Replace(bytes, Encoding.UTF8.GetBytes(template), start, options, Pcre2MatchOptions.None, token);
             var expectedBytes = Encoding.UTF8.GetBytes(expected);
@@ -183,15 +180,14 @@ public sealed class Pcre2SliceTemplateAuthorityTests
 
     public static IEnumerable<object[]> Cutoffs()
     {
-        foreach (var working in new[] { false, true })
         foreach (var hit in new[] { false, true })
         foreach (var liveToken in new[] { false, true })
-            yield return [working, hit, liveToken];
+            yield return [hit, liveToken];
     }
 
     [Theory]
     [MemberData(nameof(Cutoffs))]
-    public void PublicWorkAndHeapCutoffsIncludeFinalByteOutput(bool working, bool hit, bool liveToken)
+    public void PublicHeapCutoffsIncludeFinalByteOutput(bool hit, bool liveToken)
     {
         using var source = new CancellationTokenSource();
         var token = liveToken ? source.Token : CancellationToken.None;
@@ -201,15 +197,15 @@ public sealed class Pcre2SliceTemplateAuthorityTests
         var expected = hit ? literal + "😀" + literal + "😀" : Encoding.UTF8.GetString(input);
         string Invoke(ulong cap)
         {
-            var regex = Create(new() { MatchLimit = working ? 0 : (uint)cap, HeapLimitInBytes = working ? cap : 0 });
+            var regex = Create(new() { HeapLimitInBytes = cap });
             try
             {
                 return Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template), 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token));
             }
             finally { Assert.False(Pcre2ReplacementPreparationControl.IsActive); }
         }
-        var kind = working ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.MatchLimit;
-        Assert.Equal(expected, Invoke(working ? ulong.MaxValue : uint.MaxValue));
+        var kind = Pcre2ErrorKind.HeapLimit;
+        Assert.Equal(expected, Invoke(ulong.MaxValue));
         Assert.Equal(kind, Assert.Throws<Pcre2MatchException>(() => Invoke(1)).ErrorKind);
         ulong first = 1, last = 1UL << 20;
         while (first < last)

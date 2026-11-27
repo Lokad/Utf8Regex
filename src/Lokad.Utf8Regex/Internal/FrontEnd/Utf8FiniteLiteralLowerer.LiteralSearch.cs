@@ -11,12 +11,12 @@ internal static partial class Utf8FiniteLiteralLowerer
         var owner = construction.Budget; owner.EnterDepth();
         try
         {
-            owner.ChargeWork(1);
+            owner.Checkpoint();
             if (branches.Length == 0) return false;
             using var expanded = Utf8ConstructionBuffer<byte[]>.Create(owner);
             foreach (var branch in branches)
             {
-                owner.ChargeWork(1);
+                owner.Checkpoint();
                 if (!TryExpandLiteralBranch(branch, ignoreCase, out var values) ||
                     expanded.Count + values.Length > MaxExpandedBranches) return false;
                 // Mutate only the parent's vector, after the speculative child
@@ -40,13 +40,13 @@ internal static partial class Utf8FiniteLiteralLowerer
             current.Add([]);
             for (var index = 0; index < tokens.Length; index++)
             {
-                owner.ChargeWork(1);
+                owner.Checkpoint();
                 var token = tokens[index];
                 if (token.Kind == AsciiPatternTokenKind.Literal)
                 {
                     var end = index + 1;
                     while (end < tokens.Length && tokens[end].Kind == AsciiPatternTokenKind.Literal)
-                    { owner.ChargeWork(1); end++; }
+                    { owner.Checkpoint(); end++; }
                     if (end == index + 1) AppendLiteralByte(current, token.Literal);
                     else AppendLiteralRun(current, tokens[index..end]);
                     index = end - 1;
@@ -63,16 +63,16 @@ internal static partial class Utf8FiniteLiteralLowerer
                 using var expanded = Utf8ConstructionBuffer<byte[]>.Create(owner);
                 foreach (var prefix in current)
                 {
-                    owner.ChargeWork(1);
+                    owner.Checkpoint();
                     foreach (var value in literalBytes)
                     {
-                        owner.ChargeWork(1);
+                        owner.Checkpoint();
                         var next = owner.AllocateArray<byte>(checked(prefix.Length + 1), false);
-                        owner.ChargeWork((ulong)prefix.Length + 1);
+                        owner.Checkpoint();
                         prefix.CopyTo(next, 0); next[^1] = value; expanded.Add(next);
                     }
                 }
-                foreach (var prefix in current) { Utf8ConstructionScope.ChargeWork(1); owner.ReleaseArray(prefix, false); }
+                foreach (var prefix in current) { Utf8ConstructionScope.Checkpoint(); owner.ReleaseArray(prefix, false); }
                 current.Clear(); current.AddRange(expanded.Span); owner.ReleaseArray(literalBytes, false);
             }
             literals = current.Take(); construction.Complete(); return true;
@@ -85,10 +85,10 @@ internal static partial class Utf8FiniteLiteralLowerer
         var owner = Utf8ConstructionScope.CurrentBudget;
         for (var index = 0; index < literals.Count; index++)
         {
-            owner.ChargeWork(1);
+            owner.Checkpoint();
             var previous = literals[index];
             var next = owner.AllocateArray<byte>(checked(previous.Length + 1), false);
-            owner.ChargeWork((ulong)previous.Length + 1);
+            owner.Checkpoint();
             previous.CopyTo(next, 0); next[^1] = value; literals[index] = next;
             owner.ReleaseArray(previous, false);
         }
@@ -99,26 +99,26 @@ internal static partial class Utf8FiniteLiteralLowerer
         var owner = Utf8ConstructionScope.CurrentBudget;
         for (var index = 0; index < literals.Count; index++)
         {
-            owner.ChargeWork(1);
+            owner.Checkpoint();
             var previous = literals[index];
             // Fund the complete append while its old prefix is still held.
             // Adjacent literal tokens need one acquisition, not every prefix.
             var next = owner.AllocateArray<byte>(checked(previous.Length + tokens.Length), false);
-            owner.ChargeWork((ulong)previous.Length + (ulong)tokens.Length);
+            owner.Checkpoint();
             for (var offset = 0; offset < previous.Length;)
             {
-                owner.ChargeWork(0);
+                owner.Checkpoint();
                 var count = Math.Min(2048, previous.Length - offset);
                 previous.AsSpan(offset, count).CopyTo(next.AsSpan(offset, count));
                 offset += count;
             }
             for (var offset = 0; offset < tokens.Length;)
             {
-                owner.ChargeWork(0);
+                owner.Checkpoint();
                 var end = offset + Math.Min(2048, tokens.Length - offset);
                 for (; offset < end; offset++) next[previous.Length + offset] = tokens[offset].Literal;
             }
-            owner.ChargeWork(0);
+            owner.Checkpoint();
             literals[index] = next;
             owner.ReleaseArray(previous, false);
         }
@@ -135,7 +135,7 @@ internal static partial class Utf8FiniteLiteralLowerer
             var found = false;
             for (var value = 0; value < 128; value++)
             {
-                owner.ChargeWork(1);
+                owner.Checkpoint();
                 if (!charClass.Contains((byte)value)) continue;
                 var folded = Internal.Search.AsciiSearch.FoldCase((byte)value);
                 if (found && folded != literal) return false;
@@ -157,7 +157,7 @@ internal static partial class Utf8FiniteLiteralLowerer
             ulong low = 0, high = 0; var count = 0;
             for (var value = 0; value < 128; value++)
             {
-                owner.ChargeWork(1);
+                owner.Checkpoint();
                 if (!charClass.Contains((byte)value)) continue;
                 var folded = ignoreCase ? Internal.Search.AsciiSearch.FoldCase((byte)value) : (byte)value;
                 var bit = 1ul << (folded & 63);
@@ -169,7 +169,7 @@ internal static partial class Utf8FiniteLiteralLowerer
             var result = owner.AllocateArray<byte>(count, false); var position = 0;
             for (var value = 0; value < 128; value++)
             {
-                owner.ChargeWork(1);
+                owner.Checkpoint();
                 if (((value < 64 ? low : high) & (1ul << (value & 63))) != 0) result[position++] = (byte)value;
             }
             literals = result; construction.Complete(); return true;
@@ -181,10 +181,10 @@ internal static partial class Utf8FiniteLiteralLowerer
     {
         foreach (var tokens in branches)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             for (var i = 0; i < tokens.Length; i++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 var token = tokens[i];
                 switch (token.Kind)
                 {

@@ -14,14 +14,15 @@ public sealed class Utf8NativeLiteralInvocationTests
     [InlineData(false)] [InlineData(true)]
     public void UnconstrainedCandidateRetainsOriginalTerminalAuthority(bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 1024),
+        var invocation = new Utf8SliceInvocation(new(0, 1024),
             expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
-        while (invocation.Budget.Steps < 62)
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+        while (invocation.Budget.DiagnosticCheckpoints < 62)
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckInput());
         var entered = false;
         invocation.CheckpointHook = step =>
         {
@@ -88,22 +89,11 @@ public sealed class Utf8NativeLiteralInvocationTests
         var regex = new Utf8Regex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.CanFindNativeLiteralForResult);
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        var baseline = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(7));
         Assert.True(regex.TryFindNativeLiteralForResult(input, 0, ref baseline, out var found, out var start, out var end));
         Assert.Equal(expectedStart >= 0, found);
         Assert.Equal((expectedStart, expectedEnd), (start, end));
-        for (var cap = 1UL; cap < baseline.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            var denied = false;
-            try { regex.TryFindNativeLiteralForResult(input, 0, ref invocation, out _, out _, out _); }
-            catch (InvalidOperationException) { denied = true; }
-            Assert.True(denied);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.Budget.LimitBreach);
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     private static Utf8SearchPlan Plan(byte[] literal, bool folded, byte[] trailing)
@@ -129,7 +119,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         var text = new string('x', offset) + hit + "xx" + hit;
         var input = Encoding.UTF8.GetBytes(text);
         var plan = Plan(Encoding.UTF8.GetBytes(needle), folded, []);
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var invocation = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
         var expected = reverse ? text.LastIndexOf(hit, StringComparison.Ordinal) : offset;
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteral(plan, input, 0, input.Length,
             reverse, ref invocation, out var index));
@@ -138,34 +128,6 @@ public sealed class Utf8NativeLiteralInvocationTests
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteral(plan, input,
             reverse ? 0 : index + length, reverse ? index : input.Length, reverse, ref invocation, out var next));
         Assert.Equal(reverse ? offset : text.LastIndexOf(hit, StringComparison.Ordinal), next);
-    }
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void EveryWorkCutoffAcrossSuccessiveSearchAndProjectionLeavesNoResultAndKeepsCallerLease(bool reverse)
-    {
-        var regex = new Utf8Regex("target", options: RegexOptions.CultureInvariant);
-        var plan = Prepared(regex);
-        var input = Encoding.UTF8.GetBytes("target" + new string('中', 5000) + "target" + new string('é', 5000) + "target");
-        var baseline = new Utf8OperationMatchCursor(input, plan, reverse, new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None));
-        var hits = 0;
-        while (baseline.TryMoveNextLiteral(out var found) == Utf8ExecutionLimitKind.None && found) hits++;
-        Assert.Equal(3, hits);
-        var total = baseline.DebugInvocationSteps;
-        for (var cap = 1UL; cap < total; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, CancellationToken.None);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            var cursor = new Utf8OperationMatchCursor(input, plan, reverse, invocation);
-            Utf8ExecutionLimitKind breach;
-            bool found;
-            do { breach = cursor.TryMoveNextLiteral(out found); } while (breach == Utf8ExecutionLimitKind.None && found);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, breach);
-            Assert.False(found);
-            Assert.False(cursor.CurrentValueMatch.Success);
-            Assert.Equal(7UL, cursor.DebugInvocationReservedBytes);
-        }
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
     [Theory]
     [InlineData(false, false)]
@@ -178,19 +140,10 @@ public sealed class Utf8NativeLiteralInvocationTests
         var needle = trailingPredicate ? "target"u8.ToArray() : payload;
         var plan = Plan(needle, false, trailingPredicate ? payload : []);
         byte[] input = [.. Enumerable.Repeat((byte)'x', 5000), .. needle, .. (trailingPredicate ? payload : [])];
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var baseline = new Utf8SliceInvocation(new(0, 7), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteral(plan, input, 0, input.Length,
             reverse, ref baseline, out var expected));
         Assert.Equal(5000, expected);
-        for (var cap = 1UL; cap < baseline.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, CancellationToken.None);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8SearchExecutor.TryFindLiteral(plan, input, 0, input.Length,
-                reverse, ref invocation, out var denied));
-            Assert.Equal(-1, denied);
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        }
     }
 
     public static IEnumerable<object[]> InterruptedCases()
@@ -210,7 +163,7 @@ public sealed class Utf8NativeLiteralInvocationTests
             "compare" => new string('a', 320000), "trailing" => "target" + new string('z', 160000), _ => new string('x', 320000) });
         var plan = Plan(literal, false, trailing);
         using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0),
+        var invocation = new Utf8SliceInvocation(new(0, 0),
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         var entered = false;
@@ -222,7 +175,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         Assert.True(entered);
         Assert.Equal(-1, index);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        var recovery = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var recovery = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteral(plan, "target"u8, 0, 6, reverse, ref recovery, out _));
     }
     [Theory]
@@ -237,7 +190,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         var options = RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(text);
-        var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), reverse, new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None));
+        var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), reverse, new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None));
         foreach (Match expected in new Regex(pattern, options).Matches(text))
         {
             Assert.True(cursor.MoveNext());

@@ -25,8 +25,7 @@ public sealed class Utf8RuntimeFamilyAdmissionTests
             .Select(j => (byte)(33 + (i * 7 + j + id) % 90)).ToArray()).ToArray()
     };
     public static IEnumerable<object[]> Families() => Enumerable.Range(0, 27).Select(family => new object[] { family });
-    public static IEnumerable<object[]> Cutoffs() => from family in new[] { 1, 2 }
-        from bytes in new[] { false, true } select new object[] { family, bytes };
+    public static IEnumerable<object[]> Cutoffs() => from family in new[] { 1, 2 } select new object[] { family };
     private static object? Field(object value, string name) => value.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(value);
 
     // Eligibility and unique pairs are semantic; a frequency heuristic is not.
@@ -44,7 +43,7 @@ public sealed class Utf8RuntimeFamilyAdmissionTests
     public void UniquePairsUseOnlyFundedFinalPayloads(int family)
     {
         var values = Family(family);
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
         var pairs = Pairs(values); var accepted = PreparedShortAsciiLiteralFamilyCounter.TryCreate(values, out var counter);
         Assert.Equal(pairs.Length > 0, accepted);
@@ -63,28 +62,27 @@ public sealed class Utf8RuntimeFamilyAdmissionTests
 
     [Theory]
     [MemberData(nameof(Cutoffs))]
-    public void EveryStorageAndWorkCutoffRefundsChildrenPreservesParentsAndKeepsWorkSpent(int family, bool bytes)
+    public void ByteCutoffsPreserveFundedParents(int family)
     {
-        var values = Family(family); ulong peak, work, loan;
-        using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        var values = Family(family); ulong peak, loan;
+        using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue))
         {
             _ = funded.Budget.AllocateObject(17, static value => new Box(value)); Assert.True(PreparedShortAsciiLiteralFamilyCounter.TryCreate(values, out _));
-            peak = funded.Budget.PeakBytes - 128; work = funded.Budget.WorkSteps - 2; loan = funded.Budget.ReservedBytes;
+            peak = funded.Budget.PeakBytes - 128; loan = funded.Budget.ReservedBytes;
         }
         var successes = 0;
-        for (var allowance = 0ul; allowance <= (bytes ? peak : work); allowance++)
+        for (var allowance = 0ul; allowance <= peak; allowance++)
         {
-            using var owner = new Utf8ConstructionScope(0, bytes ? 128 + allowance : ulong.MaxValue, bytes ? ulong.MaxValue : 2 + allowance, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(0, 128 + allowance, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
             var error = Record.Exception(() => Assert.True(PreparedShortAsciiLiteralFamilyCounter.TryCreate(values, out _)));
             if (error is null) { successes++; Assert.Equal(loan, owner.Budget.ReservedBytes); }
             else
             {
-                Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
+                Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes,
                     Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
                 Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             }
-            Assert.InRange(owner.Budget.WorkSteps, 2ul, bytes ? ulong.MaxValue : 2 + allowance);
             Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
         }
         Assert.Equal(1, successes);
@@ -94,7 +92,7 @@ public sealed class Utf8RuntimeFamilyAdmissionTests
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void RootsAndSelectedByteSearchDenyDepthBeforeAcquisition(int depth)
     {
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, (ulong)depth);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         // Four distinct primary values borrow the checked BCL search; only the
         // counter and independent byte-array preparation frames remain.
@@ -112,10 +110,10 @@ public sealed class Utf8RuntimeFamilyAdmissionTests
     [Fact]
     public void EmptyAndOutOfCountFamiliesBorrowAllStateWithoutAnAllowance()
     {
-        using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var owner = new Utf8ConstructionScope(0, 0, 0);
         Assert.False(PreparedShortAsciiLiteralFamilyCounter.TryCreate([], out _));
         Assert.False(PreparedShortAsciiLiteralFamilyCounter.TryCreate(Bytes("abc"), out _));
-        Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
+Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
     }
 
     [Fact]

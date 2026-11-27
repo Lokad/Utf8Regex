@@ -143,7 +143,6 @@ public sealed class Pcre2IntrinsicAnchorProbeTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = bytes
@@ -170,7 +169,6 @@ public sealed class Pcre2IntrinsicAnchorProbeTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 4096
@@ -183,23 +181,6 @@ public sealed class Pcre2IntrinsicAnchorProbeTests
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("xaaab"u8, Pcre2PartialMode.Soft, 1).Kind);
         Assert.Equal("aaab", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
-    }
-
-    [Fact]
-    public void MultilineSearchCannotBypassFiniteWork()
-    {
-        var regex = new Utf8Pcre2Regex("^foo", options: Pcre2CompileOptions.Multiline, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 20
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("x\n", 100)) + "foo");
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = regex.Probe(input, Pcre2PartialMode.Soft); }).ErrorKind);
-        Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("foo"u8, Pcre2PartialMode.Soft).Kind);
     }
 
     [Theory]

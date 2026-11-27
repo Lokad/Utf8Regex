@@ -33,7 +33,7 @@ public sealed partial class Utf8Pcre2Regex
     {
         for (var offset = 0; offset < bytes.Length;)
         {
-            if (offset != 0) budget.ChargeWork(0);
+            if (offset != 0) budget.Checkpoint();
             var count = Utf8SliceBufferWork.Utf8BlockLength(bytes[offset..]);
             Utf8Validation.ThrowIfInvalidOnly(bytes.Slice(offset, count), offset);
             offset += count;

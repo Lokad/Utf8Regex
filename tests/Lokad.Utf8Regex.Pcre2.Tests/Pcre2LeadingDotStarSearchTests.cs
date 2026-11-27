@@ -32,7 +32,7 @@ public sealed class Pcre2LeadingDotStarSearchTests
     public void LeadingDotStarMatchesOverlappingBclGrammarAtValidStarts(string pattern)
     {
         var direct = new Utf8Pcre2Regex(pattern);
-        var vm = CreateMetered(pattern, 1_000_000);
+        var vm = CreateMetered(pattern);
         // An unconstrained dot repeat plus exact suffix has the same Boolean
         // existence over these scalar-aligned subjects in the BCL grammar.
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
@@ -71,41 +71,12 @@ public sealed class Pcre2LeadingDotStarSearchTests
         }
     }
 
-    [Fact]
-    public void LeadingDotStarObservesMatchOptionsAndLimits()
-    {
-        const string Pattern = @".*(ss)";
-        var direct = new Utf8Pcre2Regex(Pattern);
-        var vm = CreateMetered(Pattern, 1_000_000);
-        var input = "x\nEssential services"u8.ToArray();
-
-        foreach (var options in new[]
-                 {
-                     Pcre2MatchOptions.Anchored,
-                     Pcre2MatchOptions.EndAnchored,
-                     Pcre2MatchOptions.NotBol,
-                     Pcre2MatchOptions.NotEol,
-                     Pcre2MatchOptions.NotEmpty,
-                     Pcre2MatchOptions.NotEmptyAtStart,
-                 })
-        {
-            var expected = options is not (Pcre2MatchOptions.Anchored or Pcre2MatchOptions.EndAnchored);
-            Assert.Equal(expected, direct.IsMatch(input, 0, options));
-            Assert.Equal(expected, vm.IsMatch(input, 0, options));
-        }
-
-        var tightlyMetered = CreateMetered(Pattern, 1);
-        Assert.Equal(
-            Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch(input)).ErrorKind);
-    }
-
-    private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
+    private static Utf8Pcre2Regex CreateMetered(string pattern) =>
         new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (matchLimit) == 0 ? null : (matchLimit)
+                MaxDepth = 4096
             },
             MatchTimeout = Regex.InfiniteMatchTimeout
         });

@@ -250,7 +250,7 @@ show scalar "y" with 2
         const string pattern = @"\G-?[0-9]+(\.[0-9]+)?(e[+-]?[0-9]+)?";
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1 } });
 
         Assert.Equal(new Utf8CaptureRange(0, end), regex.Match(Encoding.UTF8.GetBytes(subject), cancellationToken: source.Token));
     }
@@ -327,7 +327,7 @@ show scalar "y" with 2
         var start = input.Length - quoted.Length;
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 64, MaxWorkingBytes = 8 << 10 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 8 << 10 } });
 
         Assert.False(regex.Match(input, cancellationToken: source.Token).Success);
         Assert.Equal(new Utf8CaptureRange(start, input.Length),
@@ -344,7 +344,7 @@ show scalar "y" with 2
         var input = Encoding.UTF8.GetBytes(quoted + " tail");
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 256, MaxWorkingBytes = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1 } });
 
         Assert.Equal(new Utf8CaptureRange(0, Encoding.UTF8.GetByteCount(quoted)),
             regex.Match(input, cancellationToken: source.Token));

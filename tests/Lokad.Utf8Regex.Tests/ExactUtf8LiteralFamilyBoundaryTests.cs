@@ -73,7 +73,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
     {
         var input = Encoding.UTF8.GetBytes(new string('z', start - 1) +
             " ant-boat ants! ant𝟢 ants\u200d 😀ants😀");
-        var policy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkSteps = 64, MaxWorkingBytes = 1 } };
+        var policy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkingBytes = 1 } };
         using var shortFirst = new Utf8Regex(@"\b(?:ant|ant-boat|ants|boat|else)\b", policy: policy);
         using var longFirst = new Utf8Regex(@"\b(?:ant-boat|ant|ants|boat|else)\b", policy: policy);
         Assert.Equal(4, shortFirst.Count(input));
@@ -174,7 +174,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         {
             using var regex = new Utf8Regex(@"\b(?:the|and|that|have|for)\b", options, new()
             {
-                ResourcePolicy = new() { MaxWorkSteps = 4096, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
+                ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
             });
             Assert.Equal(expected, regex.IsMatch(input, token.Token));
             Assert.Equal(expected, regex.IsMatch(input, token.Token, new NoWorkingStorage()));
@@ -186,7 +186,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
     {
         using var regex = new Utf8Regex(@"\b(?:the|the-re|and|that|for)\b", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
         });
         using var cancellation = new CancellationTokenSource();
         var loan = new NoWorkingStorage();
@@ -223,7 +223,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         using var ordinary = new Utf8Regex(pattern, options);
         using var finite = new Utf8Regex(pattern, options, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxWorkingBytes = 1, MaxResultBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1, MaxResultBytes = 1 }
         });
         using var token = new CancellationTokenSource();
         var allowance = new NoWorkingStorage();
@@ -237,9 +237,9 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
     {
         using var regex = new Utf8Regex(@"\b(?:Task|ValueTask)\b", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4096 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
-        var invocation = new Utf8SliceInvocation(new(4096, 1, 1024), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(1, 1024), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(1, regex.CountForResult("éTask Task"u8, 2, ref invocation));
     }
 
@@ -249,7 +249,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("éthe ", 32)) + " and!");
         using var regex = new Utf8Regex(@"\b(?:the|and|that|have|for)\b", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 200 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
 
         Assert.True(regex.IsMatch(bytes));
@@ -269,7 +269,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         using var regex = new Utf8Regex(@"\b(?:the|and|that|have|for)\b", policy: new()
         {
             MatchTimeout = TimeSpan.FromSeconds(1),
-            ResourcePolicy = new() { MaxWorkSteps = 32 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
 
         Assert.True(regex.IsMatch(input));
@@ -280,10 +280,9 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ControlledWordFamilySearchChecksItsBudgetAndOriginalToken(bool writeSlots)
+    public void ControlledWordFamilySearchChecksOriginalCancellation(bool writeSlots)
     {
         const string pattern = @"\b(?:the|and|that|have|for)\b";
-        using var denied = new Utf8Regex(pattern, policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1 } });
         var sentinel = new Utf8CaptureRange(100, 101);
         Utf8CaptureRange[] slots = [sentinel, sentinel];
 
@@ -295,15 +294,10 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
             else regex.IsMatch(input, token, loan);
         }
 
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Search(denied, "the"u8)).ResourceKind);
-        if (writeSlots) Assert.False(slots[0].Success);
-        slots[0] = sentinel;
-
         using var token = new CancellationTokenSource();
         using var regex = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         var input = new byte[160 * 1024];
         Array.Fill(input, (byte)'z');
@@ -326,7 +320,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         using var regex = new Utf8Regex(@"\b(?:the|and|that|have|for)\b", policy: new()
         {
             MatchTimeout = TimeSpan.FromMilliseconds(100),
-            ResourcePolicy = new() { MaxWorkSteps = 64, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         using var source = new CancellationTokenSource();
         var sentinel = new Utf8CaptureRange(100, 101);

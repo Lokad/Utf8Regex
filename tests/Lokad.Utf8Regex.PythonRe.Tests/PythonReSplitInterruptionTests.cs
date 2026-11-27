@@ -21,7 +21,6 @@ public sealed class PythonReSplitInterruptionTests
             MatchTimeout = timeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20

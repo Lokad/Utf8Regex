@@ -29,7 +29,6 @@ public sealed class Utf8CooperativeBooleanContractTests
                 MatchTimeout = Timeout.InfiniteTimeSpan,
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 4096,
                     MaxWorkingBytes = 1,
                     MaxResultBytes = 1

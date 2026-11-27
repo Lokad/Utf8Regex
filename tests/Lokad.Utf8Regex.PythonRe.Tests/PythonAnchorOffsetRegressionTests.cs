@@ -146,28 +146,6 @@ public sealed class PythonAnchorOffsetRegressionTests
         Assert.Equal(expected, regex.Match(Utf8(text), mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
-    [Fact]
-    public void DotAllFullMatchMetersThePrefixUnderAFiniteWorkLimit()
-    {
-        var input = Utf8("start\n" + new string('x', 16_384) + "end");
-        using var regex = new Utf8PythonRegex("start.*end", options: PythonReCompileOptions.DotAll,
-            policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = new() { MaxWorkSteps = 64, MaxDepth = 1, MaxWorkingBytes = 4096, MaxResultBytes = 1 },
-            });
-        Assert.True(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
-        using var tooLittleWork = new Utf8PythonRegex("start.*end", options: PythonReCompileOptions.DotAll,
-            policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = new() { MaxWorkSteps = 1 },
-            });
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(
-            () => tooLittleWork.Match(input, mode: Utf8PythonMatchMode.FullMatch));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-    }
-
     [Theory]
     [InlineData("(?<=x)foo", "xfoo", 1, true, 1, 4)]
     [InlineData("(?<=x)foo", "afoo", 1, false, 0, 0)]

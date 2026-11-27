@@ -107,7 +107,6 @@ public sealed class Utf8NativeCompilationTests
     }
 
     [Theory]
-    [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
@@ -115,7 +114,7 @@ public sealed class Utf8NativeCompilationTests
     {
         var policy = limit switch
         {
-            0 => new Utf8ConstructionPolicy { MaxWorkSteps = 1 },
+            0 => new Utf8ConstructionPolicy {  },
             1 => new Utf8ConstructionPolicy { MaxDepth = 1 },
             2 => new Utf8ConstructionPolicy { MaxInstructionCapacity = 1 },
             _ => new Utf8ConstructionPolicy { MaxBytes = 1 },
@@ -129,7 +128,6 @@ public sealed class Utf8NativeCompilationTests
         }, cancellationToken: default));
         Assert.Equal(limit switch
         {
-            0 => Utf8ResourceLimitKind.ConstructionWorkSteps,
             1 => Utf8ResourceLimitKind.ConstructionDepth,
             2 => Utf8ResourceLimitKind.ConstructionInstructionCapacity,
             _ => Utf8ResourceLimitKind.ConstructionBytes,
@@ -161,7 +159,6 @@ public sealed class Utf8NativeCompilationTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxWorkingBytes = 1_000_000,
                 MaxResultBytes = 1_000_000
             },

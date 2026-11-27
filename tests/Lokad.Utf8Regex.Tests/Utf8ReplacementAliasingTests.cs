@@ -95,7 +95,7 @@ public sealed class Utf8ReplacementAliasingTests
     public void BoundaryLiteralReplacementUsesScalarNeighborsWithAnAliasedTemplate(string template, string result, bool finite)
     {
         using var regex = new Utf8Regex(@"\b(?<word>cat|dog)\b", RegexOptions.Compiled | RegexOptions.CultureInvariant,
-            finite ? new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkSteps = 4096 } } : null);
+            finite ? new Utf8RegexPolicy { ResourcePolicy = new() { MaxDepth = 4096 } } : null);
         var subject = "écat|😀cat😀|dog\u200c|dog"u8;
         var replacement = Encoding.UTF8.GetBytes(template);
         var expected = Encoding.UTF8.GetBytes(result);

@@ -8,7 +8,7 @@ internal static partial class Utf8Validation
     // Regex subjects already satisfy their caller-valid text contract.
     internal static Utf8ExecutionLimitKind TryValidateOnly(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
     {
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.CheckInput();
         invocation.Budget.ThrowIfCancellationRequested();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         if (invocation.IsUnmetered && invocation.CheckpointHook is null)
@@ -18,14 +18,14 @@ internal static partial class Utf8Validation
         }
         for (var offset = 0; offset < input.Length;)
         {
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var count = Utf8SliceBufferWork.Utf8BlockLength(input[offset..], 2048);
             ThrowIfInvalidOnly(input.Slice(offset, count), offset);
             offset += count;
         }
-        breach = invocation.TryChargeInputStep();
+        breach = invocation.CheckInput();
         invocation.Budget.ThrowIfCancellationRequested();
         return breach;
     }

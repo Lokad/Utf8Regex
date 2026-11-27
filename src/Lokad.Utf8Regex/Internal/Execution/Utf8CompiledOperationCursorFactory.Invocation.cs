@@ -23,7 +23,7 @@ internal static partial class Utf8CompiledOperationCursorFactory
                 {
                     if ((index & 31) == 0)
                     {
-                        var breach = invocation.TryChargeInputStep();
+                        var breach = invocation.CheckInput();
                         if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Literal-family admission exceeded {breach}.");
                         invocation.Budget.ThrowIfCancellationRequested();
                     }

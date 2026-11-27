@@ -61,7 +61,7 @@ public sealed class Utf8ClassFamilyQualificationTests
     {
         using var regex = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1, MaxWorkSteps = 100 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         Assert.Equal(Utf8SliceTerminalRootKind.DelimitedClassRepeat, program.TerminalRoot);
@@ -89,7 +89,7 @@ public sealed class Utf8ClassFamilyQualificationTests
         var body = empty + "\"\" "u8.Length;
         using var regex = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 128, MaxWorkSteps = 128 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 128 }
         });
 
         Assert.False(regex.Match(input, body, endOffsetInBytes: input.Length - 1).Success);
@@ -113,10 +113,8 @@ public sealed class Utf8ClassFamilyQualificationTests
         var bytes = Encoding.UTF8.GetBytes("\"" + new string('a', 140_000) + "\"");
         using var limited = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 8 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Execute(limited, default)).ResourceKind);
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
@@ -151,7 +149,7 @@ public sealed class Utf8ClassFamilyQualificationTests
         var input = Encoding.UTF8.GetBytes(text);
         using var regex = new Utf8Regex(pattern, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 24, MaxDepth = 1, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 }
         });
         using var live = new CancellationTokenSource();
         Assert.Equal(3, Regex.Count(text, pattern));
@@ -163,7 +161,7 @@ public sealed class Utf8ClassFamilyQualificationTests
     {
         using var regex = new Utf8Regex("\"[^\"\\n]*\"");
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
-        var invocation = Utf8SliceInvocation.CreateExclusive(new(0, 0, 4), Timeout.InfiniteTimeSpan, default);
+        var invocation = Utf8SliceInvocation.CreateExclusive(new(0, 4), Timeout.InfiniteTimeSpan, default);
         Assert.True(invocation.Ledger.TryReserve(8));
 
         var result = Utf8SliceRunner.FindDelimitedClassRepeat(program, [], 0, ref invocation);

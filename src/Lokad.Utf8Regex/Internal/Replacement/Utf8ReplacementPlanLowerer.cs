@@ -9,7 +9,7 @@ internal static class Utf8ReplacementPlanLowerer
         var instructions = storage.Buffer<Utf8ReplacementInstruction>();
         foreach (var token in tokens)
         {
-            storage.Budget.ChargeWork(1);
+            storage.Budget.Checkpoint();
             instructions.Add(LowerToken(token, wholeLiteralCaptureNumber));
         }
         return Utf8ReplacementPlan.Create(storage, instructions.Span);

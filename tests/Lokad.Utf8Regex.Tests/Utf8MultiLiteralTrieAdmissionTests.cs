@@ -24,7 +24,7 @@ public sealed class Utf8MultiLiteralTrieAdmissionTests
     public void PublishedTrieKeepsMajorStorageAdmitted(int family)
     {
         var literals = Literals(family);
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 0xa5;
         var held = owner.Budget.ReservedBytes;
@@ -45,7 +45,7 @@ public sealed class Utf8MultiLiteralTrieAdmissionTests
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
     public void RootAndNestedSearchDepthDenialsReleaseAllChildLoans(int depth)
     {
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, (ulong)depth);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 0xa5;
         var held = owner.Budget.ReservedBytes;
@@ -63,12 +63,12 @@ public sealed class Utf8MultiLiteralTrieAdmissionTests
     [Fact]
     public void EmptyTrieBorrowsAllStateWithoutAnOwnerOrAnyAllowance()
     {
-        using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var owner = new Utf8ConstructionScope(0, 0, 0);
         var search = PreparedMultiLiteralTrieSearch.Create([]);
         Assert.Empty(search.RootMap); Assert.Equal(0, search.RootSearch.Count);
         Assert.Equal(-1, search.IndexOf("😀"u8)); Assert.Equal(-1, search.LastIndexOf("😀"u8));
         Assert.False(search.TryGetMatchedLiteralInfo("😀"u8, 0, out _, out _));
-        Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
+Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
 
     }
 

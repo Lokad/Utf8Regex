@@ -117,7 +117,6 @@ public sealed class Pcre2CompoundCandidateProbeTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = bytes
@@ -136,25 +135,6 @@ public sealed class Pcre2CompoundCandidateProbeTests
         Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("😀xabcabc"u8, Pcre2PartialMode.Soft).Kind);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(1).Probe("xabcab"u8, Pcre2PartialMode.Hard).Kind);
-    }
-
-    [Theory]
-    [InlineData("(?>a+b)")] [InlineData("(abc)(?1)")]
-    [InlineData("(abc)++x")] [InlineData("(?(?=abc).*|Z)")]
-    public void CompoundCandidateWorkCannotBypassFiniteAllowance(string pattern)
-    {
-        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 20
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var input = Encoding.UTF8.GetBytes(new string('q', 1000));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = regex.Probe(input, Pcre2PartialMode.Soft); }).ErrorKind);
-        Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("q"u8, Pcre2PartialMode.Soft, 0, Pcre2MatchOptions.Anchored).Kind);
     }
 
     [Theory]

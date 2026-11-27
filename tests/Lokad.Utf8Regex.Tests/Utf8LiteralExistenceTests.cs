@@ -39,38 +39,13 @@ public sealed class Utf8LiteralExistenceTests
     }
 
     [Fact]
-    public void FiniteBooleanSearchRetainsFundedAdmissionAndWork()
+    public void BooleanSearchPreservesScalarSemantics()
     {
-        var regex = Limited(100000);
+        var regex = Limited();
         Assert.True(regex.IsMatch("é😀ss"u8));
         Assert.False(regex.IsMatch("é😀no"u8));
-        var firstSuccess = 0UL;
-        for (ulong cap = 1; cap <= 512; cap++)
-        {
-            try
-            {
-                Assert.True(Limited(cap).IsMatch("ss"u8));
-                if (firstSuccess == 0) firstSuccess = cap;
-            }
-            catch (Utf8ResourceLimitExceededException error)
-            {
-                Assert.Equal(0UL, firstSuccess);
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-                Assert.Equal(cap, error.Limit);
-                Assert.True(error.Requested > error.Limit);
-            }
-        }
-        Assert.InRange(firstSuccess, 2UL, 512UL);
         foreach (var options in new[] { RegexOptions.RightToLeft, RegexOptions.NonBacktracking, RegexOptions.IgnoreCase })
-            Assert.True(Limited(100000, options).IsMatch("ss"u8));
-    }
-
-    [Fact]
-    public void WorkDenialPrecedesAConclusiveMiss()
-    {
-        var input = Encoding.UTF8.GetBytes(new string('x', 1 << 20) + "é");
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Limited(1).IsMatch(input)).ResourceKind);
+            Assert.True(Limited(options).IsMatch("ss"u8));
     }
 
     [Theory]
@@ -83,7 +58,7 @@ public sealed class Utf8LiteralExistenceTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
-        var regex = Limited(4096, timeout: expire ? TimeSpan.FromMilliseconds(20) : null);
+        var regex = Limited(timeout: expire ? TimeSpan.FromMilliseconds(20) : null);
         var retained = Utf8MatchSequence.First(new Utf8Regex(".*(?<x>ss)").CreateMatchCursor("éss"u8.ToArray()));
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
@@ -106,13 +81,12 @@ public sealed class Utf8LiteralExistenceTests
             Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, canceled.Token)).CancellationToken);
     }
 
-    private static Utf8Regex Limited(ulong work, RegexOptions options = RegexOptions.None, TimeSpan? timeout = null) =>
+    private static Utf8Regex Limited(RegexOptions options = RegexOptions.None, TimeSpan? timeout = null) =>
         new(".*(ss)", options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = timeout ?? Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = work,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 8 << 20,
                 MaxResultBytes = 1
@@ -130,7 +104,7 @@ public sealed class Utf8LiteralExistenceTests
             if (++reads == cancelAt) source.Cancel();
             return 0;
         });
-        var regex = Limited(100000, timeout: TimeSpan.FromSeconds(1));
+        var regex = Limited(timeout: TimeSpan.FromSeconds(1));
         Assert.True(regex.IsMatch("ss"u8, source.Token));
         Assert.True(reads > 1);
         cancelAt = reads;

@@ -39,7 +39,6 @@ public sealed class PythonReBraceQuantifierTests
     {
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 100000,
             MaxDepth = 256,
             MaxWorkingBytes = 1000000,
             MaxResultBytes = 1000000
@@ -124,40 +123,5 @@ public sealed class PythonReBraceQuantifierTests
         }
         Assert.Equal(expected == 5 ? ["", "😀", "", "😀", ""] : new[] { "😀😀", "" },
                     snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void LongBraceLookaheadSpendsConstructionWorkBeforeLiteralFallback(bool bytes)
-    {
-        var pattern = "a{" + new string('0', 8192) + "x";
-        var policy = new Utf8ConstructionPolicy { MaxWorkSteps = 256 };
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-        {
-            if (bytes)
-            {
-                _ = Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-                {
-                    MatchTimeout = Regex.InfiniteMatchTimeout,
-                    ResourcePolicy = default,
-                    ConstructionPolicy = policy,
-                    ConstructionTimeout = Regex.InfiniteMatchTimeout
-                }, cancellationToken: default);
-            }
-            else
-            {
-                _ = Utf8PythonRegex.Compile(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-                {
-                    MatchTimeout = Regex.InfiniteMatchTimeout,
-                    ResourcePolicy = default,
-                    ConstructionPolicy = policy,
-                    ConstructionTimeout = Regex.InfiniteMatchTimeout
-                }, cancellationToken: default);
-            }
-        });
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-        Assert.False(Utf8ConstructionScope.IsActive);
-        Assert.True(new Utf8PythonRegex("a{foo}").Match("a{foo}"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 }

@@ -43,7 +43,7 @@ internal static class Utf8SliceParser
         {
             while (frames.Count != 0)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var index = frames.Count - 1;
                 var frame = frames[index];
                 var node = frame.Node;

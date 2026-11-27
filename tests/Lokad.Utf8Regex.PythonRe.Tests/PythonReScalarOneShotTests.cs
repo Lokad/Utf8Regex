@@ -21,7 +21,6 @@ public sealed class PythonReScalarOneShotTests
                 var options = dotAll ? PythonReCompileOptions.DotAll : PythonReCompileOptions.None;
                 var policy = mode == 2 ? new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = 5_000_000,
                     MaxDepth = 8192,
                     MaxWorkingBytes = 16 << 20,
                     MaxResultBytes = 16 << 20,
@@ -83,7 +82,6 @@ public sealed class PythonReScalarOneShotTests
             MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 5_000_000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 16 << 20,
                 MaxResultBytes = 16 << 20

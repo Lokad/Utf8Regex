@@ -42,37 +42,4 @@ public sealed class Utf8ScalarRangeAdmissionTests
         Assert.Equal(2, regex.Count(Encoding.UTF8.GetBytes("\U00010400\U00010401\U00010402")));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void WorkLimitStopsSupplementaryInsensitiveReferenceAfterCaptureAndRecovers(bool rightToLeft)
-    {
-        var options = RegexOptions.CultureInvariant | (rightToLeft ? RegexOptions.RightToLeft : RegexOptions.None);
-        var pattern = rightToLeft ? @"(?i)^\1([\s\S]{80})$" : @"(?i)^([\s\S]{80})\1$";
-        var program = Utf8SliceParser.TryParse(pattern, options);
-        Assert.NotNull(program);
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("\U00010400", 80)) +
-            string.Concat(Enumerable.Repeat("\U00010428", 80)));
-        var starts = new int[program.GroupCount];
-        var ends = new int[program.GroupCount];
-        var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        var start = rightToLeft ? input.Length : 0;
-        Assert.True(Utf8SliceRunner.TryMatchAt(program, input, start, starts, ends, true, ref baseline).IsMatch);
-        Assert.Equal(320, ends[0] - starts[0]);
-        // Leave forty scalar comparisons plus the end anchor/accept unperformed.
-        var limit = baseline.Budget.Steps - 42;
-        var denied = new Utf8SliceInvocation(new Utf8ExecutionLimits(limit, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-        var stopped = Utf8SliceRunner.TryMatchAt(program, input, start, starts, ends, true, ref denied);
-        Assert.False(stopped.IsMatch);
-        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, stopped.Breach);
-        Assert.Equal(limit + 1, denied.Budget.Steps);
-        Assert.All(starts, value => Assert.Equal(-1, value));
-        Assert.All(ends, value => Assert.Equal(-1, value));
-        Assert.Equal(0UL, denied.Ledger.ReservedBytes);
-        var recovered = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.True(Utf8SliceRunner.TryMatchAt(program, input, start, starts, ends, true, ref recovered).IsMatch);
-        Assert.Equal(320, ends[0] - starts[0]);
-        Assert.Equal(0UL, recovered.Ledger.ReservedBytes);
-    }
 }

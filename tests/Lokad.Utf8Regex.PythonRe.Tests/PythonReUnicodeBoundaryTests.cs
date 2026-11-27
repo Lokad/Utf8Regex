@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReUnicodeBoundaryTests
 {
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Fact]
     public void UnicodeBoundaryKeepsThePinnedPredicateWithoutLookaroundPrograms()
@@ -163,7 +163,7 @@ public sealed class PythonReUnicodeBoundaryTests
     [Fact]
     public void OutputAdmissionAndOriginalCancellationStillApply()
     {
-        foreach (var policy in new[] { Funded with { MaxResultBytes = 1 }, Funded with { MaxWorkingBytes = 1 }, Funded with { MaxWorkSteps = 1 } })
+        foreach (var policy in new[] { Funded with { MaxResultBytes = 1 }, Funded with { MaxWorkingBytes = 1 } })
             Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReSplitAssert.Decode("é alpha"u8, new Utf8PythonRegex(@"\b", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
             {
                 MatchTimeout = Regex.InfiniteMatchTimeout,

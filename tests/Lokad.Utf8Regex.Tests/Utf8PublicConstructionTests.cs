@@ -11,19 +11,19 @@ public sealed class Utf8PublicConstructionTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000
+                MaxDepth = 4096
             },
             ConstructionPolicy = policy,
             ConstructionTimeout = Regex.InfiniteMatchTimeout
         }, cancellationToken: token);
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+[InlineData(1)] [InlineData(2)] [InlineData(3)]
     public void EachFiniteConstructionLimitDeniesAndFreshCallRecovers(int limit)
     {
         var policy = limit switch
         {
-            0 => new Utf8ConstructionPolicy { MaxWorkSteps = 1 },
+            0 => new Utf8ConstructionPolicy {  },
             1 => new Utf8ConstructionPolicy { MaxDepth = 1 },
             2 => new Utf8ConstructionPolicy { MaxInstructionCapacity = 1 },
             _ => new Utf8ConstructionPolicy { MaxBytes = 1 },
@@ -31,7 +31,6 @@ public sealed class Utf8PublicConstructionTests
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Compile(policy));
         Assert.Equal(limit switch
         {
-            0 => Utf8ResourceLimitKind.ConstructionWorkSteps,
             1 => Utf8ResourceLimitKind.ConstructionDepth,
             2 => Utf8ResourceLimitKind.ConstructionInstructionCapacity,
             _ => Utf8ResourceLimitKind.ConstructionBytes,
@@ -45,13 +44,12 @@ public sealed class Utf8PublicConstructionTests
     [Fact]
     public void FundedConstructionPreservesCapturesAndIndependentExecutionPolicy()
     {
-        var regex = Compile(new() { MaxWorkSteps = 1000000, MaxDepth = 128,
+        var regex = Compile(new() { MaxDepth = 128,
             MaxInstructionCapacity = 10000, MaxBytes = 1000000 });
         var match = regex.Match("x😀😀y"u8);
         Assert.True(match.Success);
         Assert.Equal(1, match.StartOffsetInBytes);
         Assert.Equal(8, (match.EndOffsetInBytes - match.StartOffsetInBytes));
-        Assert.Equal(100000ul, regex.ResourcePolicy.MaxWorkSteps);
     }
 
     [Theory]
@@ -67,7 +65,6 @@ public sealed class Utf8PublicConstructionTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 64,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000
@@ -103,7 +100,7 @@ public sealed class Utf8PublicConstructionTests
             MatchTimeout = TimeSpan.Zero,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 0
+                MaxDepth = 4096
             },
             ConstructionPolicy = new()
             {
@@ -151,7 +148,6 @@ public sealed class Utf8PublicConstructionTests
             {
                 MaxInstructionCapacity = ulong.MaxValue,
                 MaxBytes = ulong.MaxValue,
-                MaxWorkSteps = ulong.MaxValue,
                 MaxDepth = uint.MaxValue
             },
             ConstructionTimeout = Regex.InfiniteMatchTimeout
@@ -200,12 +196,12 @@ public sealed class Utf8PublicConstructionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+     [InlineData(1)] [InlineData(2)] [InlineData(3)]
     public void ZeroConstructionBudgetsAreInvalidBeforeParsing(int limit)
     {
         var policy = limit switch
         {
-            0 => new Utf8ConstructionPolicy { MaxWorkSteps = 0 },
+
             1 => new Utf8ConstructionPolicy { MaxDepth = 0 },
             2 => new Utf8ConstructionPolicy { MaxInstructionCapacity = 0 },
             _ => new Utf8ConstructionPolicy { MaxBytes = 0 },

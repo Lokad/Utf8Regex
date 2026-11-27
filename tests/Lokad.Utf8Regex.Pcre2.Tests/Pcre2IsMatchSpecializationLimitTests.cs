@@ -14,7 +14,6 @@ public sealed class Pcre2IsMatchSpecializationLimitTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                 MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                 MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                 MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
@@ -51,7 +50,7 @@ public sealed class Pcre2IsMatchSpecializationLimitTests
     public void DisjointOptionalTokensNeedNoHeapBeforeTerminalDigitRuns()
     {
         using var regex = Create(@"^[-+]?\d*\.?\d*$", Pcre2CompileOptions.Ucp,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 100, DepthLimit = 1, HeapLimitInBytes = 1 });
+            new Utf8Pcre2ExecutionLimits { DepthLimit = 1, HeapLimitInBytes = 1 });
         Assert.True(regex.IsMatch("-12.5"u8));
         Assert.True(regex.IsMatch("+١.𝟚\n"u8));
         Assert.False(regex.IsMatch("3.14x9"u8));

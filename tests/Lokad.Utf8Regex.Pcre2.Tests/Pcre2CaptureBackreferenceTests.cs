@@ -12,7 +12,7 @@ public sealed class Pcre2CaptureBackreferenceTests
     {
         using var regex = new Utf8Pcre2Regex(@"\A(?:(?<edge>[a😀])z|😀)(?(edge)Q|!)\z", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxWorkingBytes = 4096 }
         });
         var backtracker = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         Assert.Contains(backtracker.Program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.CaptureToken);
@@ -33,7 +33,7 @@ public sealed class Pcre2CaptureBackreferenceTests
     {
         using var regex = new Utf8Pcre2Regex(@"^((.)(?1)\2|.?)$", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 32, MaxWorkingBytes = 4096 }
+            ResourcePolicy = new() { MaxDepth = 32, MaxWorkingBytes = 4096 }
         });
         using var source = new CancellationTokenSource();
         var input = "😀abba😀"u8;
@@ -42,25 +42,6 @@ public sealed class Pcre2CaptureBackreferenceTests
         Assert.Equal((0, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
         AssertGroup(captures[2], input, "😀", 0, 4);
         Assert.False(regex.IsMatch("😀abca😀"u8, cancellationToken: source.Token));
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void LongSubroutineBackreferenceChargesComparisonWork(bool folded)
-    {
-        var reference = folded ? @"(?i:\k<text>)" : @"\k<text>";
-        var pattern = @"\A(?<text>[ab]+):(?&check)\z(?(DEFINE)(?<check>" + reference + "))";
-        var capture = new string('a', 128 << 10);
-        var input = Encoding.UTF8.GetBytes(capture + ":" + (folded ? capture.ToUpperInvariant() : capture));
-        using var limited = new Utf8Pcre2Regex(pattern,
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 112 } });
-        using var unlimited = new Utf8Pcre2Regex(pattern);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(limited.DebugCompiledProgram.Operations.IsMatch);
-        Assert.True(limited.IsMatch(folded ? "ab:AB"u8 : "ab:ab"u8));
-        Assert.True(unlimited.IsMatch(input));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => limited.IsMatch(input)).ErrorKind);
     }
 
     [Theory]
@@ -87,7 +68,7 @@ public sealed class Pcre2CaptureBackreferenceTests
         using var regex = new Utf8Pcre2Regex(@"(?<pair>\d{2}[- ]){3}\k<pair>\z",
             options: Pcre2CompileOptions.Ucp, policy: new Utf8RegexPolicy
             {
-                ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 1 << 16 }
+                ResourcePolicy = new() { MaxDepth = 64, MaxWorkingBytes = 1 << 16 }
             });
         using var source = new CancellationTokenSource();
         ReadOnlySpan<byte> input = "é١٢-٣٤ 𝟡٦-𝟡٦-"u8;

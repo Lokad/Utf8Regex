@@ -10,7 +10,6 @@ public sealed class PythonReLiteralRepeatFullMatchTests
 {
     private static Utf8ResourcePolicy Small => new()
     {
-        MaxWorkSteps = 100000,
         MaxDepth = 1,
         MaxWorkingBytes = 1,
         MaxResultBytes = 1
@@ -34,7 +33,6 @@ public sealed class PythonReLiteralRepeatFullMatchTests
                 MatchTimeout = Timeout.InfiniteTimeSpan,
                 ResourcePolicy = controlled ? new()
                 {
-                    MaxWorkSteps = 1000000,
                     MaxDepth = 10000,
                     MaxWorkingBytes = 1 << 20,
                     MaxResultBytes = 1 << 20
@@ -74,12 +72,11 @@ public sealed class PythonReLiteralRepeatFullMatchTests
             ResourcePolicy = Small
         });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(period, 65)));
-        using var denied = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var denied = new Utf8ConstructionScope(0, 0, 0);
         using var live = new CancellationTokenSource();
         var match = regex.Match(input, 0, cancellationToken: live.Token, mode: Utf8PythonMatchMode.FullMatch);
         Assert.True(match.Success);
         Assert.Equal(0UL, denied.Budget.ReservedBytes);
-        Assert.Equal(0UL, denied.Budget.WorkSteps);
         Assert.Equal(Encoding.UTF8.GetString(input), System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 
@@ -162,56 +159,6 @@ public sealed class PythonReLiteralRepeatFullMatchTests
 
     }
 
-    [Fact]
-    public void FixedTailWorkDenialIsCumulativeAndNeverBecomesAMiss()
-    {
-        const string pattern = "(?:é😀){1,1000000}Ω";
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀", 129)) + "Ω");
-        ulong low = 1, high = 10000;
-        while (low < high)
-        {
-            var cap = low + (high - low) / 2;
-            try
-            {
-                Assert.True(new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
-                {
-                    MatchTimeout = Timeout.InfiniteTimeSpan,
-                    ResourcePolicy = Small with
-                    {
-                        MaxWorkSteps = cap
-                    }
-                }).Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
-                high = cap;
-            }
-            catch (Utf8ResourceLimitExceededException error)
-            {
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-                low = cap + 1;
-            }
-        }
-        for (ulong cap = 1; cap < low; cap++)
-        {
-            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = Small with
-                {
-                    MaxWorkSteps = cap
-                }
-            }).Match(input, mode: Utf8PythonMatchMode.FullMatch));
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-            Assert.Equal(cap + 1, error.Requested);
-        }
-        Assert.True(new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = Small with
-            {
-                MaxWorkSteps = low
-            }
-        }).Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -243,30 +190,6 @@ public sealed class PythonReLiteralRepeatFullMatchTests
             ResourcePolicy = Small
         });
         Assert.False(regex.Match(Encoding.UTF8.GetBytes(text), mode: Utf8PythonMatchMode.FullMatch).Success);
-    }
-
-    [Theory]
-    [InlineData(1UL)]
-    [InlineData(4UL)]
-    [InlineData(16UL)]
-    public void WorkDenialIsNotNoMatchAndFreshInvocationsRecover(ulong work)
-    {
-        var regex = new Utf8PythonRegex("(?:Шерлок )+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = Small with
-            {
-                MaxWorkSteps = work
-            }
-        });
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("Шерлок ", 1024)));
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input, mode: Utf8PythonMatchMode.FullMatch));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-        Assert.True(new Utf8PythonRegex("(?:Шерлок )+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = Small
-        }).Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]

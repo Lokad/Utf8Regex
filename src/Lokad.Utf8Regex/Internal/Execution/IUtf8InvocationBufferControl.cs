@@ -7,8 +7,8 @@ internal interface IUtf8InvocationBufferControl
     bool CanRetainWorkspace { get; }
     Utf8ExecutionLimitKind TryReserveWorking(ulong bytes);
     void ReleaseWorking(ulong bytes);
-    Utf8ExecutionLimitKind TryChargeWorkspaceStep();
-    Utf8ExecutionLimitKind TryChargeWorkspaceStepAfterReservation();
+    Utf8ExecutionLimitKind CheckWorkspace();
+    Utf8ExecutionLimitKind CheckWorkspaceAfterReservation();
     Utf8ExecutionLimitKind TryChargeResultBytes(ulong bytes);
 }
 
@@ -24,16 +24,16 @@ internal readonly ref struct Utf8InvocationBufferControl(ref Utf8SliceInvocation
     // Core result producers already charge their major extents at the call
     // sites; shared buffer helpers must not charge them a second time.
     public Utf8ExecutionLimitKind TryChargeResultBytes(ulong bytes) => Utf8ExecutionLimitKind.None;
-    public Utf8ExecutionLimitKind TryChargeWorkspaceStep() => ChargeWorkspaceStep(checkDeadline: true);
+    public Utf8ExecutionLimitKind CheckWorkspace() => CheckWorkspace(checkDeadline: true);
 
-    public Utf8ExecutionLimitKind TryChargeWorkspaceStepAfterReservation()
+    public Utf8ExecutionLimitKind CheckWorkspaceAfterReservation()
         // A successful reservation checks the deadline. Repeat it when code
-        // outside this invocation can run during admission or at the work step.
-        => ChargeWorkspaceStep(_invocation.Ledger.HasMemoryAllowance || _invocation.CheckpointHook is not null);
+        // outside this invocation can run during admission or at the checkpoint.
+        => CheckWorkspace(_invocation.Ledger.HasMemoryAllowance || _invocation.CheckpointHook is not null);
 
-    private Utf8ExecutionLimitKind ChargeWorkspaceStep(bool checkDeadline)
+    private Utf8ExecutionLimitKind CheckWorkspace(bool checkDeadline)
     {
-        var breach = checkDeadline ? _invocation.TryChargeInputStep() : _invocation.TryChargeBoundedCheck();
+        var breach = checkDeadline ? _invocation.CheckInput() : _invocation.CheckBoundedProgress();
         if (breach == Utf8ExecutionLimitKind.None) _invocation.Budget.ThrowIfCancellationRequested();
         return breach;
     }

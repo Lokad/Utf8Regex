@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Internal;
@@ -14,22 +15,17 @@ namespace Lokad.Utf8Regex.Internal;
 internal sealed class Utf8ConstructionBudget
 {
     private readonly IUtf8MemoryAllowance? _memoryAllowance;
+    private readonly bool _observeCheckpoints;
 
-    internal Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, ulong maximumWorkSteps, ulong maximumDepth)
-        : this(maximum, maximumBytes, maximumWorkSteps, maximumDepth, null) { }
-
-    internal Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, ulong maximumWorkSteps, ulong maximumDepth,
-        IUtf8MemoryAllowance? memoryAllowance)
+    internal Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, ulong maximumDepth = Utf8ConstructionScope.DefaultDepth,
+        IUtf8MemoryAllowance? memoryAllowance = null)
     {
         Maximum = maximum;
         MaximumBytes = maximumBytes;
-        MaximumWorkSteps = maximumWorkSteps;
         MaximumDepth = maximumDepth;
         _memoryAllowance = memoryAllowance;
+        _observeCheckpoints = Utf8SearchDiagnosticsSession.Current is not null;
     }
-
-    internal Utf8ConstructionBudget(ulong maximum, ulong maximumBytes)
-        : this(maximum, maximumBytes, Utf8ConstructionScope.DefaultWorkSteps, Utf8ConstructionScope.DefaultDepth) { }
 
     internal ulong Maximum { get; }
     internal ulong MaximumBytes { get; private set; }
@@ -37,9 +33,7 @@ internal sealed class Utf8ConstructionBudget
     internal ulong Peak { get; private set; }
     internal ulong ReservedBytes { get; private set; }
     internal ulong PeakBytes { get; private set; }
-    internal ulong MaximumWorkSteps { get; }
     internal ulong MaximumDepth { get; }
-    internal ulong WorkSteps { get; private set; }
     internal ulong Depth { get; private set; }
     internal ulong PeakDepth { get; private set; }
     // Optional authority belongs to this shared owner, so nested optimizers
@@ -48,19 +42,16 @@ internal sealed class Utf8ConstructionBudget
     // limits are independent of this construction owner.
     internal Utf8ExecutionDeadline Deadline { get; set; } = Utf8ExecutionDeadline.Infinite;
     internal System.Threading.CancellationToken CancellationToken { get; set; }
-    internal Action<ulong>? CheckpointHook { get; set; }
+    internal Action? CheckpointHook { get; set; }
+    internal ulong DiagnosticCheckpoints { get; private set; }
 
-    // Actual admitted work stays spent even when a speculative child declines.
-    // Batch admission happens before the bounded scan/copy it represents.
-    internal void ChargeWork(ulong steps)
+    internal void Checkpoint()
     {
-        CheckpointHook?.Invoke(WorkSteps);
+        var hook = CheckpointHook;
+        hook?.Invoke();
         CancellationToken.ThrowIfCancellationRequested();
         Deadline.CheckNow();
-        var requested = steps > ulong.MaxValue - WorkSteps ? ulong.MaxValue : WorkSteps + steps;
-        if (steps > ulong.MaxValue - WorkSteps || requested > MaximumWorkSteps)
-            throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionWorkSteps, MaximumWorkSteps, requested);
-        WorkSteps += steps;
+        if (_observeCheckpoints) DiagnosticCheckpoints++;
     }
 
     internal void EnterDepth()
@@ -101,7 +92,7 @@ internal sealed class Utf8ConstructionBudget
     {
         var bytes = Math.Max(128ul, ObjectBytes<TState>());
         CheckBytes(bytes);
-        ChargeWork(2); // Conservative admission and factory-acquisition work.
+        Checkpoint();
         ReserveBytes(bytes);
         try
         {
@@ -115,7 +106,7 @@ internal sealed class Utf8ConstructionBudget
         if (text.IsEmpty) return string.Empty;
         var bytes = StringBytes(text.Length);
         CheckBytes(bytes);
-        ChargeWork((ulong)text.Length + 1);
+        Checkpoint();
         ReserveBytes(bytes);
         try
         {
@@ -130,14 +121,13 @@ internal sealed class Utf8ConstructionBudget
         // Pattern strings are interoperability input. Validate complete scalars
         // before acquiring bytes; an impossible surrogate atom must never become
         // a replacement-character literal in a native search plan.
-        ChargeWork((ulong)input.Length);
+        Checkpoint();
         var byteCount = 0;
         for (var offset = 0; offset < input.Length;)
         {
             var end = offset + Math.Min(2048, input.Length - offset);
-            if (offset != 0) ChargeWork(0);
+            if (offset != 0) Checkpoint();
             // A pair may cross the chunk end: finish its scalar before polling.
-            // The pass was admitted above; checkpoints add no numeric work.
             do
             {
                 if (Rune.DecodeFromUtf16(input[offset..], out var scalar, out var width) != System.Buffers.OperationStatus.Done)
@@ -149,12 +139,12 @@ internal sealed class Utf8ConstructionBudget
         var result = AllocateArray<byte>(byteCount, false);
         try
         {
-            ChargeWork((ulong)input.Length + (ulong)byteCount);
+            Checkpoint();
             var position = 0;
             for (var offset = 0; offset < input.Length;)
             {
                 var end = offset + Math.Min(2048, input.Length - offset);
-                if (offset != 0) ChargeWork(0);
+                if (offset != 0) Checkpoint();
                 do
                 {
                     _ = Rune.DecodeFromUtf16(input[offset..], out var scalar, out var width);
@@ -171,11 +161,11 @@ internal sealed class Utf8ConstructionBudget
     {
         // Count/validate before allocating the output. Parsing starts only after
         // the decoded string has been admitted into the enclosing owner.
-        ChargeWork((ulong)input.Length);
+        Checkpoint();
         var charCount = 0;
         for (var offset = 0; offset < input.Length;)
         {
-            if (offset != 0) ChargeWork(0);
+            if (offset != 0) Checkpoint();
             var count = Utf8SliceBufferWork.Utf8BlockLength(input[offset..]);
             try { charCount = checked(charCount + encoding.GetCharCount(input.Slice(offset, count))); }
             catch (DecoderFallbackException failure) when (offset != 0)
@@ -191,13 +181,13 @@ internal sealed class Utf8ConstructionBudget
         ReserveBytes(bytes);
         try
         {
-            ChargeWork((ulong)input.Length);
+            Checkpoint();
             return string.Create(charCount, new ConstructionDecodeState(input, this, encoding), static (destination, state) =>
             {
                 var written = 0;
                 for (var offset = 0; offset < state.Input.Length;)
                 {
-                    if (offset != 0) state.Budget.ChargeWork(0);
+                    if (offset != 0) state.Budget.Checkpoint();
                     var count = Utf8SliceBufferWork.Utf8BlockLength(state.Input[offset..]);
                     written += state.Encoding.GetChars(state.Input.Slice(offset, count), destination[written..]);
                     offset += count;
@@ -278,7 +268,7 @@ internal sealed class Utf8ConstructionBudget
         var bytes = ArrayBytes<T>(count);
         if (instructions) CheckSlots((ulong)count);
         CheckBytes(bytes);
-        ChargeWork((ulong)count);
+        Checkpoint();
         if (instructions) Reserve((ulong)count);
         ReserveBytes(bytes);
         try { return count == 0 ? [] : new T[count]; }

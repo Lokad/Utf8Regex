@@ -5,8 +5,7 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReFixedPolicyPreparationTests
 {
     [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
+        [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
     [InlineData(4)]
@@ -14,7 +13,6 @@ public sealed class PythonReFixedPolicyPreparationTests
     {
         var policy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = limit is 0 or 4 ? 1_000_000ul : null,
             MaxDepth = limit is 1 or 4 ? 2048u : null,
             MaxWorkingBytes = limit is 2 or 4 ? 1_048_576ul : null,
             MaxResultBytes = limit is 3 or 4 ? 1_048_576ul : null
@@ -60,7 +58,7 @@ public sealed class PythonReFixedPolicyPreparationTests
     [InlineData(true)]
     public void ScalarOneShotValuesAndTextSupportFiniteWork(bool finite)
     {
-        var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000 } : default;
+        var policy = finite ? new Utf8ResourcePolicy { MaxDepth = 4096 } : default;
         var prefix = new Utf8PythonRegex("prefix[0-9]+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,

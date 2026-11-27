@@ -46,26 +46,10 @@ public sealed class Pcre2MultilineSearchTests
     }
 
     [Fact]
-    public void ExactLinePrefixSupportsFiniteLimits()
-    {
-        var regex = new Utf8Pcre2Regex(            "^ERROR: .+$", options:             Pcre2CompileOptions.Multiline, compileSettings:             default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Regex.InfiniteMatchTimeout
-        });
-        Assert.Equal(
-            Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => regex.IsMatch("INFO: ok\nERROR: boom"u8)).ErrorKind);
-    }
-
-    [Fact]
     public void ExactLinePrefixEnumerationUsesBoundedWorkAcrossNonStarters()
     {
         using var regex = new Utf8Pcre2Regex("^ERROR: .+$", options: Pcre2CompileOptions.Multiline,
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 128 } });
+            policy: new() { ResourcePolicy = new() { MaxDepth = 4096 } });
         using var live = new CancellationTokenSource();
         var gap = "😀" + new string('x', 4096) + "\n";
         var input = Encoding.UTF8.GetBytes(gap + "ERROR: é\n" + gap);
@@ -82,7 +66,7 @@ public sealed class Pcre2MultilineSearchTests
     public void ExactLinePrefixSkipsInteriorDecoysAndFindsPairAcrossScanBlocks()
     {
         using var regex = new Utf8Pcre2Regex("^ERROR: .+$", options: Pcre2CompileOptions.Multiline,
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 128 } });
+            policy: new() { ResourcePolicy = new() { MaxDepth = 4096 } });
         using var live = new CancellationTokenSource();
         var decoys = "😀 " + string.Concat(Enumerable.Repeat("DEBUG: ERROR: decoy ", 90));
         var prefix = decoys + new string('x', 2047 - Encoding.UTF8.GetByteCount(decoys)) + "\n";

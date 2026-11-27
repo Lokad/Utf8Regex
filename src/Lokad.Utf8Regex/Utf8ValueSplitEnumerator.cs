@@ -14,7 +14,7 @@ public ref struct Utf8ValueSplitEnumerator
     private readonly ReadOnlySpan<byte> _input;
     private readonly bool _rightToLeft;
     private Utf8OperationMatchCursor _matchCursor;
-    internal ulong DebugInvocationSteps => _matchCursor.DebugInvocationSteps;
+    internal ulong DiagnosticCheckpointCount => _matchCursor.DiagnosticCheckpointCount;
     internal ulong DebugInvocationReservedBytes => _matchCursor.DebugInvocationReservedBytes;
     internal ulong DebugPeakWorkingBytes => _matchCursor.DebugPeakWorkingBytes;
     private int _segmentBoundary;

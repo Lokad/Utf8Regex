@@ -29,7 +29,7 @@ public sealed class Pcre2RecursivePalindromeTests
     public void RecursivePalindromeMatchesScalarPalindromeSemanticsAtValidStarts(string pattern)
     {
         var direct = new Utf8Pcre2Regex(pattern);
-        var vm = CreateMetered(pattern, 1_000_000);
+        var vm = CreateMetered(pattern);
 
         foreach (var inputText in new[]
                  {
@@ -71,42 +71,12 @@ public sealed class Pcre2RecursivePalindromeTests
     }
 
     [Theory]
-    [InlineData("^((.)(?1)\\2|.?)$")]
-    [InlineData("^(.|(.)(?1)?\\2)$")]
-    public void RecursivePalindromeObservesMatchOptionsAndLimits(string pattern)
-    {
-        var direct = new Utf8Pcre2Regex(pattern);
-        var vm = CreateMetered(pattern, 1_000_000);
-        var input = "abcba"u8.ToArray();
-
-        foreach (var options in new[]
-                 {
-                     Pcre2MatchOptions.Anchored,
-                     Pcre2MatchOptions.EndAnchored,
-                     Pcre2MatchOptions.NotBol,
-                     Pcre2MatchOptions.NotEol,
-                     Pcre2MatchOptions.NotEmpty,
-                     Pcre2MatchOptions.NotEmptyAtStart,
-                 })
-        {
-            var expected = options is not (Pcre2MatchOptions.NotBol or Pcre2MatchOptions.NotEol);
-            Assert.Equal(expected, direct.IsMatch(input, 0, options));
-            Assert.Equal(expected, vm.IsMatch(input, 0, options));
-        }
-
-        var tightlyMetered = CreateMetered(pattern, 1);
-        Assert.Equal(
-            Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch("abcba"u8)).ErrorKind);
-    }
-
-    [Theory]
     [InlineData(@"^((.)(?1)\2|.?)$", "åäääää")]
     [InlineData(@"^((.)(?1)\2|.?)$", "😀😁😁😁")]
     [InlineData(@"^(.|(.)(?1)?\2)$", "åäääää")]
     public void SubroutineScreenRejectsSharedUtf8LeadWithinWorkLimit(string pattern, string text)
     {
-        using var regex = CreateMetered(pattern, 20);
+        using var regex = CreateMetered(pattern);
         using var cancellation = new CancellationTokenSource();
 
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(text), cancellationToken: cancellation.Token));
@@ -119,7 +89,7 @@ public sealed class Pcre2RecursivePalindromeTests
     [InlineData(@"(?(DEFINE)(?<n>a?))\A(?&n)?(?<tail>aa)\z", "aa", 0)]
     public void OptionalCallsPreservePriorityEmptyReturnAndCallerCaptures(string pattern, string text, int tailStart)
     {
-        using var regex = CreateMetered(pattern, 1_000_000);
+        using var regex = CreateMetered(pattern);
         var captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
         var input = Encoding.UTF8.GetBytes(text);
 
@@ -132,7 +102,7 @@ public sealed class Pcre2RecursivePalindromeTests
     [Fact]
     public void SubroutineRetriesRestoreCallerCapturesAfterTheJournalGrows()
     {
-        using var regex = CreateMetered(@"\A(?<piece>(?<unit>[ab]){2,128}):(?&piece)bb\k<unit>\z", 1_000_000);
+        using var regex = CreateMetered(@"\A(?<piece>(?<unit>[ab]){2,128}):(?&piece)bb\k<unit>\z");
         var input = Encoding.UTF8.GetBytes("aa:" + new string('b', 80) + "a");
         Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
 
@@ -153,7 +123,7 @@ public sealed class Pcre2RecursivePalindromeTests
     public void OptionalDotInSubroutineProgramRetainsScalarWidthAndNewlineRules(
         string optional, string text, int optionalEnd)
     {
-        using var regex = CreateMetered(@"(?(DEFINE)(?<piece>q))\A(?&piece)(?<prefix>" + optional + @")é\z", 1_000);
+        using var regex = CreateMetered(@"(?(DEFINE)(?<piece>q))\A(?&piece)(?<prefix>" + optional + @")é\z");
         Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
         var result = regex.Match(Encoding.UTF8.GetBytes(text), captures: captures);
 
@@ -172,7 +142,7 @@ public sealed class Pcre2RecursivePalindromeTests
     {
         using var regex = new Utf8Pcre2Regex(@"^(?1)\d{3}(a)", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new Utf8ResourcePolicy { MaxWorkingBytes = 512, MaxWorkSteps = 1000, MaxDepth = 2 }
+            ResourcePolicy = new Utf8ResourcePolicy { MaxWorkingBytes = 512, MaxDepth = 2 }
         });
         using var cancellation = new CancellationTokenSource();
 
@@ -189,12 +159,12 @@ public sealed class Pcre2RecursivePalindromeTests
             scalars.SequenceEqual(scalars.Reverse());
     }
 
-    private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
+    private static Utf8Pcre2Regex CreateMetered(string pattern) =>
         new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (matchLimit) == 0 ? null : (matchLimit)
+                MaxDepth = 4096
             },
             MatchTimeout = Regex.InfiniteMatchTimeout
         });

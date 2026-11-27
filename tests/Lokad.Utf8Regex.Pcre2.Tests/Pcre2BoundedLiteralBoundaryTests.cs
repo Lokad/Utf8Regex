@@ -20,7 +20,7 @@ public sealed class Pcre2BoundedLiteralBoundaryTests
     {
         using var regex = new Utf8Pcre2Regex(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 100_000, MaxDepth = 256, MaxWorkingBytes = 1 << 20 }
+            ResourcePolicy = new() { MaxDepth = 256, MaxWorkingBytes = 1 << 20 }
         });
         using var source = new CancellationTokenSource();
         Assert.Equal(Pcre2CandidateSearchKind.BoundedLiteralWindow, regex.DebugCompiledProgram.CandidateSearch.Kind);
@@ -62,7 +62,7 @@ public sealed class Pcre2BoundedLiteralBoundaryTests
     {
         using var regex = new Utf8Pcre2Regex(Date, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 16, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
         var input = Encoding.UTF8.GetBytes(new string('1', 8192));
         using var source = new CancellationTokenSource();
@@ -72,10 +72,8 @@ public sealed class Pcre2BoundedLiteralBoundaryTests
 
         using var tight = new Utf8Pcre2Regex(Date, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 2, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
-        var failure = Assert.Throws<Pcre2MatchException>(() => tight.IsMatch(input, cancellationToken: source.Token));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
     }
 
     [Theory]

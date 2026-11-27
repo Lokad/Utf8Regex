@@ -12,7 +12,6 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
 
     private static Utf8ResourcePolicy Generous => new()
     {
-        MaxWorkSteps = 1_000_000,
         MaxDepth = 128,
         MaxWorkingBytes = 1 << 20,
         MaxResultBytes = 1 << 20
@@ -72,7 +71,6 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10_000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -106,7 +104,6 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -151,7 +148,7 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         var core = new global::Lokad.Utf8Regex.Utf8Regex(string.Join('|', Literals));
         Assert.True(core.CanCountNativeLiteralForResult);
         Assert.False(core.CanFindNativeLiteralForResult);
-        var invocation = new Utf8SliceInvocation(new(1_000_000, 1, 8, 1), Regex.InfiniteMatchTimeout, default);
+        var invocation = new Utf8SliceInvocation(new(1, 8, 1), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
         try
         {
@@ -172,7 +169,6 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -201,74 +197,6 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         Assert.Equal(new[] { "cat", "cow" }, matches.Select(match => System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span)));
         Assert.Equal("cat", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(6, retained.Value.StartOffsetInBytes);
-    }
-    [Fact]
-    public void NinthAlternativeUsesTheBoundedScalarProof()
-    {
-        var pattern = string.Join('|', Literals) + "|wolf";
-        using var core = new global::Lokad.Utf8Regex.Utf8Regex(pattern);
-        Assert.False(core.CanCountNativeLiteralForResult);
-        var input = Encoding.UTF8.GetBytes("π😀" + string.Join(' ', Literals) + " wolf");
-        Utf8PythonRegex Create(ulong work) => new(pattern, options: PythonReCompileOptions.None, policy: new()
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = work,
-                MaxDepth = 1,
-                MaxWorkingBytes = 1,
-                MaxResultBytes = 1
-            }
-        });
-        Assert.Equal(9, Create(1_000_000).Count(input, startOffsetInBytes: 6));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(1).Count(input, startOffsetInBytes: 6)).ResourceKind);
-    }
-    [Theory]
-    [InlineData(2)]
-    [InlineData(4)]
-    [InlineData(5)]
-    [InlineData(8)]
-    public void WorkDenialIsPublicCumulativeAndFreshOnReuse(int width)
-    {
-        var pattern = string.Join('|', Literals.Take(width));
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(string.Join(' ', Literals.Take(width)) + " ", 128)));
-        var expected = width * 128;
-        Utf8PythonRegex Create(ulong cap) => new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Generous with
-            {
-                MaxWorkSteps = cap
-            }
-        });
-        void Denied(ulong cap)
-        {
-            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(cap).Count(input));
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-            Assert.Equal(cap, error.Limit);
-            Assert.True(error.Requested > cap);
-        }
-        Denied(1);
-        ulong low = 1, high = 100_000;
-        while (high - low > 1)
-        {
-            var middle = low + (high - low) / 2;
-            try
-            {
-                Assert.Equal(expected, Create(middle).Count(input));
-                high = middle;
-            }
-            catch (Utf8ResourceLimitExceededException error)
-            {
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-                low = middle;
-            }
-        }
-        Denied(high - 1);
-        var admitted = Create(high);
-        Assert.Equal(expected, admitted.Count(input));
-        Assert.Equal(expected, admitted.Count(input));
     }
     [Fact]
     public void DeadlineAtEntryUsesPythonDiagnosticLimits()

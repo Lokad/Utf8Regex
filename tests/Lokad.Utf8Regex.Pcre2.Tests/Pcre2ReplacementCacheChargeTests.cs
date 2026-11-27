@@ -87,33 +87,26 @@ public sealed class Pcre2ReplacementCacheChargeTests
     [Fact]
     public void EveryWorkCutoffAndEmptyValueChecksUseTheParentBudget()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var value = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse("é$1😀"u8, Pcre2SubstitutionOptions.Extended));
         ulong steps;
-        using (var probe = Utf8ConstructionScope.Enter()) { Assert.True(Compute(value, ulong.MaxValue, default, out _)); steps = probe.Budget.WorkSteps; }
-        for (ulong cap = 0; cap <= steps; cap++)
-        {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cap, ulong.MaxValue); owner.Budget.ReserveBytes(7);
-            var failure = Record.Exception(() => Compute(value, ulong.MaxValue, default, out _));
-            if (cap < steps) Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-            else Assert.Null(failure);
-            Assert.Equal(7UL, owner.Budget.ReservedBytes); Assert.InRange(owner.Budget.WorkSteps, 0UL, cap);
-        }
+        using (var probe = Utf8ConstructionScope.Enter()) { Assert.True(Compute(value, ulong.MaxValue, default, out _)); steps = probe.Budget.DiagnosticCheckpoints; }
         using var source = new CancellationTokenSource(); source.Cancel();
-        using var canceled = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
+        using var canceled = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         canceled.Budget.CancellationToken = source.Token;
         var error = Assert.Throws<OperationCanceledException>(() => Compute(default, 0, default, out _));
-        Assert.Equal(source.Token, error.CancellationToken); Assert.Equal(0UL, canceled.Budget.WorkSteps);
-    }
+        Assert.Equal(source.Token, error.CancellationToken);     }
 
     [Fact]
     public void EmptyPreparationStillChecksTheOriginalDeadline()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var owner = Utf8ConstructionScope.Enter(); owner.Budget.ReserveBytes(7);
         owner.Budget.Deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20));
         ticks = 15; Assert.True(Compute(default, 0, default, out var charge)); Assert.Equal(0UL, charge);
-        var spent = owner.Budget.WorkSteps;
+        var spent = owner.Budget.DiagnosticCheckpoints;
         ticks = 25; Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => Compute(default, 0, default, out _));
-        Assert.Equal(spent, owner.Budget.WorkSteps); Assert.Equal(7UL, owner.Budget.ReservedBytes);
+        Assert.Equal(spent, owner.Budget.DiagnosticCheckpoints); Assert.Equal(7UL, owner.Budget.ReservedBytes);
     }
 }

@@ -54,7 +54,7 @@ internal ref struct Pcre2SubroutineCalls(int frameLimit, bool trackRents, int en
         {
             if (slots[..64].Contains(current)) return true;
             slots = slots[64..];
-            budget.ChargeWorkspaceStep();
+            budget.CheckWorkspace();
         }
         return slots.Contains(current);
     }

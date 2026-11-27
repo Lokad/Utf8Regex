@@ -20,12 +20,11 @@ public sealed class Utf8MultiLiteralConstructionAdmissionTests
 
     public static IEnumerable<object[]> Cutoffs() =>
         from builder in Enum.GetValues<Builder>()
-        from byteLimit in new[] { false, true }
-        select new object[] { builder, byteLimit };
+        select new object[] { builder };
 
     [Theory]
     [MemberData(nameof(Cutoffs))]
-    public void ByteAndWorkDenialsRestoreParentAndKeepAdmittedWork(Builder builder, bool byteLimit)
+    public void ByteDenialsRestoreParentStorage(Builder builder)
     {
         var texts = builder switch
         {
@@ -37,29 +36,24 @@ public sealed class Utf8MultiLiteralConstructionAdmissionTests
             _ => new[] { "ab", "ac", "ad", "bb" },
         };
         var literals = texts.Select(Encoding.UTF8.GetBytes).ToArray();
-        ulong heldBytes, heldWork, retainedBytes, lateCutoff, successCutoff;
-        using (var measured = new Utf8ConstructionScope(1, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        ulong heldBytes, retainedBytes, lateCutoff, successCutoff;
+        using (var measured = new Utf8ConstructionScope(1, ulong.MaxValue, ulong.MaxValue))
         {
             _ = measured.Budget.AllocateArray<int>(1, instructions: true);
             heldBytes = measured.Budget.ReservedBytes;
-            heldWork = measured.Budget.WorkSteps;
             BuildAndCheck(builder, literals);
             // The published arrays still need their loans even when construction
             // scratch can grow less under a tighter byte cap.
             retainedBytes = measured.Budget.ReservedBytes - heldBytes;
-            var required = byteLimit ? retainedBytes : measured.Budget.WorkSteps - heldWork;
-            lateCutoff = required == 0 ? 0 : required - 1;
-            successCutoff = byteLimit ? measured.Budget.PeakBytes - heldBytes : measured.Budget.WorkSteps - heldWork;
+            lateCutoff = retainedBytes == 0 ? 0 : retainedBytes - 1;
+            successCutoff = measured.Budget.PeakBytes - heldBytes;
         }
         foreach (var allowance in new[] { 0ul, lateCutoff, successCutoff }.Distinct())
         {
-            var byteCap = byteLimit ? heldBytes + allowance : ulong.MaxValue;
-            var workCap = byteLimit ? ulong.MaxValue : heldWork + allowance;
-            using var owner = new Utf8ConstructionScope(1, byteCap, workCap, ulong.MaxValue);
+            var byteCap = heldBytes + allowance;
+            using var owner = new Utf8ConstructionScope(1, byteCap, ulong.MaxValue);
             var parent = owner.Budget.AllocateArray<int>(1, instructions: true);
             parent[0] = 17;
-            var workBeforeLastCharge = heldWork;
-            owner.Budget.CheckpointHook = work => workBeforeLastCharge = work;
 
             if (allowance == successCutoff)
             {
@@ -70,22 +64,15 @@ public sealed class Utf8MultiLiteralConstructionAdmissionTests
             {
                 var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
                     BuildAndCheck(builder, literals));
-                Assert.Equal(byteLimit ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
+                Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes,
                     failure.ResourceKind);
-                Assert.Equal(byteLimit ? byteCap : workCap, failure.Limit);
+                Assert.Equal(byteCap, failure.Limit);
                 Assert.True(failure.Requested > failure.Limit);
                 Assert.Equal(heldBytes, owner.Budget.ReservedBytes);
-                if (!byteLimit) Assert.Equal(workBeforeLastCharge, owner.Budget.WorkSteps);
-                if (allowance != 0)
-                {
-                    Assert.True(owner.Budget.WorkSteps > heldWork);
-                    if (retainedBytes != 0) Assert.True(owner.Budget.PeakBytes > heldBytes);
-                }
             }
             Assert.Equal(17, parent[0]);
             Assert.Equal(0ul, owner.Budget.Depth);
             Assert.Equal(1ul, owner.Budget.Reserved);
-            Assert.InRange(owner.Budget.WorkSteps, workBeforeLastCharge, workCap);
             Assert.InRange(owner.Budget.PeakBytes, heldBytes, byteCap);
         }
     }

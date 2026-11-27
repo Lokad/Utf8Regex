@@ -20,7 +20,7 @@ public sealed class Utf8EscapedClassRangeTests
             var options = mode | RegexOptions.CultureInvariant;
             var policy = controlled ? new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000, MaxDepth = 256,
+                MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
             } : default;
             var oracle = new Regex(pattern, options);

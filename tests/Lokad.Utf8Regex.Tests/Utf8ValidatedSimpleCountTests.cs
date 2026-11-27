@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ValidatedSimpleCountTests
 {
     private static Utf8ResourcePolicy Limits => new()
-    { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
+    { MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
 
     [Theory]
     [InlineData("((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))", "", 0)]
@@ -75,7 +75,6 @@ RegexOptions options, bool unicodePrefix)
             {
                 ResourcePolicy = Limits with
                 {
-                    MaxWorkSteps = 4096,
                     MaxWorkingBytes = 1,
                     MaxDepth = 1
                 }
@@ -105,13 +104,8 @@ RegexOptions options, bool unicodePrefix)
         Assert.Equal(1, regex.Count("é😀ASIAABCDEFGHIJKLMNOP"u8));
         var denied = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = Limits with
-            {
-                MaxWorkSteps = 1
-            }
+            ResourcePolicy = Limits
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count("é😀ASIAABCDEFGHIJKLMNOP"u8)).ResourceKind);
     }
 
     [Theory]

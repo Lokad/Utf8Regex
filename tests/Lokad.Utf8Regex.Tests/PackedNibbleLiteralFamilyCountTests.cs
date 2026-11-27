@@ -185,7 +185,6 @@ public sealed class PackedNibbleLiteralFamilyCountTests
             MatchTimeout = TimeSpan.FromSeconds(5),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1_048_576,
                 MaxResultBytes = 1_048_576

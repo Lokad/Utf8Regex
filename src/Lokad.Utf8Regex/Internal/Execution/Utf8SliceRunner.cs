@@ -386,12 +386,12 @@ internal static partial class Utf8SliceRunner
                 // Keep initial workspace admission and reset above. This complete
                 // root has no continuation or consuming nonempty alternative. Preserve
                 // VM step/deadline cadence; callers retain final publication checks.
-                var breach = invocation.TryChargeStep();
+                var breach = invocation.CheckProgress();
                 invocation.Budget.ThrowIfCancellationRequested();
                 if (breach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, breach);
                 var matched = !requireNonEmpty && MatchesBoundary(program, program.Instructions[0], input, start);
-                breach = invocation.TryChargeStep();
+                breach = invocation.CheckProgress();
                 invocation.Budget.ThrowIfCancellationRequested();
                 attempt = new(matched && breach == Utf8ExecutionLimitKind.None,
                     matched && breach == Utf8ExecutionLimitKind.None ? start : -1, breach);
@@ -673,13 +673,13 @@ internal static partial class Utf8SliceRunner
             invocation.CheckpointHook is null && invocation.IsUnmetered &&
             TryGetFixedDecimalFollower(program, out var digits, out var firstFollower, out var lastFollower))
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
             if (!TryFindFixedDecimalMatch(input, fromByte, digits, firstFollower, lastFollower, decimalProof, out var start, out var end))
                 return new(false, -1, -1, Utf8ExecutionLimitKind.None);
             if (!collectHistory && captureStarts.IsEmpty && captureEnds.IsEmpty)
             {
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 return breach == Utf8ExecutionLimitKind.None
                     ? new(true, start, end, breach) : new(false, -1, -1, breach);
             }
@@ -712,7 +712,7 @@ internal static partial class Utf8SliceRunner
                 var admission = invocation.TryReserveWorking(0);
                 if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
             }
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
             invocation.Budget.ThrowIfCancellationRequested();
             if (MayMatchAdmittedCandidate(program, input, fromByte, 0, out var acceptedEnd, emitted,
@@ -720,7 +720,7 @@ internal static partial class Utf8SliceRunner
             {
                 if (acceptedEnd >= 0)
                 {
-                    breach = invocation.TryChargeInputStep();
+                    breach = invocation.CheckInput();
                     invocation.Budget.ThrowIfCancellationRequested();
                     if (interpretedVisits > 0 && breach == Utf8ExecutionLimitKind.None)
                         program.ObserveProofWork(interpretedVisits);
@@ -771,7 +771,7 @@ internal static partial class Utf8SliceRunner
                 return true;
             }
         }
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.CheckInput();
         if (breach == Utf8ExecutionLimitKind.None)
             invocation.Budget.ThrowIfCancellationRequested();
         if (breach != Utf8ExecutionLimitKind.None || seekVeryEnd && fromByte != input.Length)
@@ -859,7 +859,7 @@ internal static partial class Utf8SliceRunner
             {
                 // The proof acquires no storage. Any enclosing loan was
                 // already admitted, and this step retains a prior denial.
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 invocation.Budget.ThrowIfCancellationRequested();
                 if (breach == Utf8ExecutionLimitKind.None && visits != 0)
                     program.ObserveProofWork(visits);
@@ -950,9 +950,9 @@ internal static partial class Utf8SliceRunner
                 if (breach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, breach);
                 if (position < 0)
-                    return new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                    return new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
             }
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, -1, breach);
             invocation.Budget.ThrowIfCancellationRequested();
@@ -965,7 +965,7 @@ internal static partial class Utf8SliceRunner
             var length = ScanAsciiMask(input[(position + 1)..], tail, category: false);
             if (length < minimum) continue;
 
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             invocation.Budget.ThrowIfCancellationRequested();
             return breach == Utf8ExecutionLimitKind.None
                 ? new(true, position, position + 1 + length, breach)
@@ -1089,7 +1089,7 @@ internal static partial class Utf8SliceRunner
             else if (leadingClass >= 0 && literalIndex >= 0 &&
                 candidatePlan.RequiredPrefilterSearcher.Kind == PreparedSearcherKind.MultiLiteral)
             {
-                var proofBreach = invocation.TryChargeInputStep();
+                var proofBreach = invocation.CheckInput();
                 if (proofBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, proofBreach);
                 if (ReferenceEquals(candidatePlan.AlignedClassDelimiterProgram, program))
@@ -1186,7 +1186,7 @@ internal static partial class Utf8SliceRunner
             var breach = ScreenFirstExactFamilyFollower(program, input, literals, ref searchStart, ref invocation);
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
             if (searchStart < 0)
-                return new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                return new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
         }
         for (var position = searchStart; position >= 0; position = AdvancePastScalar(input, position, program.RightToLeft))
         {
@@ -1209,11 +1209,11 @@ internal static partial class Utf8SliceRunner
                     return new(false, -1, -1, seekBreach);
                 if (position < 0)
                     return new(false, -1, -1,
-                        new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                        new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
                 if (provedMatchEnd >= 0 && canProveValue && captureEnds.IsEmpty &&
                     invocation.Budget.Limits.MaxDepth is 0 or >= BranchedPrefixInstructionLimit)
                 {
-                    var admission = invocation.TryChargeInputStep();
+                    var admission = invocation.CheckInput();
                     invocation.Budget.ThrowIfCancellationRequested();
                     return admission == Utf8ExecutionLimitKind.None
                         ? new(true, position, provedMatchEnd, admission) : new(false, -1, -1, admission);
@@ -1238,7 +1238,7 @@ internal static partial class Utf8SliceRunner
                     return new(false, -1, -1, seekBreach);
                 if (position < 0)
                     return new(false, -1, -1,
-                        new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                        new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
             }
             if (leading >= 0 && ((uint)position >= (uint)input.Length ||
                 !MayStartAtByte(input[position], leading, leadingLast, sparsePair, includeKelvin) ||
@@ -1250,7 +1250,7 @@ internal static partial class Utf8SliceRunner
                     return new(false, -1, -1, seekBreach);
                 if (position < 0)
                     return new(false, -1, -1,
-                        new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                        new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
             }
             if (seekBeginning)
             {
@@ -1261,7 +1261,7 @@ internal static partial class Utf8SliceRunner
             }
             // The ordinal neighbor check reads at most two scalars. Use the
             // instruction cadence for rejected starts and poll before verifying a hit.
-            var breach = requiresEqualScalars ? invocation.TryChargeBoundedCheck() : invocation.TryChargeInputStep();
+            var breach = requiresEqualScalars ? invocation.CheckBoundedProgress() : invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, -1, breach);
             invocation.Budget.ThrowIfCancellationRequested();
@@ -1273,7 +1273,7 @@ internal static partial class Utf8SliceRunner
                     continue;
                 if (lineEnd >= 0 && canProveValue && captureEnds.IsEmpty)
                 {
-                    breach = invocation.TryChargeInputStep();
+                    breach = invocation.CheckInput();
                     invocation.Budget.ThrowIfCancellationRequested();
                     return breach == Utf8ExecutionLimitKind.None
                         ? new(true, position, lineEnd, breach) : new(false, -1, -1, breach);
@@ -1393,7 +1393,7 @@ internal static partial class Utf8SliceRunner
                 {
                     // The candidate step admitted the bounded walk. Confirm
                     // the original interruption and work before publishing it.
-                    breach = invocation.TryChargeInputStep();
+                    breach = invocation.CheckInput();
                     invocation.Budget.ThrowIfCancellationRequested();
                     return breach == Utf8ExecutionLimitKind.None
                         ? new(true, position, acceptedEnd, breach)
@@ -1501,7 +1501,7 @@ internal static partial class Utf8SliceRunner
             }
             if (leadingLiteral < 0) return Utf8ExecutionLimitKind.None;
 
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             invocation.Budget.ThrowIfCancellationRequested();
             if (input.IsEmpty || input[0] != leadingLiteral) position = -1;
@@ -1509,7 +1509,7 @@ internal static partial class Utf8SliceRunner
         }
         if (leadingLiteral >= 0)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             invocation.Budget.ThrowIfCancellationRequested();
             if (position < input.Length && (position == 0 || input[position - 1] == (byte)'\n') &&
@@ -1523,7 +1523,7 @@ internal static partial class Utf8SliceRunner
             var overlap = needle.Length - 1;
             while (input.Length - position > overlap)
             {
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var length = Math.Min(2048, input.Length - position);
                 var relative = input.Slice(position, length).IndexOf(needle);
@@ -1538,7 +1538,7 @@ internal static partial class Utf8SliceRunner
         if (position == 0 || input[position - 1] == (byte)'\n') return Utf8ExecutionLimitKind.None;
         while (position < input.Length)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var length = Math.Min(2048, input.Length - position);
             var newline = input.Slice(position, length).IndexOf((byte)'\n');
@@ -1654,7 +1654,7 @@ internal static partial class Utf8SliceRunner
             if (candidatePlan.LiteralSearch is { IgnoreCase: false, Length: > 0 and <= 64 } literal)
             {
                 var prefixStart = first.Kind == Utf8SliceInstructionKind.Boundary ? 1 : 0;
-                var breach = invocation.TryChargeInputStep();
+                var breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
                 if (LiteralStartsAtInstruction(program, prefixStart, literal.Needle))
                     prefixContinuation = prefixStart + literal.Length;
@@ -1662,7 +1662,7 @@ internal static partial class Utf8SliceRunner
             else if (candidatePlan.Kind == Utf8SearchKind.ExactAsciiLiterals &&
                 candidatePlan.LiteralSearch is null && candidatePlan.AlternateLiteralsUtf8 is { Length: >= 2 and <= 8 } literals)
             {
-                var breach = invocation.TryChargeInputStep();
+                var breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
                 familyContinuations = stackalloc int[literals.Length];
                 if (!TryFindExactFamilyContinuations(program.Instructions, literals, familyContinuations, out prefixContinuation))
@@ -1672,7 +1672,7 @@ internal static partial class Utf8SliceRunner
                     breach = ScreenExactFamilyFollower(program, input, literals, prefixContinuation,
                         ref position, ref invocation);
                     if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
-                    if (position < 0) return new(0, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                    if (position < 0) return new(0, new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
                 }
             }
         }
@@ -1694,7 +1694,7 @@ internal static partial class Utf8SliceRunner
             var suffix = fromByte;
             var breach = TrySeekAsciiCandidate(input, ref suffix, finalByte, finalByte, ref invocation);
             if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
-            if (suffix < 0) return new(0, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+            if (suffix < 0) return new(0, new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
         }
         var branchWindow = checkBranchedPrefix && input.Length - fromByte >= 256
             ? FindBranchedAsciiWindow(program, leadingScalarIndex) : default;
@@ -1893,7 +1893,7 @@ internal static partial class Utf8SliceRunner
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0)
                         return CompleteCandidateCount(program, count, interpretedVisits,
-                            new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                            new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
                     if (leadingFirst < 128 && (shortRepeatWindow.Min != 0 ? !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal) :
                         (leadingPrefix.IsEmpty && leadingSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                         (uint)(input[position + 1] - leadingSecond) > (uint)(leadingSecondLast - leadingSecond))) ||
@@ -1937,14 +1937,14 @@ internal static partial class Utf8SliceRunner
                     }
                     if (position < 0)
                     {
-                        return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                        return new(count, new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
                     }
                 }
                 // A mandatory initial strict-end anchor admits only EOF, even
                 // after an empty match. Keep original terminal authority when
                 // an offset or the preceding match has moved below that start.
                 if (seekVeryEnd && position != input.Length)
-                    return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                    return new(count, new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
                 var prefixBytes = leadingPrefix.Length;
                 var candidateContinuation = prefixContinuation;
                 if (seekLiteral)
@@ -1967,7 +1967,7 @@ internal static partial class Utf8SliceRunner
                     // Keep the final charge and recheck the original token after
                     // its diagnostic hook before publishing any accumulated count.
                     if (position < 0)
-                        return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                        return new(count, new Utf8InvocationBufferControl(ref invocation).CheckWorkspace());
                 }
                 if (seekBeginning)
                 {
@@ -1975,7 +1975,7 @@ internal static partial class Utf8SliceRunner
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0) break;
                 }
-                var breach = requiresEqualScalars ? invocation.TryChargeBoundedCheck() : invocation.TryChargeInputStep();
+                var breach = requiresEqualScalars ? invocation.CheckBoundedProgress() : invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None)
                     return new Utf8SliceCountOutcome(count, breach);
                 invocation.Budget.ThrowIfCancellationRequested();
@@ -2092,7 +2092,7 @@ internal static partial class Utf8SliceRunner
                 {
                     // The first attempt admits the workspace. Accept reads no
                     // attempt state, so later proved ranges only debit that step.
-                    var acceptance = invocation.TryChargeStep();
+                    var acceptance = invocation.CheckProgress();
                     outcome = acceptance == Utf8ExecutionLimitKind.None
                         ? new(true, position + verifiedPrefix.Item2, acceptance) : new(false, -1, acceptance);
                 }
@@ -2179,7 +2179,7 @@ internal static partial class Utf8SliceRunner
                 resumeFailure = false;
                 goto Backtrack;
             }
-            var stepBreach = invocation.TryChargeStep();
+            var stepBreach = invocation.CheckProgress();
             if (stepBreach != Utf8ExecutionLimitKind.None)
             {
                 failure = stepBreach;
@@ -2203,7 +2203,7 @@ internal static partial class Utf8SliceRunner
                             instruction = instructions[++programIndex];
                             if (instruction.Kind != Utf8SliceInstructionKind.Literal || instruction.B != 0 ||
                                 (uint)instruction.A >= 128) break;
-                            var literalBreach = invocation.TryChargeStep();
+                            var literalBreach = invocation.CheckProgress();
                             if (literalBreach != Utf8ExecutionLimitKind.None)
                                 { failure = literalBreach; goto Failure; }
                         }
@@ -2406,7 +2406,7 @@ internal static partial class Utf8SliceRunner
                     // Charge each verified instruction before advancing over it.
                     for (var consumed = 0; consumed < verifiedPrefix; consumed++)
                     {
-                        var prefixBreach = invocation.TryChargeStep();
+                        var prefixBreach = invocation.CheckProgress();
                         if (prefixBreach != Utf8ExecutionLimitKind.None)
                         { failure = prefixBreach; goto Failure; }
                     }
@@ -2419,7 +2419,7 @@ internal static partial class Utf8SliceRunner
                         // These complete iterations have no retry or observed
                         // capture effects. Resume at the loop choice before
                         // the first excluded byte, wider scalar, or next block.
-                        var scanBreach = invocation.TryChargeInputStep();
+                        var scanBreach = invocation.CheckInput();
                         if (scanBreach != Utf8ExecutionLimitKind.None)
                         { failure = scanBreach; goto Failure; }
                         var block = input.Slice(inputIndex, Math.Min(64, input.Length - inputIndex));
@@ -3193,7 +3193,7 @@ internal static partial class Utf8SliceRunner
                         }
                         else
                         {
-                            failure = invocation.TryChargeStep();
+                            failure = invocation.CheckProgress();
                             if (failure != Utf8ExecutionLimitKind.None) goto Failure;
                             if (!TryGetScalarWidthEndingAt(input, popped.InputIndex, out var width)) goto Backtrack;
                             inputIndex = popped.InputIndex - width;
@@ -3211,7 +3211,7 @@ internal static partial class Utf8SliceRunner
                         {
                             // This saved endpoint cannot reach the terminal anchor.
                             // The undo has run normally and the next frame owns its state.
-                            var skipBreach = invocation.TryChargeStep();
+                            var skipBreach = invocation.CheckProgress();
                             if (skipBreach != Utf8ExecutionLimitKind.None) { failure = skipBreach; goto Failure; }
                             goto Backtrack;
                         }
@@ -3299,7 +3299,7 @@ internal static partial class Utf8SliceRunner
             _reservation = bytes;
             if (balanceGroups != 0)
             {
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 Heads = new int[balanceGroups];
             }
@@ -3355,15 +3355,15 @@ internal static partial class Utf8SliceRunner
             // The workspace releases this reservation even on partial allocation
             // or interruption, just as it releases partially acquired stack chunks.
             _reservedBytes = reserved;
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             counts = new int[repeats];
-            breach = invocation.TryChargeInputStep();
+            breach = invocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             positions = new int[repeats];
             for (var offset = 0; offset < repeats;)
             {
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var length = Math.Min(2048, repeats - offset);
                 counts.AsSpan(offset, length).Fill(-1);
@@ -3382,7 +3382,7 @@ internal static partial class Utf8SliceRunner
             {
                 if ((index & 63) == 0 || index == _trailCount - 1)
                 {
-                    var breach = invocation.TryChargeInputStep();
+                    var breach = invocation.CheckInput();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                 }
                 var entry = _trailTables[index / TrailChunkCapacity][index % TrailChunkCapacity];
@@ -3422,7 +3422,7 @@ internal static partial class Utf8SliceRunner
             if (Breach != Utf8ExecutionLimitKind.None) return false;
             try
             {
-                Breach = invocation.TryChargeInputStep();
+                Breach = invocation.CheckInput();
                 if (Breach != Utf8ExecutionLimitKind.None) return false;
                 _firstFrames = Utf8ExactStatePool<Utf8SliceFrame>.Rent(FrameChunkCapacity, invocation.HasUnlimitedWorkingMemory);
                 _reservedBytes += bytes;
@@ -3478,7 +3478,7 @@ internal static partial class Utf8SliceRunner
             var next = input[end];
             if (next == first || next == second || next == third) return Utf8ExecutionLimitKind.None;
 
-            var breach = invocation.TryChargeInputStep();
+            var breach = invocation.CheckInput();
             // The skipped body would hold one transient repeat exit and
             // evaluate its assertion above the existing compact rewind.
             if (breach == Utf8ExecutionLimitKind.None) breach = invocation.Budget.TryNoteDepth((uint)_frameCount + 2);
@@ -3491,7 +3491,7 @@ internal static partial class Utf8SliceRunner
                 if (stop >= 0) { position += stop; break; }
                 position += block.Length;
                 if (position == input.Length) break;
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
             }
 
@@ -3526,7 +3526,7 @@ internal static partial class Utf8SliceRunner
             breach = Utf8ExecutionLimitKind.None;
             for (var index = _trailCount - 1; index >= 0; index--)
             {
-                breach = invocation.TryChargeStep();
+                breach = invocation.CheckProgress();
                 if (breach != Utf8ExecutionLimitKind.None) return false;
                 var entry = TrailEntryAt(index);
                 if (entry.Slot != slot) continue;
@@ -3825,21 +3825,21 @@ internal static partial class Utf8SliceRunner
             var adopted = false;
             try
             {
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return false;
                 var candidate = replaceTable ? new T[capacity][] : tables ?? throw new InvalidOperationException("Live slice stack table is missing.");
                 if (replaceTable && tables is not null)
                 {
                     for (var offset = 0; offset < oldCapacity;)
                     {
-                        breach = invocation.TryChargeInputStep();
+                        breach = invocation.CheckInput();
                         if (breach != Utf8ExecutionLimitKind.None) return false;
                         var length = Math.Min(256, oldCapacity - offset);
                         tables.AsSpan(offset, length).CopyTo(candidate.AsSpan(offset, length));
                         offset += length;
                     }
                 }
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return false;
                 var leaf = new T[chunkCapacity];
                 // Publish only after acquisition and copy complete. Failed growth
@@ -3892,7 +3892,7 @@ internal static partial class Utf8SliceRunner
             var backIndex = inputIndex;
             while (capIndex > referStart)
             {
-                var charge = invocation.TryChargeStep();
+                var charge = invocation.CheckProgress();
                 if (charge != Utf8ExecutionLimitKind.None) return new(false, -1, charge);
                 if (backIndex <= 0 ||
                     !TryReadScalar(input, capIndex, true, out var captureScalar, out var capWidth) ||
@@ -3913,7 +3913,7 @@ internal static partial class Utf8SliceRunner
             var backIndex = inputIndex;
             while (capIndex < referEnd)
             {
-                var charge = invocation.TryChargeStep();
+                var charge = invocation.CheckProgress();
                 if (charge != Utf8ExecutionLimitKind.None) return new(false, -1, charge);
                 if (backIndex >= input.Length ||
                     !TryReadScalar(input, capIndex, false, out var captureScalar, out var capWidth) ||

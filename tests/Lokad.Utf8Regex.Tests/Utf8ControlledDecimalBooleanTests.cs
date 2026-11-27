@@ -36,7 +36,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
         using var source = new CancellationTokenSource();
         foreach (var compiled in new[] { false, true })
         {
-            var regex = Create(compiled, 100000, 256, 1 << 20, 1 << 20);
+            var regex = Create(compiled, 256, 1 << 20, 1 << 20);
             Assert.Equal(expected, regex.IsMatch(input));
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
         }
@@ -51,7 +51,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
     public void DisjointTerminalOptionalsNeedNoRewindStorage(string text)
     {
         using var source = new CancellationTokenSource();
-        using var regex = Create(false, 128, 1, 1, 1);
+        using var regex = Create(false, 1, 1, 1);
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(text), source.Token));
     }
 
@@ -62,7 +62,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
     public void ShortProvedDecimalRunsKeepTheirEndpointsWithinTheWorkLimit(string text, bool expected)
     {
         using var source = new CancellationTokenSource();
-        using var regex = Create(true, 8, 1, 1, 1);
+        using var regex = Create(true, 1, 1, 1);
         Assert.Equal(expected, regex.IsMatch(Encoding.ASCII.GetBytes(text), source.Token));
     }
 
@@ -77,7 +77,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
     {
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(@"^\d{1,2}/\d{1,2}/\d{4}$", options: RegexOptions.Compiled,
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 1, MaxWorkingBytes = 1 } });
+            policy: new() { ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 1 } });
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         Assert.Equal(3, Enumerable.Range(0, program.Instructions.Length).Count(program.SkipsTerminalRewind));
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(text), source.Token));
@@ -92,7 +92,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
     public void DecimalCategoryProofRespectsAdditionalMembersAndNegation(string set, string text, bool expected)
     {
         using var regex = new Utf8Regex("^" + set + @"{1,2}/\d{4}$", RegexOptions.Compiled | RegexOptions.IgnoreCase,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 4096 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 4096 } });
         using var token = new CancellationTokenSource();
         Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(text), token.Token));
     }
@@ -103,7 +103,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
     public void TerminalUnicodeBoundaryProvesMandatoryDecimalRuns(string pattern)
     {
         using var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled,
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 << 20 } });
+            policy: new() { ResourcePolicy = new() { MaxWorkingBytes = 1 << 20 } });
         using var source = new CancellationTokenSource();
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         Assert.Equal(3, Enumerable.Range(0, program.Instructions.Length).Count(program.SkipsTerminalRewind));
@@ -121,7 +121,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
     {
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", options: RegexOptions.Compiled,
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 55, MaxWorkingBytes = 1 } });
+            policy: new() { ResourcePolicy = new() { MaxWorkingBytes = 1 } });
 
         Assert.False(regex.IsMatch("Today is 11/18/201A and tomorrow is 11/19/201A."u8, source.Token));
         Assert.Equal(new Utf8CaptureRange(7, 22), regex.Match(" 1/2x! 1/𝟙/٢٠٢٦!"u8, cancellationToken: source.Token));
@@ -138,7 +138,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
     {
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 24, MaxWorkingBytes = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1 } });
         var prefix = string.Concat(Enumerable.Repeat("x/11/2.x ", 8)) + " ";
         const string date = "1/18/2026";
         var input = Encoding.UTF8.GetBytes(prefix + date + ".");
@@ -153,7 +153,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
     {
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 80, MaxWorkingBytes = 1 << 20 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1 << 20 } });
         var prefix = string.Concat(Enumerable.Repeat("x/11/2.x ", 32));
         var input = Encoding.UTF8.GetBytes(prefix + " 1/18/2026.");
 
@@ -161,27 +161,27 @@ public sealed class Utf8ControlledDecimalBooleanTests
     }
 
     [Theory]
-    [InlineData("Today is 11/18/201A and tomorrow is 11/19/201A.", 13ul)]
-    [InlineData("x12/34/2026! ", 8ul)]
-    [InlineData("é1٢/18/٢٠٢٦! ", 10ul)]
-    public void RejectedDateWindowsSkipInteriorStarts(string text, ulong work)
+    [InlineData("Today is 11/18/201A and tomorrow is 11/19/201A.")]
+    [InlineData("x12/34/2026! ")]
+    [InlineData("é1٢/18/٢٠٢٦! ")]
+    public void RejectedDateWindowsSkipInteriorStarts(string text)
     {
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = work, MaxWorkingBytes = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1 } });
 
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(text), source.Token));
     }
 
     [Theory]
-    [InlineData("😀١/٢/٢٠٢٦! ３/４/２０２７!", 2, 8ul)]
-    [InlineData("𝟙/𝟚/𝟚𝟘𝟚𝟞! １/２/２０２７!", 2, 7ul)]
-    [InlineData("é١٢/٣٤/٢٠٢٦! 𝟙/𝟚/𝟚𝟘𝟚𝟞x", 0, 32ul)]
-    public void CountCompletesWideDecimalProofsWithinTheWorkLimit(string text, int expected, ulong work)
+    [InlineData("😀١/٢/٢٠٢٦! ３/４/２０２７!", 2)]
+    [InlineData("𝟙/𝟚/𝟚𝟘𝟚𝟞! １/２/２０２７!", 2)]
+    [InlineData("é١٢/٣٤/٢٠٢٦! 𝟙/𝟚/𝟚𝟘𝟚𝟞x", 0)]
+    public void CountCompletesWideDecimalProofsWithinTheWorkLimit(string text, int expected)
     {
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = work, MaxWorkingBytes = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1 } });
 
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text), source.Token));
     }
@@ -192,7 +192,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
         const string pattern = @"\b\d{1,2}/\d{1,2}/\d{2,4}\b";
         using var source = new CancellationTokenSource();
         using var limited = new Utf8Regex(pattern, RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 8, MaxWorkingBytes = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1 } });
         Assert.True(limited.IsMatch("Today is 11/18/2019 and tomorrow is 11/19/2019."u8, source.Token));
 
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
@@ -229,7 +229,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
         using var tokenSource = new CancellationTokenSource();
         using var ordinary = new Utf8Regex(pattern, RegexOptions.Compiled);
         using var limited = new Utf8Regex(pattern, RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 512, MaxWorkingBytes = 4096 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 4096 } });
         var expected = new Utf8CaptureRange(start, end);
         Assert.Equal(expected, ordinary.Match(input));
         Assert.Equal(expected, limited.Match(input, cancellationToken: tokenSource.Token));
@@ -252,7 +252,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
     {
         using var source = new CancellationTokenSource();
         using var limited = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 12, MaxWorkingBytes = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1 } });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(start >= 0, limited.IsMatch(input, source.Token));
         Assert.Equal(start >= 0 ? new Utf8CaptureRange(start, end) : default,
@@ -277,7 +277,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
         const string pattern = @"(\d{4}[- ]){3}\d{3,4}";
         using var token = new CancellationTokenSource();
         using var limited = new Utf8Regex(pattern, RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 12, MaxWorkingBytes = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1 } });
         Assert.True(limited.IsMatch("1234-5678-1234-456"u8, token.Token));
         Assert.False(limited.IsMatch("1234-5678-1234-45X"u8, token.Token));
         Assert.True(limited.IsMatch("1𝟚34-5678-1234-456"u8, token.Token));
@@ -325,19 +325,6 @@ public sealed class Utf8ControlledDecimalBooleanTests
         Assert.Equal((0, 2), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
     }
 
-    [Fact]
-    public void DigitDiscoverySpendsTheOriginalWorkAllowance()
-    {
-        var input = Encoding.ASCII.GetBytes(new string('1', 4096));
-        const ulong workLimit = 1;
-        var regex = Create(false, workLimit, 65536, 8 << 20, 1);
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-        Assert.Equal(workLimit, error.Limit);
-        Assert.True(error.Requested > error.Limit);
-        Assert.True(Create(false, 1000000, 65536, 8 << 20, 1).IsMatch(input));
-    }
-
     [Theory]
     [InlineData(false, 128)]
     [InlineData(true, 128)]
@@ -348,7 +335,7 @@ public sealed class Utf8ControlledDecimalBooleanTests
         // The diagnostic hook fires every 64 modeled steps. A long ASCII
         // digit run now charges one step per checked block.
         var input = Encoding.ASCII.GetBytes(new string('1', blocks * 2048));
-        var regex = Create(false, 100000000, 65536, 8 << 20, 1);
+        var regex = Create(false, 65536, 8 << 20, 1);
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
         var triggered = false;
@@ -379,13 +366,12 @@ public sealed class Utf8ControlledDecimalBooleanTests
         Assert.Equal(source.Token, canceled.CancellationToken);
     }
 
-    private static Utf8Regex Create(bool compiled, ulong work, uint depth, ulong working, ulong result) =>
+    private static Utf8Regex Create(bool compiled, uint depth, ulong working, ulong result) =>
         new(Pattern, options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromSeconds(1),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = work,
                 MaxDepth = depth,
                 MaxWorkingBytes = working,
                 MaxResultBytes = result

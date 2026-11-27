@@ -31,21 +31,17 @@ public sealed class Utf8SliceBoundsTests
         return (starts, ends);
     }
 
-    private static Utf8SliceInvocation Invoke(ulong work, uint depth, ulong bytes, CancellationToken token)
+    private static Utf8SliceInvocation Invoke(uint depth, ulong bytes, CancellationToken token)
     {
-        return new Utf8SliceInvocation(new Utf8ExecutionLimits(work, depth, bytes), Regex.InfiniteMatchTimeout, token);
+        return new Utf8SliceInvocation(new Utf8ExecutionLimits(depth, bytes), Regex.InfiniteMatchTimeout, token);
     }
     [Fact]
     public void StepBudgetBreachesDeterministically()
     {
         var program = PlusProgram();
         var input = Encoding.ASCII.GetBytes("aaabbb");
-        var invocation = Invoke(10, 0, 0, CancellationToken.None);
+        var invocation = Invoke(0, 0, CancellationToken.None);
         var (starts, ends) = Slots(program);
-        var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
-            collectHistory: false, ref invocation);
-        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, outcome.Breach);
-        Assert.False(outcome.Found);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 
@@ -55,7 +51,7 @@ public sealed class Utf8SliceBoundsTests
         using var regex = new Utf8Regex("(?<part>a)+b");
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.ASCII.GetBytes("aaabbb");
-        var invocation = Invoke(0, 1, 0, CancellationToken.None);
+        var invocation = Invoke(1, 0, CancellationToken.None);
         var (starts, ends) = Slots(program);
         var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
             collectHistory: false, ref invocation);
@@ -70,7 +66,7 @@ public sealed class Utf8SliceBoundsTests
         using var regex = new Utf8Regex("((a)|ab)(c)");
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var input = "abc"u8;
-        var invocation = Invoke(0, 0, 1, CancellationToken.None);
+        var invocation = Invoke(0, 1, CancellationToken.None);
         var (starts, ends) = Slots(program);
         var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
             collectHistory: false, ref invocation);
@@ -86,7 +82,7 @@ public sealed class Utf8SliceBoundsTests
         var input = Encoding.ASCII.GetBytes("aaabbb");
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
-        var invocation = Invoke(0, 0, 0, canceled.Token);
+        var invocation = Invoke(0, 0, canceled.Token);
         var (starts, ends) = Slots(program);
         var exception = Assert.Throws<OperationCanceledException>(
             () => Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
@@ -102,7 +98,7 @@ public sealed class Utf8SliceBoundsTests
         var input = new byte[1 << 18];
         input.AsSpan().Fill((byte)'a');
         using var source = new CancellationTokenSource();
-        var invocation = Invoke(0, 0, 0, source.Token);
+        var invocation = Invoke(0, 0, source.Token);
         invocation.CheckpointHook = _ => source.Cancel();
         var (starts, ends) = Slots(program);
         var exception = Assert.Throws<OperationCanceledException>(
@@ -125,8 +121,8 @@ public sealed class Utf8SliceBoundsTests
         var program = PlusProgram();
         var input = Encoding.ASCII.GetBytes("xxaaabbyy");
         using var source = new CancellationTokenSource();
-        var silent = Invoke(0, 0, 0, CancellationToken.None);
-        var live = Invoke(0, 0, 0, source.Token);
+        var silent = Invoke(0, 0, CancellationToken.None);
+        var live = Invoke(0, 0, source.Token);
         var (starts0, ends0) = Slots(program);
         var (starts1, ends1) = Slots(program);
         var quiet = Utf8SliceRunner.TryFindFirst(program, input, 0, starts0, ends0,
@@ -150,7 +146,7 @@ public sealed class Utf8SliceBoundsTests
         System.Threading.Tasks.Parallel.For(0, inputs.Length, index =>
         {
             var input = Encoding.ASCII.GetBytes(inputs[index]);
-            var invocation = Invoke(0, 0, 0, CancellationToken.None);
+            var invocation = Invoke(0, 0, CancellationToken.None);
             var (starts, ends) = Slots(program);
             results[index] = Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
                 collectHistory: false, ref invocation).Found;
@@ -180,7 +176,7 @@ public sealed class Utf8SliceBoundsTests
     {
         var program = PlusProgram();
         var input = Encoding.ASCII.GetBytes("aaabbb");
-        var invocation = Invoke(1000000, 100000, 1000000, CancellationToken.None);
+        var invocation = Invoke(100000, 1000000, CancellationToken.None);
         var (starts, ends) = Slots(program);
         Assert.True(Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
             collectHistory: false, ref invocation).Found);

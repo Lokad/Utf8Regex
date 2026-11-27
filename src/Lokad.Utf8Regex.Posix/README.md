@@ -101,7 +101,7 @@ SKU is an unambiguous consumer control, not a POSIX selection claim. One timed b
 | `capture/sku007` | 591.99 µs | 706.58 µs | 900.13 µs | 1.41 |
 | `cursor/ambiguous` | 1.75 µs | 1.96 µs | 1.96 µs | 1.28 |
 
-Only the empty-capture, longest-cursor and SKU control rows time all policy lanes; SKU costs here remain per 4,096-call batch. Finite lanes enforce work/depth/working limits and a positive result limit under an original live token. Funded lanes add a thread-safe 16 MiB host allowance; the deadline lane adds a 30-second invocation timeout. Values/caller-owned capture destinations create no producer result payload. These are absolute public-operation costs, including useful metering; the unlimited native comparator has no corresponding host policy.
+Only the empty-capture, longest-cursor and SKU control rows time all policy lanes; SKU costs here remain per 4,096-call batch. Finite lanes in this snapshot used the former work-step cap, depth and working-byte limits, and a positive result limit under an original live token. Funded lanes add a thread-safe 16 MiB host allowance; the deadline lane adds a 30-second invocation timeout. Values/caller-owned capture destinations create no producer result payload. These are absolute public-operation costs, including useful metering; the unlimited native comparator has no corresponding host policy.
 
 [Compact summary](../../bench/Snapshots/Posix.json). Snapshot SHA-256: `4EC1C056C73519C107E85E6C19AA15AB9BE145F92A259B51E09E66DA54A6C320`.
 <!-- END GENERATED POSIX BENCHMARKS -->

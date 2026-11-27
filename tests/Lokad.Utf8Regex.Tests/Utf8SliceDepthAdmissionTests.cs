@@ -36,12 +36,12 @@ public sealed class Utf8SliceDepthAdmissionTests
         var extra = Frames(capacity + 1, repeats, rtl);
         var firstInput = Subject(capacity);
         var secondInput = Subject(capacity + 1);
-        var admitted = new Utf8SliceInvocation(new(0, (uint)capacity, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var admitted = new Utf8SliceInvocation(new((uint)capacity, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(admitted.Ledger.TryReserve(7));
         Assert.True(Run(exact, firstInput, ref admitted).IsMatch);
         var peak = admitted.Budget.PeakWorkingBytes;
         Assert.Equal((uint)capacity, admitted.Budget.PeakDepth); Assert.Equal(7UL, admitted.Ledger.ReservedBytes);
-        var denied = new Utf8SliceInvocation(new(0, (uint)capacity, peak), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var denied = new Utf8SliceInvocation(new((uint)capacity, peak), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(denied.Ledger.TryReserve(7));
         var failure = Run(extra, secondInput, ref denied);
         Assert.False(failure.IsMatch); Assert.Equal(Utf8ExecutionLimitKind.Depth, failure.Breach);
@@ -68,11 +68,11 @@ public sealed class Utf8SliceDepthAdmissionTests
     {
         var small = Assertions(0, positive); var large = Assertions(8192, positive);
         Assert.Equal(8192, large.Assertions[0].Body.Assertions[0].Body.RepeatCount);
-        var baseline = new Utf8SliceInvocation(new(0, 1, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var baseline = new Utf8SliceInvocation(new(1, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(baseline.Ledger.TryReserve(7));
         Assert.Equal(Utf8ExecutionLimitKind.Depth, Run(small, [], ref baseline).Breach);
         var peak = baseline.Budget.PeakWorkingBytes;
-        var invocation = new Utf8SliceInvocation(new(0, 1, peak), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var invocation = new Utf8SliceInvocation(new(1, peak), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(invocation.Ledger.TryReserve(7));
         var before = GC.GetAllocatedBytesForCurrentThread();
         var outcome = Run(large, [], ref invocation);
@@ -89,11 +89,11 @@ public sealed class Utf8SliceDepthAdmissionTests
     {
         var program = Assertions(32, true);
         using var source = new CancellationTokenSource(); source.Cancel();
-        var canceled = new Utf8SliceInvocation(new(0, 1, 0), Regex.InfiniteMatchTimeout, source.Token);
+        var canceled = new Utf8SliceInvocation(new(1, 0), Regex.InfiniteMatchTimeout, source.Token);
         var error = Assert.Throws<OperationCanceledException>(() => Run(program, [], ref canceled));
         Assert.Equal(source.Token, error.CancellationToken); Assert.Equal(0UL, canceled.Ledger.ReservedBytes);
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var expired = new Utf8SliceInvocation(new(0, 1, 0), TimeSpan.FromMilliseconds(20), CancellationToken.None);
+        var expired = new Utf8SliceInvocation(new(1, 0), TimeSpan.FromMilliseconds(20), CancellationToken.None);
         ticks = 25;
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => Run(program, [], ref expired));
         Assert.Equal(0UL, expired.Ledger.ReservedBytes);

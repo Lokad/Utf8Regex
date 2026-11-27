@@ -7,32 +7,15 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2ValidationWorkTests
 {
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
-    public void PatternChecksDenyBeforeScanningWithNoWork(int entry)
-    {
-        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
-        var pattern = new string('a', 4096) + "(?C)";
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Validate(entry, pattern));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-        Assert.Equal((ulong)pattern.Length, failure.Requested);
-        Assert.Equal(0ul, scope.Budget.WorkSteps);
-        Assert.Equal(0ul, scope.Budget.ReservedBytes);
-    }
-
-    [Theory]
     [InlineData(false)] [InlineData(true)]
     public void UnterminatedTokenRescansCannotEscapeCumulativeWork(bool verb)
     {
         var pattern = verb ? string.Concat(Enumerable.Repeat("(*X", 256))
             : "[" + string.Concat(Enumerable.Repeat("[:", 256));
         var maximum = (ulong)pattern.Length * 3;
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, maximum + 1, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 37;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            Pcre2CaptureNameValidator.Validate(pattern, Pcre2CompileOptions.None, Pcre2NewlineConvention.Lf));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-        Assert.InRange(owner.Budget.WorkSteps, 1ul, maximum + 1);
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(37, parent[0]);
@@ -51,12 +34,11 @@ public sealed class Pcre2ValidationWorkTests
         var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromSeconds(30));
         owner.Budget.Deadline = deadline;
         owner.Budget.CancellationToken = cancellation.Token;
-        owner.Budget.CheckpointHook = _ => { if (timeout) ticks = 30000; else cancellation.Cancel(); };
+        owner.Budget.CheckpointHook = () => { if (timeout) ticks = 30000; else cancellation.Cancel(); };
         var failure = Record.Exception(() => Validate(entry, "plain😀"));
         if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
         else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         Assert.Same(deadline, owner.Budget.Deadline);
-        Assert.Equal(0ul, owner.Budget.WorkSteps);
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
     }
@@ -72,11 +54,9 @@ public sealed class Pcre2ValidationWorkTests
         // that the complete admission validator may accept.
         var literal = verb ? new string('x', length) + "(*MARK:" + new string('a', 247) + "(?<100>a)"
             : "[[:" + new string('a', length) + ":]]";
-        using var owner = Utf8ConstructionScope.Enter();
         // Qualify lexical admission alone; these bodies need not be served by
         // every compiler. A MARK argument is text, not a numeric definition.
         Pcre2CaptureNameValidator.Validate(literal, Pcre2CompileOptions.None, Pcre2NewlineConvention.Lf);
-        Assert.True(owner.Budget.WorkSteps >= (ulong)literal.Length);
         var failure = Assert.Throws<Pcre2CompileException>(() =>
             Pcre2CaptureNameValidator.Validate(literal + "(?<100>b)", Pcre2CompileOptions.None, Pcre2NewlineConvention.Lf));
         Assert.Equal(Pcre2ErrorKind.InvalidAfterParensQuery, failure.ErrorKind);
@@ -97,24 +77,6 @@ public sealed class Pcre2ValidationWorkTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void NewNameChecksKeepTheExistingParentWorkAllowance(bool verb)
-    {
-        var pattern = verb ? "(*MARK:" + new string('é', 128) + ")a"
-            : "(?<" + new string('é', 65) + ">a)";
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 48,
-            (ulong)pattern.Length + 1, ulong.MaxValue);
-        var parent = owner.Budget.AllocateArray<byte>(1, false);
-        parent[0] = 37;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            Pcre2CaptureNameValidator.Validate(pattern, Pcre2CompileOptions.None, Pcre2NewlineConvention.Lf));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-        Assert.Equal(48UL, owner.Budget.ReservedBytes);
-        Assert.Equal(0UL, owner.Budget.Depth);
-        Assert.Equal(37, parent[0]);
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
     public void EveryValidationPassAndRescanRetainsParentInterruption(bool timeout)
     {
         foreach (var pattern in new[] { "(a)(?#ignored)[b]", "(?x)#" + new string('x', 8192) + "(?C)\n(a)",
@@ -124,7 +86,7 @@ public sealed class Pcre2ValidationWorkTests
             var checkpoints = 0;
             using (var probe = Utf8ConstructionScope.Enter())
             {
-                probe.Budget.CheckpointHook = _ => checkpoints++;
+                probe.Budget.CheckpointHook = () => checkpoints++;
                 if (pattern[0] == '(' && pattern[1] != '*') Validate(2, pattern);
                 else Validate(1, pattern);
             }
@@ -140,7 +102,7 @@ public sealed class Pcre2ValidationWorkTests
                 owner.Budget.Deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromSeconds(30));
                 owner.Budget.CancellationToken = cancellation.Token;
                 var current = 0;
-                owner.Budget.CheckpointHook = _ =>
+                owner.Budget.CheckpointHook = () =>
                 {
                     if (++current != target) return;
                     if (timeout) ticks = 30000; else cancellation.Cancel();

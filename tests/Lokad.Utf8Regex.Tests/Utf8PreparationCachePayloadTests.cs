@@ -108,6 +108,7 @@ public sealed class Utf8PreparationCachePayloadTests
     [Fact]
     public void OriginalFactoryFailureReleasesPendingCharge()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var cache = Create(2, 4096);
         var failure = new InvalidOperationException("original");
         using var owner = Utf8ConstructionScope.Enter();
@@ -115,7 +116,7 @@ public sealed class Utf8PreparationCachePayloadTests
             static (_, error) => throw error, default(Utf8ConstructionTextNoControl), default(ByteStorage))));
         Assert.Equal(0, cache.Count); Assert.Equal(0ul, cache.PayloadBytes);
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
-        Assert.True(owner.Budget.WorkSteps > 0);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > 0);
     }
 
     [Fact]
@@ -134,13 +135,14 @@ public sealed class Utf8PreparationCachePayloadTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
     public void StageAdmissionDenialsKeepThePreviousGenerationAndSpentWork(bool work)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var probe = Create(1, 4096); _ = Add(probe, "good", new byte[100]);
         ulong maximum;
         using (var owner = Utf8ConstructionScope.Enter())
-        { _ = Add(probe, "new", new byte[100]); maximum = work ? owner.Budget.WorkSteps : owner.Budget.PeakBytes; }
+        { _ = Add(probe, "new", new byte[100]); maximum = work ? owner.Budget.DiagnosticCheckpoints : owner.Budget.PeakBytes; }
         // Identity hashes have process-dependent collisions. Exercise every
         // bounded work cutoff and classify the actual outcome rather than
         // assuming a different object's successful probe count is identical.
@@ -153,7 +155,7 @@ public sealed class Utf8PreparationCachePayloadTests
             var cache = Create(1, 4096); var good = Add(cache, "good", new byte[100]);
             var before = cache.PayloadBytes;
             using var parent = new Utf8ConstructionScope(ulong.MaxValue,
-                work ? ulong.MaxValue : 128 + capacity, work ? 2 + capacity : ulong.MaxValue, ulong.MaxValue);
+                work ? ulong.MaxValue : 128 + capacity, ulong.MaxValue);
             _ = parent.Budget.AllocateObject(17, static _ => new object());
             var checkpoint = parent.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
@@ -162,7 +164,7 @@ public sealed class Utf8PreparationCachePayloadTests
                 if (failure is not null)
                 {
                     failures++;
-                    Assert.Equal(work ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes,
+                    Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes,
                         Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
                     Assert.Equal(before, cache.PayloadBytes);
                     Assert.Same(good, Add(cache, "good", []));
@@ -172,7 +174,6 @@ public sealed class Utf8PreparationCachePayloadTests
                 if (!work && capacity == maximum) Assert.Null(failure);
             }
             Assert.Equal(128ul, parent.Budget.ReservedBytes); Assert.Equal(checkpoint, parent.Budget.ReservedBytes);
-            Assert.InRange(parent.Budget.WorkSteps, 2ul, work ? 2 + capacity : ulong.MaxValue);
         }
         Assert.True(failures > 0); Assert.True(successes > 0);
     }

@@ -29,11 +29,11 @@ internal static class Utf8OwnedOptionPrelude
                pattern[index + 1] == '?' &&
                TryConsumeLeadingGlobalOptionsGroup(budget, pattern, ref index, ref stagedOptions))
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             consumed = index;
         }
 
-        budget.ChargeWork(1);
+        budget.Checkpoint();
         options = stagedOptions;
         return consumed;
 
@@ -45,7 +45,7 @@ internal static class Utf8OwnedOptionPrelude
             var staged = options;
             while (scan < pattern.Length)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var ch = pattern[scan];
                 if (ch == '-')
                 {

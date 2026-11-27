@@ -22,7 +22,7 @@ internal static class ProfileDifferential
         var token = mode is "token" or "all" ? cancellation.Token : default;
         TimeSpan? timeout = mode is "timeout" or "all" ? TimeSpan.FromSeconds(10) : null;
         var policy = mode is "budget" or "all" ? new Utf8ResourcePolicy {
-            MaxWorkSteps = 1_000_000, MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 } : default;
+            MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 } : default;
         foreach (var pattern in patterns)
         {
             var oracle = new Regex(pattern, RegexOptions.CultureInvariant);

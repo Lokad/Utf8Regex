@@ -18,14 +18,14 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
             var distinct = 0;
             foreach (var literal in literals)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (literal.Length < 2) return false;
                 foreach (var value in literal)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     if (value >= 0x80) return false;
                 }
-                budget.ChargeWork((ulong)distinct);
+                budget.Checkpoint();
                 if (!firstBytes[..distinct].Contains(literal[0])) firstBytes[distinct++] = literal[0];
             }
             // The original one-bucket rejection needs no prepared state.
@@ -42,7 +42,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
             var filters = budget.AllocateArray<Filter>(count - 1, false);
             for (var index = 1; index < count; index++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 filters[index - 1] = new(best[index].Offset, CreateFilterValues(literals, best[index].Offset, budget));
             }
             var pair = CreateDispatch(literals, best[0].Offset, data.ShortestLength, budget, out var triple);
@@ -58,17 +58,17 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
     {
         Span<int> seen = stackalloc int[128];
         Span<byte> values = stackalloc byte[6];
-        budget.ChargeWork(128);
+        budget.Checkpoint();
         seen.Clear();
         var selected = 0;
         for (var offset = 0; offset < shortest; offset++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var count = 0;
             var stamp = offset + 1; // Array lengths keep this below Int32.MaxValue.
             foreach (var literal in literals)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 var value = literal[offset];
                 if (seen[value] == stamp) continue;
                 seen[value] = stamp;
@@ -76,13 +76,13 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
             }
             if (count <= 1) continue;
             var commonness = 0;
-            budget.ChargeWork((ulong)count);
+            budget.Checkpoint();
             for (var index = 0; index < count; index++)
                 commonness += AsciiSearch.GetAsciiFrequencyRank(values[index]);
             var candidate = new RankedOffset(offset, commonness * 8 + count);
             // At most four comparisons and shifts. This is the original
             // ascending score, descending offset order, without discarded arrays.
-            budget.ChargeWork(8);
+            budget.Checkpoint();
             var position = 0;
             while (position < selected && (best[position].Score < candidate.Score ||
                 best[position].Score == candidate.Score && best[position].Offset > candidate.Offset)) position++;
@@ -100,7 +100,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
         var count = 0;
         foreach (var literal in literals)
         {
-            budget.ChargeWork(1 + (ulong)count);
+            budget.Checkpoint();
             var value = literal[offset];
             if (!values[..count].Contains(value)) values[count++] = value;
         }
@@ -119,7 +119,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
         Span<byte> values = stackalloc byte[6];
         var count = CollectValues(literals, offset, values, budget);
         var owned = budget.AllocateArray<byte>(count, false);
-        budget.ChargeWork((ulong)count);
+        budget.Checkpoint();
         values[..count].CopyTo(owned);
         return owned;
     }
@@ -130,11 +130,11 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
         triple = default;
         for (var secondary = 0; secondary < shortest; secondary++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (secondary == primary || !HasUniquePairs(literals, primary, secondary, budget)) continue;
             if (literals.Length == 3)
             {
-                budget.ChargeWork(3);
+                budget.Checkpoint();
                 triple = new(primary, secondary,
                     literals[0][primary], literals[0][secondary], literals[0],
                     literals[1][primary], literals[1][secondary], literals[1],
@@ -144,7 +144,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
             var entries = budget.AllocateArray<PairDispatchEntry>(literals.Length, false);
             for (var index = 0; index < literals.Length; index++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 entries[index] = new(literals[index][primary], literals[index][secondary], literals[index]);
             }
             return new(primary, secondary, entries);
@@ -156,10 +156,10 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
     {
         for (var first = 0; first < literals.Length; first++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             for (var second = first + 1; second < literals.Length; second++)
             {
-                budget.ChargeWork(1);
+                budget.Checkpoint();
                 if (literals[first][primary] == literals[second][primary] &&
                     literals[first][secondary] == literals[second][secondary]) return false;
             }

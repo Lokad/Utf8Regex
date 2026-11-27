@@ -55,7 +55,7 @@ internal ref partial struct Utf8OperationMatchCursor
     internal Utf8ExecutionLimitKind TryMoveNextAnchoredLiteral(out bool found)
     {
         found = false;
-        var breach = _sliceInvocation.TryChargeInputStep();
+        var breach = _sliceInvocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         _sliceInvocation.Budget.ThrowIfCancellationRequested();
         if (_anchoredExhausted) return Utf8ExecutionLimitKind.None;
@@ -76,7 +76,7 @@ internal ref partial struct Utf8OperationMatchCursor
         }
         if (!equal)
         {
-            breach = _sliceInvocation.TryChargeInputStep();
+            breach = _sliceInvocation.CheckInput();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             _sliceInvocation.Budget.ThrowIfCancellationRequested();
             _anchoredExhausted = true;
@@ -85,7 +85,7 @@ internal ref partial struct Utf8OperationMatchCursor
         var consumed = (start) + (literal.Length);
         breach = Utf8SliceBufferWork.TryCreateMatchRange(start, (start) + (literal.Length), ref _sliceInvocation, out var projected);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
-        breach = _sliceInvocation.TryChargeInputStep();
+        breach = _sliceInvocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         _sliceInvocation.Budget.ThrowIfCancellationRequested();
         _current = projected;

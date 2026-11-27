@@ -76,7 +76,7 @@ public sealed class Utf8FoldedPunctuationSearchTests
             var text = "é😀 " + new string('x', prefix) + literal.ToUpperInvariant() + " z " + literal.ToLowerInvariant() + "\0";
             var input = Encoding.UTF8.GetBytes(text);
             var policy = finite ? new Utf8ResourcePolicy
-            { MaxWorkSteps = 1_000_000, MaxDepth = 2048, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } : default;
+            { MaxDepth = 2048, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } : default;
                 var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
                 {
                     ResourcePolicy = policy

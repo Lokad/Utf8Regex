@@ -27,7 +27,6 @@ public sealed class Utf8CaretPrefixScopeTests
             var oracle = new Regex(pattern, options);
             var policy = finite ? new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20

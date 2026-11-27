@@ -108,7 +108,6 @@ public sealed class Pcre2AnchoredPartialProbeTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = resultBytes
@@ -125,15 +124,6 @@ public sealed class Pcre2AnchoredPartialProbeTests
         Assert.Equal("abbb", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.Probe("😀abbb"u8, Pcre2PartialMode.Soft, 4, Pcre2MatchOptions.Anchored).GetMatch().GetGroup(1).GetValueBytes()));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = new Utf8Pcre2Regex("(a)b+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        })            .Probe("abbb"u8, Pcre2PartialMode.Hard, 0, Pcre2MatchOptions.Anchored); }).ErrorKind);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = new Utf8Pcre2Regex("(a)b+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {

@@ -37,13 +37,13 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
     {
         var pattern = $@"^([0-9]+)(\-| |{end})(.*){end}";
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 3, MaxWorkingBytes = 1, MaxDepth = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1, MaxDepth = 1 } });
         using var token = new CancellationTokenSource();
         var bytes = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.IsMatch(bytes, token.Token));
 
         using var ranges = new Utf8Regex(pattern, RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 4, MaxWorkingBytes = 1, MaxDepth = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1, MaxDepth = 1 } });
         var actual = ranges.Match(bytes, cancellationToken: token.Token);
         Assert.Equal(expected, actual.Success);
         if (expected)
@@ -54,17 +54,17 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
     }
 
     [Theory]
-    [InlineData("///doc", 4, true)]
-    [InlineData("///doc\nlater", 4, false)]
-    [InlineData(" [|  /// title", 4, true)]
-    [InlineData(" [|  ///\n😀", 4, true)]
-    [InlineData(" [|  ///\n\n😀", 4, false)]
-    [InlineData(" [|\u2003///\u2003doc😀", 128, true)]
-    public void AnchoredWhitespaceProofPreservesGreedyScalarRanges(string text, int workLimit, bool expected)
+    [InlineData("///doc", true)]
+    [InlineData("///doc\nlater", false)]
+    [InlineData(" [|  /// title", true)]
+    [InlineData(" [|  ///\n😀", true)]
+    [InlineData(" [|  ///\n\n😀", false)]
+    [InlineData(" [|\u2003///\u2003doc😀", true)]
+    public void AnchoredWhitespaceProofPreservesGreedyScalarRanges(string text, bool expected)
     {
         const string pattern = @"^\s*(\[\|\s*)?///\s?(?<doc>.*)$";
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = (ulong)workLimit, MaxWorkingBytes = 4096 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 4096 } });
         using var source = new CancellationTokenSource();
 
         var actual = regex.Match(Encoding.UTF8.GetBytes(text), cancellationToken: source.Token);
@@ -84,7 +84,7 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
         const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
         using var source = new CancellationTokenSource();
         using var limited = new Utf8Regex(pattern, options,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 4, MaxWorkingBytes = 1, MaxDepth = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1, MaxDepth = 1 } });
         using var ordinary = new Utf8Regex(pattern, options);
 
         Assert.Equal(new Utf8CaptureRange(0, 5), limited.Match("Name9"u8, cancellationToken: source.Token));
@@ -103,7 +103,7 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
     {
         const string pattern = @"^\s*(\[\|\s*)?///\s?(?<doc>.*)$";
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 4, MaxWorkingBytes = 4096 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 4096 } });
         using var source = new CancellationTokenSource();
         var text = " [|  ///" + new string('x', 128) + "😀";
 
@@ -117,16 +117,17 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
     [InlineData(true)]
     public void SingleOriginProofChecksInterruptionBeforeReturningWithAnEnclosingLoan(bool expire)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var regex = new Utf8Regex("^[a-z][a-z0-9_]*$",
             RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(64, 1, 13),
+        var invocation = new Utf8SliceInvocation(new(1, 13),
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
         for (var i = 0; i < 62; i++)
-            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeStep());
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.CheckProgress());
         invocation.CheckpointHook = _ =>
         {
             if (expire) clock.Advance(250);
@@ -138,7 +139,6 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
 
         if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
         else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
-        Assert.Equal(64UL, invocation.Budget.Steps);
         Assert.Equal(13UL, invocation.Budget.PeakWorkingBytes);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         invocation.Ledger.Release(13);

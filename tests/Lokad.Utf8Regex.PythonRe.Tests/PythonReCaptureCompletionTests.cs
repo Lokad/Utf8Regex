@@ -25,8 +25,7 @@ public sealed class PythonReCaptureCompletionTests
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
                     MaxWorkingBytes = 4096,
-                    MaxResultBytes = 4096,
-                    MaxWorkSteps = 10000
+                    MaxResultBytes = 4096
                 }
             });
             var input = Encoding.UTF8.GetBytes(text);
@@ -77,8 +76,7 @@ public sealed class PythonReCaptureCompletionTests
             ResourcePolicy = new Utf8ResourcePolicy
             {
                 MaxWorkingBytes = 1024,
-                MaxResultBytes = 4096,
-                MaxWorkSteps = 10000
+                MaxResultBytes = 4096
             }
         });
         Utf8PythonRangeMatch result = default;
@@ -104,13 +102,13 @@ public sealed class PythonReCaptureCompletionTests
         {
             for (var kind = 0; kind < 3; kind++)
             {
-                yield return [row.GetProperty("id").GetInt32(), kind, row.GetRawText()];
+                yield return [kind, row.GetRawText()];
             }
         }
     }
 
     public static IEnumerable<object[]> GlobalCases() => Rows().Select(row =>
-        new object[] { row.GetProperty("id").GetInt32(), row.GetRawText() });
+        new object[] { row.GetRawText() });
 
     private static int? LastIndex(JsonElement expected)
         => expected.GetProperty("lastIndex").ValueKind == JsonValueKind.Null ? null : expected.GetProperty("lastIndex").GetInt32();
@@ -145,7 +143,7 @@ public sealed class PythonReCaptureCompletionTests
     }
     [Theory]
     [MemberData(nameof(SingleCases))]
-    public void CompleteOneShotCapturesFollowCpython(int id, int kind, string json)
+    public void CompleteOneShotCapturesFollowCpython(int kind, string json)
     {
         using var document = JsonDocument.Parse(json);
         var row = document.RootElement;
@@ -155,7 +153,7 @@ public sealed class PythonReCaptureCompletionTests
         using var source = new CancellationTokenSource();
         foreach (var bytes in new[] { false, true })
         {
-            var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxResultBytes = 1000000 };
+            var policy = new Utf8ResourcePolicy { MaxResultBytes = 1000000 };
             var regex = bytes ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
             {
                 MatchTimeout = Regex.InfiniteMatchTimeout,
@@ -180,7 +178,7 @@ public sealed class PythonReCaptureCompletionTests
     }
     [Theory]
     [MemberData(nameof(GlobalCases))]
-    public void GlobalCursorAliasesPublishCompleteRetainableCaptures(int id, string json)
+    public void GlobalCursorAliasesPublishCompleteRetainableCaptures(string json)
     {
         Utf8PythonRangeMatch cursorRange = default;
         using var document = JsonDocument.Parse(json);
@@ -220,14 +218,14 @@ public sealed class PythonReCaptureCompletionTests
         {
             captureCursor5.MoveNext(out expected);
         }
-        foreach (var work in new[] { false, true })
+        foreach (var work in new[] { false})
         {
             Utf8PythonRegex Create(ulong cap) => new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
             {
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = work ? new()
                 {
-                    MaxWorkSteps = cap
+                    MaxDepth = 4096
                 }
 
     : new()
@@ -251,7 +249,7 @@ public sealed class PythonReCaptureCompletionTests
                 }
                 catch (Utf8ResourceLimitExceededException error)
                 {
-                    Assert.Equal(work ? Utf8ResourceLimitKind.ExecutionWorkSteps : Utf8ResourceLimitKind.ExecutionResultBytes, error.ResourceKind);
+                    Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, error.ResourceKind);
                     first = cap + 1;
                 }
             }

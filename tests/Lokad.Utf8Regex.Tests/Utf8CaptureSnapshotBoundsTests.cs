@@ -36,7 +36,7 @@ public sealed class Utf8CaptureSnapshotBoundsTests
     {
         var text = "x中🙂" + target + new string('!', 1 << 20);
         var input = Encoding.UTF8.GetBytes(text);
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 128, MaxDepth = 128, MaxWorkingBytes = 64 << 10, MaxResultBytes = 8192 };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 128, MaxWorkingBytes = 64 << 10, MaxResultBytes = 8192 };
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var oracle = new Regex(pattern, options);
@@ -71,7 +71,7 @@ public sealed class Utf8CaptureSnapshotBoundsTests
     [Fact]
     public void ResultBudgetAdmitsBorrowedRangesButBoundsCaptureHistoryStorage()
     {
-        var policy = new Utf8ResourcePolicy { MaxResultBytes = 4096, MaxWorkingBytes = 1 << 20, MaxWorkSteps = 1_000_000 };
+        var policy = new Utf8ResourcePolicy { MaxResultBytes = 4096, MaxWorkingBytes = 1 << 20 };
         var regex = new Utf8Regex(@"(?<run>a+)(?:b|c)", options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,

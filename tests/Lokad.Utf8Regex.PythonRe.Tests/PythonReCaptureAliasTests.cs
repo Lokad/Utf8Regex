@@ -54,7 +54,6 @@ public sealed class PythonReCaptureAliasTests
                 MatchTimeout = Timeout.InfiniteTimeSpan,
                 ResourcePolicy = finite ? new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 2048,
                     MaxWorkingBytes = 1_048_576,
                     MaxResultBytes = 1_048_576

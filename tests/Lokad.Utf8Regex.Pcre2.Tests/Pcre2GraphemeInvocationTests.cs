@@ -23,7 +23,6 @@ public sealed class Pcre2GraphemeInvocationTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -112,40 +111,6 @@ public sealed class Pcre2GraphemeInvocationTests
             Assert.True(regex.IsMatch("a"u8));
     }
 
-    [Theory] [MemberData(nameof(Routes))]
-    public void FiniteWorkDeniesInsideScanAfterValidation(string pattern, string route)
-    {
-        var input = Encoding.UTF8.GetBytes("a" + new string('\u0301', 65536));
-        var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 128, DepthLimit = 1024,
-            HeapLimitInBytes = 16 << 20, ResultLimitInBytes = 16 << 20 };
-        Assert.True(new Utf8Pcre2Regex("a", options: default, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
-                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
-                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
-                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        }).IsMatch(input));
-        var regex = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
-                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
-                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
-                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var failure = Assert.Throws<Pcre2MatchException>(() => Run(regex, input, route, default));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
-        Assert.Contains(nameof(Pcre2GraphemeClusterSemantics), failure.StackTrace);
-        Assert.True(regex.IsMatch("a"u8));
-    }
-
     [Fact]
     public void ControlledClustersKeepCombiningZwjRegionalAndScalarBoundaries()
     {
@@ -162,7 +127,6 @@ public sealed class Pcre2GraphemeInvocationTests
                 {
                     ResourcePolicy = finite ? new()
                     {
-                        MaxWorkSteps = 1_000_000,
                         MaxDepth = 1024,
                         MaxWorkingBytes = 16 << 20,
                         MaxResultBytes = 16 << 20,

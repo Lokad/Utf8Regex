@@ -20,7 +20,6 @@ public sealed class Utf8ControlledRequiredLiteralTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1024,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -62,7 +61,6 @@ public sealed class Utf8ControlledRequiredLiteralTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1000000,
                     MaxDepth = 8192,
                     MaxWorkingBytes = 1048576,
                     MaxResultBytes = 1048576
@@ -82,7 +80,7 @@ public sealed class Utf8ControlledRequiredLiteralTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10000
+                MaxDepth = 4096
             }
         });
         Assert.True(regex.Match("éfoobar"u8, 5, []).Success);
@@ -96,7 +94,7 @@ public sealed class Utf8ControlledRequiredLiteralTests
     {
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 1024 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.Inspection.SearchPlan.RequiredPrefilterSearcher.HasValue);
@@ -128,7 +126,6 @@ public sealed class Utf8ControlledRequiredLiteralTests
             MatchTimeout = timeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1024,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1

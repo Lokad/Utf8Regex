@@ -24,7 +24,6 @@ public sealed class Utf8AsciiLanguageCountTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1000000,
                     MaxDepth = 8192,
                     MaxWorkingBytes = 8 << 20,
                     MaxResultBytes = 1
@@ -75,18 +74,9 @@ public sealed class Utf8AsciiLanguageCountTests
     }
 
     [Fact]
-    public void FiniteWorkAndOriginalTokenStillGovernThePublicCall()
+    public void CountObservesOriginalCancellation()
     {
         var bytes = Encoding.UTF8.GetBytes(new string('x', 1 << 20) + "00.11.22.255");
-        var denied = new Utf8Regex(Pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(bytes));
         var regex = new Utf8Regex(Pattern, options: RegexOptions.Compiled);
         using var source = new CancellationTokenSource();
         source.Cancel();
@@ -135,7 +125,6 @@ public sealed class Utf8AsciiLanguageCountTests
             MatchTimeout = TimeSpan.FromSeconds(1),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 8 << 20,
                 MaxResultBytes = 1

@@ -156,7 +156,6 @@ public sealed class Pcre2CrlfDotProbeTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = bytes
@@ -188,23 +187,6 @@ public sealed class Pcre2CrlfDotProbeTests
         var probe = regex.Probe("\r\n😀é"u8, Pcre2PartialMode.Hard, 2);
         Assert.Equal(lazy ? Utf8Pcre2ProbeKind.FullMatch : Utf8Pcre2ProbeKind.PartialMatch, probe.Kind);
         Assert.Equal((2, 8), (probe.Value.StartOffsetInBytes, probe.Value.EndOffsetInBytes));
-    }
-
-    [Fact]
-    public void CrlfCandidateWorkCannotBypassFiniteAllowance()
-    {
-        var regex = new Utf8Pcre2Regex(".{2,3}", options: Pcre2CompileOptions.None, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 20
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("\r\n", 4096)));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = regex.Probe(input, Pcre2PartialMode.Hard); }).ErrorKind);
-        Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("abc"u8, Pcre2PartialMode.Hard).Kind);
     }
 
     [Theory]

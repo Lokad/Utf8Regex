@@ -84,40 +84,9 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
 
     [Theory]
     [MemberData(nameof(Shapes))]
-    public void EveryWorkCutoffRestoresParentAndNeverRefundsSpentWork(string pattern, RegexOptions options)
-    {
-        ulong work;
-        using (var measured = Utf8ConstructionScope.Enter())
-        {
-            Create(pattern, options);
-            work = measured.Budget.WorkSteps;
-        }
-        for (var cutoff = 0ul; cutoff <= work; cutoff++)
-        {
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            using (var discarded = Utf8ConstructionScope.Enter())
-            {
-                var failure = Record.Exception(() => Create(pattern, options));
-                if (cutoff < work)
-                {
-                    var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
-                    Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, breach.ResourceKind);
-                    Assert.Equal(cutoff + 2, breach.Limit);
-                    Assert.True(breach.Requested > breach.Limit);
-                }
-                else Assert.Null(failure);
-            }
-            AssertParent(owner.Budget, checkpoint, parent);
-            Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2);
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(Shapes))]
     public void CapacityAndDepthCutoffsRecoverWithoutLosingParentLoans(string pattern, RegexOptions options)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         ulong peak, depth, recoveryPeak;
         using (var measured = Utf8ConstructionScope.Enter())
         {
@@ -134,7 +103,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         }
         foreach (var cap in new[] { 128ul, 224ul, 512ul, 1024ul, 2048ul, peak / 2, peak - 1, peak }.Distinct().Order())
         {
-            using var owner = new Utf8ConstructionScope(0, cap, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(0, cap, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             using (var discarded = Utf8ConstructionScope.Enter())
@@ -153,15 +122,15 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
             Assert.True(owner.Budget.PeakBytes <= cap);
             if (cap >= recoveryPeak)
             {
-                var spent = owner.Budget.WorkSteps;
+                var spent = owner.Budget.DiagnosticCheckpoints;
                 using (var discarded = Utf8ConstructionScope.Enter()) Create("a", Options);
-                Assert.True(owner.Budget.WorkSteps > spent);
+                Assert.True(owner.Budget.DiagnosticCheckpoints > spent);
                 AssertParent(owner.Budget, checkpoint, parent);
             }
         }
         for (var cap = 0ul; cap < depth; cap++)
         {
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, cap);
+            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cap);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             var breach = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(pattern, options));
@@ -188,7 +157,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         var count = 0;
         using (var measured = Utf8ConstructionScope.Enter())
         {
-            measured.Budget.CheckpointHook = _ => count++;
+            measured.Budget.CheckpointHook = () => count++;
             Create(pattern, options);
         }
         Assert.True(count > 0);
@@ -204,7 +173,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
             owner.Budget.Deadline = deadline;
             owner.Budget.CancellationToken = cancellation.Token;
             var current = 0;
-            owner.Budget.CheckpointHook = _ =>
+            owner.Budget.CheckpointHook = () =>
             {
                 if (++current != target) return;
                 if (timeout) ticks = 30000;
@@ -242,15 +211,16 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
     [InlineData("a[bc")]
     public void SyntaxDeclinesReleaseAllLexicalStorageAndTheSameOwnerRecovers(string pattern)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var owner = Utf8ConstructionScope.Enter();
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, Options, out var diagnostic));
         Assert.True(diagnostic.IsSyntaxError);
         AssertParent(owner.Budget, checkpoint, parent);
-        var spent = owner.Budget.WorkSteps;
+        var spent = owner.Budget.DiagnosticCheckpoints;
         using (var discarded = Utf8ConstructionScope.Enter()) Create("a", Options);
-        Assert.True(owner.Budget.WorkSteps > spent);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > spent);
         AssertParent(owner.Budget, checkpoint, parent);
     }
 
@@ -258,7 +228,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
     public void LeadingOptionsReturnASourceOffsetWithNoByteHeadroom()
     {
         const string pattern = "(?im)(?-m)😀z";
-        using var owner = new Utf8ConstructionScope(0, 0, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, 0, ulong.MaxValue);
         var options = Options;
         var offset = Utf8OwnedOptionPrelude.ConsumeLeadingGlobalOptions(new(pattern), ref options);
         Assert.True(pattern.AsSpan(offset).SequenceEqual("😀z"));
@@ -272,27 +242,16 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
     [InlineData(true)]
     public void EveryOptionWorkCutoffAndInterruptionPreservesParentAndRefOptions(bool timeout)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const string pattern = "(?im)(?-m)😀z";
         ulong work;
         var checkpoints = 0;
         using (var measured = Utf8ConstructionScope.Enter())
         {
-            measured.Budget.CheckpointHook = _ => checkpoints++;
+            measured.Budget.CheckpointHook = () => checkpoints++;
             var options = Options;
             _ = Utf8OwnedOptionPrelude.ConsumeLeadingGlobalOptions(new(pattern), ref options);
-            work = measured.Budget.WorkSteps;
-        }
-        for (var cap = 0ul; cap < work; cap++)
-        {
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cap + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            var options = Options;
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                Utf8OwnedOptionPrelude.ConsumeLeadingGlobalOptions(new(pattern), ref options));
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-            Assert.Equal(Options, options);
-            AssertParent(owner.Budget, checkpoint, parent);
+            work = measured.Budget.DiagnosticCheckpoints;
         }
         for (var target = 1; target <= checkpoints; target++)
         {
@@ -305,7 +264,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
             owner.Budget.Deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromSeconds(30));
             owner.Budget.CancellationToken = cancellation.Token;
             var current = 0;
-            owner.Budget.CheckpointHook = _ =>
+            owner.Budget.CheckpointHook = () =>
             {
                 if (++current != target) return;
                 if (timeout) ticks = 30000; else cancellation.Cancel();
@@ -324,6 +283,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
     [InlineData(true)]
     public void FrontEndEntriesBorrowSourceTextAndRespectSharedWorkCapsForFreshGraphs(bool compile)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const string pattern = "(?i)ab😀";
         // These entries create fresh nodes and reference-keyed admitted maps.
         // Probe work can vary with node identities; bound actual work rather
@@ -333,37 +293,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         {
             var executionPattern = compile ? Utf8FrontEnd.Compile(pattern, Options).SemanticRegex.ExecutionPattern : Utf8FrontEnd.Analyze(pattern, Options).SemanticRegex.ExecutionPattern;
             Assert.True(executionPattern == pattern.AsSpan(4));
-            work = measured.Budget.WorkSteps;
-        }
-        foreach (var cap in new[] { 0ul, work / 3, work - 1 })
-        {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cap + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            Exception? failure;
-            using (var discarded = Utf8ConstructionScope.Enter())
-            {
-                failure = Record.Exception(() =>
-                {
-                    if (compile)
-                    {
-                        var prepared = Utf8FrontEnd.Compile(pattern, Options);
-                        Assert.True(prepared.SemanticRegex.ExecutionPattern == pattern.AsSpan(4));
-                        Assert.NotNull(prepared.SemanticRegex.CaptureCatalog);
-                    }
-                    else
-                    {
-                        var semantic = Utf8FrontEnd.Analyze(pattern, Options).SemanticRegex;
-                        Assert.True(semantic.ExecutionPattern == pattern.AsSpan(4));
-                        Assert.NotNull(semantic.RuntimeTree);
-                    }
-                });
-                if (failure is not null)
-                    Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                if (cap == 0) Assert.NotNull(failure);
-            }
-            AssertParent(owner.Budget, checkpoint, parent);
-            Assert.InRange(owner.Budget.WorkSteps, 2ul, cap + 2);
+            work = measured.Budget.DiagnosticCheckpoints;
         }
     }
 

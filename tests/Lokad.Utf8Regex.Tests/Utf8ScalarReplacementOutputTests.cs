@@ -82,7 +82,7 @@ public sealed class Utf8ScalarReplacementOutputTests
     [InlineData(true)]
     public void MalformedByteTemplatesFailBeforeOutputAndDoNotPreventReuse(bool finite)
     {
-        var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 128,
+        var policy = finite ? new Utf8ResourcePolicy { MaxDepth = 128,
             MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 } : default;
         using var source = new CancellationTokenSource();
         byte[][] templates = [[0x61, 0xff, 0xf0, 0x9f, 0x98, 0x80], [0xf0, 0x9f], [0xed, 0xa0, 0x80]];

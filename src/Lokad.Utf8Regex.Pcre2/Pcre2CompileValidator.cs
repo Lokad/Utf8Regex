@@ -79,14 +79,14 @@ internal static class Pcre2CompileValidator
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        budget.ChargeWork((ulong)pattern.Length);
+        budget.Checkpoint();
         var hasEscape = false;
         var hasGroupSyntax = false;
         // Only candidate presence is tested here. Context and policy/error
         // priority stay with the existing lexical validators below.
         for (var offset = 0; offset < pattern.Length; offset += 2048)
         {
-            budget.ChargeWork(0);
+            budget.Checkpoint();
             var count = Math.Min(2048, pattern.Length - offset);
             if (pattern.IsUtf8)
             {
@@ -135,7 +135,7 @@ internal static class Pcre2CompileValidator
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        budget.ChargeWork((ulong)pattern.Length);
+        budget.Checkpoint();
         var groupDepth = 0;
         var inCharacterClass = false;
         var classHasAtom = false;
@@ -149,7 +149,7 @@ internal static class Pcre2CompileValidator
         {
             if (offset >= nextCheckpoint)
             {
-                budget.ChargeWork(0);
+                budget.Checkpoint();
                 nextCheckpoint = offset + 2048;
             }
             var character = pattern[offset];
@@ -311,7 +311,7 @@ internal static class Pcre2CompileValidator
         var invalid = false;
         for (; cursor < pattern.Length; cursor++)
         {
-            if ((cursor & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
+            if ((cursor & 2047) == 0) Utf8ConstructionScope.Checkpoint();
             var flag = pattern[cursor];
             if (flag is ':' or ')')
             {
@@ -351,7 +351,7 @@ internal static class Pcre2CompileValidator
     {
         while (cursor < pattern.Length && pattern[cursor] is ' ' or '\t')
         {
-            if ((cursor & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
+            if ((cursor & 2047) == 0) Utf8ConstructionScope.Checkpoint();
             cursor++;
         }
     }
@@ -362,7 +362,7 @@ internal static class Pcre2CompileValidator
         value = 0;
         while (cursor < pattern.Length && pattern[cursor] is >= '0' and <= '9')
         {
-            if ((cursor & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
+            if ((cursor & 2047) == 0) Utf8ConstructionScope.Checkpoint();
             value = Math.Min(65536, value * 10 + pattern[cursor++] - '0');
         }
         return cursor != start;
@@ -372,7 +372,7 @@ internal static class Pcre2CompileValidator
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        budget.ChargeWork((ulong)pattern.Length);
+        budget.Checkpoint();
         var lookaroundDepth = 0;
         var inCharacterClass = false;
         var classHasAtom = false;
@@ -385,7 +385,7 @@ internal static class Pcre2CompileValidator
         {
             if (offset >= nextCheckpoint)
             {
-                budget.ChargeWork(0);
+                budget.Checkpoint();
                 nextCheckpoint = offset + 2048;
             }
             var character = pattern[offset];
@@ -484,7 +484,7 @@ internal static class Pcre2CompileValidator
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        budget.ChargeWork((ulong)pattern.Length);
+        budget.Checkpoint();
         var lookbehindDepth = 0;
         var inCharacterClass = false;
         var classHasAtom = false;
@@ -497,7 +497,7 @@ internal static class Pcre2CompileValidator
         {
             if (offset >= nextCheckpoint)
             {
-                budget.ChargeWork(0);
+                budget.Checkpoint();
                 nextCheckpoint = offset + 2048;
             }
             var character = pattern[offset];
@@ -603,7 +603,7 @@ internal static class Pcre2CompileValidator
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        budget.ChargeWork((ulong)pattern.Length);
+        budget.Checkpoint();
         var inCharacterClass = false;
         var classHasAtom = false;
         var classStart = false;
@@ -615,7 +615,7 @@ internal static class Pcre2CompileValidator
         {
             if (offset >= nextCheckpoint)
             {
-                budget.ChargeWork(0);
+                budget.Checkpoint();
                 nextCheckpoint = offset + 2048;
             }
             var character = pattern[offset];

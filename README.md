@@ -54,8 +54,8 @@ remain valid after cursor advance or disposal.
 
 ## Cancellation and limits
 
-Instances accept cancellation tokens, timeouts and optional work, depth, working-
-capacity and result-capacity limits:
+Instances accept cancellation tokens, timeouts and optional limits on depth,
+working capacity and result capacity.
 
 ```csharp
 var bounded = new Utf8Regex(
@@ -65,7 +65,7 @@ var bounded = new Utf8Regex(
         MatchTimeout = TimeSpan.FromSeconds(1),
         ResourcePolicy = new Utf8ResourcePolicy
         {
-            MaxWorkSteps = 1_000_000, MaxDepth = 256,
+            MaxDepth = 256,
             MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576
         }
     });

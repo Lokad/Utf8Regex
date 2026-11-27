@@ -21,7 +21,6 @@ public sealed class Pcre2PreparationMemoryPolicyTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxWorkingBytes = 64
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
@@ -37,7 +36,7 @@ public sealed class Pcre2PreparationMemoryPolicyTests
         var regex = new Utf8Pcre2Regex("(?<x>a)b");
         var get = Preparation(regex);
         var templateUtf8 = Encoding.UTF8.GetBytes(template);
-        var invocation = new Utf8SliceInvocation(new(100000, 256, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var invocation = new Utf8SliceInvocation(new(256, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
         using (var control = Pcre2ReplacementPreparationControl.Borrow(invocation, default))
         {
@@ -59,7 +58,6 @@ public sealed class Pcre2PreparationMemoryPolicyTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 100000,
                 MaxWorkingBytes = 64
             },
             MatchTimeout = Timeout.InfiniteTimeSpan

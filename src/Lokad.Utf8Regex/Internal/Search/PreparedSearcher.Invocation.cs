@@ -14,7 +14,7 @@ internal readonly partial struct PreparedSearcher
         ArgumentOutOfRangeException.ThrowIfNegative(start);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(end, input.Length);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
-        var breach = invocation.TryChargeBoundedCheck();
+        var breach = invocation.CheckBoundedProgress();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         var candidate = -1;
         var length = 1;
@@ -29,7 +29,7 @@ internal readonly partial struct PreparedSearcher
                 {
                     // The first window is bounded. Check the deadline directly
                     // before the next window or before publishing the result.
-                    breach = invocation.TryChargeBoundedCheck();
+                    breach = invocation.CheckBoundedProgress();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                 }
                 var value = LiteralSearch.Needle[0];
@@ -50,7 +50,7 @@ internal readonly partial struct PreparedSearcher
                     if (reverse) high -= count;
                     else low += count;
                     if (low == high) break;
-                    breach = invocation.TryChargeInputStep();
+                    breach = invocation.CheckInput();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                 }
             }
@@ -75,7 +75,7 @@ internal readonly partial struct PreparedSearcher
             {
                 for (var id = 0; id < literals.Length; id++)
                 {
-                    breach = invocation.TryChargeInputStep();
+                    breach = invocation.CheckInput();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     var literal = literals[id];
                     var index = position;
@@ -84,7 +84,7 @@ internal readonly partial struct PreparedSearcher
                         folded, ref invocation, out var equal);
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     if (!equal) continue;
-                    breach = invocation.TryChargeInputStep();
+                    breach = invocation.CheckInput();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     invocation.Budget.ThrowIfCancellationRequested();
                     match = new PreparedSearchMatch(index, literal.Length, id);
@@ -101,7 +101,7 @@ internal readonly partial struct PreparedSearcher
             var high = end - length;
             while (low <= high)
             {
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var count = Math.Min(2048, high - low + 1);
                 var blockStart = reverse ? high - count + 1 : low;
@@ -117,7 +117,7 @@ internal readonly partial struct PreparedSearcher
                 break;
             }
         }
-        breach = invocation.TryChargeInputStep();
+        breach = invocation.CheckInput();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         invocation.Budget.ThrowIfCancellationRequested();
         if (candidate >= 0) { match = new PreparedSearchMatch(candidate, length, 0); found = true; }

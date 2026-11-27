@@ -21,20 +21,18 @@ public sealed class Utf8ResourcePolicyTests
     [Fact]
     public void UnlimitedHasNoBudgets()
     {
-        Assert.Null(Utf8ResourcePolicy.Unlimited.MaxWorkSteps);
         Assert.Null(Utf8ResourcePolicy.Unlimited.MaxDepth);
         Assert.Null(Utf8ResourcePolicy.Unlimited.MaxWorkingBytes);
         Assert.Null(Utf8ResourcePolicy.Unlimited.MaxResultBytes);
     }
 
     [Theory]
-    [InlineData(0ul, null, null, null)]
-    [InlineData(null, 0u, null, null)]
-    [InlineData(null, null, 0ul, null)]
-    [InlineData(null, null, null, 0ul)]
-    public void ZeroBudgetsAreRejected(ulong? work, uint? depth, ulong? workingBytes, ulong? resultBytes)
+    [InlineData(0u, null, null)]
+    [InlineData(null, 0ul, null)]
+    [InlineData(null, null, 0ul)]
+    public void ZeroBudgetsAreRejected(uint? depth, ulong? workingBytes, ulong? resultBytes)
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = work, MaxDepth = depth, MaxWorkingBytes = workingBytes, MaxResultBytes = resultBytes };
+        var policy = new Utf8ResourcePolicy { MaxDepth = depth, MaxWorkingBytes = workingBytes, MaxResultBytes = resultBytes };
         Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("cat", options: System.Text.RegularExpressions.RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout,
@@ -55,13 +53,12 @@ public sealed class Utf8ResourcePolicyTests
     }
 
     [Theory]
-    [InlineData(100ul, 10u, null, null)]
-    [InlineData(null, 10u, null, null)]
-    [InlineData(null, null, 1024ul, null)]
-    [InlineData(null, 10u, null, 1024ul)]
-    public void FiniteBudgetsConstructAndExecute(ulong? work, uint? depth, ulong? workingBytes, ulong? resultBytes)
+    [InlineData(10u, null, null)]
+    [InlineData(null, 1024ul, null)]
+    [InlineData(10u, null, 1024ul)]
+    public void FiniteBudgetsConstructAndExecute(uint? depth, ulong? workingBytes, ulong? resultBytes)
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = work, MaxDepth = depth, MaxWorkingBytes = workingBytes, MaxResultBytes = resultBytes };
+        var policy = new Utf8ResourcePolicy { MaxDepth = depth, MaxWorkingBytes = workingBytes, MaxResultBytes = resultBytes };
         var regex = new Utf8Regex("cat", options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
@@ -72,7 +69,7 @@ public sealed class Utf8ResourcePolicyTests
     [Fact]
     public void ValidFinitePolicyPreservesPatternSyntaxFailure()
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100ul, MaxWorkingBytes = 1024ul };
+        var policy = new Utf8ResourcePolicy { MaxWorkingBytes = 1024ul };
         Assert.Throws<ArgumentException>(() => new Utf8Regex("[invalid", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,

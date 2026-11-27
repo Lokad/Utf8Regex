@@ -36,7 +36,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     public void FinalScalarScreenUsesTheRequiredRepeatMinimum(string text)
     {
         using var regex = Utf8Regex.Compile(@"^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]? ?[0-9][A-Za-z]{2}$",
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 2 } });
+            policy: new() { ResourcePolicy = new() { MaxDepth = 4096 } });
         using var token = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(text);
         Assert.False(regex.IsMatch(input, token.Token));
@@ -51,7 +51,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
         const string pattern = @"\A(?<tail>[A-Z]{2,6}|[0-9]{1,3})\]?$";
         using var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 100, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });
 
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(subject)));
@@ -88,7 +88,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     {
         using var regex = Utf8Regex.Compile(@"^[-+]?\d*\.?\d*$", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 8 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var token = new CancellationTokenSource();
         var nearMiss = Encoding.UTF8.GetBytes(new string('7', 1024) + "x\n");
@@ -101,7 +101,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     {
         using var regex = Utf8Regex.Compile(@"\A(?<number>\d*\.?\d*)$", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 2048 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var token = new CancellationTokenSource();
         var nearMiss = Encoding.UTF8.GetBytes(new string('7', 1024) + "x1");
@@ -122,7 +122,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     {
         using var regex = Utf8Regex.Compile(@"\A(?<digits>\d+)\dX*!\z", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var token = new CancellationTokenSource();
         var ascii = new string('7', asciiLength);
@@ -135,19 +135,6 @@ public sealed class Utf8AnchoredLiteralSuffixTests
 
         var oneDigit = Encoding.UTF8.GetBytes("𝟘" + new string('X', 64) + "!");
         Assert.False(regex.IsMatch(oneDigit, token.Token));
-    }
-
-    [Fact]
-    public void LongDecimalBlockScanObservesWorkLimit()
-    {
-        using var regex = Utf8Regex.Compile(@"\A\d+!\z", policy: new()
-        {
-            ResourcePolicy = new() { MaxWorkSteps = 128 }
-        });
-        using var token = new CancellationTokenSource();
-        var input = Encoding.UTF8.GetBytes(new string('7', 300_000) + "!");
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input, token.Token)).ResourceKind);
     }
 
     [Theory]

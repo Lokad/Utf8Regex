@@ -12,7 +12,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// Sequential advances may cross host calls and asynchronous waits; the original deadline includes those waits.
 /// Concurrent or reentrant access is rejected. Aliases reference the same position and lifetime.
 /// Returned ranges own immutable metadata and retain their borrowed subject; they remain usable after later advances or disposal.
-/// Work and modeled result capacity remain cumulative through moves and snapshot publication. Working release never refunds result traffic; caller-retained live memory has separate scope.
+/// Modeled result capacity remains cumulative through moves and snapshot publication. Working release never refunds result charges. Caller-retained live memory has separate scope.
 /// Exclusive VM scratch is reused and stays charged while positioned, including during projection and host waits. EOF, failure and disposal release it synchronously. Scratch and publication overlap can require a higher working cap.
 /// Captures expose byte ranges only; callers derive character positions from their text when needed.
 /// </remarks>

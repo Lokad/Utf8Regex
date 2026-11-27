@@ -41,7 +41,7 @@ internal static class PythonReGroupNameValidator
 
     private static bool TryReadRune(string text, ref int index, out Rune rune)
     {
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         if (!Rune.TryGetRuneAt(text, index, out rune))
         {
             return false;

@@ -31,7 +31,7 @@ internal sealed class PythonReScalarSet : IDisposable
 
     internal void Add(int scalar)
     {
-        budget.ChargeWork(1);
+        budget.Checkpoint();
         var key = scalar >> 8;
         if (!indices.TryGetValue(key, out var index))
         {
@@ -62,7 +62,7 @@ internal sealed class PythonReScalarSet : IDisposable
         {
             while (_pageIndex < set.keys.Count)
             {
-                set.budget.ChargeWork(1);
+                set.budget.Checkpoint();
                 if (_bits != 0)
                 {
                     _scalar = (set.keys[_pageIndex] << 8) + (_wordIndex << 5) + BitOperations.TrailingZeroCount(_bits);

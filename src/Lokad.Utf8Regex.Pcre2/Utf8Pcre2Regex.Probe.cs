@@ -54,7 +54,7 @@ public sealed partial class Utf8Pcre2Regex
         try
         {
             _budget.CheckDeadline();
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             while (CanStartCandidate(startOffsetInBytes))
             {
                 var accepts = LeadingAssertionAccepts(compiled, input, startOffsetInBytes, matchOptions, out var canRetry);
@@ -95,7 +95,7 @@ public sealed partial class Utf8Pcre2Regex
                 if (_anchored || !canRetry || !Pcre2CharacterRunner.TryAdvanceCandidate(compiled.Request,
                     null, _input, startOffsetInBytes, ref _budget, out var next))
                     return NoMatch();
-                _budget.ChargeWorkspaceStep();
+                _budget.CheckWorkspace();
                 startOffsetInBytes = next;
             }
             return NoMatch();
@@ -118,7 +118,7 @@ public sealed partial class Utf8Pcre2Regex
             return true;
         canRetry = assertion.Kind == Pcre2CharacterTokenKind.BeginningOfLine &&
             (assertion.Options & Pcre2CharacterOptions.Multiline) != 0;
-        _budget.ChargeWorkspaceStep();
+        _budget.CheckWorkspace();
         return Pcre2CharacterRunner.TryMatchToken(assertion, compiled.Request, input, start, _originalStart, matchOptions, ref _budget, out _);
     }
 
@@ -142,7 +142,7 @@ public sealed partial class Utf8Pcre2Regex
         // selected newline convention determine the endpoint, not byte count.
         while (Pcre2CharacterRunner.TryMatchToken(dot, request, input, end, _originalStart, _matchOptions, ref _budget, out var next))
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             end = next;
         }
         // Hard partial asks whether another scalar could extend the greedy
@@ -157,7 +157,7 @@ public sealed partial class Utf8Pcre2Regex
         var remaining = input[startOffsetInBytes..];
         for (var i = 0; i < remaining.Length && (!_anchored || i == 0) && CanStartCandidate(startOffsetInBytes + i); i++)
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             if (remaining[i] != (byte)'a')
             {
                 continue;
@@ -166,7 +166,7 @@ public sealed partial class Utf8Pcre2Regex
             var j = i + 1;
             while (j < remaining.Length && remaining[j] == (byte)'b')
             {
-                _budget.ChargeWorkspaceStep();
+                _budget.CheckWorkspace();
                 j++;
             }
 
@@ -205,7 +205,7 @@ public sealed partial class Utf8Pcre2Regex
         byte[]? bestLiteral = null;
         foreach (var literal in literalBytes)
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             var index = IndexOf(remaining, literal);
             if (index < 0)
             {
@@ -233,7 +233,7 @@ public sealed partial class Utf8Pcre2Regex
             var partialLength = 0;
             foreach (var literal in literalBytes)
             {
-                _budget.ChargeWorkspaceStep();
+                _budget.CheckWorkspace();
                 partialLength = Math.Max(partialLength, LongestTrailingPrefixLength(remaining, literal));
             }
 
@@ -257,11 +257,11 @@ public sealed partial class Utf8Pcre2Regex
 
         for (var start = 0; start < remaining.Length && (!_anchored || start == 0) && CanStartCandidate(startOffsetInBytes + start); start++)
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             var candidate = remaining[start..];
             for (var i = 0; i < literalBytes.Length; i++)
             {
-                _budget.ChargeWorkspaceStep();
+                _budget.CheckWorkspace();
                 var literal = literalBytes[i];
                 if (candidate.StartsWith(literal))
                 {
@@ -305,7 +305,7 @@ public sealed partial class Utf8Pcre2Regex
         var last = consumesPrefix || prefixUtf8.IsEmpty ? input.Length - 1 : input.Length - prefixUtf8.Length;
         for (var start = first; start <= last; start++)
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             var consumedStart = consumesPrefix ? start : start + prefixUtf8.Length;
             if (_anchored && consumedStart != startOffsetInBytes || !CanStartCandidate(consumedStart)) break;
             if (!input[start..].StartsWith(prefixUtf8))
@@ -350,7 +350,7 @@ public sealed partial class Utf8Pcre2Regex
 
     private Utf8Pcre2ProbeResult ProbeViaEndAssertion(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, bool allowFinalNewline)
     {
-        _budget.ChargeWorkspaceStep();
+        _budget.CheckWorkspace();
         var newline = _compiled.Request.Settings.Newline;
         var matchIndex = allowFinalNewline
             ? Pcre2CharacterSemantics.GetFirstFinalNewlineOrEnd(input, startOffsetInBytes, newline)
@@ -390,11 +390,11 @@ public sealed partial class Utf8Pcre2Regex
         var candidate = startOffsetInBytes;
         while (CanStartCandidate(candidate))
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             var end = candidate;
             while (end < input.Length && input[end] == (byte)'c')
             {
-                _budget.ChargeWorkspaceStep();
+                _budget.CheckWorkspace();
                 end++;
             }
             var hasMinimum = !requireAtLeastOneC || end > candidate;
@@ -420,13 +420,13 @@ public sealed partial class Utf8Pcre2Regex
         var candidate = startOffsetInBytes;
         while (CanStartCandidate(candidate))
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             if (candidate == input.Length || input[candidate] is not ((byte)'a' or (byte)'b'))
             {
                 var end = candidate;
                 while (Pcre2CharacterRunner.TryMatchToken(dot, request, input, end, _originalStart, _matchOptions, ref _budget, out var nextEnd))
                 {
-                    _budget.ChargeWorkspaceStep();
+                    _budget.CheckWorkspace();
                     end = nextEnd;
                 }
                 if (end == input.Length && (partialMode == Pcre2PartialMode.Hard ||
@@ -455,7 +455,7 @@ public sealed partial class Utf8Pcre2Regex
         var cursor = 0;
         while (cursor < remaining.Length && remaining[cursor] == (byte)'a')
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             cursor++;
         }
 
@@ -481,7 +481,7 @@ public sealed partial class Utf8Pcre2Regex
         while (count < maxCount && Pcre2CharacterRunner.TryMatchToken(newline, request, input,
             cursor, _originalStart, _matchOptions, ref _budget, out var next))
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             var loneFinalCr = next == input.Length && next == cursor + 1 && input[cursor] == (byte)'\r';
             cursor = next;
             count++;
@@ -521,7 +521,7 @@ public sealed partial class Utf8Pcre2Regex
         var matched = 0;
         while (matched < remaining.Length && matched < requiredLength && remaining[matched] == literalUtf8[matched % literalUtf8.Length])
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             matched++;
         }
 
@@ -569,7 +569,7 @@ public sealed partial class Utf8Pcre2Regex
         var cursor = 0;
         while (cursor + literalUtf8.Length <= remaining.Length && remaining[cursor..].StartsWith(literalUtf8))
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             cursor += literalUtf8.Length;
         }
 
@@ -629,7 +629,7 @@ public sealed partial class Utf8Pcre2Regex
         var aCount = 0;
         while (aCount < remaining.Length && remaining[aCount] == (byte)'a')
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             aCount++;
         }
 
@@ -638,7 +638,7 @@ public sealed partial class Utf8Pcre2Regex
 
         // The admitted class owns UCP membership and complete scalar width.
         // ASCII byte classification would falsely reject Unicode word scalars.
-        _budget.ChargeWorkspaceStep();
+        _budget.CheckWorkspace();
         if (Pcre2CharacterRunner.TryMatchToken(word, compiled.Request, input,
             startOffsetInBytes + aCount, _originalStart, _matchOptions, ref _budget, out var end))
         {
@@ -664,7 +664,7 @@ public sealed partial class Utf8Pcre2Regex
 
         // Both admitted branches share one leading scalar. Keep the whole
         // subject for their suffixes; later text is not part of the match.
-        _budget.ChargeWorkspaceStep();
+        _budget.CheckWorkspace();
         if (!Pcre2CharacterRunner.TryMatchToken(prefix, compiled.Request, input,
             startOffsetInBytes, _originalStart, _matchOptions, ref _budget, out var cursor))
             return NoMatch();
@@ -677,7 +677,7 @@ public sealed partial class Utf8Pcre2Regex
         // Soft partial may retry a later complete alternative. Hard partial
         // keeps the first branch's inspected EOF extent before trying it.
         var terminal = ((Pcre2TokenBacktrackingNode)((Pcre2SequenceBacktrackingNode)branches[1]).Children[1]).Token;
-        _budget.ChargeWorkspaceStep();
+        _budget.CheckWorkspace();
         if (Pcre2CharacterRunner.TryMatchToken(terminal, compiled.Request, input,
             cursor, _originalStart, _matchOptions, ref _budget, out var end))
             return Full([Project(0, startOffsetInBytes, end)]);
@@ -696,13 +696,13 @@ public sealed partial class Utf8Pcre2Regex
         var candidate = startOffsetInBytes;
         while (candidate < input.Length && CanStartCandidate(candidate))
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             var end = candidate;
             var count = 0;
             while (count < maxCount && Pcre2CharacterRunner.TryMatchToken(dot, compiled.Request,
                 input, end, _originalStart, _matchOptions, ref _budget, out var next))
             {
-                _budget.ChargeWorkspaceStep();
+                _budget.CheckWorkspace();
                 end = next;
                 count++;
                 // A lone final CR can become a CRLF newline. Hard partial must
@@ -745,7 +745,7 @@ public sealed partial class Utf8Pcre2Regex
         var search = startOffsetInBytes;
         while (search <= input.Length && CanStartCandidate(search))
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             var remaining = input[search..];
             var index = intrinsic ? remaining.StartsWith(literal) ? 0 : -1 : IndexOf(remaining, literal);
             if (index >= 0 && !CanStartCandidate(search + index)) index = -1;
@@ -786,7 +786,7 @@ public sealed partial class Utf8Pcre2Regex
         ReadOnlySpan<byte> input, int start)
     {
         if (leading is not { } assertion) return true;
-        _budget.ChargeWorkspaceStep();
+        _budget.CheckWorkspace();
         return Pcre2CharacterRunner.TryMatchToken(assertion, request, input, start, _originalStart, _matchOptions, ref _budget, out _);
     }
 
@@ -816,7 +816,7 @@ public sealed partial class Utf8Pcre2Regex
     private Utf8Pcre2ProbeResult ProbeTrailingAssertion(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
         int start, int end, Pcre2CharacterToken assertion, Pcre2CompileRequest request)
     {
-        _budget.ChargeWorkspaceStep();
+        _budget.CheckWorkspace();
         var full = Pcre2CharacterRunner.TryMatchToken(assertion, request, input,
             end, _originalStart, _matchOptions, ref _budget, out _);
         if (partialMode != Pcre2PartialMode.None)
@@ -878,7 +878,7 @@ public sealed partial class Utf8Pcre2Regex
         var maxLength = Math.Min(subject.Length, literal.Length - 1);
         for (var length = maxLength; length >= 1; length--)
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             if (subject[^length..].SequenceEqual(literal[..length]))
             {
                 return length;
@@ -951,7 +951,7 @@ public sealed partial class Utf8Pcre2Regex
         // whole-line scan, subject slice, or independent resource owner.
         while (_candidateScan < start)
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             if (!Pcre2CharacterRunner.TryAdvanceCandidate(_compiled.Request, null, _input,
                 _candidateScan, ref _budget, out var next))
             {
@@ -967,17 +967,17 @@ public sealed partial class Utf8Pcre2Regex
     {
         if (_anchored)
         {
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             return subject.StartsWith(literal) ? 0 : -1;
         }
         if (_budget.IsUnmetered) return subject.IndexOf(literal);
-        _budget.ChargeWorkspaceStep();
+        _budget.CheckWorkspace();
         if (literal.IsEmpty) return 0;
         var last = subject.Length - literal.Length;
         for (var position = 0; position <= last;)
         {
             _budget.CheckDeadline();
-            _budget.ChargeWorkspaceStep();
+            _budget.CheckWorkspace();
             var candidates = Math.Min(4096, last - position + 1);
             // Keep Span.IndexOf's SIMD kernel. Overlap the final literal tail
             // so a hit across a controlled chunk boundary cannot be missed.

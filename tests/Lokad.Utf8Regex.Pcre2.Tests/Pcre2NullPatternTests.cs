@@ -44,7 +44,7 @@ public sealed class Pcre2NullPatternTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 0
+                MaxDepth = 0
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         }));

@@ -127,7 +127,6 @@ public sealed class Pcre2LiteralDotStarProbeTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = bytes
@@ -145,23 +144,6 @@ public sealed class Pcre2LiteralDotStarProbeTests
         Assert.Equal("f😀é", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("😀f😀é"u8, Pcre2PartialMode.Soft).Kind);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(1).Probe("😀f😀é"u8, Pcre2PartialMode.Hard).Kind);
-    }
-
-    [Fact]
-    public void GreedyScalarWorkCannotBypassFiniteAllowance()
-    {
-        var regex = new Utf8Pcre2Regex("f.*", options: Pcre2CompileOptions.DotAll, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 20
-            },
-            MatchTimeout = Timeout.InfiniteTimeSpan
-        });
-        var input = Encoding.UTF8.GetBytes("f" + new string('x', 32768));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = regex.Probe(input, Pcre2PartialMode.Hard); }).ErrorKind);
-        Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, regex.Probe("f"u8, Pcre2PartialMode.Hard).Kind);
     }
 
     [Theory]

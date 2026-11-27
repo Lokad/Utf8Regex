@@ -8,7 +8,7 @@ public sealed class Utf8IdentifierValueMatchTests
 {
     private const string Pattern = "[a-zA-Z][a-zA-Z0-9]*";
     private static readonly Utf8ResourcePolicy Policy = new()
-    { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 };
+    { MaxDepth = 256, MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 };
 
     [Fact]
     public void BoundedAsciiValuesPreserveTheSelectedIndexWithoutVmStorage()
@@ -87,32 +87,6 @@ public sealed class Utf8IdentifierValueMatchTests
             var input = Encoding.UTF8.GetBytes(text);
             Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: canceled.Token)).CancellationToken);
         }
-    }
-
-    [Theory]
-    [InlineData("!!abc12.tail", true)]
-    [InlineData("123_", false)]
-    public void EveryWorkCutoffRefusesPartialPublication(string text, bool success)
-    {
-        var input = Encoding.ASCII.GetBytes(text); var denied = false; var admitted = false;
-        for (ulong work = 1; work < 100; work++)
-        {
-            var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = Policy with
-                {
-                    MaxWorkSteps = work,
-                    MaxDepth = 1,
-                    MaxWorkingBytes = 1,
-                    MaxResultBytes = 1
-                }
-            });
-            try { Assert.Equal(success, regex.Match(input).Success); admitted = true; break; }
-            catch (Utf8ResourceLimitExceededException failure)
-            { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind); denied = true; }
-        }
-        Assert.True(denied); Assert.True(admitted);
     }
 
     [Theory]

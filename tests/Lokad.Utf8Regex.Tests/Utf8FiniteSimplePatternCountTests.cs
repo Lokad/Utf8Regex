@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8FiniteSimplePatternCountTests
 {
-    private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+    private static Utf8ResourcePolicy Funded => new() { MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Theory]
     [InlineData("a?b[0-9]{2}")]
@@ -91,37 +91,6 @@ public sealed class Utf8FiniteSimplePatternCountTests
         });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(new Regex(pattern, RegexOptions.CultureInvariant).Count(text), regex.Count(input));
-    }
-
-    [Theory]
-    [InlineData("", 0)]
-    [InlineData("abxx", 0)]
-    [InlineData("b12 ab34", 2)]
-    public void EveryWorkCutoffBoundsPublicSearchAndPublication(string text, int expected)
-    {
-        var regex = new Utf8Regex("a?b[0-9]{2}", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Funded
-        });
-        var input = Encoding.UTF8.GetBytes(text);
-        ulong required = 0;
-        for (ulong work = 1; work <= 128; work++)
-        {
-            var candidate = new Utf8Regex("a?b[0-9]{2}", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Regex.InfiniteMatchTimeout,
-                ResourcePolicy = Funded with
-                {
-                    MaxWorkSteps = work
-                }
-            });
-            try { Assert.Equal(expected, candidate.Count(input)); required = work; break; }
-            catch (Utf8ResourceLimitExceededException error)
-            { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
-        }
-        Assert.InRange(required, 2UL, 128UL);
-        Assert.Equal(expected, regex.Count(input));
     }
 
     [Theory]

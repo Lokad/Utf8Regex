@@ -96,19 +96,19 @@ public sealed class Utf8EmissionConstructionAdmissionTests
     [Fact]
     public void EmittedCodeReachesTheEnclosingConstructionOwner()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var parent = Utf8ConstructionScope.Enter();
         var result = CompileCount();
         Assert.Equal(typeof(int), result.Method.ReturnType);
         Assert.True(parent.Budget.ReservedBytes > 0);
         Assert.True(parent.Budget.Reserved > 0);
-        Assert.True(parent.Budget.WorkSteps > 0);
+        Assert.True(parent.Budget.DiagnosticCheckpoints > 0);
         Assert.True(parent.Budget.PeakDepth > 0);
         Assert.Equal(0UL, parent.Budget.Depth);
     }
 
     [Theory]
     [InlineData(Utf8ResourceLimitKind.ConstructionBytes)]
-    [InlineData(Utf8ResourceLimitKind.ConstructionWorkSteps)]
     [InlineData(Utf8ResourceLimitKind.ConstructionDepth)]
     [InlineData(Utf8ResourceLimitKind.ConstructionInstructionCapacity)]
     public void SharedEmissionFailuresPropagateWithoutPublishingOrLeaking(Utf8ResourceLimitKind kind)
@@ -116,7 +116,6 @@ public sealed class Utf8EmissionConstructionAdmissionTests
         using var parent = new Utf8ConstructionScope(
             kind == Utf8ResourceLimitKind.ConstructionInstructionCapacity ? 0 : Utf8ConstructionScope.DefaultInstructionCapacity,
             kind == Utf8ResourceLimitKind.ConstructionBytes ? 1 : Utf8ConstructionScope.DefaultBufferBytes,
-            kind == Utf8ResourceLimitKind.ConstructionWorkSteps ? 0 : Utf8ConstructionScope.DefaultWorkSteps,
             kind == Utf8ResourceLimitKind.ConstructionDepth ? 0 : Utf8ConstructionScope.DefaultDepth);
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => CompileCount());
         Assert.Equal(kind, error.ResourceKind);
@@ -142,24 +141,24 @@ public sealed class Utf8EmissionConstructionAdmissionTests
     }
 
     [Theory]
-    [InlineData(false)]
     [InlineData(true)]
     public void ProductionCountUnwindsAtEveryWorkAndDepthCutoff(bool depth)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         ulong required;
         using (var funded = Utf8ConstructionScope.Enter())
         {
             _ = CompileCount();
-            required = depth ? funded.Budget.PeakDepth : funded.Budget.WorkSteps;
+            required = depth ? funded.Budget.PeakDepth : funded.Budget.DiagnosticCheckpoints;
         }
         for (var cutoff = 0UL; cutoff < required; cutoff++)
         {
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue,
-                depth ? ulong.MaxValue : cutoff + 8, depth ? cutoff : ulong.MaxValue);
+                depth ? cutoff : ulong.MaxValue);
             var parent = owner.Budget.AllocateArray<byte>(8, true);
             parent[0] = 37;
             var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => CompileCount());
-            Assert.Equal(depth ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
+            Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, error.ResourceKind);
             Assert.Equal(48UL, owner.Budget.ReservedBytes);
             Assert.Equal(8UL, owner.Budget.Reserved);
             Assert.Equal(0UL, owner.Budget.Depth);
@@ -178,7 +177,7 @@ public sealed class Utf8EmissionConstructionAdmissionTests
         var count = 0;
         using (var funded = Utf8ConstructionScope.Enter())
         {
-            funded.Budget.CheckpointHook = _ => count++;
+            funded.Budget.CheckpointHook = () => count++;
             _ = CompileCount();
         }
         // Count hook invocations, including the zero-work checkpoint after the
@@ -195,7 +194,7 @@ public sealed class Utf8EmissionConstructionAdmissionTests
             owner.Budget.Deadline = deadline;
             owner.Budget.CancellationToken = cancellation.Token;
             var checkpoint = 0;
-            owner.Budget.CheckpointHook = _ =>
+            owner.Budget.CheckpointHook = () =>
             {
                 if (++checkpoint != target) return;
                 if (timeout) ticks = 30000;
@@ -234,7 +233,7 @@ public sealed class Utf8EmissionConstructionAdmissionTests
         for (var cutoff = 0UL; cutoff <= required; cutoff += instructions ? 1UL : 16UL)
         {
             using var owner = new Utf8ConstructionScope(instructions ? cutoff + 8 : ulong.MaxValue,
-                instructions ? ulong.MaxValue : cutoff + 48, ulong.MaxValue, ulong.MaxValue);
+                instructions ? ulong.MaxValue : cutoff + 48, ulong.MaxValue);
             var parent = owner.Budget.AllocateArray<byte>(8, true);
             parent[0] = 37;
             var error = Record.Exception(() => _ = CompileCount());
@@ -310,6 +309,7 @@ public sealed class Utf8EmissionConstructionAdmissionTests
     [InlineData(2)]
     public void InvalidControlFlowFailsBeforePublicationAndRestoresTheOwner(int shape)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         using var parent = Utf8ConstructionScope.Enter();
         Assert.Throws<InvalidProgramException>(() =>
         {
@@ -329,6 +329,6 @@ public sealed class Utf8EmissionConstructionAdmissionTests
         Assert.Equal(0UL, parent.Budget.Reserved);
         Assert.Equal(0UL, parent.Budget.Depth);
 
-        Assert.True(parent.Budget.WorkSteps > 0);
+        Assert.True(parent.Budget.DiagnosticCheckpoints > 0);
     }
 }

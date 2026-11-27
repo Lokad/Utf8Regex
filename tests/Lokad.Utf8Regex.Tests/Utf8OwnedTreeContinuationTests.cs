@@ -196,19 +196,9 @@ public sealed class Utf8OwnedTreeContinuationTests
         Assert.True(Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
             collectHistory: false, ref baseline).Found);
         Assert.Equal(0UL, baseline.Ledger.ReservedBytes);
-        for (ulong work = 1; work < baseline.Budget.Steps; work++)
-        {
-            Array.Fill(starts, -1);
-            Array.Fill(ends, -1);
-            var limited = new Utf8SliceInvocation(new Utf8ExecutionLimits(work, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps,
-                Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
-                    collectHistory: false, ref limited).Breach);
-            Assert.Equal(0UL, limited.Ledger.ReservedBytes);
-        }
         Array.Fill(starts, -1);
         Array.Fill(ends, -1);
-        var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
+        var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
             Regex.InfiniteMatchTimeout, CancellationToken.None);
         // Retained history needs the journal even when no alternative remains.
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes,

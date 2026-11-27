@@ -16,7 +16,7 @@ public sealed class Utf8SliceHistoryAdmissionTests
         var regex = new Utf8Regex("(?<x>.)+", options: RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
         var input = "é😀a"u8.ToArray();
-        var invocation = Invocation(new(ulong.MaxValue, 0, 0));
+        var invocation = Invocation(new(0, 0));
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         var firstResults = new Utf8InvocationResultLedger();
         var secondResults = new Utf8InvocationResultLedger();
@@ -60,7 +60,7 @@ public sealed class Utf8SliceHistoryAdmissionTests
         using var regex = new Utf8Regex("(a)+" + string.Concat(Enumerable.Repeat("(b)", groups - 1)));
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var input = System.Text.Encoding.UTF8.GetBytes("aaa" + new string('b', groups - 1));
-        var invocation = Invocation(new(0, 0, ulong.MaxValue, ulong.MaxValue));
+        var invocation = Invocation(new(0, ulong.MaxValue, ulong.MaxValue));
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         var results = new Utf8InvocationResultLedger();
         try

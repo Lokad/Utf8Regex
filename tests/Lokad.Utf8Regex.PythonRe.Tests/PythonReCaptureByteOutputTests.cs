@@ -6,7 +6,6 @@ public sealed class PythonReCaptureByteOutputTests
 {
     private static Utf8ResourcePolicy Funded => new()
     {
-        MaxWorkSteps = 10_000_000,
         MaxDepth = 100_000,
         MaxWorkingBytes = 16 * 1024 * 1024,
         MaxResultBytes = 16 * 1024 * 1024

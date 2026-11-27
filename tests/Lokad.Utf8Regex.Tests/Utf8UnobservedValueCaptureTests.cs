@@ -42,8 +42,7 @@ public sealed class Utf8UnobservedValueCaptureTests
             ResourcePolicy = new Utf8ResourcePolicy
             {
                 // Elided capture storage must not determine the value allowance.
-                MaxWorkingBytes = rtl ? 1280UL : forwardCaptureBytes - 1,
-                MaxWorkSteps = 100000
+                MaxWorkingBytes = rtl ? 1280UL : forwardCaptureBytes - 1
             }
         });
         var input = "xxabcdef123"u8.ToArray();
@@ -73,8 +72,7 @@ public sealed class Utf8UnobservedValueCaptureTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkingBytes = 256,
-                MaxWorkSteps = 100000
+                MaxWorkingBytes = 256
             }
         });
         Assert.True(new Utf8Regex(pattern).IsMatch(input));
@@ -94,8 +92,7 @@ public sealed class Utf8UnobservedValueCaptureTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkingBytes = 256,
-                MaxWorkSteps = 100000
+                MaxWorkingBytes = 256
             }
         });
         Assert.True(admitted.IsMatch(input));
@@ -108,8 +105,7 @@ public sealed class Utf8UnobservedValueCaptureTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkingBytes = 1,
-                MaxWorkSteps = 100000
+                MaxWorkingBytes = 1
             }
         });
         Assert.True(denied.IsMatch(input));
@@ -118,37 +114,6 @@ public sealed class Utf8UnobservedValueCaptureTests
         var captures = new Utf8CaptureRange[2];
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match(input, captures: captures)).ResourceKind);
-    }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void EveryPublicWorkCutoffIsStructuredAndNeverChangesSuccessfulRange(bool boolean)
-    {
-        var input = Encoding.UTF8.GetBytes("é😀 abcdef123");
-        var baseline = new Utf8Regex("abcdef([0-9]+)").Match(input);
-        var admitted = false;
-        for (ulong limit = 1; limit <= 256; limit++)
-        {
-            var regex = new Utf8Regex("abcdef([0-9]+)", options: RegexOptions.None, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = new Utf8ResourcePolicy
-                {
-                    MaxWorkSteps = limit,
-                    MaxWorkingBytes = 256
-                }
-            });
-            try
-            {
-                if (boolean) Assert.True(regex.IsMatch(input));
-                else Assert.Equal(baseline, regex.Match(input));
-                admitted = true;
-                break;
-            }
-            catch (Utf8ResourceLimitExceededException error)
-            { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
-        }
-        Assert.True(admitted);
     }
 
     [Theory]
@@ -163,7 +128,6 @@ public sealed class Utf8UnobservedValueCaptureTests
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxWorkingBytes = 256
             }
         });

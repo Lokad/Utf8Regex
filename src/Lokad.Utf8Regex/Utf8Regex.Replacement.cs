@@ -232,7 +232,7 @@ public sealed partial class Utf8Regex
         {
             while (frames.Count > 0)
             {
-                storage.Budget.ChargeWork(1);
+                storage.Budget.Checkpoint();
                 var frame = frames.Peek();
                 var current = frame.Node;
                 if (frame.NextChild < 0)
@@ -249,7 +249,7 @@ public sealed partial class Utf8Regex
                             var multiple = false;
                             for (var i = 0; i < current.ChildCount; i++)
                             {
-                                storage.Budget.ChargeWork(1);
+                                storage.Budget.Checkpoint();
                                 var candidate = current.Child(i);
                                 if (IsZeroWidthBoundaryNode(candidate.Kind)) continue;
                                 if (child is not null) { multiple = true; break; }

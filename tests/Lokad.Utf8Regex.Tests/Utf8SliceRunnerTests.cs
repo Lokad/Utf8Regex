@@ -14,7 +14,7 @@ public sealed class Utf8SliceRunnerTests
 {
     private static Utf8SliceInvocation Unmetered()
     {
-        return new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        return new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
     }
 
     private static Utf8SliceNode Lit(byte value)

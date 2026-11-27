@@ -46,7 +46,6 @@ public sealed class Pcre2XucPropertyTests
                 {
                     var limits = finite ? new Utf8Pcre2ExecutionLimits
                     {
-                        MatchLimit = 1000000,
                         DepthLimit = 256,
                         HeapLimitInBytes = 1048576,
                         ResultLimitInBytes = 1048576
@@ -56,7 +55,6 @@ public sealed class Pcre2XucPropertyTests
                     {
                         ResourcePolicy = new Utf8ResourcePolicy
                         {
-                            MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                             MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                             MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                             MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
@@ -67,7 +65,6 @@ public sealed class Pcre2XucPropertyTests
                     {
                         ResourcePolicy = new Utf8ResourcePolicy
                         {
-                            MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
                             MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
                             MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
                             MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
@@ -100,7 +97,6 @@ public sealed class Pcre2XucPropertyTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576
@@ -128,7 +124,6 @@ public sealed class Pcre2XucPropertyTests
     }
 
     [Theory]
-    [InlineData(0, Pcre2ErrorKind.MatchLimit)]
     [InlineData(1, Pcre2ErrorKind.DepthLimit)]
     [InlineData(2, Pcre2ErrorKind.HeapLimit)]
     [InlineData(3, Pcre2ErrorKind.ResultLimit)]
@@ -137,7 +132,7 @@ public sealed class Pcre2XucPropertyTests
         const string pattern = @"(?:(?<x>\p{Xuc})|(?<y>\p{Xuc}{2}))+!";
         var policy = control switch
         {
-            0 => new Utf8ResourcePolicy { MaxWorkSteps = 1 },
+            0 => new Utf8ResourcePolicy { MaxDepth = 4096 },
             1 => new Utf8ResourcePolicy { MaxDepth = 1 },
             2 => new Utf8ResourcePolicy { MaxWorkingBytes = 1 },
             _ => new Utf8ResourcePolicy { MaxResultBytes = 1 },
@@ -161,7 +156,6 @@ public sealed class Pcre2XucPropertyTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576
@@ -189,7 +183,6 @@ public sealed class Pcre2XucPropertyTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576
@@ -230,7 +223,6 @@ public sealed class Pcre2XucPropertyTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576

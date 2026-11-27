@@ -52,7 +52,7 @@ internal sealed class Utf8ConstructionSession(
     internal T[] Copy<T>(Utf8ConstructionBuffer<T> values, bool retained)
     {
         var result = Allocate<T>(values.Count, retained);
-        budget.ChargeWork((ulong)values.Count);
+        budget.Checkpoint();
         values.Span.CopyTo(result);
         return result;
     }
@@ -82,7 +82,7 @@ internal sealed class Utf8ConstructionSession(
         for (var index = 0; index < text.Length;)
         {
             control.Check();
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var rune = ReadScalar(text, ref index);
             count = checked(count + rune.Utf8SequenceLength);
         }
@@ -91,9 +91,9 @@ internal sealed class Utf8ConstructionSession(
         for (var index = 0; index < text.Length;)
         {
             control.Check();
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var rune = ReadScalar(text, ref index);
-            budget.ChargeWork((ulong)rune.Utf8SequenceLength);
+            budget.Checkpoint();
             written += rune.EncodeToUtf8(result.AsSpan(written));
         }
         return result;

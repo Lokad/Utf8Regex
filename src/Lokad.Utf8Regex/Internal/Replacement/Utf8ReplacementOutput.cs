@@ -15,7 +15,7 @@ internal ref struct Utf8ReplacementRangeLedger
     internal Utf8ExecutionLimitKind TryAdd<TControl>(Utf8ReplacementRange range, scoped TControl control)
         where TControl : IUtf8InvocationBufferControl, allows ref struct
     {
-        var breach = control.TryChargeWorkspaceStep();
+        var breach = control.CheckWorkspace();
         if (breach == Utf8ExecutionLimitKind.None)
             breach = control.TryChargeResultBytes(_ranges.PendingGrowthBytes);
         return breach == Utf8ExecutionLimitKind.None ? _ranges.TryPush(range, control) : breach;

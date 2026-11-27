@@ -114,7 +114,7 @@ public sealed class Utf8LiteralEdgeQualificationTests
     public void RequiredLiteralWitnessRespectsTheFullPattern(string pattern, string hit, string miss, bool provesMatch)
     {
         using var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 1000 } });
+            new() { ResourcePolicy = new() { MaxDepth = 4096 } });
         Assert.Equal(provesMatch, regex.Inspection.PreparedRegex.RequiredLiteralProvesMatch);
         using var source = new CancellationTokenSource();
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(hit), source.Token));
@@ -142,25 +142,26 @@ public sealed class Utf8LiteralEdgeQualificationTests
     [Fact]
     public void EveryLiteralProofCutoffRetainsOnlyItsFinalPayloadAndRestoresParentLoans()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         foreach (var pattern in new[] { @"\A(?<x>a)(?:b)", @"(?i:a)(?i:b)\z" })
         {
             var tree = Tree(pattern, RegexOptions.CultureInvariant); ulong peak, work;
-            using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-            { Assert.True(Utf8AnchoredLiteralClassifier.Classify(tree).HasValue); Assert.Equal(48ul, funded.Budget.ReservedBytes); peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps; }
+            using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue))
+            { Assert.True(Utf8AnchoredLiteralClassifier.Classify(tree).HasValue); Assert.Equal(48ul, funded.Budget.ReservedBytes); peak = funded.Budget.PeakBytes; work = funded.Budget.DiagnosticCheckpoints; }
             Assert.InRange(peak, 1ul, 20000ul); Assert.InRange(work, 1ul, 10000ul);
-            foreach (var bytes in new[] { true, false })
+            foreach (var bytes in new[] { true})
             {
                 var successes = 0; var limit = bytes ? peak : work;
                 for (var cutoff = 0ul; cutoff <= limit; cutoff++)
                 {
-                    using var owner = new Utf8ConstructionScope(0, bytes ? 128 + cutoff : ulong.MaxValue, bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
+                    using var owner = new Utf8ConstructionScope(0, bytes ? 128 + cutoff : ulong.MaxValue, ulong.MaxValue);
                     var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
                     var failure = Record.Exception(() => Utf8AnchoredLiteralClassifier.Classify(tree));
                     if (failure is null) { successes++; Assert.Equal(128ul + 48ul, owner.Budget.ReservedBytes); }
                     else
-                    { Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind); Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); }
+                    { Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind); Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); }
                     Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
-                    Assert.True(bytes ? owner.Budget.PeakBytes <= 128 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);
+                    Assert.True(bytes ? owner.Budget.PeakBytes <= 128 + cutoff : owner.Budget.DiagnosticCheckpoints <= 2 + cutoff);
                 }
                 if (bytes) Assert.InRange(successes, 1, (int)limit + 1); else Assert.Equal(1, successes);
             }
@@ -170,6 +171,7 @@ public sealed class Utf8LiteralEdgeQualificationTests
     [Fact]
     public void LiteralWrapperAdmissionFailureLeavesTheOwnerUsable()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const RegexOptions options = RegexOptions.CultureInvariant;
         var tree = Tree(@"\Aab", options);
         var literal = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, options, "ab");
@@ -179,11 +181,11 @@ public sealed class Utf8LiteralEdgeQualificationTests
         root.Children = new[] { Utf8TreeNode.Create(Utf8TreeNodeKind.Beginning, options), literal };
         var deep = Utf8OwnedRegexTree.Create(root, tree.CaptureCount, tree.CaptureNames, tree.CaptureNameToNumberMapping, tree.CaptureNumberSparseMapping,
             tree.Options, tree.Culture, tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase, tree.Features, tree.LiteralEligibility);
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 8);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 8);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
         Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8AnchoredLiteralClassifier.Classify(deep)).ResourceKind);
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-        var spent = owner.Budget.WorkSteps; Assert.True(Utf8AnchoredLiteralClassifier.Classify(tree).HasValue); Assert.Equal(128ul + 48ul, owner.Budget.ReservedBytes);
-        Assert.True(owner.Budget.WorkSteps > spent); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
+        var spent = owner.Budget.DiagnosticCheckpoints; Assert.True(Utf8AnchoredLiteralClassifier.Classify(tree).HasValue); Assert.Equal(128ul + 48ul, owner.Budget.ReservedBytes);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > spent); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
     }
 }

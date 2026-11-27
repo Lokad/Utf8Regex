@@ -15,7 +15,7 @@ internal static class Utf8ScalarAsciiProjector
         charClass = default;
         if (scalarClass is null || scalarClass.Data.Length < 3) return false;
         var data = scalarClass.Data;
-        Utf8ConstructionScope.ChargeWork(1);
+        Utf8ConstructionScope.Checkpoint();
         return data[0] == 0 && data[2] == 0 && 3L + data[1] == data.Length &&
             TryProjectRanges(data.AsSpan(3), 128, out charClass);
     }
@@ -55,18 +55,18 @@ internal static class Utf8ScalarAsciiProjector
         low = definitionLow;
         high = definitionHigh;
         var asciiOnly = true;
-        Utf8ConstructionScope.ChargeWork(2);
+        Utf8ConstructionScope.Checkpoint();
         for (var word = 0; word < 2; word++)
             for (var bits = word == 0 ? definitionLow : definitionHigh; bits != 0; bits &= bits - 1)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 var value = (char)(word * 64 + BitOperations.TrailingZeroCount(bits));
                 for (var behavior = firstBehavior; behavior <= lastBehavior; behavior++)
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents(value, (Utf8ScalarCaseBehavior)behavior))
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         if (equivalent < 64) low |= 1UL << equivalent;
                         else if (equivalent < 128) high |= 1UL << (equivalent - 64);
                         else asciiOnly = false;
@@ -91,7 +91,7 @@ internal static class Utf8ScalarAsciiProjector
         var depth = 0;
         while (position < data.Length)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (data.Length - position < 3) return false;
             var negated = data[position] != 0;
             var rangeCount = data[position + 1];
@@ -125,7 +125,7 @@ internal static class Utf8ScalarAsciiProjector
         ulong low = 0, high = 0;
         for (var index = 0; index < ranges.Length; index += 2)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             var start = ranges[index];
             var end = ranges[index + 1];
             if (start < 0 || start >= end || end > maximumEnd) return false;
@@ -149,7 +149,7 @@ internal static class Utf8ScalarAsciiProjector
         uint categoryMask = 0;
         for (var index = 0; index < predicates.Length; index++)
         {
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             var code = predicates[index];
             if (code is 100 or -100)
             {
@@ -173,7 +173,7 @@ internal static class Utf8ScalarAsciiProjector
                 var start = index;
                 while (++index < predicates.Length && predicates[index] != 0)
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     var member = predicates[index];
                     if (member is < -30 or > 30) return false;
                     if (member > 0) positive |= 1u << (member - 1);
@@ -192,7 +192,7 @@ internal static class Utf8ScalarAsciiProjector
         {
             for (var value = 0; value < 128; value++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if ((categoryMask & (1u << (int)char.GetUnicodeCategory((char)value))) == 0) continue;
                 if (value < 64) low |= 1UL << value;
                 else high |= 1UL << (value - 64);
@@ -251,7 +251,7 @@ internal static class Utf8ScalarAsciiProjector
     {
         shorthand = -1; negated = false;
         if (categories.IsEmpty) return true;
-        Utf8ConstructionScope.ChargeWork((ulong)categories.Length);
+        Utf8ConstructionScope.Checkpoint();
         if (categories.Length == 1 && categories[0] is 9 or -9 or 100 or -100)
         {
             shorthand = Math.Abs(categories[0]) == 9 ? 0 : 2;

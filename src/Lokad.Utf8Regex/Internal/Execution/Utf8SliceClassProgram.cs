@@ -31,14 +31,14 @@ internal sealed class Utf8SliceClassProgram
             var bits = 0;
             foreach (var member in members)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 bits |= 1 << (int)member;
             }
             return bits;
         }
 
         var segments = arena.Allocate<Segment>(operands.Count, true);
-        arena.Budget.ChargeWork((ulong)operands.Count);
+        arena.Budget.Checkpoint();
         for (var index = 0; index < operands.Count; index++)
             segments[index] = FromNode(operands[index]);
 
@@ -53,7 +53,7 @@ internal sealed class Utf8SliceClassProgram
         var matched = false;
         for (var segment = _segments.Length - 1; segment >= 0; segment--)
         {
-            breach = invocation.TryChargeStep();
+            breach = invocation.CheckProgress();
             if (breach != Utf8ExecutionLimitKind.None) return false;
             var segmentHit = SegmentMatches(scalar, _segments[segment], behavior, ref invocation, out breach);
             if (breach != Utf8ExecutionLimitKind.None) return false;

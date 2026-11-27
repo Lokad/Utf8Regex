@@ -65,7 +65,7 @@ internal ref struct Pcre2BacktrackingWorkspace
     private T[]? Rent<T>(int capacity, scoped ref Pcre2ResourceBudget budget) where T : struct
     {
         if (capacity == 0) return null;
-        budget.ChargeWorkspaceStep();
+        budget.CheckWorkspace();
         return Utf8ExactStatePool<T>.Rent(capacity, _retain);
     }
 

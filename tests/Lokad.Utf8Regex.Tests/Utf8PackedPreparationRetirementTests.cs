@@ -12,11 +12,10 @@ public sealed class Utf8PackedPreparationRetirementTests
     {
         foreach (var needle in new[] { "abcdefghijklmnop"u8.ToArray(), "ABCDEFGHIJKLMNOP"u8.ToArray() })
         {
-            using var owner = new Utf8ConstructionScope(0, 1104, 640, 1);
+            using var owner = new Utf8ConstructionScope(0, 1104, 1);
             var search = new PreparedSubstringSearch(needle, true);
             Assert.Equal(1, search.IndexOf("!AbCdEfGhIjKlMnOp?"u8));
             Assert.Equal(1, search.Count("!AbCdEfGhIjKlMnOp?"u8));
-            Assert.InRange(owner.Budget.WorkSteps, 1ul, 640ul);
             var expected = Utf8ConstructionBudget.ArrayBytes<int>(256);
             if (needle[0] == (byte)'A') expected += Utf8ConstructionBudget.ArrayBytes<byte>(16);
             Assert.Equal(expected, owner.Budget.ReservedBytes);

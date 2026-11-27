@@ -37,7 +37,7 @@ public sealed class Pcre2SameStartLiteralCompilerTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000
+                MaxDepth = 4096
             },
             MatchTimeout = Regex.InfiniteMatchTimeout
         });
@@ -78,41 +78,6 @@ public sealed class Pcre2SameStartLiteralCompilerTests
 
             return ranges;
         }
-    }
-
-    [Fact]
-    public void SameStartLiteralFallsBackForMatchOptionsAndLimits()
-    {
-        const string Pattern = "(?<=abc)(|def)";
-        var input = "abcdefabc"u8.ToArray();
-        var direct = new Utf8Pcre2Regex(Pattern);
-        var vm = new Utf8Pcre2Regex(            Pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1_000_000
-            },
-            MatchTimeout = Regex.InfiniteMatchTimeout
-        });
-
-        Assert.Equal(
-            vm.Count(input, 3, Pcre2MatchOptions.Anchored),
-            direct.Count(input, 3, Pcre2MatchOptions.Anchored));
-        Assert.Equal(
-            vm.Count(input, 3, Pcre2MatchOptions.NotEmpty),
-            direct.Count(input, 3, Pcre2MatchOptions.NotEmpty));
-
-        var tightlyMetered = new Utf8Pcre2Regex(            Pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = 1
-            },
-            MatchTimeout = Regex.InfiniteMatchTimeout
-        });
-        Assert.Equal(
-            Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => tightlyMetered.Count(input)).ErrorKind);
     }
 
     [Fact]

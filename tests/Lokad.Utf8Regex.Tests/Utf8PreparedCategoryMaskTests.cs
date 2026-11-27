@@ -37,7 +37,6 @@ public sealed class Utf8PreparedCategoryMaskTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 10000,
                     MaxWorkingBytes = 65536,
                     MaxResultBytes = 65536
                 }
@@ -57,7 +56,7 @@ public sealed class Utf8PreparedCategoryMaskTests
     {
         using var regex = new Utf8Regex(@"^(?<row>(?<digit>\d)+)[a-z]$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 4096 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 4096 } });
         using var source = new CancellationTokenSource();
         var input = "١𝟙K\n"u8.ToArray();
         var range = new Utf8CaptureRange(0, 9);
@@ -70,15 +69,15 @@ public sealed class Utf8PreparedCategoryMaskTests
     }
 
     [Theory]
-    [InlineData("K١𝟙A٢", 12, 128ul)]
-    [InlineData("a1f12", 5, 4ul)]
-    [InlineData("a12:b3\n", 6, 4ul)]
-    [InlineData("a1:b2/3", 0, 8ul)]
-    public void DisjointDecimalRunsWithOmittedCapturesNeedNoRewindStorage(string text, int end, ulong work)
+    [InlineData("K١𝟙A٢", 12)]
+    [InlineData("a1f12", 5)]
+    [InlineData("a12:b3\n", 6)]
+    [InlineData("a1:b2/3", 0)]
+    public void DisjointDecimalRunsWithOmittedCapturesNeedNoRewindStorage(string text, int end)
     {
         using var regex = new Utf8Regex(@"^[a-z]((\d)+):?[a-z]((\d)+)$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
-            new() { ResourcePolicy = new() { MaxWorkSteps = work, MaxWorkingBytes = 1 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1 } });
         using var source = new CancellationTokenSource();
         Assert.Equal(end > 0 ? new Utf8CaptureRange(0, end) : default,
             regex.Match(Encoding.UTF8.GetBytes(text), cancellationToken: source.Token));

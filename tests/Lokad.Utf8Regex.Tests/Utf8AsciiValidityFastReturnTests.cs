@@ -60,11 +60,9 @@ public sealed class Utf8AsciiValidityFastReturnTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.IsMatch(input)).ResourceKind);
         using var token = new CancellationTokenSource();
         var regex = new Utf8Regex(".*(ss)");
         Assert.True(regex.IsMatch(input, token.Token));

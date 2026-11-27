@@ -114,20 +114,9 @@ public sealed class Utf8SliceCaptureCatalogTests
         Assert.True(Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
             collectHistory: false, ref baseline).Found);
         Assert.Equal(0UL, baseline.Ledger.ReservedBytes);
-        for (ulong work = 1; work < baseline.Budget.Steps; work++)
-        {
-            Array.Fill(starts, -1);
-            Array.Fill(ends, -1);
-            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(work, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-            var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
-                collectHistory: false, ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, outcome.Breach);
-            Assert.False(outcome.Found);
-            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        }
         Array.Fill(starts, -1);
         Array.Fill(ends, -1);
-        var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes,
             Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
                 collectHistory: false, ref storage).Breach);
@@ -141,6 +130,7 @@ public sealed class Utf8SliceCaptureCatalogTests
     [InlineData(@"(?<1>c(?<01>a)+b)")]
     public void CancellationInterruptsCaptureOpeningSearchWithCleanup(string pattern)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var program = Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(program);
         var input = Encoding.ASCII.GetBytes("c" + new string('a', 40) + "b");
@@ -151,7 +141,7 @@ public sealed class Utf8SliceCaptureCatalogTests
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
             collectHistory: false, ref baseline).Found);
-        var cancelAt = ((baseline.Budget.Steps - 1) / 64 - 1) * 64;
+        var cancelAt = ((baseline.Budget.DiagnosticCheckpoints - 1) / 64 - 1) * 64;
         Array.Fill(starts, -1);
         Array.Fill(ends, -1);
         using var source = new CancellationTokenSource();

@@ -21,7 +21,6 @@ public sealed class Utf8CallerValidTextTests
             {
                 ResourcePolicy = finite ? new()
                 {
-                    MaxWorkSteps = 128,
                     MaxDepth = 4096,
                     MaxWorkingBytes = 1 << 24,
                     MaxResultBytes = 1 << 20
@@ -129,16 +128,8 @@ public sealed class Utf8CallerValidTextTests
     }
 
     [Fact]
-    public void CallerTextRetainsFiniteWorkAndWorkingAdmission()
+    public void CallerTextRetainsWorkingAdmission()
     {
-        var work = new Utf8Regex(@"(a+)\1", policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 1
-            }
-        });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Count("aaaa"u8));
         var memory = new Utf8Regex(@"(a+)\1", policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new()

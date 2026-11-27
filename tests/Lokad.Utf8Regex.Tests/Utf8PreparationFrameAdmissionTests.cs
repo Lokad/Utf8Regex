@@ -27,7 +27,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
     public static IEnumerable<object[]> RootDenials()
     {
         foreach (var route in new[] { 0, 1 })
-        for (var denial = 0; denial < 3; denial++) yield return [route, denial];
+        for (var denial = 0; denial < 2; denial++) yield return [route, denial];
     }
 
     [Theory]
@@ -36,12 +36,11 @@ public sealed class Utf8PreparationFrameAdmissionTests
     {
         var find = FindTree(route == 0 && denial == 0 ? 1 : 0);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, denial == 0 ? 128ul : ulong.MaxValue,
-            denial == 2 ? 2ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
+            denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Prepare(route, find));
-        Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, 1 => Utf8ResourceLimitKind.ConstructionDepth,
-            _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, failure.ResourceKind);
+        Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, 1 => Utf8ResourceLimitKind.ConstructionDepth}, failure.ResourceKind);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(128ul, owner.Budget.PeakBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
@@ -53,8 +52,9 @@ public sealed class Utf8PreparationFrameAdmissionTests
     [InlineData(0)] [InlineData(1)]
     public void DeepChildDenialRestoresParentAndAllowsSameOwnerRecovery(int route)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var find = FindTree(32);
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, 8);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 8);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Prepare(route, find));
@@ -64,10 +64,10 @@ public sealed class Utf8PreparationFrameAdmissionTests
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        var spent = owner.Budget.WorkSteps;
+        var spent = owner.Budget.DiagnosticCheckpoints;
         using (var recovery = Utf8ConstructionScope.Enter())
             Assert.NotNull(Prepare(route, FindTree()));
-        Assert.True(owner.Budget.WorkSteps > spent);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > spent);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
@@ -77,7 +77,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
     public void WidthOfBorrowedLeafAdmitsDepthWithoutScratch()
     {
         var leaf = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "é😀");
-        using var owner = new Utf8ConstructionScope(0, 0, ulong.MaxValue, 1);
+        using var owner = new Utf8ConstructionScope(0, 0, 1);
 
         Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(6, 6),
             Utf8OwnedFindOptimizations.ComputeByteWidth(leaf));
@@ -93,7 +93,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
         root.Children = Enumerable.Range(0, 512).Select(_ =>
             Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'é')).ToArray();
 
-        using var owner = new Utf8ConstructionScope(0, 1024, 4096, 2);
+        using var owner = new Utf8ConstructionScope(0, 1024, 2);
         Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(1024, 1024),
             Utf8OwnedFindOptimizations.ComputeByteWidth(root));
         Assert.Equal(2ul, owner.Budget.PeakDepth);
@@ -105,39 +105,15 @@ public sealed class Utf8PreparationFrameAdmissionTests
     [InlineData(0)] [InlineData(1)]
     public void EveryWorkCutoffRestoresBorrowedPreparation(int route)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var find = FindTree(3);
         ulong work;
-        using (var measure = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        using (var measure = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
             Assert.NotNull(Prepare(route, find));
-            work = measure.Budget.WorkSteps;
+            work = measure.Budget.DiagnosticCheckpoints;
         }
         Assert.InRange(work, 1ul, 10000ul);
-        for (var cutoff = 0ul; cutoff <= work; cutoff++)
-        {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            using (var speculative = Utf8ConstructionScope.Enter())
-            {
-                var failure = Record.Exception(() => Prepare(route, find));
-                if (cutoff < work)
-                {
-                    var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
-                    Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, breach.ResourceKind);
-                    Assert.Equal(cutoff + 2, breach.Limit);
-                    Assert.True(breach.Requested > breach.Limit);
-                    Assert.Equal(128ul, owner.Budget.ReservedBytes);
-                    Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-                }
-                else Assert.Null(failure);
-                Assert.Equal(0ul, owner.Budget.Depth);
-                Assert.True(owner.Budget.WorkSteps <= cutoff + 2);
-            }
-            Assert.Equal(128ul, owner.Budget.ReservedBytes);
-            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-            Assert.Equal(17, parent.Value);
-        }
     }
 
     [Theory]
@@ -145,7 +121,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
     public void SuccessfulPreparationKeepsRetainedPayloadLoansUntilOwnerCloses(int route)
     {
         var find = FindTree(3);
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         using (var child = Utf8ConstructionScope.Enter())
@@ -177,7 +153,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
     public void ChildArrayGrowthDenialRestoresParentBytes(int route)
     {
         var find = FindTree(128);
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 2048, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 2048, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Prepare(route, find));

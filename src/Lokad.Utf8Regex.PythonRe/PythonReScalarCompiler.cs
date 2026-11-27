@@ -26,7 +26,7 @@ internal static partial class PythonReScalarCompiler
         using var nodes = Utf8ConstructionMap<PythonReNode, Utf8SliceNode>.Create(construction.Budget, ReferenceEqualityComparer.Instance);
         while (frames.Count != 0)
         {
-            construction.Budget.ChargeWork(1);
+            construction.Budget.Checkpoint();
             var frameIndex = frames.Count - 1;
             var frame = frames[frameIndex];
             var node = frame.Node;
@@ -193,7 +193,7 @@ internal static partial class PythonReScalarCompiler
         // define owned metadata, and named slots need no discarded decimal text.
         foreach (var named in parse.NamedGroups)
         {
-            construction.Budget.ChargeWork(1);
+            construction.Budget.Checkpoint();
             names[named.Value] = named.Key;
         }
         if (names.Length > 1)
@@ -201,7 +201,7 @@ internal static partial class PythonReScalarCompiler
             using var nameText = Utf8ConstructionText.Create();
             for (var group = 1; group < names.Length; group++)
             {
-                construction.Budget.ChargeWork(1);
+                construction.Budget.Checkpoint();
                 if (names[group] is not null) continue;
                 nameText.Clear();
                 names[group] = nameText.Append(group).ToText();

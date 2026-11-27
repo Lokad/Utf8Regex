@@ -10,13 +10,12 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8FiniteLiteralMatchTests
 {
-    private static Utf8Regex Create(string pattern, ulong work = 100000, RegexOptions options = RegexOptions.None)
+    private static Utf8Regex Create(string pattern, RegexOptions options = RegexOptions.None)
         => new(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = work,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -75,7 +74,6 @@ public sealed class Utf8FiniteLiteralMatchTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -153,7 +151,6 @@ public sealed class Utf8FiniteLiteralMatchTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1_000_000,
                     MaxDepth = 32,
                     MaxWorkingBytes = 1 << 20,
                     MaxResultBytes = 1 << 20
@@ -177,7 +174,6 @@ public sealed class Utf8FiniteLiteralMatchTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 32,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -207,7 +203,6 @@ public sealed class Utf8FiniteLiteralMatchTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 32,
                     MaxWorkingBytes = working ? 1UL : 1UL << 20,
                     MaxResultBytes = working ? 1UL << 20 : 1UL
@@ -229,36 +224,6 @@ public sealed class Utf8FiniteLiteralMatchTests
     }
 
     [Theory]
-    [InlineData("needle")] [InlineData("needle|other|third")] [InlineData("夏洛克·福尔摩斯")]
-    [InlineData("needle|other|third|fourth|fifth")]
-    public void WorkDenialIncludesValidationDiscoveryProjectionAndPublication(string pattern)
-    {
-        var literal = pattern.Contains('夏') ? pattern : "needle";
-        var text = new string('é', 4097) + "😀" + literal;
-        var input = Encoding.UTF8.GetBytes(text);
-        ulong low = 1, high = 100000;
-        while (low < high)
-        {
-            var cap = low + (high - low) / 2;
-            try { Assert.True(Create(pattern, cap).Match(input).Success); high = cap; }
-            catch (Utf8ResourceLimitExceededException failure)
-            {
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-                Assert.Equal(cap + 1, failure.Requested);
-                low = cap + 1;
-            }
-        }
-        for (ulong cap = 1; cap < low; cap++)
-        {
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(pattern, cap).Match(input));
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-            Assert.Equal(cap, failure.Limit);
-            Assert.Equal(cap + 1, failure.Requested);
-        }
-        AssertRange(Create(pattern, low).Match(input), text, 4099, literal.Length);
-    }
-
-    [Theory]
     [InlineData(false, "needle")]
     [InlineData(true, "needle")]
 
@@ -275,7 +240,6 @@ public sealed class Utf8FiniteLiteralMatchTests
             MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
@@ -284,7 +248,7 @@ public sealed class Utf8FiniteLiteralMatchTests
         var input = Encoding.UTF8.GetBytes(new string('é', 160000) + "needle");
         var prepared = (Utf8PreparedRegex)typeof(Utf8Regex)
             .GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex)!;
-        var discovery = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var discovery = new Utf8SliceInvocation(new(0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindNativeLiteralMatch(prepared.SearchPlan,
             input, 0, input.Length, false, ref discovery, out var selected, out var found));
         Assert.True(found);
@@ -350,7 +314,6 @@ public sealed class Utf8FiniteLiteralMatchTests
                 MatchTimeout = Regex.InfiniteMatchTimeout,
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 1000000,
                     MaxDepth = 1024,
                     MaxWorkingBytes = 1 << 20,
                     MaxResultBytes = 1 << 20
@@ -365,33 +328,6 @@ public sealed class Utf8FiniteLiteralMatchTests
     }
 
     [Theory]
-    [InlineData("(nee)(dle)")] [InlineData("needle|other|third")]
-    public void BooleanWorkDenialIncludesTheSuccessfulAndTerminalChecks(string pattern)
-    {
-        var input = Encoding.UTF8.GetBytes(new string('é', 4097) + "😀needle");
-        ulong low = 1, high = 100000;
-        while (low < high)
-        {
-            var cap = low + (high - low) / 2;
-            try { Assert.True(Create(pattern, cap).IsMatch(input)); high = cap; }
-            catch (Utf8ResourceLimitExceededException failure)
-            {
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-                Assert.Equal(cap + 1, failure.Requested);
-                low = cap + 1;
-            }
-        }
-        for (ulong cap = 1; cap < low; cap++)
-        {
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(pattern, cap).IsMatch(input));
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
-            Assert.Equal(cap, failure.Limit);
-            Assert.Equal(cap + 1, failure.Requested);
-        }
-        Assert.True(Create(pattern, low).IsMatch(input));
-    }
-
-    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void BooleanSearchKeepsOriginalInterruption(bool expire)
@@ -403,7 +339,6 @@ public sealed class Utf8FiniteLiteralMatchTests
             MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1

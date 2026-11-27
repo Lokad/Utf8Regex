@@ -140,6 +140,7 @@ public sealed class Utf8SliceNumericEscapeTests
     [InlineData(true)]
     public void NumericReferenceJournalUsesSharedLimitsAndRecovers(bool compiled)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const string pattern = @"\A(?<12>c(?<12>a)+b)\12\z";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var program = Utf8SliceParser.TryParse(pattern, options);
@@ -153,26 +154,14 @@ public sealed class Utf8SliceNumericEscapeTests
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
             collectHistory: false, ref baseline).Found);
-        Assert.True(baseline.Budget.Steps > 64);
+        Assert.True(baseline.Budget.DiagnosticCheckpoints > 64);
         Assert.True(baseline.Budget.PeakDepth > 1);
         Assert.Equal(0UL, baseline.Ledger.ReservedBytes);
-        for (ulong work = 1; work < baseline.Budget.Steps; work++)
-        {
-            Array.Fill(starts, -1);
-            Array.Fill(ends, -1);
-            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(work, 0, 0),
-                Regex.InfiniteMatchTimeout, CancellationToken.None);
-            var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
-                collectHistory: false, ref invocation);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, outcome.Breach);
-            Assert.False(outcome.Found);
-            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        }
         for (uint depth = 1; depth < baseline.Budget.PeakDepth; depth++)
         {
             Array.Fill(starts, -1);
             Array.Fill(ends, -1);
-            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, depth, 0),
+            var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(depth, 0),
                 Regex.InfiniteMatchTimeout, CancellationToken.None);
             Assert.Equal(Utf8ExecutionLimitKind.Depth,
                 Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
@@ -181,7 +170,7 @@ public sealed class Utf8SliceNumericEscapeTests
         }
         Array.Fill(starts, -1);
         Array.Fill(ends, -1);
-        var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
+        var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
             Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes,
             Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,

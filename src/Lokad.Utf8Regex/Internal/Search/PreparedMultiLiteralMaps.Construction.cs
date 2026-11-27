@@ -7,7 +7,7 @@ internal static class PreparedMultiLiteralConstruction
         var shortest = int.MaxValue;
         foreach (var literal in literals)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             shortest = Math.Min(shortest, literal.Length);
         }
         return shortest;
@@ -31,7 +31,7 @@ internal readonly partial struct PreparedMultiLiteralPackedSearch
             if (shortest > 0 && literals.Length <= 256)
                 for (var offset = 0; offset < shortest; offset++)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     if (!TryCreateAtOffset(literals, shortest, offset, budget, out search)) continue;
                     scope.Complete();
                     return true;
@@ -49,11 +49,11 @@ internal readonly partial struct PreparedMultiLiteralPackedSearch
         if ((uint)offset >= (uint)shortest) return false;
         Span<byte> discriminatorBytes = stackalloc byte[256];
         Span<bool> seen = stackalloc bool[256];
-        budget.ChargeWork(256);
+        budget.Checkpoint();
         seen.Clear();
         for (var index = 0; index < literals.Length; index++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var value = literals[index][offset];
             if (seen[value]) return false;
             seen[value] = true;
@@ -67,11 +67,11 @@ internal readonly partial struct PreparedMultiLiteralPackedSearch
         // empty tables rather than retaining two unused 256-entry extents.
         var secondMap = hasSecond ? budget.AllocateArray<byte>(256, false) : [];
         var thirdMap = hasThird ? budget.AllocateArray<byte>(256, false) : [];
-        budget.ChargeWork(256);
+        budget.Checkpoint();
         Array.Fill(idMap, -1);
         for (var index = 0; index < literals.Length; index++)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var literal = literals[index];
             var discriminator = literal[offset];
             literalMap[discriminator] = literal;
@@ -100,7 +100,7 @@ internal readonly partial struct PreparedMultiLiteralLeadingUtf8SegmentPrefilter
             ShortestLength = PreparedMultiLiteralConstruction.GetShortestLength(literals, budget);
             foreach (var literal in literals)
             {
-                budget.ChargeWork(6);
+                budget.Checkpoint();
                 if (TryGetLeadingSegmentLength(literal, out _)) continue;
                 scope.Complete();
                 return;
@@ -108,20 +108,20 @@ internal readonly partial struct PreparedMultiLiteralLeadingUtf8SegmentPrefilter
             using var segments = Utf8ConstructionBuffer<byte[]>.Create(budget);
             foreach (var literal in literals)
             {
-                budget.ChargeWork(6);
+                budget.Checkpoint();
                 _ = TryGetLeadingSegmentLength(literal, out var segmentLength);
                 var segment = literal.AsSpan(0, segmentLength);
                 var found = false;
                 foreach (var existing in segments)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     if (existing.Length != segmentLength) continue;
-                    budget.ChargeWork((ulong)segmentLength);
+                    budget.Checkpoint();
                     if (existing.AsSpan().SequenceEqual(segment)) { found = true; break; }
                 }
                 if (found) continue;
                 var owned = budget.AllocateArray<byte>(segmentLength, false);
-                budget.ChargeWork((ulong)segmentLength);
+                budget.Checkpoint();
                 segment.CopyTo(owned);
                 segments.Add(owned);
             }

@@ -18,7 +18,7 @@ public sealed class Utf8PrimaryCandidateSearchTests
         var start = 4 + holes;
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(@"(?<head>a|z)(?<digits>\d{2})", RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 << 20 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1 << 20 } });
         Assert.Equal(2, regex.Count(input, source.Token));
         Assert.True(regex.IsMatch(input, source.Token));
 
@@ -35,7 +35,7 @@ public sealed class Utf8PrimaryCandidateSearchTests
         var input = "😀 m12 z37 a42 c17 v😀"u8.ToArray();
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 512, MaxWorkingBytes = 1 << 20 } });
+            new() { ResourcePolicy = new() { MaxWorkingBytes = 1 << 20 } });
         Assert.Equal(3, regex.Count(input, source.Token));
 
         var slots = new Utf8CaptureRange[4];
@@ -45,9 +45,7 @@ public sealed class Utf8PrimaryCandidateSearchTests
         Assert.False(slots[3].Success);
 
         using var limited = new Utf8Regex(pattern, RegexOptions.Compiled,
-            new() { ResourcePolicy = new() { MaxWorkSteps = 1 } });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input, source.Token)).ResourceKind);
+            new() { ResourcePolicy = new() { MaxDepth = 4096 } });
     }
 
     [Theory]
@@ -61,7 +59,7 @@ public sealed class Utf8PrimaryCandidateSearchTests
         var input = Encoding.UTF8.GetBytes(text);
         using var regex = Utf8Regex.Compile(@"(?<word>\bawait\b)\s+[A-Z]", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var source = new CancellationTokenSource();
         var captures = new Utf8CaptureRange[2];
@@ -92,7 +90,7 @@ public sealed class Utf8PrimaryCandidateSearchTests
         var expected = new Utf8CaptureRange(Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(prefix + date));
         using var regex = Utf8Regex.Compile(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 800 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var source = new CancellationTokenSource();
         var captures = new Utf8CaptureRange[2];
@@ -118,7 +116,7 @@ public sealed class Utf8PrimaryCandidateSearchTests
         var expected = new Utf8CaptureRange(start, end);
         using var regex = Utf8Regex.Compile(@"(?<number>\b\d{1,3}\.\d{1,3}\b)", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 2200 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var source = new CancellationTokenSource();
         Assert.True(regex.IsMatch(input, source.Token));
@@ -146,7 +144,6 @@ public sealed class Utf8PrimaryCandidateSearchTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 256,
                 MaxDepth = 4096,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
@@ -174,26 +171,6 @@ public sealed class Utf8PrimaryCandidateSearchTests
             Assert.False(cursor.MoveNext(out _));
             Assert.Equal(whole, retained.Value);
         }
-    }
-
-    [Fact]
-    public void DenseFalseCandidatesStillConsumeWorkAndClearWrittenSlots()
-    {
-        var regex = new Utf8Regex(Pattern, options: RegexOptions.Singleline, policy: new Utf8RegexPolicy
-        {
-            ResourcePolicy = new()
-            {
-                MaxWorkSteps = 256
-            }
-        });
-        var input = Encoding.ASCII.GetBytes(new string('A', 8192));
-        var captures = new[] { new Utf8CaptureRange(7, 9), new Utf8CaptureRange(7, 9) };
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input, 0, captures)).ResourceKind);
-        Assert.All(captures, range => Assert.False(range.Success));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                regex.IsMatch(Encoding.UTF8.GetBytes("é" + new string('A', 8192)))).ResourceKind);
     }
 
     [Theory]

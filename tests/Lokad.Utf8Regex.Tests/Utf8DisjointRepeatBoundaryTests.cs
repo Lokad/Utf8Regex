@@ -21,7 +21,7 @@ public sealed class Utf8DisjointRepeatBoundaryTests
         var behind = new Utf8SliceNode.LookbehindNode(body, true) { ForwardScalarCount = 3 };
         var root = new Utf8SliceNode.ConcatNode([behind, new Utf8SliceNode.LiteralNode(success ? 'x' : '-', false)]);
         var program = Utf8SliceLowerer.Lower(root, null, false, false, false)!;
-        var invocation = new Utf8SliceInvocation(new(10000, 32, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var invocation = new Utf8SliceInvocation(new(32, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(invocation.Ledger.TryReserve(13));
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];

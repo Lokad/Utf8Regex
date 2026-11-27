@@ -39,7 +39,7 @@ internal static class Utf8OwnedTreeParser
         {
             while (frames.Count != 0 && !context.Failed)
             {
-                construction.Budget.ChargeWork(1);
+                construction.Budget.Checkpoint();
                 // Advance updates the current slot before the stack can grow or pop.
                 var suspended = Advance(ref context, ref frames.Peek(), out var child);
                 if (suspended) frames.Push(child);
@@ -81,7 +81,7 @@ internal static class Utf8OwnedTreeParser
                 {
                     foreach (var topChild in topChildren)
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         topChild.Parent = top;
                     }
                 }
@@ -161,7 +161,7 @@ internal static class Utf8OwnedTreeParser
                 (frame.Nodes ??= state.Storage.Buffer<Utf8TreeNode>()).Add(branch);
                 state.Position++;
             }
-            Utf8ConstructionScope.ChargeWork(1);
+            Utf8ConstructionScope.Checkpoint();
             if (frame.Depth == 0) state.Depth0Branch = frame.Nodes?.Count ?? 0;
             frame.Stage = 1;
             child = new(OwnedParseProduction.Concatenation, frame.Depth);
@@ -195,7 +195,7 @@ internal static class Utf8OwnedTreeParser
                 }
                 else
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     var character = state.Pattern[state.Position];
                     if (character == '|' || character == ')')
                     {
@@ -208,7 +208,7 @@ internal static class Utf8OwnedTreeParser
                         {
                             while (!state.AtEnd && state.Pattern[state.Position] != (char)10)
                             {
-                                Utf8ConstructionScope.ChargeWork(1);
+                                Utf8ConstructionScope.Checkpoint();
                                 state.Position++;
                             }
 
@@ -605,7 +605,7 @@ internal static class Utf8OwnedTreeParser
                 return;
             }
 
-            Utf8ConstructionScope.ChargeWork((ulong)run.Length);
+            Utf8ConstructionScope.Checkpoint();
             children.Add(run.IsUtf8 ? Utf8TreeNode.CreateUtf8Literal(state.Options, run.ToUtf8(state.Storage))
                 : run.Length == 1 ? One(state, run[0]) : Multi(state, run.ToText()));
             run.Clear();
@@ -721,7 +721,7 @@ internal static class Utf8OwnedTreeParser
                         state.Pattern[state.Position + 1] >= '0' &&
                         state.Pattern[state.Position + 1] <= '7')
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         state.Position++;
                         octal = octal * 8 + (state.Pattern[state.Position] - '0');
                         octalDigits++;
@@ -818,14 +818,14 @@ internal static class Utf8OwnedTreeParser
             // on these valid patterns; owned parsing retains their semantics.
             while (true)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (!ParseClassSegment(ref state, data, out var subtracted)) return false;
                 if (!subtracted) break;
                 remainingClosers++;
             }
             while (remainingClosers > 0)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (state.AtEnd || state.Pattern[state.Position] != ']')
                     return state.Fail(state.AtEnd ? Utf8PatternError.UnclosedClass : Utf8PatternError.InvalidSyntax);
                 state.Position++;
@@ -872,7 +872,7 @@ internal static class Utf8OwnedTreeParser
             var first = true;
             while (true)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (state.AtEnd)
                 {
                     return state.Fail(Utf8PatternError.UnclosedClass);
@@ -1009,7 +1009,7 @@ internal static class Utf8OwnedTreeParser
             using var ranges = Utf8ConstructionBuffer<(int Low, int High)>.Create(owner);
             for (var index = 0; index < scalarRanges.Count; index += 2)
                 {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 ranges.Add((scalarRanges[index], scalarRanges[index + 1]));
             }
             if (fold)
@@ -1017,16 +1017,16 @@ internal static class Utf8OwnedTreeParser
                 var count = ranges.Count;
                 for (var index = 0; index < count; index++)
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     var range = ranges[index];
                     for (var value = range.Low; value < range.High; value++)
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         if (value < 0x10000)
                         {
                             foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents((char)value, behavior))
                             {
-                                Utf8ConstructionScope.ChargeWork(1);
+                                Utf8ConstructionScope.Checkpoint();
                                 if (equivalent < range.Low || equivalent >= range.High)
                                     ranges.Add((equivalent, equivalent + 1));
                             }
@@ -1045,7 +1045,7 @@ internal static class Utf8OwnedTreeParser
             var mergedCount = 0;
             for (var index = 0; index < ranges.Count; index++)
             {
-                owner.ChargeWork(1);
+                owner.Checkpoint();
                 var range = ranges[index];
                 if (mergedCount != 0 && range.Low < ranges[mergedCount - 1].High)
                 {
@@ -1062,7 +1062,7 @@ internal static class Utf8OwnedTreeParser
             data.Add(categories.Count);
             for (var index = 0; index < mergedCount; index++)
             {
-                owner.ChargeWork(2);
+                owner.Checkpoint();
                 var range = ranges[index];
                 data.Add(range.Low);
                 data.Add(range.High);
@@ -1156,7 +1156,7 @@ internal static class Utf8OwnedTreeParser
                 state.Pattern[state.Position + 1 + length] >= '0' &&
                 state.Pattern[state.Position + 1 + length] <= '7')
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 number = number * 8 + (state.Pattern[state.Position + 1 + length] - '0');
                 length++;
             }
@@ -1328,7 +1328,7 @@ internal static class Utf8OwnedTreeParser
             var close = open + 1;
             while (close < state.Pattern.Length)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (state.Pattern[close] == '}') break;
                 close++;
             }
@@ -1363,7 +1363,7 @@ internal static class Utf8OwnedTreeParser
                 categories.Add(0);
                 foreach (var member in members)
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     var encoded = member + 1;
                     categories.Add(invert ? -encoded : encoded);
                 }
@@ -1467,7 +1467,7 @@ internal static class Utf8OwnedTreeParser
                 var contentStart = state.Position;
                 while (!state.AtEnd && state.Pattern[state.Position] != close)
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     state.Position++;
                 }
 
@@ -1483,7 +1483,7 @@ internal static class Utf8OwnedTreeParser
                 var isPop = false;
                 var name = content;
                 string? popName = null;
-                Utf8ConstructionScope.ChargeWork((ulong)content.Length * 3);
+                Utf8ConstructionScope.Checkpoint();
                 var separator = content.IndexOf('-');
                 if (separator >= 0)
                 {
@@ -1624,7 +1624,7 @@ internal static class Utf8OwnedTreeParser
 
             foreach (var character in value)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (character < '0' || character > '9')
                 {
                     return false;
@@ -1652,7 +1652,7 @@ internal static class Utf8OwnedTreeParser
 
             foreach (var character in value)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (!IsWordChar(character))
                 {
                     return false;
@@ -1699,7 +1699,7 @@ internal static class Utf8OwnedTreeParser
             var total = 0L;
             foreach (var character in value)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (character < '0' || character > '9')
                 {
                     return false;
@@ -1732,7 +1732,7 @@ internal static class Utf8OwnedTreeParser
             var end = state.Position + 2;
             while (end < state.Pattern.Length && state.Pattern[end] >= '0' && state.Pattern[end] <= '9')
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 end++;
             }
 
@@ -1754,7 +1754,7 @@ internal static class Utf8OwnedTreeParser
                 return null;
             }
             var close = open == '<' ? '>' : '\'';
-            Utf8ConstructionScope.ChargeWork((ulong)(state.Pattern.Length - state.Position - 3));
+            Utf8ConstructionScope.Checkpoint();
             var end = state.Pattern.IndexOf(close, state.Position + 3);
             if (end < 0)
             {
@@ -1812,7 +1812,7 @@ internal static class Utf8OwnedTreeParser
                 if (groupDefinitions is not null)
                     for (var index = 0; index < definitionCount; index++)
                     {
-                        budget.ChargeWork(1);
+                        budget.Checkpoint();
                         var definition = groupDefinitions[index];
                         definitions[index] = new Utf8CaptureDefinition(definition.Name, definition.Declared, definition.IsAuto, definition.OpenPosition);
                     }
@@ -1826,7 +1826,7 @@ internal static class Utf8OwnedTreeParser
             if (groupDefinitions is not null)
                 for (var index = 0; index < definitionCount; index++)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     var definition = groupDefinitions[index];
                     var slot = catalog.DefinitionNumbers[index];
                     if (definition.IsAuto) definition.Node.M = slot;
@@ -1835,7 +1835,7 @@ internal static class Utf8OwnedTreeParser
             if (state.RequiredSlots is { } requiredSlots)
                 foreach (var required in requiredSlots.Span)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     if (catalog.OrdinalFromNumber(required) < 0)
                         return state.Fail(Utf8PatternError.UndefinedCapture);
                 }
@@ -1848,7 +1848,7 @@ internal static class Utf8OwnedTreeParser
             if (state.BackrefFixups is { } fixups)
                 foreach (var fixup in fixups.Span)
                 {
-                    budget.ChargeWork(1);
+                    budget.Checkpoint();
                     if (!ResolveFixup(storage, fixup, catalog, state.CapturePositions, ref root, ref morphed, state.CaseBehavior, state.Pattern.IsUtf8))
                         return state.Fail(Utf8PatternError.UndefinedCapture, fixup.ReferencePosition);
                 }
@@ -1933,13 +1933,13 @@ internal static class Utf8OwnedTreeParser
                     var branches = storage.Buffer<Utf8TreeNode>();
                     branches.Add(assertion);
                     for (var branch = 0; branch < fixup.Node.ChildCount; branch++) {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         branches.Add(fixup.Node.Child(branch));
                     }
                     fixup.Node.Kind = Utf8TreeNodeKind.ExpressionConditional;
                     fixup.Node.Children = branches;
                     foreach (var branch in branches) {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         branch.Parent = fixup.Node;
                     }
 
@@ -2055,7 +2055,7 @@ internal static class Utf8OwnedTreeParser
             // on overflow; preserve this interpreted lexical compatibility quirk.
             for (var index = 0; index < digits.Length; index++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 number = unchecked(number * 10 + digits[index] - '0');
                 if (number > captureScanLimit) break;
                 consumed = index + 1;
@@ -2077,7 +2077,7 @@ internal static class Utf8OwnedTreeParser
                 var value = 0;
                 while (consumed < digits.Length && consumed < 3 && value < 32 && digits[consumed] is >= '0' and <= '7')
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     value = value * 8 + digits[consumed] - '0';
                     consumed++;
                 }
@@ -2203,7 +2203,7 @@ internal static class Utf8OwnedTreeParser
             beforeAnchor.Add(prefix);
             for (var i = 0; i + 1 < restText.Length; i++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 beforeAnchor.Add(Utf8TreeNode.Create(Utf8TreeNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, restText[i]));
             }
 
@@ -2261,7 +2261,7 @@ internal static class Utf8OwnedTreeParser
                 {
                     expression.Children = sequence;
                     foreach (var child in sequence) {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         child.Parent = expression;
                     }
                 }
@@ -2271,7 +2271,7 @@ internal static class Utf8OwnedTreeParser
 
             foreach (var node in sequence)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 node.Parent = parent;
             }
 
@@ -2286,7 +2286,7 @@ internal static class Utf8OwnedTreeParser
                 var top = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, oldNode.Options);
                 top.Children = sequence;
                 foreach (var child in sequence) {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     child.Parent = top;
                 }
                 root = top;
@@ -2297,7 +2297,7 @@ internal static class Utf8OwnedTreeParser
             {
                 for (var i = 0; i < siblings.Count; i++)
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     if (ReferenceEquals(siblings[i], oldNode))
                     {
                         siblings.RemoveAt(i);
@@ -2319,7 +2319,7 @@ internal static class Utf8OwnedTreeParser
             using var frames = Utf8ConstructionFrames<(Utf8TreeNode Node, int NextChild)>.Create(storage.Budget, (node, 0));
             while (frames.Count > 0)
             {
-                storage.Budget.ChargeWork(1);
+                storage.Budget.Checkpoint();
                 var index = frames.Count - 1;
                 var frame = frames[index];
                 var current = frame.Node;
@@ -2364,7 +2364,7 @@ internal static class Utf8OwnedTreeParser
                     var removed = 0;
                     for (var i = 0; i < children.Count;)
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         if (children[i].Kind == Utf8TreeNodeKind.Empty)
                         {
                             children.RemoveAt(i);
@@ -2402,7 +2402,7 @@ internal static class Utf8OwnedTreeParser
                 var pendingOptions = RegexOptions.None;
                 foreach (var child in children)
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     if (IsMergeableLiteral(child) && (pending.Count == 0 ||
                         child.Options == pendingOptions && child.MatchCaseInsensitive == pending[0].MatchCaseInsensitive))
                     {
@@ -2428,7 +2428,7 @@ internal static class Utf8OwnedTreeParser
                 node.Children = fused;
                 foreach (var child in fused)
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     child.Parent = node;
                 }
 
@@ -2463,7 +2463,7 @@ internal static class Utf8OwnedTreeParser
             var run = new OwnedLiteralRun(storage, native);
             foreach (var literal in pending)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (literal.Kind == Utf8TreeNodeKind.One)
                 {
                     run.Append(literal.Ch);
@@ -2473,13 +2473,13 @@ internal static class Utf8OwnedTreeParser
                     if (literal.LiteralUtf8 is { } bytes) run.AppendUtf8(bytes);
                     else
                     {
-                        Utf8ConstructionScope.ChargeWork((ulong)(literal.Str?.Length ?? 0));
+                        Utf8ConstructionScope.Checkpoint();
                         run.Append(literal.Str!);
                     }
                 }
             }
 
-            Utf8ConstructionScope.ChargeWork((ulong)run.Length);
+            Utf8ConstructionScope.Checkpoint();
             var merged = native ? Utf8TreeNode.CreateUtf8Literal(pending[0].Options, run.ToUtf8(storage))
                 : Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, pending[0].Options, run.ToText());
             merged.MatchCaseInsensitive = pending[0].MatchCaseInsensitive;
@@ -2636,7 +2636,7 @@ internal static class Utf8OwnedTreeParser
             var negate = false;
             while (!state.AtEnd)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 var character = state.Pattern[state.Position];
                 if (character is '-' or '+') negate = character == '-';
                 else if (IsScopeFlag(character))
@@ -2661,12 +2661,12 @@ internal static class Utf8OwnedTreeParser
             if ((state.Options & RegexOptions.IgnorePatternWhitespace) == 0) return;
             while (!state.AtEnd)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (IsIgnoredWhitespace(state.Pattern[state.Position])) state.Position++;
                 else if (state.Pattern[state.Position] == '#')
                 {
                     while (!state.AtEnd && state.Pattern[state.Position] != '\n') {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         state.Position++;
                     }
                 }
@@ -2693,7 +2693,7 @@ internal static class Utf8OwnedTreeParser
         }
         static bool SkipComment(ref ParserState state)
         {
-            Utf8ConstructionScope.ChargeWork((ulong)(state.Pattern.Length - state.Position - 3));
+            Utf8ConstructionScope.Checkpoint();
             var end = state.Pattern.IndexOf(')', state.Position + 3);
             if (end < 0)
             {
@@ -2707,7 +2707,7 @@ internal static class Utf8OwnedTreeParser
             value = 0;
             for (var i = 0; i < count; i++)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (state.AtEnd)
                 {
                     return false;
@@ -2811,7 +2811,7 @@ internal static class Utf8OwnedTreeParser
             {
                 for (var i = 0; i < siblings.Count; i++)
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
+                    Utf8ConstructionScope.Checkpoint();
                     if (ReferenceEquals(siblings[i], oldNode))
                     {
                         siblings[i] = fresh;
@@ -2831,7 +2831,7 @@ internal static class Utf8OwnedTreeParser
             node.Children = children;
             foreach (var child in children)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 child.Parent = node;
             }
 
@@ -2844,7 +2844,7 @@ internal static class Utf8OwnedTreeParser
             node.Children = branches;
             foreach (var branch in branches)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 branch.Parent = node;
             }
 
@@ -2866,7 +2866,7 @@ internal static class Utf8OwnedTreeParser
                     var start = state.Position;
                     while (!state.AtEnd && IsAsciiDigit(state.Pattern[state.Position]))
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         state.Position++;
                     }
                     frame.Digits = state.Pattern.CopyText(start, state.Position - start);
@@ -2884,7 +2884,7 @@ internal static class Utf8OwnedTreeParser
                     if (!state.AtEnd && IsAsciiConditionNameStart(state.Pattern[state.Position]))
                         while (!state.AtEnd && IsAsciiConditionNameChar(state.Pattern[state.Position]))
                         {
-                            Utf8ConstructionScope.ChargeWork(1);
+                            Utf8ConstructionScope.Checkpoint();
                             state.Position++;
                         }
                     if (state.Position > start && !state.AtEnd && state.Pattern[state.Position] == ')')
@@ -3027,7 +3027,7 @@ internal static class Utf8OwnedTreeParser
             conditional.Children = branches;
             foreach (var branch in branches)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 branch.Parent = conditional;
             }
             if (frame.Expression is null)
@@ -3239,7 +3239,7 @@ internal static class Utf8OwnedTreeParser
             var minimumValue = 0L;
             while (!state.AtEnd && state.Pattern[state.Position] >= '0' && state.Pattern[state.Position] <= '9')
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 var next = minimumValue * 10 + (state.Pattern[state.Position] - '0');
                 if (next > Infinite)
                 {
@@ -3268,7 +3268,7 @@ internal static class Utf8OwnedTreeParser
                     hasMaximum = true;
                     while (!state.AtEnd && state.Pattern[state.Position] >= '0' && state.Pattern[state.Position] <= '9')
                     {
-                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.Checkpoint();
                         var nextMaximum = maximumValue * 10 + (state.Pattern[state.Position] - '0');
                         if (nextMaximum > Infinite)
                         {
@@ -3353,7 +3353,7 @@ internal static class Utf8OwnedTreeParser
         using var frames = Utf8ConstructionFrames<(Utf8TreeNode Node, int NextChild)>.Create(budget, (root, 0));
         while (frames.Count > 0)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             var index = frames.Count - 1;
             var frame = frames[index];
             var node = frame.Node;
@@ -3391,7 +3391,7 @@ internal static class Utf8OwnedTreeParser
         // An invalid text literal must never be encoded as a replacement character.
         for (var offset = 0; offset < text.Length;)
         {
-            budget.ChargeWork(1);
+            budget.Checkpoint();
             if (Rune.DecodeFromUtf16(text.AsSpan(offset), out _, out var width) != OperationStatus.Done)
                 return true;
             offset += width;
@@ -3453,7 +3453,7 @@ internal static class Utf8OwnedTreeParser
             if (_utf8 is null) { _text!.Append(text); return; }
             for (var position = 0; position < text.Length;)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                Utf8ConstructionScope.Checkpoint();
                 if (Rune.DecodeFromUtf16(text.AsSpan(position), out var scalar, out var consumed) != OperationStatus.Done)
                     throw new InvalidOperationException("A resolved literal cannot contain unpaired surrogates.");
                 AppendScalar(scalar.Value); position += consumed;

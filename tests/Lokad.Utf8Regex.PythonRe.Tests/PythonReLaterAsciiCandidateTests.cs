@@ -128,7 +128,6 @@ public sealed class PythonReLaterAsciiCandidateTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 2000,
                 MaxDepth = 4096,
                 MaxWorkingBytes = 16UL << 20,
                 MaxResultBytes = 1UL << 20

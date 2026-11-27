@@ -44,6 +44,7 @@ public sealed class Utf8RepeatProofPredicateTests
     private static (bool Found, int End, Utf8ExecutionLimitKind Breach, ulong Work, int[] Calls, ulong Reserved)
         Run(bool generic, bool tableNegated, bool outerNegated, bool folded, string text, ulong limit)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var calls = new List<int>();
         var mask = new byte[16];
         foreach (var value in new[] { ' ', '\t', '\n', '\r', '\f' }) mask[value >> 3] |= (byte)(1 << (value & 7));
@@ -67,9 +68,9 @@ public sealed class Utf8RepeatProofPredicateTests
         ]);
         var program = Utf8SliceLowerer.Lower(root, null, false, false, false)!;
         var input = Encoding.UTF8.GetBytes(text);
-        var invocation = new Utf8SliceInvocation(new(limit, 4096, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var invocation = new Utf8SliceInvocation(new(4096, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Utf8Validation.ThrowIfInvalidOnly(input);
         var result = Utf8SliceRunner.TryMatchAt(program, input, 0, [], [], true, ref invocation);
-        return (result.IsMatch, result.EndIndex, result.Breach, invocation.Budget.Steps, calls.ToArray(), invocation.Ledger.ReservedBytes);
+        return (result.IsMatch, result.EndIndex, result.Breach, invocation.Budget.DiagnosticCheckpoints, calls.ToArray(), invocation.Ledger.ReservedBytes);
     }
 }

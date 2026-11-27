@@ -44,7 +44,6 @@ public sealed class Pcre2FullProbeCaptureTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = resultBytes
@@ -73,13 +72,10 @@ public sealed class Pcre2FullProbeCaptureTests
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = (work) == 0 ? null : (work),
                 MaxWorkingBytes = (heap) == 0 ? null : (heap)
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = Create(1, 1 << 20).Probe("dogsbody"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(100000, 1).Probe("dogsbody"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         Assert.Equal("sbody", System.Text.Encoding.UTF8.GetString(Create(100000, 1 << 20).Probe("dogsbody"u8, Pcre2PartialMode.Soft).GetMatch().GetGroup(1).GetValueBytes()));

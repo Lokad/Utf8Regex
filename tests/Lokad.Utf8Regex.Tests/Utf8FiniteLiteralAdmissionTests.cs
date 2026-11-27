@@ -15,6 +15,7 @@ public sealed class Utf8FiniteLiteralAdmissionTests
     [InlineData("[AaBbCcDd]{2}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     public void ReturnedLiteralBuffersRemainAdmitted(string pattern, RegexOptions options)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var semantic = Utf8FrontEnd.Analyze(pattern, options).SemanticRegex;
         using var owner = Utf8ConstructionScope.Enter();
         Assert.True(Utf8FiniteLiteralLowerer.TryCreateLiteralBranches(semantic, options, out var literals));
@@ -27,23 +28,22 @@ public sealed class Utf8FiniteLiteralAdmissionTests
         }
         Assert.True(owner.Budget.ReservedBytes >= bytes);
         Assert.True(owner.Budget.PeakBytes >= owner.Budget.ReservedBytes);
-        Assert.True(owner.Budget.WorkSteps > 0);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > 0);
         Assert.Equal(0ul, owner.Budget.Depth);
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(2)]
     public void DeniedConstructionPreservesTheParentBuffer(int dimension)
     {
         var semantic = Utf8FrontEnd.Analyze("(?:ab|cd){1,3}[xy]", RegexOptions.None).SemanticRegex;
         using var owner = new Utf8ConstructionScope(0, dimension == 0 ? 48ul : ulong.MaxValue,
-            dimension == 1 ? 1ul : ulong.MaxValue, dimension == 2 ? 0ul : ulong.MaxValue);
+            dimension == 2 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 0xa5;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             Utf8FiniteLiteralLowerer.TryCreateLiteralBranches(semantic, RegexOptions.None, out _));
-        Assert.Equal(dimension switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
-            1 => Utf8ResourceLimitKind.ConstructionWorkSteps, _ => Utf8ResourceLimitKind.ConstructionDepth }, failure.ResourceKind);
+        Assert.Equal(dimension switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, _ => Utf8ResourceLimitKind.ConstructionDepth }, failure.ResourceKind);
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(0xa5, parent[0]);
@@ -60,7 +60,7 @@ public sealed class Utf8FiniteLiteralAdmissionTests
         owner.Budget.ReserveBytes(7);
         owner.Budget.CancellationToken = cancellation.Token;
         owner.Budget.Deadline = Utf8ExecutionDeadline.Start(expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
-        owner.Budget.CheckpointHook = _ => { if (expire) clock.Advance(250); else cancellation.Cancel(); };
+        owner.Budget.CheckpointHook = () => { if (expire) clock.Advance(250); else cancellation.Cancel(); };
         var failure = Record.Exception(() =>
             Utf8FiniteLiteralLowerer.TryCreateLiteralBranches(semantic, RegexOptions.None, out _));
         if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
@@ -74,12 +74,13 @@ public sealed class Utf8FiniteLiteralAdmissionTests
     [InlineData("(?=abc)ab[cd]")] [InlineData("\\Aab[cd]\\Z")]
     public void NonliteralOrExcessiveExpansionsDeclineWithoutRetainingScratch(string pattern)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var semantic = Utf8FrontEnd.Analyze(pattern, RegexOptions.None).SemanticRegex;
         using var owner = Utf8ConstructionScope.Enter();
         Assert.False(Utf8FiniteLiteralLowerer.TryCreateLiteralBranches(semantic, RegexOptions.None, out _));
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.True(owner.Budget.WorkSteps > 0);
+        Assert.True(owner.Budget.DiagnosticCheckpoints > 0);
     }
 
     [Theory]
@@ -87,6 +88,7 @@ public sealed class Utf8FiniteLiteralAdmissionTests
     [InlineData(RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
     public void WideClassRepeatDeclinesBeforeExpandingRepeatLengths(RegexOptions options)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         Assert.Equal(Measure("[A-Za-z]{0,2}ing"), Measure("[A-Za-z]{0,12}ing"));
 
         (ulong Work, ulong PeakBytes) Measure(string pattern)
@@ -95,7 +97,7 @@ public sealed class Utf8FiniteLiteralAdmissionTests
             using var owner = Utf8ConstructionScope.Enter();
             Assert.False(Utf8FiniteLiteralLowerer.TryCreateLiteralBranches(semantic, options, out _));
             Assert.Equal(0ul, owner.Budget.ReservedBytes);
-            return (owner.Budget.WorkSteps, owner.Budget.PeakBytes);
+            return (owner.Budget.DiagnosticCheckpoints, owner.Budget.PeakBytes);
         }
     }
 }

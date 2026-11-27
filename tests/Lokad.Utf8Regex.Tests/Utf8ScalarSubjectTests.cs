@@ -223,7 +223,6 @@ public sealed class Utf8ScalarSubjectTests
             Assert.False(outcome.IsMatch);
             Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
             Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-            Assert.Equal(0UL, invocation.Budget.Steps);
         }
     }
 
@@ -262,7 +261,7 @@ public sealed class Utf8ScalarSubjectTests
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("\U0001f600", 1024)));
         var program = Utf8SliceParser.TryParse("^(.)+$", RegexOptions.CultureInvariant)!;
-        var invocation = new Utf8SliceInvocation(new(0, 0, 128), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var invocation = new Utf8SliceInvocation(new(0, 128), Regex.InfiniteMatchTimeout, CancellationToken.None);
         var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0,
             new int[program.GroupCount], new int[program.GroupCount], false, ref invocation);
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, outcome.Breach);

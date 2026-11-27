@@ -53,7 +53,7 @@ public sealed class Utf8UriExistenceTests
     public void GreedyQueryAndFragmentRangesNeedNoRetryStorage()
     {
         using var source = new CancellationTokenSource();
-        using var regex = Limited(4096, working: 1);
+        using var regex = Limited(working: 1);
         var input = "https://écho/?id=😀#début fin"u8;
         var expected = new Utf8CaptureRange(0, "https://écho/?id=😀#début"u8.Length);
         Assert.Equal(expected, regex.Match(input, cancellationToken: source.Token));
@@ -68,41 +68,21 @@ public sealed class Utf8UriExistenceTests
     public void FiniteExistenceRetainsFundedAdmissionAndScalarSemantics()
     {
         using var cancellation = new CancellationTokenSource();
-        using var tightWorking = Limited(128, working: 1);
+        using var tightWorking = Limited(working: 1);
         Assert.True(tightWorking.IsMatch("https://atlas.example.org/reports/export?id=42"u8, cancellation.Token));
         Assert.True(tightWorking.IsMatch("é://hôte/résumé#section"u8, cancellation.Token));
         Assert.False(tightWorking.IsMatch("x://😀"u8, cancellation.Token));
-        Assert.True(Limited(100000).IsMatch("𐐀://😀😀"u8));
-        Assert.False(Limited(100000).IsMatch("x://😀"u8));
-        ulong firstSuccess = 0;
-        for (ulong cap = 1; cap <= 512; cap++)
-        {
-            try
-            {
-                Assert.True(Limited(cap).IsMatch("x://ab"u8));
-                if (firstSuccess == 0) firstSuccess = cap;
-            }
-            catch (Utf8ResourceLimitExceededException error)
-            {
-                Assert.Equal(0UL, firstSuccess);
-                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-                Assert.Equal(cap, error.Limit);
-                Assert.True(error.Requested > error.Limit);
-            }
-        }
-        Assert.InRange(firstSuccess, 2UL, 512UL);
-        var lateMalformed = Encoding.UTF8.GetBytes(new string('x', (1 << 20))).Append((byte)255).ToArray();
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Limited(1).IsMatch(lateMalformed)).ResourceKind);
+        Assert.True(Limited().IsMatch("𐐀://😀😀"u8));
+        Assert.False(Limited().IsMatch("x://😀"u8));
         foreach (var options in new[] { RegexOptions.RightToLeft, RegexOptions.NonBacktracking, RegexOptions.IgnoreCase })
-            Assert.True(Limited(100000, options).IsMatch("x://ab"u8));
+            Assert.True(Limited(options).IsMatch("x://ab"u8));
     }
 
     [Fact]
     public void LongUriSchemeNeedsOnlyItsLastScalarForExistence()
     {
         using var source = new CancellationTokenSource();
-        using var limited = Limited(32, RegexOptions.Compiled, working: 1);
+        using var limited = Limited(RegexOptions.Compiled, working: 1);
         using var ordinary = new Utf8Regex(Pattern, RegexOptions.Compiled);
         foreach (var tip in new[] { "", "𐐀" })
         {
@@ -135,7 +115,7 @@ public sealed class Utf8UriExistenceTests
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = Limited(1000000, timeout: expire ? TimeSpan.FromMilliseconds(20) : null);
+        var regex = Limited(timeout: expire ? TimeSpan.FromMilliseconds(20) : null);
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -173,7 +153,7 @@ public sealed class Utf8UriExistenceTests
             if (++reads == cancelAt) cancellation.Cancel();
             return 0;
         });
-        var regex = Limited(100000, timeout: TimeSpan.FromSeconds(1));
+        var regex = Limited(timeout: TimeSpan.FromSeconds(1));
         Assert.True(regex.IsMatch("x://ab"u8, cancellation.Token));
         Assert.True(reads > 1);
         cancelAt = reads;
@@ -183,14 +163,13 @@ public sealed class Utf8UriExistenceTests
         Assert.Equal(cancelAt, reads);
     }
 
-    private static Utf8Regex Limited(ulong work, RegexOptions options = RegexOptions.None, TimeSpan? timeout = null,
+    private static Utf8Regex Limited(RegexOptions options = RegexOptions.None, TimeSpan? timeout = null,
         ulong working = 8 << 20)
         => new(Pattern, options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = timeout ?? Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = work,
                 MaxDepth = 8192,
                 MaxWorkingBytes = working,
                 MaxResultBytes = 1

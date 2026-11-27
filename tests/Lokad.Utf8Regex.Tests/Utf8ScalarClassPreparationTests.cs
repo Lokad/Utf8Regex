@@ -28,7 +28,7 @@ public sealed class Utf8ScalarClassPreparationTests
         var scalarClass = Class(pattern);
         var comparator = new Regex(@"\A(?:" + pattern + @")\z", RegexOptions.CultureInvariant);
         using var regex = new Utf8Regex(@"\A(" + pattern + @")\z", RegexOptions.CultureInvariant);
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
         Assert.True(Utf8ScalarAsciiProjector.TryProjectAsciiQuery(scalarClass, out var mask));
         Span<byte> input = stackalloc byte[1];
         for (var value = 0; value < 128; value++)
@@ -106,7 +106,7 @@ public sealed class Utf8ScalarClassPreparationTests
         {
             var scalarClass = Class(pattern);
             var comparator = new Regex(@"\A(?:" + pattern + @")\z", RegexOptions.CultureInvariant);
-            using var query = new Utf8ConstructionScope(0, 0, ulong.MaxValue, ulong.MaxValue);
+            using var query = new Utf8ConstructionScope(0, 0, ulong.MaxValue);
             Assert.True(Utf8ScalarAsciiProjector.TryProjectAsciiQuery(scalarClass, out var mask));
             for (var value = 0; value < 128; value++)
                 Assert.Equal(comparator.IsMatch(((char)value).ToString()), mask.Contains((byte)value));
@@ -128,7 +128,7 @@ public sealed class Utf8ScalarClassPreparationTests
         }
         Assert.True(Utf8ScalarAsciiProjector.TryProjectAsciiQuery(large, out var warmed));
         Assert.True(warmed.IsEmpty);
-        using (var query = new Utf8ConstructionScope(0, 128, ulong.MaxValue, ulong.MaxValue))
+        using (var query = new Utf8ConstructionScope(0, 128, ulong.MaxValue))
         {
             var parent = query.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = query.Budget.ReservedBytes;
@@ -144,14 +144,10 @@ public sealed class Utf8ScalarClassPreparationTests
             Assert.Equal(checkpoint, query.Budget.ReservedBytes);
             Assert.Equal(17, parent.Value);
         }
-        using (var query = new Utf8ConstructionScope(0, 128, 64, ulong.MaxValue))
+        using (var query = new Utf8ConstructionScope(0, 128, ulong.MaxValue))
         {
             var parent = query.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = query.Budget.ReservedBytes;
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                Utf8ScalarAsciiProjector.TryProjectAsciiQuery(large, out _));
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-            Assert.True(failure.Requested > 64);
             Assert.Equal(128ul, query.Budget.ReservedBytes);
             Assert.Equal(0ul, query.Budget.Depth);
             Assert.Equal(checkpoint, query.Budget.ReservedBytes);

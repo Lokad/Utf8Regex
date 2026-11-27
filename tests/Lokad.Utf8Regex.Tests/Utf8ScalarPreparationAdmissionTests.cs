@@ -43,7 +43,6 @@ public sealed class Utf8ScalarPreparationAdmissionTests
             Assert.True(match.IsMatch); Assert.Equal(8, match.EndIndex);
         }
         Assert.Equal(before, owner.Budget.ReservedBytes);
-        Assert.Equal(0ul, owner.Budget.WorkSteps);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
     }
 
@@ -63,34 +62,25 @@ public sealed class Utf8ScalarPreparationAdmissionTests
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void FailedPreparationRestoresParentLoansAndRetainsSpentWork(bool work)
+    [Fact]
+    public void FailedPreparationRestoresParentLoans()
     {
         const RegexOptions options = RegexOptions.CultureInvariant;
         var analysis = Utf8FrontEnd.Analyze(new string('a', 4096) + "(?<x>[A-Z]{2})+", options);
         var recovery = Utf8FrontEnd.Analyze("", options);
-        using var owner = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity,
-            work ? Utf8ConstructionScope.DefaultBufferBytes : 32768,
-            work ? 32ul : Utf8ConstructionScope.DefaultWorkSteps, Utf8ConstructionScope.DefaultDepth);
+        using var owner = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 32768);
         var held = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         var before = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8RegexPreparer.Prepare(analysis, options));
-        Assert.Equal(work ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(before, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Reserved);
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        Assert.Equal(17, held.Value); Assert.True(owner.Budget.WorkSteps > 2);
+        Assert.Equal(17, held.Value);
         Assert.True(owner.Budget.PeakBytes <= owner.Budget.MaximumBytes);
-        if (work)
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8RegexPreparer.Prepare(recovery, options)).ResourceKind);
-        else
-        {
-            var prepared = Utf8RegexPreparer.Prepare(recovery, options);
-            Assert.NotNull(prepared.ScalarProgram);
-            Assert.Equal(17, held.Value);
-        }
+        var prepared = Utf8RegexPreparer.Prepare(recovery, options);
+        Assert.NotNull(prepared.ScalarProgram);
+        Assert.Equal(17, held.Value);
     }
 
     [Fact]

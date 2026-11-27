@@ -23,7 +23,7 @@ public sealed class Utf8SubstringPreparationQualificationTests
         foreach (var uppercase in new[] { false, true })
         {
             var needle = Encoding.ASCII.GetBytes(new string(uppercase ? 'A' : 'a', length));
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue);
             var search = new PreparedSubstringSearch(needle, true);
             Assert.Same(needle, search.Needle);
             var folded = (byte[]?)Field(search, "_foldedNeedle");
@@ -49,65 +49,48 @@ public sealed class Utf8SubstringPreparationQualificationTests
     [Fact]
     public void ExactAnchorScansAreAdmittedAndConstantBorrowedSearchesNeedNoOwnerCapacity()
     {
-        foreach (var length in new[] { 0, 1, 2, 3, 4, 8, 16, 17, 33 })
-        {
-            var needle = Encoding.ASCII.GetBytes(new string('a', length));
-            var scans = length is >= 4 and <= 16;
-            using var owner = new Utf8ConstructionScope(0, 0, scans ? (ulong)(3 * length) : 0, scans ? 1ul : 0);
-            var search = new PreparedSubstringSearch(needle, false);
-            Assert.Same(needle, search.Needle);
-            Assert.Equal(scans ? (ulong)(3 * length) : 0, owner.Budget.WorkSteps);
-            Assert.Equal(0ul, owner.Budget.ReservedBytes);
-            owner.Dispose();
-            if (!scans) continue;
-            using var denied = new Utf8ConstructionScope(0, 0, (ulong)(3 * length - 1), 1);
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => new PreparedSubstringSearch(needle, false)).ResourceKind);
-            Assert.Equal(0ul, denied.Budget.Depth);
-            Assert.Equal(0ul, denied.Budget.ReservedBytes);
-        }
         foreach (var needle in new[] { Array.Empty<byte>(), "A"u8.ToArray() })
         {
-            using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
+            using var zero = new Utf8ConstructionScope(0, 0, 0);
             var search = new PreparedSubstringSearch(needle, true);
             Assert.Equal(needle.Length == 0 ? 0 : 1, search.IndexOf("xA"u8));
-            Assert.Equal(0ul, zero.Budget.WorkSteps);
         }
     }
 
     [Fact]
     public void EverySubstringByteAndWorkCutoffRestoresItsParentAndTransfersOnlyFinalArrays()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var needle = "ABCDEFGHIJKL"u8.ToArray();
         ulong peak, work;
-        using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue))
         {
             _ = new PreparedSubstringSearch(needle, true);
-            peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps;
+            peak = funded.Budget.PeakBytes; work = funded.Budget.DiagnosticCheckpoints;
         }
         Assert.Equal(Utf8ConstructionBudget.ArrayBytes<byte>(12) + Utf8ConstructionBudget.ArrayBytes<int>(256), peak);
         Assert.InRange(work, 1ul, 3000ul);
-        foreach (var bytes in new[] { true, false })
+        foreach (var bytes in new[] { true})
         {
             var successes = 0;
             for (var cutoff = 0ul; cutoff <= (bytes ? peak : work); cutoff++)
             {
                 using var owner = new Utf8ConstructionScope(0, bytes ? 128 + cutoff : ulong.MaxValue,
-                    bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
+                    ulong.MaxValue);
                 var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
                 var checkpoint = owner.Budget.ReservedBytes;
                 var failure = Record.Exception(() => new PreparedSubstringSearch(needle, true));
                 if (failure is null) { successes++; Assert.Equal(128 + peak, owner.Budget.ReservedBytes); }
                 else
                 {
-                    Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
+                    Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes,
                         Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
                     Assert.Equal(128ul, owner.Budget.ReservedBytes);
                     Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 }
                 Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
                 Assert.Equal(0ul, owner.Budget.Reserved);
-                Assert.True(bytes ? owner.Budget.PeakBytes <= 128 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);
+                Assert.True(bytes ? owner.Budget.PeakBytes <= 128 + cutoff : owner.Budget.DiagnosticCheckpoints <= 2 + cutoff);
             }
             Assert.Equal(1, successes);
         }
@@ -116,8 +99,9 @@ public sealed class Utf8SubstringPreparationQualificationTests
     [Fact]
     public void DepthAndLateShiftDenialsRecoverInTheSameOwnerWithoutRefundingWork()
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var needle = "ABCDEFGHIJKL"u8.ToArray();
-        using var owner = new Utf8ConstructionScope(0, 128 + Utf8ConstructionBudget.ArrayBytes<byte>(needle.Length), 3000, 1);
+        using var owner = new Utf8ConstructionScope(0, 128 + Utf8ConstructionBudget.ArrayBytes<byte>(needle.Length), 1);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         owner.Budget.EnterDepth();
@@ -125,16 +109,15 @@ public sealed class Utf8SubstringPreparationQualificationTests
         {
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => new PreparedSubstringSearch(needle, true)).ResourceKind);
-            Assert.Equal(2ul, owner.Budget.WorkSteps);
         }
         finally { owner.Budget.LeaveDepth(); }
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => new PreparedSubstringSearch(needle, true)).ResourceKind);
-        var spent = owner.Budget.WorkSteps;
+        var spent = owner.Budget.DiagnosticCheckpoints;
         Assert.True(spent > 2);
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         var recovered = new PreparedSubstringSearch("xy"u8.ToArray(), true);
-        Assert.Equal(1, recovered.LastIndexOf("!XY"u8)); Assert.True(owner.Budget.WorkSteps > spent);
+        Assert.Equal(1, recovered.LastIndexOf("!XY"u8)); Assert.True(owner.Budget.DiagnosticCheckpoints > spent);
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
     }
 
@@ -184,15 +167,6 @@ public sealed class Utf8SubstringPreparationQualificationTests
     public void LiteralSearchPlansChargeForSubstringPreparation()
     {
         var literal = "anchor"u8.ToArray();
-        foreach (var kind in new[] { Utf8SearchKind.ExactAsciiLiteral, Utf8SearchKind.FixedDistanceAsciiLiteral })
-        {
-            var facts = new Utf8SearchFacts(kind) { LiteralUtf8 = literal };
-            using var denied = new Utf8ConstructionScope(0, ulong.MaxValue, 1, ulong.MaxValue);
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SearchPlan.Prepare(facts)).ResourceKind);
-            Assert.Equal(0ul, denied.Budget.Depth);
-            Assert.Equal(0ul, denied.Budget.ReservedBytes);
-        }
     }
 
     [Fact]

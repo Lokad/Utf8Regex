@@ -51,7 +51,6 @@ public sealed class Utf8LiteralEqualityTests
                 MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout,
                 ResourcePolicy = finite ? new Utf8ResourcePolicy
                 {
-                    MaxWorkSteps = 100000,
                     MaxDepth = 1024,
                     MaxWorkingBytes = 1048576,
                     MaxResultBytes = 1048576

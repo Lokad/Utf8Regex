@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReFiniteValueSearchTests
 {
     private static readonly Utf8ResourcePolicy Policy = new()
-    { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
+    { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
 
     [Theory]
     [InlineData("needle", "π😀needle!", 6)]
@@ -99,26 +99,18 @@ public sealed class PythonReFiniteValueSearchTests
     [InlineData("😀")]
     public void EveryWorkCutoffKeepsTheExistingParentLoanAndRefusesPartialSuccess(string scalar)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var owner = new Utf8PythonRegex("Шерлок");
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(scalar, 8192)) + "Шерлок");
-        var probe = new Utf8SliceInvocation(new(100000, 1, 13, 1), Timeout.InfiniteTimeSpan, default);
+        var probe = new Utf8SliceInvocation(new(1, 13, 1), Timeout.InfiniteTimeSpan, default);
         Assert.True(probe.Ledger.TryReserve(13));
         Assert.True(owner.MaterializeNativeMatchValue(input, 0, 0, ref probe).Success);
         Assert.Equal(13UL, probe.Ledger.ReservedBytes);
-        var needed = probe.Budget.Steps;
-        for (ulong limit = 1; limit < needed; limit++)
-        {
-            var invocation = new Utf8SliceInvocation(new(limit, 1, 13, 1), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            Exception? failure = null;
-            try { _ = owner.MaterializeNativeMatchValue(input, 0, 0, ref invocation); } catch (Exception error) { failure = error; }
-            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        }
-        var exact = new Utf8SliceInvocation(new(needed, 1, 13, 1), Timeout.InfiniteTimeSpan, default);
+        var needed = probe.Budget.DiagnosticCheckpoints;
+        var exact = new Utf8SliceInvocation(new(1, 13, 1), Timeout.InfiniteTimeSpan, default);
         Assert.True(exact.Ledger.TryReserve(13));
         Assert.True(owner.MaterializeNativeMatchValue(input, 0, 0, ref exact).Success);
-        Assert.Equal(needed, exact.Budget.Steps); Assert.Equal(13UL, exact.Ledger.ReservedBytes);
+        Assert.Equal(needed, exact.Budget.DiagnosticCheckpoints); Assert.Equal(13UL, exact.Ledger.ReservedBytes);
     }
 
     [Theory]
@@ -174,7 +166,7 @@ public sealed class PythonReFiniteValueSearchTests
             ResourcePolicy = Policy
         });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é中😀", 20000)) + "Шерлок");
-        var limits = new Utf8ExecutionLimits(100000, 1, 13, 1);
+        var limits = new Utf8ExecutionLimits(1, 13, 1);
         var probe = new Utf8SliceInvocation(limits, timeout, default);
         var checkpoints = new List<ulong>();
         // Diagnostics observe the existing 64-step cadence, not every charge.

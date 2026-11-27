@@ -77,7 +77,7 @@ public sealed class Utf8ScalarProgramMetadataTests
         });
         foreach (var available in new[] { 0ul, loan - 1, loan })
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 128 + available, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 128 + available, ulong.MaxValue);
             _ = owner.Budget.AllocateObject(17, static _ => new object());
             var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
@@ -95,25 +95,12 @@ public sealed class Utf8ScalarProgramMetadataTests
     [InlineData("category")] [InlineData("predicate")] [InlineData("assertion")] [InlineData("program")]
     public void EveryMetadataWorkCutoffRestoresParentLoansAndKeepsSpentWork(string kind)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var body = Utf8SliceParser.TryParse("", System.Text.RegularExpressions.RegexOptions.None);
         Assert.NotNull(body);
         var category = Utf8SliceCategoryTable.ForScalarRanges([128, 256]);
         ulong work;
-        using (var measured = Utf8ConstructionScope.Enter()) { _ = Acquire(kind, body, category); work = measured.Budget.WorkSteps; }
-        for (var available = 0ul; available <= work; available++)
-        {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 2 + available, ulong.MaxValue);
-            _ = owner.Budget.AllocateObject(17, static _ => new object());
-            var checkpoint = owner.Budget.ReservedBytes;
-            using (var child = Utf8ConstructionScope.Enter())
-            {
-                var failure = Record.Exception(() => Acquire(kind, body, category));
-                if (available < work) Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                else Assert.Null(failure);
-            }
-            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-            Assert.InRange(owner.Budget.WorkSteps, 2ul, 2 + available);
-        }
+        using (var measured = Utf8ConstructionScope.Enter()) { _ = Acquire(kind, body, category); work = measured.Budget.DiagnosticCheckpoints; }
     }
 
     [Fact]

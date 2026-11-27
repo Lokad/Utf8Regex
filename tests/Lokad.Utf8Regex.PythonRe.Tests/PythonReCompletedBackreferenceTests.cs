@@ -10,7 +10,6 @@ public sealed class PythonReCompletedBackreferenceTests
     private const string Pattern = @"(?P<word>[a-z]+)-(?P=word)";
     private static Utf8ResourcePolicy Funded => new()
     {
-        MaxWorkSteps = 1_000_000,
         MaxDepth = 4096,
         MaxWorkingBytes = 1 << 20,
         MaxResultBytes = 1 << 20
@@ -126,8 +125,7 @@ public sealed class PythonReCompletedBackreferenceTests
     public void FiniteAdmissionRemainsBeforePublication()
     {
         var input = "token-token"u8.ToArray();
-        foreach (var policy in new[] { new Utf8ResourcePolicy { MaxWorkSteps = 1 },
-            new Utf8ResourcePolicy { MaxWorkingBytes = 1 }, new Utf8ResourcePolicy { MaxResultBytes = 1 } })
+        foreach (var policy in new[] { new Utf8ResourcePolicy { MaxWorkingBytes = 1 }, new Utf8ResourcePolicy { MaxResultBytes = 1 } })
         {
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             {

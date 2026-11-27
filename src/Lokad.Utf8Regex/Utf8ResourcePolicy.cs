@@ -5,9 +5,6 @@ namespace Lokad.Utf8Regex;
 /// Core and the Python-compatible adapter omit the subject from timeout exception Input when either byte budget is finite, avoiding a subject-sized diagnostic decode after expiry. This does not cap exception metadata or process memory.</remarks>
 public readonly record struct Utf8ResourcePolicy
 {
-    /// <summary>Gets the maximum cumulative execution step count (units and scope depend on the profile), or <see langword="null"/> for no cap.</summary>
-    public ulong? MaxWorkSteps { get; init; }
-
     /// <summary>Gets the maximum live backtracking/continuation frames or pending linear alternatives, or <see langword="null"/> for no cap.</summary>
     /// <remarks>Depth is measured by the selected execution route. A linear replay without a pending stack uses no depth allowance.
     /// This bounds execution state nesting, not pattern nesting, total work, workspace/table width or process memory.
@@ -36,7 +33,7 @@ public readonly record struct Utf8ResourcePolicy
     /// <exception cref="ArgumentOutOfRangeException">A budget is zero. Use <see langword="null"/> for unlimited.</exception>
     internal void Validate(string paramName)
     {
-        if (MaxWorkSteps == 0 || MaxDepth == 0 || MaxWorkingBytes == 0 || MaxResultBytes == 0)
+        if (MaxDepth == 0 || MaxWorkingBytes == 0 || MaxResultBytes == 0)
         {
             throw new ArgumentOutOfRangeException(paramName, "Resource budgets must be null (unlimited) or at least one.");
         }

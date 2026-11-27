@@ -27,26 +27,13 @@ public sealed class Utf8NativeReplacementParserTests
     [InlineData(false)] [InlineData(true)]
     public void NativePreparationInterruptionsAndWorkDenialsPreserveTheParent(bool timeout)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         const string text = "é${one}😀$00123$+$0";
         ulong steps; var checkpoints = 0;
         using (var measured = Utf8ConstructionScope.Enter())
         {
-            measured.Budget.CheckpointHook = _ => checkpoints++;
-            _ = Prepare(text); steps = measured.Budget.WorkSteps;
-        }
-        for (ulong maximum = 0; maximum <= steps; maximum++)
-        {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, maximum, ulong.MaxValue);
-            owner.Budget.ReserveBytes(7);
-            using (var child = Utf8ConstructionScope.Enter())
-            {
-                var failure = Record.Exception(() => Prepare(text));
-                if (maximum < steps) Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
-                    Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                else Assert.Null(failure);
-            }
-            Assert.Equal(7UL, owner.Budget.ReservedBytes); Assert.Equal(0UL, owner.Budget.Depth);
-            Assert.InRange(owner.Budget.WorkSteps, 0UL, maximum);
+            measured.Budget.CheckpointHook = () => checkpoints++;
+            _ = Prepare(text); steps = measured.Budget.DiagnosticCheckpoints;
         }
         for (var target = 1; target <= checkpoints; target++)
         {
@@ -55,7 +42,7 @@ public sealed class Utf8NativeReplacementParserTests
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
             owner.Budget.CancellationToken = token.Token;
             owner.Budget.Deadline = timeout ? Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(10)) : Utf8ExecutionDeadline.Infinite;
-            owner.Budget.CheckpointHook = _ => { if (++calls == target) { if (timeout) ticks = 10; else token.Cancel(); } };
+            owner.Budget.CheckpointHook = () => { if (++calls == target) { if (timeout) ticks = 10; else token.Cancel(); } };
             var failure = Record.Exception(() => Prepare(text));
             if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);

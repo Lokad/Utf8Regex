@@ -46,7 +46,6 @@ public sealed class PythonReUnicodeStringSizingTests
         {
             var policy = funded ? new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 1_048_576,
                 MaxResultBytes = 1_048_576

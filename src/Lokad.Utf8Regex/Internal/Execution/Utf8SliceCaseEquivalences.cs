@@ -4337,7 +4337,7 @@ internal static class Utf8SliceCaseEquivalences
             // Longer linear scans borrow the same owner in bounded blocks.
             if (offset != 0)
             {
-                breach = invocation.TryChargeInputStep();
+                breach = invocation.CheckInput();
                 if (breach != Utf8ExecutionLimitKind.None) return false;
             }
             var block = ranges.AsSpan(offset, Math.Min(64, ranges.Length - offset));

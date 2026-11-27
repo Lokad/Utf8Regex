@@ -11,36 +11,23 @@ public sealed class Pcre2NativeReplacementParserTests
     [InlineData(false, true)] [InlineData(true, true)]
     public void NativeWorkAndInterruptionCutoffsKeepTheParentAndOriginalAuthority(bool extended, bool timeout)
     {
+        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         var source = Encoding.UTF8.GetBytes(extended ? @"é${1:+\U😀:\x{10428}}\é" : "é😀$$$0");
         var options = extended ? Pcre2SubstitutionOptions.Extended : Pcre2SubstitutionOptions.None;
         ulong steps; var checkpoints = 0;
         using (var measured = Utf8ConstructionScope.Enter())
         {
-            measured.Budget.CheckpointHook = _ => checkpoints++;
+            measured.Budget.CheckpointHook = () => checkpoints++;
             _ = Pcre2ReplacementPreparationControl.Prepare(source, options, false);
-            steps = measured.Budget.WorkSteps;
-        }
-        for (ulong limit = 0; limit <= steps; limit++)
-        {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, limit, ulong.MaxValue);
-            owner.Budget.ReserveBytes(7);
-            using (var child = Utf8ConstructionScope.Enter())
-            {
-                var failure = Record.Exception(() => Pcre2ReplacementPreparationControl.Prepare(source, options, false));
-                if (limit < steps) Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
-                    Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                else Assert.Null(failure);
-            }
-            Assert.Equal(7UL, owner.Budget.ReservedBytes);
-            Assert.InRange(owner.Budget.WorkSteps, 0UL, limit);
+            steps = measured.Budget.DiagnosticCheckpoints;
         }
         for (var target = 1; target <= checkpoints; target++)
         {
             using var owner = Utf8ConstructionScope.Enter(); owner.Budget.ReserveBytes(7);
             using var token = new CancellationTokenSource(); var calls = 0;
             long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-            owner.Budget.CheckpointHook = _ => { if (++calls == target) { if (timeout) ticks = 10; else token.Cancel(); } };
-            var invocation = new Utf8SliceInvocation(new(1_000_000, 1024, 1 << 20),
+            owner.Budget.CheckpointHook = () => { if (++calls == target) { if (timeout) ticks = 10; else token.Cancel(); } };
+            var invocation = new Utf8SliceInvocation(new(1024, 1 << 20),
                 timeout ? TimeSpan.FromMilliseconds(10) : Timeout.InfiniteTimeSpan, token.Token);
             using (var control = Pcre2ReplacementPreparationControl.Borrow(invocation, token.Token))
             {
@@ -74,7 +61,7 @@ public sealed class Pcre2NativeReplacementParserTests
                 using var owner = new Utf8ConstructionScope(
                     kind == Utf8ResourceLimitKind.ConstructionInstructionCapacity ? limit : ulong.MaxValue,
                     kind == Utf8ResourceLimitKind.ConstructionBytes ? 7 + limit : ulong.MaxValue,
-                    ulong.MaxValue, kind == Utf8ResourceLimitKind.ConstructionDepth ? limit : ulong.MaxValue);
+                    kind == Utf8ResourceLimitKind.ConstructionDepth ? limit : ulong.MaxValue);
                 owner.Budget.ReserveBytes(7);
                 using (var child = Utf8ConstructionScope.Enter())
                 {

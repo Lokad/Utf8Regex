@@ -20,7 +20,7 @@ public sealed class PythonReSubstitutionOutputTests
         var input = "😀"u8.ToArray();
         var cursor = new PythonReScalarMatchCursor(input, program, 0,
             Regex.InfiniteMatchTimeout,
-            null, "(.)", new(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
+            null, "(.)", new(new(0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
         var writer = cursor.CreateOutputWriter();
         try
         {
@@ -44,7 +44,7 @@ public sealed class PythonReSubstitutionOutputTests
         Assert.NotNull(program);
         var slotBytes = Utf8ConstructionBudget.ArrayBytes<int>(2 * program.GroupCount);
         var cursor = new PythonReScalarMatchCursor([], program, 0, Regex.InfiniteMatchTimeout,
-            null, "(.)", new(new(0, 0, 13 + slotBytes + 2 * Bytes(8193) - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None));
+            null, "(.)", new(new(0, 13 + slotBytes + 2 * Bytes(8193) - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         var writer = cursor.CreateOutputWriter();
         var payload = Enumerable.Repeat((byte)'x', 8193).ToArray();
@@ -76,61 +76,10 @@ public sealed class PythonReSubstitutionOutputTests
     }
 
     [Fact]
-    public void EveryFinalByteWorkCutoffPreservesUnpublishedStorageAndParentCapacity()
-    {
-        var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
-        var program = core.Inspection.AvailableOwnedSliceProgram;
-        Assert.NotNull(program);
-        var slotBytes = Utf8ConstructionBudget.ArrayBytes<int>(2 * program.GroupCount);
-        var payload = new byte[8193];
-        ulong seed;
-        ulong completionWork;
-        {
-            var measured = new PythonReScalarMatchCursor([], program, 0,
-                Regex.InfiniteMatchTimeout,
-                null, "(.)", new(new(100000, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
-            var writer = measured.CreateOutputWriter();
-            measured.AppendBytes(ref writer, payload);
-            seed = measured.WorkingInvocation.Budget.Steps;
-            Assert.Equal(payload, measured.CompleteOutputBytes(ref writer));
-            completionWork = measured.WorkingInvocation.Budget.Steps - seed;
-            measured.ReleaseOutput(ref writer); measured.Dispose();
-        }
-        for (ulong cutoff = 0; cutoff <= completionWork; cutoff++)
-        {
-            var cursor = new PythonReScalarMatchCursor([], program, 0,
-                Regex.InfiniteMatchTimeout,
-                null, "(.)", new(new(seed + cutoff, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
-            Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
-            var writer = cursor.CreateOutputWriter();
-            try
-            {
-                cursor.AppendBytes(ref writer, payload);
-                Assert.Equal(seed, cursor.WorkingInvocation.Budget.Steps);
-                byte[] result = [];
-                Exception? failure = null;
-                try { result = cursor.CompleteOutputBytes(ref writer); }
-                catch (InvalidOperationException error) { failure = error; }
-                if (cutoff == completionWork) { Assert.Null(failure); Assert.Equal(payload, result); Assert.Equal(0, writer.Length); }
-                else
-                {
-                    Assert.NotNull(failure); Assert.Empty(result);
-                    Assert.Equal(8193, writer.Length); Assert.Equal(payload, writer.WrittenBytes.ToArray());
-                }
-                Assert.Equal(cutoff >= 3 ? Bytes(8193) : 0, cursor.ResultReservation);
-                Assert.Equal(13 + slotBytes + Bytes(8193) + (cutoff >= 3 && cutoff < completionWork ? Bytes(8193) : 0), cursor.ReservedBytes);
-            }
-            finally { cursor.ReleaseOutput(ref writer); cursor.Dispose(); }
-            Assert.Equal(13UL, cursor.ReservedBytes);
-            cursor.WorkingInvocation.Ledger.Release(13);
-        }
-    }
-
-    [Fact]
     public void NativeLiteralByteOutputKeepsItsLoanUntilPublication()
     {
         var core = new global::Lokad.Utf8Regex.Utf8Regex("foo");
-        var invocation = new Utf8SliceInvocation(new(0, 0, 13 + 48 + 64), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var invocation = new Utf8SliceInvocation(new(0, 13 + 48 + 64), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(invocation.Ledger.TryReserve(13));
         Utf8InvocationResultLedger results = default;
         try
@@ -150,7 +99,7 @@ public sealed class PythonReSubstitutionOutputTests
     {
         var core = new global::Lokad.Utf8Regex.Utf8Regex("cat");
         var input = "caté😀 dog"u8;
-        var invocation = new Utf8SliceInvocation(new(0, 0, 128), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var invocation = new Utf8SliceInvocation(new(0, 128), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(invocation.Ledger.TryReserve(13));
         Utf8InvocationResultLedger results = default;
         try
@@ -192,7 +141,7 @@ public sealed class PythonReSubstitutionOutputTests
     {
         using var regex = new Utf8PythonRegex("cat", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 4096, MaxResultBytes = 4096 }
+            ResourcePolicy = new() { MaxWorkingBytes = 4096, MaxResultBytes = 4096 }
         });
         using var source = new CancellationTokenSource();
         var gap = new string('x', gapLength);

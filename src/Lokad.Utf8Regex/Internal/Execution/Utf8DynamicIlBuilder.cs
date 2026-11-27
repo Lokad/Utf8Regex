@@ -84,12 +84,12 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
         {
             budget.EnterDepth(); entered = true;
             budget.CheckBytes(ObjectBytes);
-            budget.ChargeWork(2);
+            budget.Checkpoint();
             budget.ReserveBytes(ObjectBytes);
             var copied = budget.AllocateArray<Type>(parameterCount, false);
             try
             {
-                budget.ChargeWork((ulong)parameterCount);
+                budget.Checkpoint();
                 copied[0] = p0;
                 // Smaller arities reuse p0 in unused positions; only supplied slots are copied.
                 if (parameterCount > 1) copied[1] = p1;
@@ -122,7 +122,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
     {
         if (instructions) budget.CheckSlots((ulong)count);
         var bytes = Utf8ConstructionBudget.ArrayBytes<T>(count);
-        budget.CheckBytes(bytes); budget.ChargeWork((ulong)count);
+        budget.CheckBytes(bytes); budget.Checkpoint();
         if (instructions) budget.Reserve((ulong)count);
         budget.ReserveBytes(bytes);
     }
@@ -144,7 +144,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (_completed) throw new InvalidOperationException("An emitted method cannot change after publication.");
-        _budget.ChargeWork(1);
+        _budget.Checkpoint();
     }
 
     internal Utf8IlLocal DeclareLocal(Type type)
@@ -239,7 +239,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
             // Reflection's parameter records and CLR token/resolver state are
             // runtime metadata, not a library-created program buffer.
             var parameters = method.GetParameters().Length;
-            _budget.ChargeWork((ulong)parameters + 1);
+            _budget.Checkpoint();
             var info = _info ?? throw new ObjectDisposedException(nameof(Utf8DynamicIlBuilder));
             var declaring = method.DeclaringType;
             var token = declaring is not null && (declaring.IsGenericType || declaring.IsArray)
@@ -290,12 +290,12 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
         var heights = _budget.AllocateArray<int>(_instructions.Count, false);
         try
         {
-            _budget.ChargeWork((ulong)heights.Length); Array.Fill(heights, -1);
+            _budget.Checkpoint(); Array.Fill(heights, -1);
             SetHeight(0, 0, heights, pending);
             var maximum = 0;
             while (pending.TryPop(out var index))
             {
-                _budget.LeaveDepth(); _budget.ChargeWork(1);
+                _budget.LeaveDepth(); _budget.Checkpoint();
                 var instruction = _instructions[index];
                 var before = heights[index];
                 if (before < instruction.Pops) throw new InvalidProgramException("The emitted evaluation stack underflows.");
@@ -321,7 +321,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
     }
     private void SetHeight(int index, int height, int[] heights, Utf8ConstructionBuffer<int> pending)
     {
-        _budget.ChargeWork(1);
+        _budget.Checkpoint();
         if ((uint)index >= (uint)heights.Length) throw new InvalidProgramException("The emitted branch has no instruction target.");
         if (heights[index] >= 0)
         {
@@ -336,7 +336,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
 
     private nint LocalTypeHandle(Type type)
     {
-        _budget.ChargeWork(1);
+        _budget.Checkpoint();
         if (_types.TryGetValue(type, out var handle)) return handle;
         // Root the runtime type in the dynamic scope as well as this temporary
         // cache. Local signatures use runtime handles, not module TypeDef rows.
@@ -347,7 +347,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
     }
     private void WriteLocalType(Type type, Utf8ConstructionBuffer<byte> signature)
     {
-        _budget.ChargeWork(1);
+        _budget.Checkpoint();
         if (type.IsByRef)
         {
             signature.Add(0x10);
@@ -373,7 +373,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
     }
     private void WriteCompressed(uint value, Utf8ConstructionBuffer<byte> signature)
     {
-        _budget.ChargeWork(1);
+        _budget.Checkpoint();
         if (value <= 0x7f) signature.Add((byte)value);
         else if (value <= 0x3fff)
         {
@@ -392,7 +392,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
         CheckMutable();
         foreach (var fixup in _fixups)
         {
-            _budget.ChargeWork(1);
+            _budget.Checkpoint();
             var target = _labels[fixup.Label].Offset;
             if (target < 0) throw new InvalidProgramException("The emitted branch label is not marked.");
             var distance = checked(target - fixup.Offset - fixup.Width);
@@ -419,7 +419,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
                 pointer: nint.Zero, auxiliary: nint.Zero, invocations: default(object), count: nint.Zero),
                 static state => state.target.CreateDelegate<TDelegate>());
             // The CLR call is opaque: recheck the same authority before publishing.
-            _budget.ChargeWork(0);
+            _budget.Checkpoint();
             _completed = true; _scope.Complete();
             // These are the three final copies, not spare construction buffers.
             // DynamicMethod and DynamicILInfo metadata and native JIT storage are excluded.

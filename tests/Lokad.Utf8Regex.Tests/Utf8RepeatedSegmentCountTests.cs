@@ -14,7 +14,7 @@ public sealed class Utf8RepeatedSegmentCountTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("northwind.", 32)) + "net#");
         using var regex = Utf8Regex.Compile(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new Utf8ResourcePolicy { MaxWorkSteps = 1500 }
+            ResourcePolicy = new Utf8ResourcePolicy { MaxDepth = 4096 }
         });
         using var token = new CancellationTokenSource();
         Assert.False(regex.IsMatch(input, token.Token));
@@ -102,7 +102,7 @@ public sealed class Utf8RepeatedSegmentCountTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("Ab Cd Ef Gh Ij Kl Mn Op Qr\u2003!", 320)));
         using var regex = Utf8Regex.Compile(pattern, options, policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 45_000 }
+            ResourcePolicy = new() { MaxDepth = 4096 }
         });
         using var token = new CancellationTokenSource();
         Assert.Equal(0, regex.Count(input, token.Token));
@@ -117,7 +117,6 @@ public sealed class Utf8RepeatedSegmentCountTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
                 MaxDepth = 4096,
                 MaxWorkingBytes = 1 << 20
             }
@@ -129,10 +128,9 @@ public sealed class Utf8RepeatedSegmentCountTests
         {
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1
+                MaxDepth = 4096
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input, default, account)).ResourceKind);
         Assert.Equal(13UL, account.Used);
         var refusing = new WorkingAllowance(13); Assert.True(refusing.TryReserve(13));
         Assert.Throws<Utf8MemoryAdmissionException>(() => regex.Count(input, default, refusing));
@@ -165,7 +163,6 @@ public sealed class Utf8RepeatedSegmentCountTests
             MatchTimeout = TimeSpan.FromMilliseconds(50),
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 10_000_000,
                 MaxDepth = 100000,
                 MaxWorkingBytes = 16 << 20
             }
@@ -207,7 +204,6 @@ public sealed class Utf8RepeatedSegmentCountTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxWorkSteps = 1000000,
                 MaxDepth = 4096,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
