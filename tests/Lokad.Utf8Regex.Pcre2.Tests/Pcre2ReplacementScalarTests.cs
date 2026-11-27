@@ -57,4 +57,15 @@ public sealed class Pcre2ReplacementScalarTests
         Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, Encoding.UTF8.GetBytes(replacement), 0, Pcre2SubstitutionOptions.Extended));
         Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(replacement),0, substitutionOptions: Pcre2SubstitutionOptions.Extended,Pcre2MatchOptions.None)));
     }
+
+    [Theory]
+    [InlineData("ς", "Σ")]
+    [InlineData("ß", "ß")]
+    public void ExtendedUppercaseUsesManagedScalarCasing(string input, string expected)
+    {
+        using var regex = new Utf8Pcre2Regex("(.)");
+        var actual = regex.Replace(Encoding.UTF8.GetBytes(input), @"\U$1\E"u8,
+            substitutionOptions: Pcre2SubstitutionOptions.Extended);
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), actual);
+    }
 }

@@ -144,8 +144,7 @@ escapes remain Unicode-aware.
 including for Indic conjuncts and emoji sequences. Regional indicators pair
 from the start of their contiguous subject run, even when matching starts
 inside the run. With `MatchInvalidUtf8`, pairing stays within each admitted
-UTF-8 fragment. Extended substitution can differ when uppercasing final sigma.
-Other Unicode properties can depend on the host runtime.
+UTF-8 fragment. Other Unicode properties can depend on the host runtime.
 
 ## Partial probing
 
@@ -174,6 +173,10 @@ complete template before matching, including misses and `SubstituteLiteral`.
 Syntax errors preserve native no-match and unselected-fallback deferral.
 With `MatchInvalidUtf8`, full output preserves unmatched malformed bytes.
 `SubstituteReplacementOnly` omits those gaps.
+
+Extended substitution uses invariant Unicode scalar casing. For `\U$1\E`,
+managed replacement maps final sigma `ς` to `Σ` and leaves sharp S `ß`
+unchanged. Native PCRE2 10.47 in UTF mode produces `σ` and `ẞ`, respectively.
 
 Discovery, capture and MARK access, output growth and copying share one
 invocation. Cold template keys and parser buffers require admission.

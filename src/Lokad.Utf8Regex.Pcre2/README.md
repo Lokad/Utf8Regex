@@ -49,7 +49,8 @@ a name to its numbered slots. `Match` and `Probe` can also report MARK.
 Use `EnumerateMatches` to stream ranges, or `CreateMatchCursor` for
 last-capture snapshots across calls. `Replace` returns owned bytes.
 `TryReplace` writes a caller buffer. Custom substitutions can use cursor
-ranges and host-owned output.
+ranges and host-owned output. Extended case conversion uses managed scalar
+casing and can differ from native PCRE2. [Substitution rules](../../docs/SPEC-PCRE2.md#substitution)
 
 ```csharp
 using System.Text;
