@@ -108,7 +108,7 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
         var literals = Literals(family);
         var prefixes = Prefixes(literals);
         var trie = PreparedMultiLiteralTrieSearch.Create(literals);
-        var search = PreparedMultiLiteralAutomatonSearch.Create(literals, trie.StateCount);
+        var search = PreparedMultiLiteralAutomatonSearch.Create(literals, trie);
         var ids = prefixes.Select((value, id) => (Key: Convert.ToHexString(value), Id: id)).ToDictionary(value => value.Key, value => value.Id);
         for (var state = 0; state < prefixes.Count; state++)
         {
@@ -128,21 +128,21 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
     }
 
     [Fact]
-    public void PreparedTrieCountAvoidsGrowthAndFinalMatrixCopy()
+    public void BorrowedTrieAvoidsGrowthAndFinalMatrixCopy()
     {
         var literals = Literals(4);
         var trie = PreparedMultiLiteralTrieSearch.Create(literals);
-        var (grown, grownPeak, grownWork) = Build(0);
-        var (sized, sizedPeak, sizedWork) = Build(trie.StateCount);
+        var (grown, grownPeak, grownWork) = Build(default);
+        var (sized, sizedPeak, sizedWork) = Build(trie);
 
         Assert.Equal(grown.Transitions, sized.Transitions);
         Assert.True(sizedPeak < grownPeak);
         Assert.True(sizedWork < grownWork);
 
-        (PreparedMultiLiteralAutomatonSearch Search, ulong Peak, ulong Work) Build(int stateCount)
+        (PreparedMultiLiteralAutomatonSearch Search, ulong Peak, ulong Work) Build(in PreparedMultiLiteralTrieSearch prepared)
         {
             using var owner = Utf8ConstructionScope.Enter();
-            var search = PreparedMultiLiteralAutomatonSearch.Create(literals, stateCount);
+            var search = PreparedMultiLiteralAutomatonSearch.Create(literals, prepared);
             return (search, owner.Budget.PeakBytes, owner.Budget.WorkSteps);
         }
     }

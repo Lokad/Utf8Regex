@@ -6,7 +6,8 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
 {
     private readonly record struct ConstructionState(int Failure, int BestOutputOrder, int BestOutputLength, int ShortestOutputLength);
 
-    public static PreparedMultiLiteralAutomatonSearch Create(byte[][] literals, int knownStateCount = 0)
+    // A supplied trie was built from the same ordered literal vector.
+    public static PreparedMultiLiteralAutomatonSearch Create(byte[][] literals, in PreparedMultiLiteralTrieSearch trie = default)
     {
         if (literals.Length == 0) return new([], [], 0, [], [], [], int.MaxValue, 0);
         using var scope = Utf8ConstructionScope.Enter();
@@ -17,50 +18,12 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
             var columns = CreateColumns(literals, budget, out var stride);
             using var states = Utf8ConstructionBuffer<ConstructionState>.Create(budget);
             using var transitions = Utf8ConstructionBuffer<int>.Create(budget);
-            if (knownStateCount != 0)
-            {
-                // The exact trie for these literals already counted the distinct
-                // prefixes. Admit the complete matrix once and publish it in place.
-                states.EnsureCapacity(knownStateCount);
-                transitions.EnsureCapacity(checked(knownStateCount * stride));
-            }
             budget.ChargeWork((ulong)stride);
             Span<int> emptyRow = stackalloc int[stride];
             emptyRow.Clear();
-            states.Add(new(0, -1, 0, int.MaxValue));
-            transitions.AddRange(emptyRow);
-            var shortestLength = int.MaxValue;
-            var longestLength = 0;
-            for (var order = 0; order < literals.Length; order++)
-            {
-                budget.ChargeWork(1);
-                var literal = literals[order];
-                shortestLength = Math.Min(shortestLength, literal.Length);
-                longestLength = Math.Max(longestLength, literal.Length);
-                var state = 0;
-                foreach (var key in literal)
-                {
-                    budget.ChargeWork(1);
-                    var index = state * stride + columns[key];
-                    var next = transitions[index];
-                    // Direct trie edges always point to non-root states. A zero
-                    // entry means absent; no separate transition flags are needed.
-                    if (next == 0)
-                    {
-                        next = states.Count;
-                        states.Add(new(0, -1, 0, int.MaxValue));
-                        transitions.AddRange(emptyRow);
-                        transitions[index] = next;
-                    }
-                    state = next;
-                }
-                budget.ChargeWork(1);
-                var output = states[state];
-                if (output.BestOutputLength == 0 || literal.Length > output.BestOutputLength ||
-                    literal.Length == output.BestOutputLength && (output.BestOutputOrder < 0 || order < output.BestOutputOrder))
-                    output = output with { BestOutputOrder = order, BestOutputLength = literal.Length };
-                states[state] = output with { ShortestOutputLength = Math.Min(output.ShortestOutputLength, literal.Length) };
-            }
+            var (shortestLength, longestLength) = trie.StateCount == 0
+                ? InsertLiteralRows(literals, columns, emptyRow, states, transitions, budget)
+                : (trie.ShortestLength, CopyTrieRows(trie.Nodes, columns, emptyRow, states, transitions, budget));
 
             // Each non-root state is queued once. The exact queue is temporary,
             // admitted before acquisition and released before final projection.
@@ -128,6 +91,67 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
             return result;
         }
         finally { budget.LeaveDepth(); }
+    }
+
+    private static (int Shortest, int Longest) InsertLiteralRows(byte[][] literals, byte[] columns,
+        ReadOnlySpan<int> emptyRow, Utf8ConstructionBuffer<ConstructionState> states,
+        Utf8ConstructionBuffer<int> transitions, Utf8ConstructionBudget budget)
+    {
+        states.Add(new(0, -1, 0, int.MaxValue));
+        transitions.AddRange(emptyRow);
+        var shortestLength = int.MaxValue;
+        var longestLength = 0;
+        for (var order = 0; order < literals.Length; order++)
+        {
+            budget.ChargeWork(1);
+            var literal = literals[order];
+            shortestLength = Math.Min(shortestLength, literal.Length);
+            longestLength = Math.Max(longestLength, literal.Length);
+            var state = 0;
+            foreach (var key in literal)
+            {
+                budget.ChargeWork(1);
+                var index = state * emptyRow.Length + columns[key];
+                var next = transitions[index];
+                // Direct trie edges always point to non-root states.
+                if (next == 0)
+                {
+                    next = states.Count;
+                    states.Add(new(0, -1, 0, int.MaxValue));
+                    transitions.AddRange(emptyRow);
+                    transitions[index] = next;
+                }
+                state = next;
+            }
+            budget.ChargeWork(1);
+            var output = states[state];
+            if (output.BestOutputLength == 0 || literal.Length > output.BestOutputLength ||
+                literal.Length == output.BestOutputLength && (output.BestOutputOrder < 0 || order < output.BestOutputOrder))
+                output = output with { BestOutputOrder = order, BestOutputLength = literal.Length };
+            states[state] = output with { ShortestOutputLength = Math.Min(output.ShortestOutputLength, literal.Length) };
+        }
+        return (shortestLength, longestLength);
+    }
+
+    private static int CopyTrieRows(ReadOnlySpan<PreparedMultiLiteralTrieNode> nodes, byte[] columns,
+        ReadOnlySpan<int> emptyRow, Utf8ConstructionBuffer<ConstructionState> states,
+        Utf8ConstructionBuffer<int> transitions, Utf8ConstructionBudget budget)
+    {
+        states.EnsureCapacity(nodes.Length);
+        transitions.EnsureCapacity(checked(nodes.Length * emptyRow.Length));
+        var longestLength = 0;
+        foreach (ref readonly var node in nodes)
+        {
+            budget.ChargeWork(1 + (ulong)node.Keys.Length);
+            longestLength = Math.Max(longestLength, node.TerminalLength);
+            var shortestOutput = node.TerminalOrder >= 0 ? node.TerminalLength : int.MaxValue;
+            states.Add(new(0, node.TerminalOrder, node.TerminalLength, shortestOutput));
+            var row = transitions.Count;
+            transitions.AddRange(emptyRow);
+            for (var edge = 0; edge < node.Keys.Length; edge++)
+                transitions[row + columns[node.Keys[edge]]] = node.Children[edge];
+        }
+        return longestLength;
     }
 
     private static byte[] CreateColumns(byte[][] literals, Utf8ConstructionBudget budget, out int stride)
