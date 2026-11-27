@@ -261,10 +261,12 @@ internal static class Utf8FrontEndSearchAnalyzer
     {
         literalUtf8 = [];
         distance = 0;
-        // The leading probe skips only zero-width anchors and boundaries.
-        // An unbounded scalar repeat there rules out a fixed-distance literal.
-        if (GetLeadingContentNode(root) is { Kind: Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy or
-                Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy, N: int.MaxValue } ||
+        // An exact literal cannot follow an uncertified byte width. Check the
+        // first class or scalar repeat before allocating the per-node widths.
+        var leading = GetLeadingContentNode(root);
+        if (leading is { Kind: Utf8TreeNodeKind.Set } && !Utf8OwnedFindOptimizations.ComputeByteWidth(leading).IsFixed ||
+            leading is { Kind: Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy or
+                Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy } && (leading.M != leading.N || leading.IsUnboundedRepeat) ||
             Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(root) is not { } fixedDistance ||
             !IsAscii(fixedDistance.Literal) ||
             fixedDistance.Literal.Length <= 1)

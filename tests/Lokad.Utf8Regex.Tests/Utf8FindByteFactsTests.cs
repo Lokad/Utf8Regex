@@ -478,6 +478,9 @@ public sealed class Utf8FindByteFactsTests
             (Pattern: "(ab.*)cd", Subject: "ab😀écd"), (Pattern: "(ab(?i:k))cd", Subject: "abKcd"),
             (Pattern: "a[é-ê]{2}bc", Subject: "aéêbc"), (Pattern: "(?i:ab)cd", Subject: "ABcd"),
             (Pattern: @"\s*abc[0-9]", Subject: "\u00a0abc7"),
+            (Pattern: @"\s([a-zA-Z]{0,12}ing)\s", Subject: "\u00a0walking\u2003"),
+            (Pattern: @"\b[a-zA-Z]{0,12}ing\b", Subject: "walking"),
+            (Pattern: "[éê]ab", Subject: "êab"),
             (Pattern: "a{2,4}bc", Subject: "aaaabc"),
             (Pattern: rtl ? @"\k<x>(?<x>😀)ab" : @"(?<x>😀)\k<x>ab", Subject: "😀😀ab") })
         {
