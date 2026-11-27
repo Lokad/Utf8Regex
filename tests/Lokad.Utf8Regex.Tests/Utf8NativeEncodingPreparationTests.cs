@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -48,7 +49,7 @@ public sealed class Utf8NativeEncodingPreparationTests
             9 => Node(Utf8TreeNodeKind.Concatenate, One('é'), Text("😀"), Node(Utf8TreeNodeKind.PositiveLookaround, One('x'))),
             _ => Text("é😀"),
         };
-        return new(root, Semantic(root, route switch { 8 => "a|😀", 9 => "é😀(?=x)", 10 => "(?:a|😀)(?=x)", _ => "é😀" }, RegexOptions.CultureInvariant));
+        return new(root, Semantic(root, route switch { 6 => @"\b(?:a|😀)\b", 8 => "a|😀", 9 => "é😀(?=x)", 10 => "(?:a|😀)(?=x)", _ => "é😀" }, RegexOptions.CultureInvariant));
     }
     private static void Run(int route, InputValue input)
     {
@@ -78,14 +79,14 @@ public sealed class Utf8NativeEncodingPreparationTests
         var name = route switch
         {
             4 => "TryUnwrapLiteralAlternation", 5 => "TryGetLiteralBranchUtf8",
-            6 => "TryUnwrapLiteralAlternationWithBoundaries", 7 => "TryExtractBoundaryWrappedLiteralTree",
-            8 => "TryExtractUtf8LiteralAlternationTree", 9 => "TryExtractLiteralWithPositiveLiteralLookaheadTree",
+            6 or 8 => "TryExtractUtf8LiteralAlternationTree", 7 => "TryExtractBoundaryWrappedLiteralTree",
+            9 => "TryExtractLiteralWithPositiveLiteralLookaheadTree",
             _ => "TryExtractLiteralAlternationWithPositiveLiteralLookaheadTree",
         };
         object?[] args = route switch
         {
-            4 or 5 => [root, null], 6 => [root, null, null, null],
-            7 or 8 => [input.Semantic, null, null, null],
+            4 or 5 => [root, null],
+            6 or 7 or 8 => [input.Semantic, null, null, null],
             9 => [input.Semantic, null, null],
             _ => [input.Semantic, options, null, null, null, null],
         };
@@ -95,8 +96,11 @@ public sealed class Utf8NativeEncodingPreparationTests
             case 4: Assert.Equal(new[] { "a", "😀" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.UTF8.GetString)); break;
             case 5: Assert.Equal("é"u8.ToArray(), args[1]); break;
             case 7: Assert.Equal("é", args[1]); break;
-            case 6: Assert.Equal(new[] { "a", "😀" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.UTF8.GetString)); break;
-            case 8: Assert.Equal(new[] { "a", "😀" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.UTF8.GetString)); break;
+            case 6 or 8:
+                Assert.Equal(new[] { "a", "😀" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.UTF8.GetString));
+                var boundary = route == 6 ? Utf8BoundaryRequirement.Boundary : Utf8BoundaryRequirement.None;
+                Assert.Equal(boundary, args[2]); Assert.Equal(boundary, args[3]);
+                break;
             case 9: Assert.Equal("é😀"u8.ToArray(), args[1]); Assert.Equal("x", Encoding.UTF8.GetString(Assert.IsType<byte[]>(args[2]))); break;
             case 10: Assert.Equal(new[] { "a", "😀" }, Assert.IsType<byte[][]>(args[2]).Select(Encoding.UTF8.GetString)); break;
         }
@@ -211,6 +215,7 @@ public sealed class Utf8NativeEncodingPreparationTests
         using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
 
         Assert.Equal(false, Call("TryExtractBoundaryWrappedLiteralTree", semantic, null, null, null));
+        Assert.Equal(false, Call("TryExtractUtf8LiteralAlternationTree", semantic, null, null, null));
         Assert.Equal(false, Call("TryExtractLiteralWithPositiveLiteralLookaheadTree", semantic, null, null));
         Assert.Equal(false, Call("TryExtractLiteralAlternationWithPositiveLiteralLookaheadTree", semantic, options, null, null, null, null));
         Assert.Equal(0ul, owner.Budget.PeakDepth);
@@ -222,20 +227,21 @@ public sealed class Utf8NativeEncodingPreparationTests
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
     public void LateDeclineRestoresSuccessfulChildTextAndArrayLoans(int route)
     {
-        var alternate = Node(Utf8TreeNodeKind.Alternate, One('a'), One('b'));
+        var alternate = Node(Utf8TreeNodeKind.Alternate, One('a'), Text(""));
         var empty = Node(Utf8TreeNodeKind.Empty);
         const RegexOptions options = RegexOptions.CultureInvariant;
         object?[] args = route switch
         {
             0 => [Semantic(Node(Utf8TreeNodeKind.Concatenate, One('a'), empty, Node(Utf8TreeNodeKind.PositiveLookaround, One('x'))), "a(?=x)", options), null, null],
             1 => [Node(Utf8TreeNodeKind.Alternate, One('a'), empty), null],
-            2 => [Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Boundary), alternate, empty), null, null, null],
+            2 => [Semantic(Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Boundary), alternate, Node(Utf8TreeNodeKind.Boundary)),
+                @"\b(?:a|)\b", options), null, null, null],
             3 => [Semantic(Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Boundary), One('a'), Node(Utf8TreeNodeKind.Boundary)),
                 @"\b a \b", options | RegexOptions.IgnorePatternWhitespace), null, null, null],
             _ => [],
         };
         var name = route switch { 0 => "TryExtractLiteralWithPositiveLiteralLookaheadTree", 1 => "TryUnwrapLiteralAlternation",
-            2 => "TryUnwrapLiteralAlternationWithBoundaries", 3 => "TryExtractBoundaryWrappedLiteralTree",
+            2 => "TryExtractUtf8LiteralAlternationTree", 3 => "TryExtractBoundaryWrappedLiteralTree",
             _ => string.Empty };
         const RegexOptions folded = RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
         Utf8SemanticRegex? nonAscii = route == 5
@@ -249,6 +255,7 @@ public sealed class Utf8NativeEncodingPreparationTests
             Assert.False(Utf8NativeExecutionAnalyzer.TryExtractSingleCapturedLiteralPattern("(a*)", false, out _));
         else
             Assert.False(Assert.IsType<bool>(Call(name, args)));
+        if (route == 2) Assert.True(owner.Budget.PeakBytes > checkpoint);
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }

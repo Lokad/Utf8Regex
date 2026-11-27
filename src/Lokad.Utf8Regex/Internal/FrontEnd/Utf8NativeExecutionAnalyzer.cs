@@ -549,20 +549,32 @@ internal static class Utf8NativeExecutionAnalyzer
         Utf8SemanticRegex semanticRegex, out byte[][] alternateLiteralsUtf8, out Utf8BoundaryRequirement leadingBoundary, out Utf8BoundaryRequirement trailingBoundary)
     {
         alternateLiteralsUtf8 = []; leadingBoundary = Utf8BoundaryRequirement.None; trailingBoundary = Utf8BoundaryRequirement.None;
+        if (GetCaptureBody(semanticRegex) is not { } body) return false;
+
+        var leading = Utf8BoundaryRequirement.None;
+        var trailing = Utf8BoundaryRequirement.None;
+        var atom = body.Kind == Utf8TreeNodeKind.Concatenate
+            ? GetBoundaryWrappedAtom(body, out leading, out trailing)
+            : body;
+        if (atom is null || atom.Kind is not (Utf8TreeNodeKind.Alternate or Utf8TreeNodeKind.Set or Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group))
+            return false;
+
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
-        if (semanticRegex.RuntimeTree?.Root is not { } root ||
-            root.Kind != Utf8TreeNodeKind.Capture || root.ChildCount != 1) return false;
         owner.EnterDepth();
         owner.ChargeWork(1);
-        if (!TryUnwrapLiteralAlternationWithBoundaries(root.Child(0), out var literals, out leadingBoundary, out trailingBoundary) || literals.Length <= 1) return false;
+        owner.EnterDepth();
+        owner.ChargeWork(1);
+        if (!TryUnwrapLiteralAlternation(atom, out var literals) || literals.Length <= 1) return false;
+        owner.LeaveDepth();
         for (var index = 0; index < literals.Length; index++)
         {
             owner.ChargeWork(1);
-            if (literals[index].Length == 0)
-            { leadingBoundary = Utf8BoundaryRequirement.None; trailingBoundary = Utf8BoundaryRequirement.None; return false; }
+            if (literals[index].Length == 0) return false;
         }
         alternateLiteralsUtf8 = literals;
+        leadingBoundary = leading;
+        trailingBoundary = trailing;
         owner.LeaveDepth();
         construction.Complete();
         return true;
@@ -602,46 +614,6 @@ internal static class Utf8NativeExecutionAnalyzer
             alternateLiteralsUtf8 = result; construction.Complete(); return true;
         }
         finally { owner.LeaveDepth(); }
-    }
-
-    private static bool TryUnwrapLiteralAlternationWithBoundaries(
-        Utf8TreeNode node, out byte[][] literals, out Utf8BoundaryRequirement leadingBoundary, out Utf8BoundaryRequirement trailingBoundary)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        var owner = construction.Budget;
-        owner.EnterDepth();
-        owner.ChargeWork(1);
-        literals = [];
-        leadingBoundary = Utf8BoundaryRequirement.None;
-        trailingBoundary = Utf8BoundaryRequirement.None;
-
-        if (!TryUnwrapLiteralAlternation(node, out literals))
-        {
-            if (node.Kind != Utf8TreeNodeKind.Concatenate) return false;
-
-            var wrapped = node.ChildCount switch
-            {
-                2 => (TryGetBoundaryRequirement(node.Child(0).Kind, out leadingBoundary) &&
-                    TryUnwrapLiteralAlternation(node.Child(1), out literals)) ||
-                    (TryUnwrapLiteralAlternation(node.Child(0), out literals) &&
-                    TryGetBoundaryRequirement(node.Child(1).Kind, out trailingBoundary)),
-                3 => TryGetBoundaryRequirement(node.Child(0).Kind, out leadingBoundary) &&
-                    TryUnwrapLiteralAlternation(node.Child(1), out literals) &&
-                    TryGetBoundaryRequirement(node.Child(2).Kind, out trailingBoundary),
-                _ => false,
-            };
-            if (!wrapped)
-            {
-                literals = [];
-                leadingBoundary = Utf8BoundaryRequirement.None;
-                trailingBoundary = Utf8BoundaryRequirement.None;
-                return false;
-            }
-        }
-
-        owner.LeaveDepth();
-        construction.Complete();
-        return true;
     }
 
     private static bool TryUnwrapLiteralAlternation(Utf8TreeNode node, out byte[][] literals)
@@ -738,23 +710,9 @@ internal static class Utf8NativeExecutionAnalyzer
         literal = string.Empty;
         leadingBoundary = Utf8BoundaryRequirement.None;
         trailingBoundary = Utf8BoundaryRequirement.None;
-        if (GetCaptureBody(semanticRegex) is not { Kind: Utf8TreeNodeKind.Concatenate, ChildCount: 2 or 3 } body)
+        if (GetCaptureBody(semanticRegex) is not { Kind: Utf8TreeNodeKind.Concatenate } body ||
+            GetBoundaryWrappedAtom(body, out var leading, out var trailing) is not { } atom)
             return false;
-
-        var first = body.Child(0);
-        var trailing = Utf8BoundaryRequirement.None;
-        Utf8TreeNode atom;
-        if (TryGetBoundaryRequirement(first.Kind, out var leading))
-        {
-            if (body.ChildCount == 3 && !TryGetBoundaryRequirement(body.Child(2).Kind, out trailing))
-                return false;
-            atom = body.Child(1);
-        }
-        else if (body.ChildCount == 2 && TryGetBoundaryRequirement(body.Child(1).Kind, out trailing))
-        {
-            atom = first;
-        }
-        else return false;
 
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
@@ -773,6 +731,21 @@ internal static class Utf8NativeExecutionAnalyzer
         trailingBoundary = trailing;
         construction.Complete();
         return true;
+    }
+
+    private static Utf8TreeNode? GetBoundaryWrappedAtom(
+        Utf8TreeNode body, out Utf8BoundaryRequirement leading, out Utf8BoundaryRequirement trailing)
+    {
+        leading = trailing = Utf8BoundaryRequirement.None;
+        if (body.ChildCount is not (2 or 3)) return null;
+
+        var first = body.Child(0);
+        if (TryGetBoundaryRequirement(first.Kind, out leading))
+        {
+            if (body.ChildCount == 3 && !TryGetBoundaryRequirement(body.Child(2).Kind, out trailing)) return null;
+            return body.Child(1);
+        }
+        return body.ChildCount == 2 && TryGetBoundaryRequirement(body.Child(1).Kind, out trailing) ? first : null;
     }
 
     private static bool TryGetBoundaryRequirement(Utf8TreeNodeKind kind, out Utf8BoundaryRequirement requirement)
