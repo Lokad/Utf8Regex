@@ -71,6 +71,16 @@ public sealed class Utf8OwnedCharClassTests
     }
 
     [Fact]
+    public void CompactedRangesKeepAdjacentEndpointsAndSubtractionSegments()
+    {
+        var tree = Utf8OwnedTreeParser.TryParse(@"[f-hb-da-cg-jk-l\p{Ll}-[x-ys-uu-w]]", RegexOptions.CultureInvariant);
+        Assert.NotNull(tree);
+        int[] expected = [0, 6, 1, 'a', 'e', 'f', 'k', 'k', 'm', 2,
+            0, 4, 0, 's', 'x', 'x', 'z'];
+        Assert.Equal(expected, Assert.Single(HarvestClasses(tree.Root)).Data);
+    }
+
+    [Fact]
     public void SinglelineDotUsesExplicitScalarRangePayload()
     {
         var tree = Utf8OwnedTreeParser.TryParse("(?s:.)", RegexOptions.CultureInvariant);

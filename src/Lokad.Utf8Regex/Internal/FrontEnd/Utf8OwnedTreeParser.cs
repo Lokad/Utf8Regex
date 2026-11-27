@@ -1042,22 +1042,32 @@ internal static class Utf8OwnedTreeParser
                 }
             }
             ranges.Sort(static (left, right) => left.Low.CompareTo(right.Low));
-            using var merged = Utf8ConstructionBuffer<(int Low, int High)>.Create(owner);
-            foreach (var range in ranges)
-            {
-                Utf8ConstructionScope.ChargeWork(1);
-                if (merged.Count != 0 && range.Low < merged[merged.Count - 1].High)
-                    merged[merged.Count - 1] = (merged[merged.Count - 1].Low, Math.Max(merged[merged.Count - 1].High, range.High));
-                else merged.Add(range);
-            }
-            using var endpoints = Utf8ConstructionBuffer<int>.Create(owner);
-            foreach (var range in merged)
+            var mergedCount = 0;
+            for (var index = 0; index < ranges.Count; index++)
             {
                 owner.ChargeWork(1);
-                endpoints.Add(range.Low); endpoints.Add(range.High);
+                var range = ranges[index];
+                if (mergedCount != 0 && range.Low < ranges[mergedCount - 1].High)
+                {
+                    var previous = ranges[mergedCount - 1];
+                    ranges[mergedCount - 1] = (previous.Low, Math.Max(previous.High, range.High));
+                }
+                else ranges[mergedCount++] = range;
             }
-            data.Add(negated ? 1 : 0); data.Add(endpoints.Count); data.Add(categories.Count);
-            data.AddRange(endpoints.Span); data.AddRange(categories.Span);
+
+            var endpointCount = checked(mergedCount * 2);
+            data.EnsureCapacity(checked(data.Count + 3 + endpointCount + categories.Count));
+            data.Add(negated ? 1 : 0);
+            data.Add(endpointCount);
+            data.Add(categories.Count);
+            for (var index = 0; index < mergedCount; index++)
+            {
+                owner.ChargeWork(2);
+                var range = ranges[index];
+                data.Add(range.Low);
+                data.Add(range.High);
+            }
+            data.AddRange(categories.Span);
         }
 
         static bool ShorthandRangeEndAhead(ref ParserState state)
