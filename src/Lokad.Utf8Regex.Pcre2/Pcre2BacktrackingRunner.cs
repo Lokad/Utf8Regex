@@ -1807,44 +1807,46 @@ internal static class Pcre2BacktrackingRunner
         }
 
         var candidate = earliest;
-        while (candidate <= latest)
+        // Every candidate here executes the same program at the same depth.
+        // Keep one admitted workspace, separate from the live parent, while
+        // each attempt restarts its repeat, capture and retry state.
+        var frames = CreateFrames(ref budget, depth);
+        var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
+        var workspace = new Pcre2BacktrackingWorkspace();
+        try
         {
-            budget.ChargeCandidate();
-            // The assertion must finish at inputIndex. Tokens and nested
-            // lookaheads still see the real subject boundaries and neighbors.
-            if (TryMatchAt(
-                    assertionProgram,
-                    input,
-                    projectionInput,
-                    candidate,
-                    outerFirstMatchingPosition,
-                    nestedOptions,
-                    captureMaterialization,
-                    captureState,
-                    depth,
-                    true,
-                    enclosingSubroutineSlot,
-                    ref budget,
-                    out var assertionMatch,
-                    out _,
-                    requiredEnd: inputIndex,
-                    fragment: fragment))
+            while (candidate <= latest)
             {
-                captures = assertionMatch.CaptureResult.AssertionRanges;
-                mark = assertionMatch.Mark;
-                reportedStartOffsetInBytes = !isNegative && assertionMatch.MatchBoundaryWasReset
-                    ? assertionMatch.StartOffsetInBytes
-                    : -1;
-                return !isNegative;
-            }
+                budget.ChargeCandidate();
+                // Nested lookaheads can inspect the real subject beyond the
+                // required finish of this lookbehind.
+                if (TryMatchAt(assertionProgram, input, projectionInput, candidate,
+                    outerFirstMatchingPosition, nestedOptions, captureMaterialization, captureState,
+                    depth, true, enclosingSubroutineSlot, ref budget, ref frames, ref repeatMutations,
+                    ref workspace, out var assertionMatch, out _, requiredEnd: inputIndex, fragment: fragment))
+                {
+                    captures = assertionMatch.CaptureResult.AssertionRanges;
+                    mark = assertionMatch.Mark;
+                    reportedStartOffsetInBytes = !isNegative && assertionMatch.MatchBoundaryWasReset
+                        ? assertionMatch.StartOffsetInBytes
+                        : -1;
+                    return !isNegative;
+                }
 
-            if (candidate == latest ||
-                Rune.DecodeFromUtf8(input[candidate..latest], out _, out var width) != OperationStatus.Done)
-            {
-                break;
-            }
+                if (candidate == latest ||
+                    Rune.DecodeFromUtf8(input[candidate..latest], out _, out var width) != OperationStatus.Done)
+                {
+                    break;
+                }
 
-            candidate += width;
+                candidate += width;
+            }
+        }
+        finally
+        {
+            workspace.Dispose(ref budget);
+            repeatMutations.Dispose(ref budget);
+            frames.Dispose(ref budget);
         }
 
         captures = [];

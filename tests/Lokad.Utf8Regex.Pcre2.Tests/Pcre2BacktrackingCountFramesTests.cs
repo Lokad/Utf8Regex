@@ -28,6 +28,22 @@ public sealed class Pcre2BacktrackingCountFramesTests
         Assert.True(allocated < 16384, $"Count allocated {allocated} bytes for fixed candidate scratch.");
     }
 
+    [Fact]
+    public void VariableLookbehindRetriesReuseFiniteCountWorkspace()
+    {
+        using var regex = Create(@"(?<=(?P<left>é{1,3}))😀");
+        var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("xéé😀z éx😀 ééé! ", 24)));
+        using var token = new CancellationTokenSource();
+        for (var index = 0; index < 3; index++)
+            Assert.Equal(24, regex.Count(bytes, cancellationToken: token.Token));
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var count = regex.Count(bytes, cancellationToken: token.Token);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(24, count);
+        Assert.True(allocated < 320_000, $"Count allocated {allocated} bytes across lookbehind retries.");
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("a")]
