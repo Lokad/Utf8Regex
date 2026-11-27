@@ -135,7 +135,7 @@ public sealed class PythonReSubstitutionOutputTests
         Utf8InvocationResultLedger results = default;
         try
         {
-            var bytes = core.ReplaceExactLiteralForResult("foo fooé"u8, "😀"u8, int.MaxValue, ref invocation, ref results, out var count);
+            var bytes = core.ReplaceExactLiteralForResult("foo fooé"u8, "😀"u8, int.MaxValue, 0, ref invocation, ref results, out var count);
             Assert.NotNull(bytes);
             Assert.Equal(2, count); Assert.Equal("😀 😀é"u8.ToArray(), bytes);
             Assert.Equal(48UL, results.ReservedBytes); Assert.Equal(61UL, invocation.Ledger.ReservedBytes);
@@ -149,13 +149,13 @@ public sealed class PythonReSubstitutionOutputTests
     public void NativeLiteralMissDefersOutputAcquisitionToItsPublicShape()
     {
         var core = new global::Lokad.Utf8Regex.Utf8Regex("cat");
-        var input = "é😀 dog"u8;
+        var input = "caté😀 dog"u8;
         var invocation = new Utf8SliceInvocation(new(0, 0, 128), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(invocation.Ledger.TryReserve(13));
         Utf8InvocationResultLedger results = default;
         try
         {
-            var bytes = core.ReplaceExactLiteralForResult(input, "😀é"u8, int.MaxValue,
+            var bytes = core.ReplaceExactLiteralForResult(input, "😀é"u8, int.MaxValue, "caté😀"u8.Length,
                 ref invocation, ref results, out var count);
             Assert.Null(bytes);
             Assert.Equal(0, count);

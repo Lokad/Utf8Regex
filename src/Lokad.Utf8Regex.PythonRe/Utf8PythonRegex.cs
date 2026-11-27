@@ -33,7 +33,7 @@ public sealed partial class Utf8PythonRegex
     private readonly IReadOnlyDictionary<string, int> _namedGroups;
     private readonly bool _canUseUtf8IterationFastPath;
     private readonly bool _canUseZeroOffsetUtf8SearchValueFastPath;
-    private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
+    private readonly bool _canUseExactLiteralReplacement;
     private const int ReplacementPlanCacheCapacity = 16;
     private readonly Utf8BoundedPreparationCache<byte[], PythonReReplacementPlan> _replacementPlanCache;
     private readonly object _patternSource;
@@ -139,7 +139,7 @@ public sealed partial class Utf8PythonRegex
                 isExactLiteral &&
                 _utf8Regex?.Inspection.ExecutionKind is
                     NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal;
-            _canUseZeroOffsetUtf8ValueFastPath =
+            _canUseExactLiteralReplacement =
                 _canUseZeroOffsetUtf8SearchValueFastPath && !_scalarProgram.CanMatchEmpty &&
                 _utf8Regex?.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral;
             _replacementPlanCache = Utf8BoundedPreparationCache<byte[], PythonReReplacementPlan>.CreateRetained(ReplacementPlanCacheCapacity, PythonReReplacementKeyComparer.Instance);
@@ -215,7 +215,7 @@ public sealed partial class Utf8PythonRegex
             ? new RegexMatchTimeoutException(string.Empty, pattern, MatchTimeout)
             : Utf8Regex.CreateMatchTimeoutException(input, pattern, MatchTimeout, InvocationLimits);
 
-    internal bool DebugUsesZeroOffsetUtf8ValueFastPath => _canUseZeroOffsetUtf8ValueFastPath;
+    internal bool DebugUsesExactLiteralReplacement => _canUseExactLiteralReplacement;
 
     internal bool DebugUsesZeroOffsetUtf8SearchValueFastPath =>
         _canUseZeroOffsetUtf8SearchValueFastPath;

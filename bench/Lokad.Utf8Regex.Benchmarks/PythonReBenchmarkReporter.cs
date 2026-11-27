@@ -2147,7 +2147,7 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         try
         {
             var bytes = GetCoreReplacementRegex().ReplaceExactLiteralForResult(InputBytes,
-                _preparedLiteralReplacementUtf8, int.MaxValue, ref invocation, ref results, out var replacementCount);
+                _preparedLiteralReplacementUtf8, int.MaxValue, 0, ref invocation, ref results, out var replacementCount);
             var returnedCount = IsSubnOperation ? replacementCount : (int?)null;
             if (IsUtf8ReplacementOperation)
             {

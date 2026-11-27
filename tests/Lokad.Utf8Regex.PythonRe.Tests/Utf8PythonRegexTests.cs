@@ -79,7 +79,7 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex("foo");
 
         Assert.True(regex.DebugUsesUtf8RegexBackend);
-        Assert.True(regex.DebugUsesZeroOffsetUtf8ValueFastPath);
+        Assert.True(regex.DebugUsesExactLiteralReplacement);
         Assert.True(regex.Match("foo"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal("foo", PythonReDotNetReference.Render(regex));
         Assert.True(regex.IsMatch("xxfooyy"u8));
@@ -112,7 +112,7 @@ public sealed class Utf8PythonRegexTests
         var match = regex.Match("Шерлок далее"u8);
 
         Assert.True(regex.DebugUsesZeroOffsetUtf8SearchValueFastPath);
-        Assert.False(regex.DebugUsesZeroOffsetUtf8ValueFastPath);
+        Assert.False(regex.DebugUsesExactLiteralReplacement);
         Assert.True(search.Success);
         Assert.Equal("π "u8.Length, search.StartOffsetInBytes);
         Assert.Equal("π Шерлок"u8.Length, search.EndOffsetInBytes);
@@ -142,7 +142,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.Multiline);
 
-        Assert.False(regex.DebugUsesZeroOffsetUtf8ValueFastPath);
+        Assert.False(regex.DebugUsesExactLiteralReplacement);
     }
 
     [Theory]
@@ -1766,7 +1766,23 @@ public sealed class Utf8PythonRegexTests
         Assert.Equal("dog dog dog", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "dog"u8, count: 99)));
         Assert.Equal("cat dog dog", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "dog"u8, count: 0, startOffsetInBytes: 4)));
         Assert.Equal("<cat> <cat> <cat>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"<\g<0>>"u8)));
+    }
 
+    [Fact]
+    public void ExactLiteralReplacementKeepsUtf8PrefixAndReplaysOnlySuffixMatches()
+    {
+        var regex = new Utf8PythonRegex("cat");
+        var input = System.Text.Encoding.UTF8.GetBytes("caté😀" + string.Concat(Enumerable.Repeat("cat", 10)));
+        var start = "caté😀"u8.Length;
+
+        Assert.Equal(("caté😀🐈" + string.Concat(Enumerable.Repeat("cat", 9)), 1),
+            PythonReSubstitutionAssert.Decode(regex.Subn(input, "🐈"u8, count: 1, startOffsetInBytes: start)));
+        Assert.Equal(("caté😀", 10),
+            PythonReSubstitutionAssert.Decode(regex.Subn(input, ""u8, startOffsetInBytes: start)));
+        var miss = regex.Subn(input, "🐈"u8, startOffsetInBytes: input.Length);
+        Assert.Equal(0, miss.ReplacementCount);
+        Assert.Equal(input, miss.ResultBytes);
+        Assert.NotSame(input, miss.ResultBytes);
     }
 
     [Fact]

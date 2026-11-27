@@ -21,6 +21,7 @@ public sealed class PythonReRetainedSubnTests
 
     [Theory]
     [InlineData("cat", "cat😀cat", "X", 1, 0, "X😀cat", 1)]
+    [InlineData("cat", "cat😀cat", "X", 1, 7, "cat😀X", 1)]
     [InlineData("(?P<x>a+)", "aa bb a", @"[\g<x>]", 0, 0, "[aa] bb [a]", 2)]
     [InlineData(".", "é😀", "z", 0, 0, "zz", 2)]
     [InlineData(".", "é😀", "z", 0, 2, "éz", 1)]

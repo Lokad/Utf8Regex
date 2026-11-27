@@ -12,6 +12,7 @@ internal static class Utf8ExactLiteralReplacement
         in PreparedSubstringSearch search,
         ReadOnlySpan<byte> replacement,
         int maximumReplacementCount,
+        int startOffsetInBytes,
         ref Utf8SliceInvocation invocation,
         ref Utf8InvocationResultLedger results,
         out int replacementCount)
@@ -21,7 +22,7 @@ internal static class Utf8ExactLiteralReplacement
         // Short substitutions already find these positions while sizing
         // the output. Keep them on the stack for the copy pass.
         Span<int> matchStarts = stackalloc int[8];
-        var nextStart = 0;
+        var nextStart = startOffsetInBytes;
         var lastStart = input.Length - search.Length;
         while (replacementCount < maximumReplacementCount)
         {
@@ -41,6 +42,7 @@ internal static class Utf8ExactLiteralReplacement
 
         var outputLength = checked(input.Length + replacementCount * (replacement.Length - search.Length));
         var output = results.AllocateArray<byte>(outputLength, ref invocation);
+        // Copy from the start of the subject so the prefix before the search still reaches the result.
         var sourcePosition = 0;
         var destinationPosition = 0;
         var copied = 0;

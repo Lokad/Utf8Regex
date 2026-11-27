@@ -152,9 +152,11 @@ public sealed partial class Utf8Regex
     }
 
     // Borrow the adapter's operation and result owner through final shaping.
-    // The caller supplies an immutable literal from its validated template.
+    // The caller supplies an immutable literal from its validated template and a checked byte start.
     internal byte[]? ReplaceExactLiteralForResult(
-        ReadOnlySpan<byte> input, ReadOnlySpan<byte> validatedLiteralUtf8, int maximumReplacementCount, ref Utf8SliceInvocation invocation, ref Utf8InvocationResultLedger results, out int replacementCount)
+        ReadOnlySpan<byte> input, ReadOnlySpan<byte> validatedLiteralUtf8, int maximumReplacementCount,
+        int startOffsetInBytes, ref Utf8SliceInvocation invocation, ref Utf8InvocationResultLedger results,
+        out int replacementCount)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(maximumReplacementCount);
         if (UsesRightToLeft() || _preparedRegex.ExecutionKind != NativeExecutionKind.ExactAsciiLiteral ||
@@ -164,7 +166,7 @@ public sealed partial class Utf8Regex
         // ASCII needles select complete scalar ranges. The caller's result
         // ledger sizes text only when requested; bytes need no UTF-16 metadata.
         return Utf8ExactLiteralReplacement.Replace(input, search, validatedLiteralUtf8,
-            maximumReplacementCount, ref invocation, ref results, out replacementCount);
+            maximumReplacementCount, startOffsetInBytes, ref invocation, ref results, out replacementCount);
     }
 
     private OperationStatus TryReplaceLiteralBytesCore(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementBytes, Span<byte> destination, out int bytesWritten, Utf8ExecutionDeadline budget)

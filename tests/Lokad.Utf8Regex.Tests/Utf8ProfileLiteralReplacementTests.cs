@@ -17,7 +17,8 @@ public sealed class Utf8ProfileLiteralReplacementTests
         byte[]? retained = null;
         try
         {
-            retained = regex.ReplaceExactLiteralForResult(input, "😀é"u8, 1, ref invocation, ref results, out var count);
+            retained = regex.ReplaceExactLiteralForResult(input, "😀é"u8, 1, "é😀"u8.Length,
+                ref invocation, ref results, out var count);
             Assert.Equal(1, count);
             Assert.Equal("é😀😀é 中foo!"u8.ToArray(), retained);
             Assert.Equal(17 + results.ReservedBytes, invocation.Ledger.ReservedBytes);

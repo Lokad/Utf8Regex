@@ -151,15 +151,14 @@ public sealed partial class Utf8PythonRegex
         resultBytes = [];
         replacementCount = 0;
         retained = null;
-        if (count < 0 || startOffsetInBytes != 0 ||
-            !_canUseZeroOffsetUtf8ValueFastPath || _utf8Regex is null ||
+        if (count < 0 || !_canUseExactLiteralReplacement || _utf8Regex is null ||
             !plan.TryGetLiteralUtf8(out var literalBytes)) return false;
 
         Utf8InvocationResultLedger results = default;
         try
         {
             var bytes = _utf8Regex.ReplaceExactLiteralForResult(input, literalBytes,
-                count == 0 ? int.MaxValue : count, ref invocation, ref results, out var replaced);
+                count == 0 ? int.MaxValue : count, startOffsetInBytes, ref invocation, ref results, out var replaced);
             if (bytes is null)
             {
                 bytes = results.AllocateArray<byte>(input.Length, ref invocation);
