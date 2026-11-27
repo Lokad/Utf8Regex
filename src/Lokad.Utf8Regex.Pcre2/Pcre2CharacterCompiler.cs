@@ -1170,7 +1170,8 @@ internal static class Pcre2CharacterRunner
         int firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
         ref Pcre2ResourceBudget budget,
-        out int nextIndex)
+        out int nextIndex,
+        Pcre2FragmentBounds fragment = default)
     {
         nextIndex = index;
         switch (token.Kind)
@@ -1260,20 +1261,21 @@ internal static class Pcre2CharacterRunner
                 return index == 0;
 
             case Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline:
-                return Pcre2CharacterSemantics.IsEndOrBeforeFinalNewline(input, index, request.Settings.Newline);
+                return !fragment.EndsAtBarrier &&
+                    Pcre2CharacterSemantics.IsEndOrBeforeFinalNewline(input, index, request.Settings.Newline);
 
             case Pcre2CharacterTokenKind.EndOfSubject:
-                return index == input.Length;
+                return !fragment.EndsAtBarrier && index == input.Length;
 
             case Pcre2CharacterTokenKind.FirstMatchingPosition:
                 return index == firstMatchingPosition;
 
             case Pcre2CharacterTokenKind.WordBoundary:
             case Pcre2CharacterTokenKind.NonWordBoundary:
-                var boundary = Pcre2CharacterSemantics.IsWordBoundary(
-                    input,
-                    index,
-                    (request.Options & Pcre2CompileOptions.Ucp) != 0);
+                var ucp = (request.Options & Pcre2CompileOptions.Ucp) != 0;
+                var boundary = fragment.IsFragment
+                    ? Pcre2CharacterSemantics.IsFragmentWordBoundary(input[fragment.ReadFloor..], index - fragment.ReadFloor, ucp)
+                    : Pcre2CharacterSemantics.IsWordBoundary(input, index, ucp);
                 return boundary == (token.Kind == Pcre2CharacterTokenKind.WordBoundary);
 
             default:
@@ -1684,6 +1686,19 @@ internal static class Pcre2CharacterSemantics
 
         var previousIsWord = Utf8ScalarNeighbors.TryGetPrevious(input, offset, out var previous) && IsWord(previous, ucp);
         var nextIsWord = Utf8ScalarNeighbors.TryGetNext(input, offset, out var next) && IsWord(next, ucp);
+        return previousIsWord != nextIsWord;
+    }
+
+    internal static bool IsFragmentWordBoundary(ReadOnlySpan<byte> input, int offset, bool ucp)
+    {
+        if (Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, offset, out var boundary))
+            return boundary;
+
+        // At an explicitly aligned start, the preceding bytes have not been
+        // scanned. A malformed predecessor is a nonword boundary neighbor.
+        var previousIsWord = Rune.DecodeLastFromUtf8(input[..offset], out var previous, out _) == OperationStatus.Done &&
+            IsWord(previous, ucp);
+        var nextIsWord = TryDecodeScalar(input, offset, out var next, out _) && IsWord(next, ucp);
         return previousIsWord != nextIsWord;
     }
 
