@@ -13,8 +13,9 @@ internal sealed class Utf8PreparedRegex
     private readonly Utf8AnchoredLiteralPlan _anchoredLiteral;
     private readonly Utf8SearchPlan _searchPlan;
 
-    // Includes the inline search plan. Its referenced buffers are admitted separately.
-    internal static ulong ObjectBytes => 2048;
+    // Split the conservative owner charge between the inline plan and any
+    // independent prefilter. Search payload buffers still have their own loans.
+    internal static ulong ObjectBytes => 2048 - Utf8SearchPlan.IndependentPrefilterBytes;
 
     private Utf8PreparedRegex(
         Utf8AnchoredLiteralPlan anchoredLiteral, in Utf8SearchPlan searchPlan,

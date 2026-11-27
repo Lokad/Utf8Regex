@@ -8,6 +8,13 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal readonly struct Utf8SearchPlan
 {
+    private sealed class PrefilterStorage(PreparedSearcher searcher)
+    {
+        internal readonly PreparedSearcher Searcher = searcher;
+    }
+
+    private static readonly PreparedSearcher s_emptyPrefilter;
+
     private Utf8SearchPlan(in Utf8SearchFacts facts, Utf8SliceProgram? scalarProgram, Utf8ConstructionBudget budget)
     {
         var kind = facts.Kind;
@@ -63,12 +70,13 @@ internal readonly struct Utf8SearchPlan
         PortfolioKind = DeterminePortfolioKind(kind, PreparedSearcher.Kind, multiLiteralSearch.Kind);
         // A short exact prefilter can share the same prepared needle as
         // candidate discovery. The runner can then reuse its first occurrence.
-        _requiredPrefilterSearcher = requiredPrefilterLiteralUtf8 is { Length: <= 64 } &&
-            literalSearch is { IgnoreCase: false } exact && exact.Needle.AsSpan().SequenceEqual(requiredPrefilterLiteralUtf8)
-            ? new PreparedSearcher(exact, ignoreCase: false)
-            : CreateRequiredPrefilter(requiredPrefilterLiteralUtf8, requiredPrefilterAlternateLiteralsUtf8);
+        _prefilterSharesCandidate = PreparedSearcher.Kind == PreparedSearcherKind.ExactLiteral &&
+            requiredPrefilterLiteralUtf8 is { Length: <= 64 } &&
+            PreparedSearcher.LiteralSearch.Needle.AsSpan().SequenceEqual(requiredPrefilterLiteralUtf8);
+        if (!_prefilterSharesCandidate)
+            _requiredPrefilter = CreateRequiredPrefilter(requiredPrefilterLiteralUtf8, requiredPrefilterAlternateLiteralsUtf8, budget);
         if (scalarProgram is not null && Utf8SliceRunner.PrepareAlignedDelimiterAlternatives(
-            scalarProgram, _requiredPrefilterSearcher, budget))
+            scalarProgram, RequiredPrefilterSearcher, budget))
             AlignedClassDelimiterProgram = scalarProgram;
         TrailingLiteralUtf8 = trailingLiteralUtf8;
         Distance = distance;
@@ -143,13 +151,24 @@ internal readonly struct Utf8SearchPlan
 
     public Utf8SearchPortfolioKind PortfolioKind { get; }
 
-    private readonly PreparedSearcher _requiredPrefilterSearcher;
+    private readonly PrefilterStorage? _requiredPrefilter;
+    private readonly bool _prefilterSharesCandidate;
+
+    internal static ulong IndependentPrefilterBytes => Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedSearcher>());
 
     // The proof applies to these lowered instructions and this searcher's needles.
     internal Utf8SliceProgram? AlignedClassDelimiterProgram { get; }
 
     [UnscopedRef]
-    public ref readonly PreparedSearcher RequiredPrefilterSearcher => ref _requiredPrefilterSearcher;
+    public ref readonly PreparedSearcher RequiredPrefilterSearcher
+    {
+        get
+        {
+            if (_prefilterSharesCandidate) return ref PreparedSearcher;
+            if (_requiredPrefilter is { } prefilter) return ref prefilter.Searcher;
+            return ref s_emptyPrefilter;
+        }
+    }
 
     public Utf8ConfirmationPlan ConfirmationPlan => CreateConfirmationPlan();
 
@@ -271,20 +290,17 @@ internal readonly struct Utf8SearchPlan
         };
     }
 
-    private static PreparedSearcher CreateRequiredPrefilter(
-        byte[]? requiredPrefilterLiteralUtf8, byte[][]? requiredPrefilterAlternateLiteralsUtf8)
+    private static PrefilterStorage? CreateRequiredPrefilter(byte[]? literal, byte[][]? literals, Utf8ConstructionBudget budget)
     {
-        if (requiredPrefilterLiteralUtf8 is { Length: > 0 } literal)
-        {
-            return new PreparedSearcher(new PreparedSubstringSearch(literal, ignoreCase: false), ignoreCase: false);
-        }
+        PreparedSearcher searcher;
+        if (literal is not null)
+            searcher = new(new PreparedSubstringSearch(literal, ignoreCase: false), ignoreCase: false);
+        else if (literals is not null)
+            searcher = new(new PreparedMultiLiteralSearch(literals, ignoreCase: false));
+        else
+            return null;
 
-        if (requiredPrefilterAlternateLiteralsUtf8 is { Length: > 0 } literals)
-        {
-            return new PreparedSearcher(new PreparedMultiLiteralSearch(literals, ignoreCase: false));
-        }
-
-        return default;
+        return budget.AllocateObject(searcher, static value => new PrefilterStorage(value));
     }
 
     internal static Utf8AlternateLiteralOverlapKind GetLiteralOverlap(byte[][]? literals)

@@ -64,8 +64,9 @@ public sealed class Utf8CanonicalSearchPayloadTests
             Assert.Equal(literals.Length, searcher.ExactMultiLiterals!.Length);
             Assert.Equal(0, searcher.FindFirst(literals[0]));
             Assert.False(plan.HasPreparedSearcher);
-            Assert.Equal(payload, owner.Budget.ReservedBytes);
-            Assert.Equal(payloadPeak, owner.Budget.PeakBytes);
+            var retained = payload + Utf8SearchPlan.IndependentPrefilterBytes;
+            Assert.Equal(retained, owner.Budget.ReservedBytes);
+            Assert.Equal(Math.Max(payloadPeak, retained), owner.Budget.PeakBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
         }
     }
