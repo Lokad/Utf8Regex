@@ -690,7 +690,8 @@ internal static class Pcre2BacktrackingRunner
         int enclosingSubroutineSlot,
         ref Pcre2ResourceBudget budget,
         out Pcre2BacktrackingMatch match,
-        out Pcre2BacktrackingFailure failure)
+        out Pcre2BacktrackingFailure failure,
+        int requiredEnd = -1)
     {
         var frames = CreateFrames(ref budget, depthBase);
         var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
@@ -700,7 +701,7 @@ internal static class Pcre2BacktrackingRunner
             return TryMatchAt(program, input, projectionInput, candidate, firstMatchingPosition,
                 matchOptions, captureMaterialization, initialCaptures,
                 depthBase, isAssertion, enclosingSubroutineSlot, ref budget,
-                ref frames, ref repeatMutations, ref workspace, out match, out failure);
+                ref frames, ref repeatMutations, ref workspace, out match, out failure, requiredEnd: requiredEnd);
         }
         finally { workspace.Dispose(ref budget); repeatMutations.Dispose(ref budget); frames.Dispose(ref budget); }
     }
@@ -722,7 +723,8 @@ internal static class Pcre2BacktrackingRunner
         scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
         scoped ref Pcre2BacktrackingWorkspace workspace,
         out Pcre2BacktrackingMatch match,
-        out Pcre2BacktrackingFailure failure, scoped Span<Utf8Pcre2CaptureRange> destination = default)
+        out Pcre2BacktrackingFailure failure, scoped Span<Utf8Pcre2CaptureRange> destination = default,
+        int requiredEnd = -1)
     {
         var configuredFrameLimit = budget.Limits.DepthLimit == 0
             ? int.MaxValue
@@ -1483,7 +1485,8 @@ internal static class Pcre2BacktrackingRunner
                             (matchOptions & Pcre2MatchOptions.EndAnchored) != 0;
                         var emptyDisallowed = (matchOptions & Pcre2MatchOptions.NotEmpty) != 0 && inputIndex == reportedStartOffsetInBytes ||
                             (matchOptions & Pcre2MatchOptions.NotEmptyAtStart) != 0 && candidate == firstMatchingPosition && inputIndex == reportedStartOffsetInBytes;
-                        if ((!endAnchored || inputIndex == input.Length) && !emptyDisallowed) goto PublishMatch;
+                        if ((!endAnchored || inputIndex == (requiredEnd < 0 ? input.Length : requiredEnd)) &&
+                            !emptyDisallowed) goto PublishMatch;
                         break;
 
                     default:
@@ -1664,9 +1667,11 @@ internal static class Pcre2BacktrackingRunner
         while (candidate <= latest)
         {
             budget.ChargeCandidate();
+            // The assertion must finish at inputIndex. Tokens and nested
+            // lookaheads still see the real subject boundaries and neighbors.
             if (TryMatchAt(
                     assertionProgram,
-                    input[..inputIndex],
+                    input,
                     projectionInput,
                     candidate,
                     outerFirstMatchingPosition,
@@ -1678,7 +1683,8 @@ internal static class Pcre2BacktrackingRunner
                     enclosingSubroutineSlot,
                     ref budget,
                     out var assertionMatch,
-                    out _))
+                    out _,
+                    requiredEnd: inputIndex))
             {
                 captures = assertionMatch.CaptureResult.AssertionRanges;
                 mark = assertionMatch.Mark;

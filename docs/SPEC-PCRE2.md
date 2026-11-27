@@ -18,6 +18,9 @@ boundaries. The prefix remains available to anchors and lookbehind. Results
 expose byte coordinates. The rules for `\C` and `\K` below govern byte fragments
 and noncontiguous reported ranges.
 
+Lookbehind must finish at the assertion location. Its anchors, boundaries
+and nested lookaheads can inspect the original subject.
+
 ## Operations and results
 
 | Operation | Result |

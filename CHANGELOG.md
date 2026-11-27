@@ -10,6 +10,8 @@
   `PosixUnsupportedSyntaxException`, a subtype of `ArgumentException`.
 - Align PCRE2 `\X` Indic conjunct boundaries with native PCRE2 10.47.
 - Accept numbered PCRE2 callouts without callbacks.
+- Keep subject anchors, boundaries and nested lookaheads visible inside
+  PCRE2 lookbehind assertions.
 
 ## 0.5.0 — 2026-11-27
 

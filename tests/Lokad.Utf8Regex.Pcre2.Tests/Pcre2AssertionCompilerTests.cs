@@ -101,6 +101,46 @@ public sealed class Pcre2AssertionCompilerTests
     }
 
     [Theory]
+    [InlineData(@"(?<=(?P<left>a)\z)b", "ab", -1, -1)]
+    [InlineData(@"(?<=(?P<left>a)\z)", "a", 1, 1)]
+    [InlineData(@"(?<=(?P<left>a)\Z)b", "ab", -1, -1)]
+    [InlineData(@"(?<=(?P<left>a)\Z)\n", "a\n", 1, 2)]
+    [InlineData(@"(?<=(?P<left>a)\b)b", "ab", -1, -1)]
+    [InlineData(@"(?<=(?P<left>a)\B)b", "ab", 1, 2)]
+    [InlineData(@"(?<=a\z)b", "ab", -1, -1)]
+    [InlineData(@"(?<=a(?=b))b", "ab", 1, 2)]
+    [InlineData(@"(?<=(?P<left>a{1,2}))a", "aa", 1, 2)]
+    [InlineData(@"(?<=a{1,2}+)a", "aa", -1, -1)]
+    [InlineData(@"(?<=a{1,2}+)a", "aaa", 2, 3)]
+    public void LookbehindEndpointKeepsWholeSubjectAnchorsAndNeighbors(
+        string pattern, string text, int start, int end)
+    {
+        using var regex = new Utf8Pcre2Regex(pattern);
+        var input = Encoding.UTF8.GetBytes(text);
+        var match = regex.Match(input);
+
+        Assert.Equal(start >= 0, regex.IsMatch(input));
+        Assert.Equal(start >= 0, match.Success);
+        Assert.Equal(start >= 0 ? 1 : 0, regex.Count(input));
+        if (match.Success)
+            Assert.Equal((start, end), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+    }
+
+    [Fact]
+    public void LookaheadInsideLookbehindCanCapturePastTheAssertionEndpoint()
+    {
+        using var regex = new Utf8Pcre2Regex(@"(?<=(?P<left>a)(?=(?P<right>b)))b");
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
+        var match = regex.Match("ab"u8, captures: captures);
+
+        Assert.True(match.Success);
+        Assert.Equal((1, 2), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.Equal((0, 1), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.Equal((1, 2), (captures[2].StartOffsetInBytes, captures[2].EndOffsetInBytes));
+        Assert.False(regex.IsMatch("ac"u8));
+    }
+
+    [Theory]
     [InlineData("xéé😀", 5, 9)]
     [InlineData("xβ!", 3, 4)]
     public void ConditionalLookbehindKeepsItsScalarBounds(string text, int start, int end)
