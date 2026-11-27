@@ -22,7 +22,7 @@ public sealed class Utf8ScalarIrAdmissionTests
     [Theory]
     [InlineData(false, false)] [InlineData(true, false)]
     [InlineData(false, true)] [InlineData(true, true)]
-    public void WideLiteralIrIsDeniedBeforeItsArrayAndNodeExpansion(bool rtl, bool supplementary)
+    public void WideLiteralRunIsDeniedBeforeAllocationOrEmission(bool rtl, bool supplementary)
     {
         var pattern = supplementary ? string.Concat(Enumerable.Repeat("😀", 16384)) : new string('a', 32768);
         foreach (var compiled in new[] { false, true })
@@ -36,7 +36,7 @@ public sealed class Utf8ScalarIrAdmissionTests
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedTreeSliceLowerer.TryLower(tree, options));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
             Assert.Equal(4096ul, failure.Limit);
-            var extent = Utf8ConstructionBudget.ArrayBytes<Utf8SliceNode>(supplementary ? 16384 : 32768);
+            var extent = Utf8ConstructionBudget.ArrayBytes<int>(supplementary ? 16384 : 32768);
             Assert.InRange(failure.Requested, extent, extent + 4096);
             Assert.True(scope.Budget.PeakBytes <= 4096);
             Assert.Equal(0ul, scope.Budget.Peak); // No VM instruction emission occurred.

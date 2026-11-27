@@ -46,6 +46,8 @@ internal abstract record Utf8SliceNode
 
     internal sealed record LiteralNode(int Value, bool FoldCase) : Utf8SliceNode;
 
+    internal sealed record LiteralRunNode(int[] Scalars, bool FoldCase, int MinimumBytes, int MaximumBytes) : Utf8SliceNode;
+
     internal sealed record SetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, bool FoldCase) : Utf8SliceNode;
 
     internal sealed record ConcatNode(Utf8SliceNode[] Children) : Utf8SliceNode;
@@ -1309,6 +1311,10 @@ internal static class Utf8SliceLowerer
                 var width = literal.Value < 0x80 ? 1 : literal.Value < 0x800 ? 2 : literal.Value < 0x10000 ? 3 : 4;
                 facts = literal.FoldCase ? new(false, false, 1, 4) : new(false, false, width, width);
                 return true;
+            case Utf8SliceNode.LiteralRunNode run:
+                facts = new(run.Scalars.Length == 0, nonBacktracking && run.MaximumBytes == 0,
+                    run.MinimumBytes, run.MaximumBytes);
+                return true;
             case Utf8SliceNode.EmptyNode or Utf8SliceNode.AnchorNode or Utf8SliceNode.BoundaryNode:
                 facts = new(true, nonBacktracking, 0, 0);
                 return true;
@@ -1703,13 +1709,13 @@ internal static class Utf8SliceLowerer
             NonBacktrackingScopes?.Add(NonBacktrackingScope);
         }
 
-        private void EmitLiteral(Utf8SliceNode.LiteralNode literal)
+        private void EmitLiteral(int value, bool foldCase)
         {
             // An invalid scalar is an impossible atom. Repetition still
             // controls whether that atom must execute.
-            Emit(Rune.TryCreate(literal.Value, out var scalar)
-                ? new Utf8SliceInstruction(Utf8SliceInstructionKind.Literal, literal.Value,
-                    literal.FoldCase && Utf8SliceCaseEquivalences.HasAlternateScalar(scalar, CaseBehavior) ? 1 : 0, 0, 0)
+            Emit(Rune.TryCreate(value, out var scalar)
+                ? new Utf8SliceInstruction(Utf8SliceInstructionKind.Literal, value,
+                    foldCase && Utf8SliceCaseEquivalences.HasAlternateScalar(scalar, CaseBehavior) ? 1 : 0, 0, 0)
                 : new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
         }
 
@@ -1727,7 +1733,14 @@ internal static class Utf8SliceLowerer
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
                     break;
                 case Utf8SliceNode.LiteralNode literal:
-                    EmitLiteral(literal);
+                    EmitLiteral(literal.Value, literal.FoldCase);
+                    break;
+                case Utf8SliceNode.LiteralRunNode run:
+                    foreach (var scalar in run.Scalars)
+                    {
+                        Budget.ChargeWork(1);
+                        EmitLiteral(scalar, run.FoldCase);
+                    }
                     break;
                 case Utf8SliceNode.SetNode set:
                     if (set.Mask16.Length != 16)
@@ -1767,7 +1780,7 @@ internal static class Utf8SliceLowerer
                         {
                             // A literal emits one instruction without suspending this frame.
                             Budget.ChargeWork(1);
-                            EmitLiteral(concatenatedLiteral);
+                            EmitLiteral(concatenatedLiteral.Value, concatenatedLiteral.FoldCase);
                             continue;
                         }
                         request = new(child, false, MirrorExecute, 0);
@@ -1930,7 +1943,7 @@ internal static class Utf8SliceLowerer
                             remaining -= 2;
                             candidateBody = capture.Body;
                         }
-                        if (candidateBody is Utf8SliceNode.ConcatNode or Utf8SliceNode.AlternationNode &&
+                        if (candidateBody is Utf8SliceNode.ConcatNode or Utf8SliceNode.AlternationNode or Utf8SliceNode.LiteralRunNode &&
                             !GetFacts(candidateBody).CanMatchEmpty && IsSmallPureBody(candidateBody, ref remaining, fixedOuter: true))
                             frame.Stage = 2;
                     }
@@ -2288,6 +2301,9 @@ internal static class Utf8SliceLowerer
                     foreach (var child in concat.Children)
                         if (!IsSmallPureBody(child, ref remaining, fixedOuter)) return false;
                     return true;
+                case Utf8SliceNode.LiteralRunNode run:
+                    remaining -= run.Scalars.Length;
+                    return remaining >= 0;
                 case Utf8SliceNode.AlternationNode alternate:
                     foreach (var branch in alternate.Branches)
                     {

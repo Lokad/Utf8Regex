@@ -101,37 +101,44 @@ internal static class Utf8OwnedTreeSliceLowerer
                             Utf8ConstructionScope.ChargeWork(1);
                             if ((value & 0xc0) != 0x80) nativeCount++;
                         }
-                        var nativeLiterals = arena.Allocate<Utf8SliceNode>(nativeCount, false);
+                        var nativeLiterals = arena.Allocate<int>(nativeCount, false);
                         var nativeNext = 0;
                         for (var offset = 0; offset < utf8.Length;)
                         {
                             Utf8ConstructionScope.ChargeWork(1);
                             if (System.Text.Rune.DecodeFromUtf8(utf8.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done)
                                 return null;
-                            nativeLiterals[rightToLeft ? nativeCount - 1 - nativeNext : nativeNext] = new Utf8SliceNode.LiteralNode(scalar.Value, foldCase);
+                            nativeLiterals[rightToLeft ? nativeCount - 1 - nativeNext : nativeNext] = scalar.Value;
                             nativeNext++; offset += consumed;
                         }
-                        return new Utf8SliceNode.ConcatNode(nativeLiterals);
+                        return LiteralRun(nativeLiterals, foldCase, nativeCount, utf8.Length);
                     }
                     if (node.Str is not { } text) return null;
                     var count = 0;
                     for (var index = 0; index < text.Length; count++)
-                        {
+                    {
                         Utf8ConstructionScope.ChargeWork(1);
                         index += char.IsSurrogatePair(text, index) ? 2 : 1;
                     }
-                    var literals = arena.Allocate<Utf8SliceNode>(count, false);
+                    var literals = arena.Allocate<int>(count, false);
                     var next = 0;
+                    var validCount = 0;
+                    long exactBytes = 0;
                     for (var index = 0; index < text.Length;)
                     {
                         Utf8ConstructionScope.ChargeWork(1);
                         var width = char.IsSurrogatePair(text, index) ? 2 : 1;
                         var value = width == 2 ? char.ConvertToUtf32(text, index) : text[index];
-                        literals[rightToLeft ? count - 1 - next : next] = new Utf8SliceNode.LiteralNode(value, foldCase);
+                        literals[rightToLeft ? count - 1 - next : next] = value;
+                        if (Rune.TryCreate(value, out var scalar))
+                        {
+                            validCount++;
+                            exactBytes += scalar.Utf8SequenceLength;
+                        }
                         next++;
                         index += width;
                     }
-                    return new Utf8SliceNode.ConcatNode(literals);
+                    return LiteralRun(literals, foldCase, validCount, exactBytes);
                 case Utf8TreeNodeKind.Concatenate:
                     var children = arena.Allocate<Utf8SliceNode>(loweredChildren.Length, false);
                     for (var index = 0; index < children.Length; index++)
@@ -239,6 +246,10 @@ internal static class Utf8OwnedTreeSliceLowerer
                     return null;
             }
         }
+        static Utf8SliceNode.LiteralRunNode LiteralRun(int[] scalars, bool foldCase, int validCount, long exactBytes) =>
+            new(scalars, foldCase, foldCase ? validCount : (int)Math.Min(int.MaxValue, exactBytes),
+                (int)Math.Min(int.MaxValue, foldCase ? (long)validCount * 4 : exactBytes));
+
         static Utf8SliceNode? DecodeClass(Utf8ScalarClass scalarClass, bool foldCase,
             Utf8ScalarCaseBehavior caseBehavior, Utf8ConstructionArena arena)
         {
