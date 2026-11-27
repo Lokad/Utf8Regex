@@ -105,6 +105,19 @@ public sealed class Utf8OwnedFindAdmissionTests
         Assert.Equal(17, parent.Value);
     }
 
+    [Fact]
+    public void LongestLiteralConcatenationSkipsUnusedChildFacts()
+    {
+        var input = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.None);
+        input.WithChild(Input(2, 128));
+        input.WithChild(Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "tail"));
+
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 1);
+        Assert.Equal("tail", Utf8OwnedFindOptimizations.TryExtractLongestLiteral(input));
+        Assert.Equal(1ul, owner.Budget.PeakDepth);
+        Assert.Equal(0ul, owner.Budget.Depth);
+    }
+
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void EveryWorkCutoffRestoresParentWithoutRefundingWork(int route)

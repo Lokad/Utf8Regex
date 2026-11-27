@@ -400,114 +400,83 @@ internal static class Utf8OwnedFindOptimizations
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<FactFrame>.Create(budget, new(node));
-        using var values = Utf8ConstructionMap<Utf8TreeNode, string?>.Create(budget, ReferenceEqualityComparer.Instance);
-        while (frames.Count != 0)
+        using var frames = Utf8ConstructionFrames<LongestLiteralFrame>.Create(budget, new(node));
+        while (true)
         {
             budget.ChargeWork(1);
-            var index = frames.Count - 1;
-            var frame = frames[index];
-            if (frame.NextChild < frame.Node.ChildCount)
+            ref var frame = ref frames.Peek();
+            var current = frame.Node;
+            var kind = current.Kind;
+            // Concatenations inspect direct literal runs. Only wrappers and
+            // alternatives consume the facts of their child subtrees.
+            var usesChildFacts = kind == Utf8TreeNodeKind.Alternate ||
+                (kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group && current.ChildCount == 1);
+            if (usesChildFacts && frame.NextChild < current.ChildCount &&
+                (frame.NextChild == 0 || frame.Literal is not null))
             {
-                var child = frame.Node.Child(frame.NextChild++);
-                frames[index] = frame;
+                var child = current.Child(frame.NextChild++);
                 frames.Push(new(child));
+                continue;
+            }
+
+            var literal = kind switch
+            {
+                Utf8TreeNodeKind.One when IsExactLiteral(current) => budget.CopyText([current.Ch]),
+                Utf8TreeNodeKind.Multi when IsExactLiteral(current) => current.Str,
+                Utf8TreeNodeKind.Concatenate => LongestRun(current, budget),
+                _ => frame.Literal,
+            };
+            frames.Pop();
+            if (frames.Count == 0)
+            {
+                if (literal is not null) construction.Complete();
+                return literal;
+            }
+
+            ref var parent = ref frames.Peek();
+            if (parent.NextChild == 1)
+            {
+                parent.Literal = literal;
+            }
+            else if (literal is not null && parent.Literal is { } common && literal.Length == common.Length)
+            {
+                // An alternate contributes a literal only when every branch
+                // proves the same spelling.
+                budget.ChargeWork((ulong)literal.Length);
+                if (!string.Equals(common, literal, StringComparison.Ordinal)) parent.Literal = null;
             }
             else
             {
-                values[frame.Node] = Measure(frame.Node, values);
-                frames.Pop();
+                parent.Literal = null;
             }
         }
-        var result = values[node];
-        if (result is not null) construction.Complete();
-        return result;
 
-        static string? Measure(Utf8TreeNode node, Utf8ConstructionMap<Utf8TreeNode, string?> values)
+        static string? LongestRun(Utf8TreeNode parent, Utf8ConstructionBudget budget)
         {
-            switch (node.Kind)
+            string? best = null;
+            using var run = Utf8ConstructionText.Create();
+            for (var i = 0; i < parent.ChildCount; i++)
             {
-                case Utf8TreeNodeKind.One when IsExactLiteral(node):
-                    return Utf8ConstructionScope.CurrentBudget.CopyText([node.Ch]);
-                case Utf8TreeNodeKind.Multi when IsExactLiteral(node):
-                    return node.Str;
-                case Utf8TreeNodeKind.Capture:
-                case Utf8TreeNodeKind.Group:
-                    return node.ChildCount == 1 ? values[node.Child(0)] : null;
-                case Utf8TreeNodeKind.Concatenate:
-                    return LongestRun(node);
-                case Utf8TreeNodeKind.Alternate:
-                    return CommonBranchLiteral(node);
-                default:
-                    return null;
-            }
-
-            static string? LongestRun(Utf8TreeNode parent)
-            {
-                string? best = null;
-                var budget = Utf8ConstructionScope.CurrentBudget;
-                using var run = Utf8ConstructionText.Create();
-                for (var i = 0; i < parent.ChildCount; i++)
+                budget.ChargeWork(1);
+                var child = parent.Child(i);
+                if (child.Kind == Utf8TreeNodeKind.One && IsExactLiteral(child))
                 {
-                    budget.ChargeWork(1);
-                    var child = parent.Child(i);
-                    if (child.Kind == Utf8TreeNodeKind.One && IsExactLiteral(child))
-                    {
-                        run.Append(child.Ch);
-                    }
-                    else if (child.Kind == Utf8TreeNodeKind.Multi && child.Str is { } text && IsExactLiteral(child))
-                    {
-                        run.Append(text);
-                    }
-                    else if (child.Kind == Utf8TreeNodeKind.Empty)
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        best = Longer(best, run.ToText());
-                        run.Clear();
-                    }
+                    run.Append(child.Ch);
                 }
-
-                return Longer(best, run.ToText());
-            }
-
-            string? CommonBranchLiteral(Utf8TreeNode parent)
-            {
-                // Each child fact is independently mandatory. Equality is a
-                // linear proof that one is shared by every branch; selecting
-                // the longest spelling from only one branch can miss matches.
-                if (parent.ChildCount == 0) return null;
-                var common = values[parent.Child(0)];
-                if (common is null) return null;
-                for (var i = 0; i < parent.ChildCount; i++)
+                else if (child.Kind == Utf8TreeNodeKind.Multi && child.Str is { } text && IsExactLiteral(child))
                 {
-                    Utf8ConstructionScope.ChargeWork(1);
-                    var candidate = values[parent.Child(i)];
-                    if (candidate is null || candidate.Length != common.Length) return null;
-                    Utf8ConstructionScope.ChargeWork((ulong)common.Length);
-                    if (!string.Equals(common, candidate, StringComparison.Ordinal)) return null;
+                    run.Append(text);
                 }
-                return common;
-            }
-
-            static string? Longer(string? left, string? right)
-            {
-                if (string.IsNullOrEmpty(left))
+                else if (child.Kind != Utf8TreeNodeKind.Empty)
                 {
-                    return string.IsNullOrEmpty(right) ? null : right;
+                    best = Longer(best, run.ToText());
+                    run.Clear();
                 }
-
-                if (string.IsNullOrEmpty(right) || right.Length <= left.Length)
-                {
-                    return left;
-                }
-
-                return right;
             }
-
+            return Longer(best, run.ToText());
         }
+
+        static string? Longer(string? best, string next) => next.Length > (best?.Length ?? 0) ? next : best;
     }
 
     // A covering family is proved from the canonical logical tree. Partial
@@ -620,6 +589,13 @@ internal static class Utf8OwnedFindOptimizations
     {
         internal readonly Utf8TreeNode Node = node;
         internal int NextChild;
+    }
+
+    private struct LongestLiteralFrame(Utf8TreeNode node)
+    {
+        internal readonly Utf8TreeNode Node = node;
+        internal int NextChild;
+        internal string? Literal;
     }
 
 }
