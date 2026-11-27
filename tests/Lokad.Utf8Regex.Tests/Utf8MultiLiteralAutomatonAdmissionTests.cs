@@ -109,6 +109,11 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
         var prefixes = Prefixes(literals);
         var trie = PreparedMultiLiteralTrieSearch.Create(literals);
         var search = PreparedMultiLiteralAutomatonSearch.Create(literals, trie);
+        var standalone = PreparedMultiLiteralAutomatonSearch.Create(literals);
+        Assert.Equal(search.Transitions, standalone.Transitions);
+        Assert.Equal(search.BestOutputOrders, standalone.BestOutputOrders);
+        Assert.Equal(search.BestOutputLengths, standalone.BestOutputLengths);
+        Assert.Equal(search.ShortestOutputLengths, standalone.ShortestOutputLengths);
         var ids = prefixes.Select((value, id) => (Key: Convert.ToHexString(value), Id: id)).ToDictionary(value => value.Key, value => value.Id);
         for (var state = 0; state < prefixes.Count; state++)
         {

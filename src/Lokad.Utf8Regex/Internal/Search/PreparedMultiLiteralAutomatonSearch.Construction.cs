@@ -42,24 +42,22 @@ internal readonly partial struct PreparedMultiLiteralAutomatonSearch
                     budget.ChargeWork(1);
                     var state = queue[head++];
                     var current = states[state];
+                    var row = state * stride;
+                    // The failure state is a shorter suffix. Breadth-first
+                    // completion has already filled its entire row.
+                    var failureRow = current.Failure * stride;
                     budget.ChargeWork((ulong)stride);
                     for (var column = 0; column < stride; column++)
                     {
-                        var index = state * stride + column;
+                        var index = row + column;
                         var next = transitions[index];
+                        var failureTarget = transitions[failureRow + column];
                         if (next == 0)
                         {
-                            transitions[index] = transitions[current.Failure * stride + column];
+                            transitions[index] = failureTarget;
                             continue;
                         }
-                        var fail = current.Failure;
-                        while (fail != 0 && transitions[fail * stride + column] == 0)
-                        {
-                            budget.ChargeWork(1);
-                            fail = states[fail].Failure;
-                        }
                         budget.ChargeWork(1);
-                        var failureTarget = transitions[fail * stride + column];
                         var failure = states[failureTarget];
                         var output = states[next] with { Failure = failureTarget };
                         if (failure.BestOutputOrder >= 0 && (output.BestOutputLength == 0 ||
