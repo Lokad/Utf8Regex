@@ -6,8 +6,6 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static class Utf8NativeExecutionAnalyzer
 {
-    private readonly record struct ScanFrame(Utf8TreeNode Node, int NextChild, bool Entered);
-
     public static bool TryAnalyze(
         Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, out Utf8RegexAnalysis analyzedRegex)
     {
@@ -20,9 +18,7 @@ internal static class Utf8NativeExecutionAnalyzer
             analyzedRegex = default;
             return false;
         }
-        var (hasImpossibleAtom, supportsFiniteLiteral) = semanticRegex.RuntimeTree is { } tree
-            ? ScanLiteralEligibility(tree.Root)
-            : default;
+        var (hasImpossibleAtom, supportsFiniteLiteral) = semanticRegex.RuntimeTree?.LiteralEligibility ?? default;
         if (hasImpossibleAtom)
         {
             // Native byte plans must never encode an impossible literal as
@@ -43,53 +39,6 @@ internal static class Utf8NativeExecutionAnalyzer
 
         analyzedRegex = default;
         return false;
-    }
-
-    internal static (bool HasImpossibleAtom, bool SupportsFiniteLiteral) ScanLiteralEligibility(Utf8TreeNode root)
-    {
-        var supportsFiniteLiteral = root.Kind == Utf8TreeNodeKind.Capture && root.ChildCount == 1;
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(budget, new(root, 0, false));
-        while (frames.Count != 0)
-        {
-            budget.ChargeWork(1);
-            var index = frames.Count - 1;
-            var frame = frames[index];
-            var node = frame.Node;
-            if (!frame.Entered)
-            {
-                // Authoritative failure atoms must never be encoded as U+FFFD
-                // by a native shortcut. Pattern UTF-16 text is interoperability
-                // input; every decoded literal must represent a complete scalar.
-                if (node.Kind == Utf8TreeNodeKind.Nothing) return (true, false);
-                if (node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy)
-                {
-                    if (char.IsSurrogate(node.Ch)) return (true, false);
-                }
-                else if (node.Kind == Utf8TreeNodeKind.Multi && node.Str is { } text)
-                {
-                    for (var offset = 0; offset < text.Length;)
-                    {
-                        budget.ChargeWork(1);
-                        if (System.Text.Rune.DecodeFromUtf16(text.AsSpan(offset), out _, out var width) != System.Buffers.OperationStatus.Done)
-                            return (true, false);
-                        offset += width;
-                    }
-                }
-                // Check the body before opening an expansion arena. Even when it
-                // cannot be expanded, visit the rest for impossible scalar atoms.
-                if (supportsFiniteLiteral && index != 0)
-                    supportsFiniteLiteral = SupportsFiniteLiteralNode(node);
-                frame = frame with { Entered = true, NextChild = node.ChildCount };
-            }
-            // Preserve the original last-child-first early-exit order, while
-            // retaining only one live continuation per ancestor.
-            if (frame.NextChild == 0) { frames.Pop(); continue; }
-            frames[index] = frame with { NextChild = frame.NextChild - 1 };
-            frames.Push(new(node.Child(frame.NextChild - 1), 0, false));
-        }
-        return (false, supportsFiniteLiteral);
     }
 
     private static bool TryAnalyzeLiteralTree(
@@ -393,19 +342,6 @@ internal static class Utf8NativeExecutionAnalyzer
         }
         finally { owner.LeaveDepth(); }
     }
-
-    private static bool SupportsFiniteLiteralNode(Utf8TreeNode node) => node.Kind switch
-    {
-        Utf8TreeNodeKind.Capture => node.N == -1 && node.ChildCount == 1,
-        Utf8TreeNodeKind.Group => node.ChildCount == 1,
-        Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate or
-        Utf8TreeNodeKind.One or Utf8TreeNodeKind.Multi or Utf8TreeNodeKind.Empty => true,
-        Utf8TreeNodeKind.Set => node.ScalarClass is { } scalarClass && scalarClass.Data.Length >= 3 &&
-            scalarClass.Data.Length == 3L + scalarClass.Data[1] + scalarClass.Data[2],
-        Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Setloop => node.M >= 0 && node.N >= node.M && node.N < int.MaxValue,
-        Utf8TreeNodeKind.Loop => node.ChildCount == 1 && node.M >= 0 && node.N >= node.M && node.N < int.MaxValue,
-        _ => false,
-    };
 
     private static bool SupportsNativeOptions(RegexOptions options)
     {

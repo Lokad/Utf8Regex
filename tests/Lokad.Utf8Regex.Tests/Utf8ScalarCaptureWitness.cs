@@ -33,7 +33,7 @@ internal static class Utf8ScalarCaptureWitness
         root.WithChild(node);
         var wrapped = Utf8OwnedRegexTree.Create(root, tree.CaptureCount, tree.CaptureNames,
             tree.CaptureNameToNumberMapping, tree.CaptureNumberSparseMapping, options, tree.Culture,
-            tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase, tree.Features);
+            tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase, tree.Features, tree.LiteralEligibility);
         var program = Utf8OwnedTreeSliceLowerer.TryLower(wrapped, options);
         Assert.NotNull(program);
         return program;

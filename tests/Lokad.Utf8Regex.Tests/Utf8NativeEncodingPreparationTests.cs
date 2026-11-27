@@ -33,7 +33,7 @@ public sealed class Utf8NativeEncodingPreparationTests
         { ExceptionDispatchInfo.Capture(inner).Throw(); throw; }
     }
     private static Utf8SemanticRegex Semantic(Utf8TreeNode body, string pattern, RegexOptions options)
-        => new(pattern, options, 0, options, Utf8OwnedRegexTree.Create(Node(Utf8TreeNodeKind.Capture, body), 1, null, null, null, options, CultureInfo.InvariantCulture, null, false, false, default));
+        => new(pattern, options, 0, options, Utf8OwnedRegexTree.Create(Node(Utf8TreeNodeKind.Capture, body), 1, null, null, null, options, CultureInfo.InvariantCulture, null, false, false, default, default));
     private sealed record InputValue(Utf8TreeNode Root, Utf8SemanticRegex Semantic);
     private static InputValue Input(int route, int depth)
     {

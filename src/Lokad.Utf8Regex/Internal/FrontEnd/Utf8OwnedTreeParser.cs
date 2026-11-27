@@ -104,10 +104,10 @@ internal static class Utf8OwnedTreeParser
             tree.Children = root;
             root.Parent = tree;
             var culture = state.ConstructionCulture;
-            var features = FreezeChildren(storage, tree);
+            var (features, literalEligibility) = FreezeChildren(storage, tree);
             var result = Utf8OwnedRegexTree.Create(tree, captureCount, captureNames, captureNameToNumber,
                 captureSparseMapping, treeOptions, culture, state.CaptureCatalog,
-                state.UsesLiteralClassBracketSyntax, state.UsesIgnoreCase, features);
+                state.UsesLiteralClassBracketSyntax, state.UsesIgnoreCase, features, literalEligibility);
             storage.Complete();
             construction.Complete();
             return result;
@@ -3327,14 +3327,18 @@ internal static class Utf8OwnedTreeParser
         }
     }
 
-    private static Utf8RegexFeatures FreezeChildren(Utf8ConstructionSession storage, Utf8TreeNode root)
+    private static (Utf8RegexFeatures Features, (bool HasImpossibleAtom, bool SupportsFiniteLiteral) LiteralEligibility)
+        FreezeChildren(Utf8ConstructionSession storage, Utf8TreeNode root)
     {
+        var budget = storage.Budget;
         var hasAbsoluteStart = false;
         var hasCaptureNodes = false;
-        using var frames = Utf8ConstructionFrames<(Utf8TreeNode Node, int NextChild)>.Create(storage.Budget, (root, 0));
+        var hasImpossibleAtom = false;
+        var supportsFiniteLiteral = true;
+        using var frames = Utf8ConstructionFrames<(Utf8TreeNode Node, int NextChild)>.Create(budget, (root, 0));
         while (frames.Count > 0)
         {
-            storage.Budget.ChargeWork(1);
+            budget.ChargeWork(1);
             var index = frames.Count - 1;
             var frame = frames[index];
             var node = frame.Node;
@@ -3343,6 +3347,12 @@ internal static class Utf8OwnedTreeParser
                 // Only the final tree represents live captures and anchors.
                 hasAbsoluteStart |= node.Kind is Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Beginning;
                 hasCaptureNodes |= node.Kind == Utf8TreeNodeKind.Capture && node.M > 0;
+                // A failed finite-expansion proof does not make the raw native
+                // shortcuts safe. Continue checking for impossible atoms.
+                if (!hasImpossibleAtom)
+                    hasImpossibleAtom = IsImpossibleLiteralAtom(node, budget);
+                if (supportsFiniteLiteral && index != 0)
+                    supportsFiniteLiteral = SupportsFiniteLiteralNode(node);
                 if (node.Children is Utf8ConstructionBuffer<Utf8TreeNode> children)
                     node.Children = storage.Copy(children, true);
             }
@@ -3353,8 +3363,39 @@ internal static class Utf8OwnedTreeParser
             }
             else frames.Pop();
         }
-        return new(hasAbsoluteStart, hasCaptureNodes);
+        return (new(hasAbsoluteStart, hasCaptureNodes), (hasImpossibleAtom, supportsFiniteLiteral && !hasImpossibleAtom));
     }
+
+    private static bool IsImpossibleLiteralAtom(Utf8TreeNode node, Utf8ConstructionBudget budget)
+    {
+        if (node.Kind == Utf8TreeNodeKind.Nothing) return true;
+        if (node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy)
+            return char.IsSurrogate(node.Ch);
+        if (node.Kind != Utf8TreeNodeKind.Multi || node.Str is not { } text) return false;
+
+        // An invalid text literal must never be encoded as a replacement character.
+        for (var offset = 0; offset < text.Length;)
+        {
+            budget.ChargeWork(1);
+            if (Rune.DecodeFromUtf16(text.AsSpan(offset), out _, out var width) != OperationStatus.Done)
+                return true;
+            offset += width;
+        }
+        return false;
+    }
+
+    private static bool SupportsFiniteLiteralNode(Utf8TreeNode node) => node.Kind switch
+    {
+        Utf8TreeNodeKind.Capture => node.N == -1 && node.ChildCount == 1,
+        Utf8TreeNodeKind.Group => node.ChildCount == 1,
+        Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate or
+        Utf8TreeNodeKind.One or Utf8TreeNodeKind.Multi or Utf8TreeNodeKind.Empty => true,
+        Utf8TreeNodeKind.Set => node.ScalarClass is { } scalarClass && scalarClass.Data.Length >= 3 &&
+            scalarClass.Data.Length == 3L + scalarClass.Data[1] + scalarClass.Data[2],
+        Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Setloop => node.M >= 0 && node.N >= node.M && node.N < int.MaxValue,
+        Utf8TreeNodeKind.Loop => node.ChildCount == 1 && node.M >= 0 && node.N >= node.M && node.N < int.MaxValue,
+        _ => false,
+    };
 
     private enum OwnedParseProduction { Alternation, Concatenation, Group, NamedGroup, Lookaround, Conditional }
 

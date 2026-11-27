@@ -7,8 +7,6 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8NativeEligibilityAdmissionTests
 {
-    public enum Route { Literal, NonBacktracking }
-
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
     private static readonly Utf8OwnedRegexTree Seed = Utf8OwnedTreeParser.TryParse("a", RegexOptions.CultureInvariant)
         ?? throw new InvalidOperationException();
@@ -21,46 +19,25 @@ public sealed class Utf8NativeEligibilityAdmissionTests
         return node;
     }
 
-    private static Utf8OwnedRegexTree Tree(Utf8TreeNode root) => Utf8OwnedRegexTree.Create(root, Seed.CaptureCount, Seed.CaptureNames, Seed.CaptureNameToNumberMapping, Seed.CaptureNumberSparseMapping, RegexOptions.CultureInvariant, CultureInfo.InvariantCulture, Seed.CaptureCatalog, false, false, default);
+    private static Utf8OwnedRegexTree Tree(Utf8TreeNode root) => Utf8OwnedRegexTree.Create(root, Seed.CaptureCount, Seed.CaptureNames, Seed.CaptureNameToNumberMapping, Seed.CaptureNumberSparseMapping, RegexOptions.CultureInvariant, CultureInfo.InvariantCulture, Seed.CaptureCatalog, false, false, default, default);
 
-    private static Utf8OwnedRegexTree Make(Route route, int depth)
+    private static Utf8OwnedRegexTree Make(int depth)
     {
-        var node = route == Route.NonBacktracking
-            ? Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "😀")
-            : Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
-        if (route == Route.NonBacktracking)
-        {
-            for (var index = 0; index < depth; index++) node = Node(Utf8TreeNodeKind.Group, RegexOptions.None, node);
-            node = Node(Utf8TreeNodeKind.Capture, RegexOptions.None, node);
-        }
-        else
-            for (var index = 0; index <= depth; index++) node = Node(Utf8TreeNodeKind.Capture, RegexOptions.None, node);
-        return Tree(node);
-    }
-
-    private static bool Prepare(Route route, Utf8OwnedRegexTree tree) => route switch
-    {
-        Route.Literal => Utf8NativeExecutionAnalyzer.ScanLiteralEligibility(tree.Root) == (false, true),
-        Route.NonBacktracking => Utf8SliceParser.IsNonBacktrackingFlatGraph(tree),
-        _ => throw new ArgumentOutOfRangeException(nameof(route)),
-    };
-
-    public static IEnumerable<object[]> RootDenials()
-    {
-        foreach (var route in Enum.GetValues<Route>())
-        for (var denial = 0; denial < 3; denial++) yield return [route, denial];
+        var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "😀");
+        for (var index = 0; index < depth; index++) node = Node(Utf8TreeNodeKind.Group, RegexOptions.None, node);
+        return Tree(Node(Utf8TreeNodeKind.Capture, RegexOptions.None, node));
     }
 
     [Theory]
-    [MemberData(nameof(RootDenials))]
-    public void RootAdmissionPrecedesScanningAndRestoresParent(Route route, int denial)
+    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    public void RootAdmissionPrecedesScanningAndRestoresParent(int denial)
     {
-        var tree = Make(route, 0);
+        var tree = Make(0);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, denial == 0 ? 128ul : ulong.MaxValue,
             denial == 2 ? 2ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Prepare(route, tree));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SliceParser.IsNonBacktrackingFlatGraph(tree));
         Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
             1 => Utf8ResourceLimitKind.ConstructionDepth, _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, failure.ResourceKind);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
@@ -72,16 +49,15 @@ public sealed class Utf8NativeEligibilityAdmissionTests
         Assert.Equal(17, parent.Value);
     }
 
-    [Theory]
-    [InlineData(Route.Literal)] [InlineData(Route.NonBacktracking)]
-    public void DeepChildDenialAndSameOwnerRecoveryRestoreLoans(Route route)
+    [Fact]
+    public void DeepChildDenialAndSameOwnerRecoveryRestoreLoans()
     {
-        var input = Make(route, 32);
-        var shallow = Make(route, 0);
+        var input = Make(32);
+        var shallow = Make(0);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, 8);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Prepare(route, input));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SliceParser.IsNonBacktrackingFlatGraph(input));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, failure.ResourceKind);
         Assert.Equal(9ul, failure.Requested);
         Assert.Equal(8ul, owner.Budget.PeakDepth);
@@ -89,7 +65,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         var work = owner.Budget.WorkSteps;
-        using (var child = Utf8ConstructionScope.Enter()) Assert.True(Prepare(route, shallow));
+        using (var child = Utf8ConstructionScope.Enter()) Assert.True(Utf8SliceParser.IsNonBacktrackingFlatGraph(shallow));
         Assert.True(owner.Budget.WorkSteps > work);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Reserved);
@@ -97,15 +73,14 @@ public sealed class Utf8NativeEligibilityAdmissionTests
         Assert.Equal(17, parent.Value);
     }
 
-    [Theory]
-    [InlineData(Route.Literal)] [InlineData(Route.NonBacktracking)]
-    public void GrowthDenialReleasesFramesAndAnyLoweredPayload(Route route)
+    [Fact]
+    public void GrowthDenialReleasesFramesAndAnyLoweredPayload()
     {
-        var input = Make(route, 128);
+        var input = Make(128);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, 2048, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Prepare(route, input));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SliceParser.IsNonBacktrackingFlatGraph(input));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.True(failure.Requested > 2048);
         Assert.InRange(owner.Budget.PeakBytes, 113ul, 2048ul);
@@ -116,15 +91,14 @@ public sealed class Utf8NativeEligibilityAdmissionTests
         Assert.Equal(17, parent.Value);
     }
 
-    [Theory]
-    [InlineData(Route.Literal)] [InlineData(Route.NonBacktracking)]
-    public void EveryWorkCutoffRestoresParentWithoutRefundingWork(Route route)
+    [Fact]
+    public void EveryWorkCutoffRestoresParentWithoutRefundingWork()
     {
-        var input = Make(route, 3);
+        var input = Make(3);
         ulong work;
         using (var measure = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
-            Assert.True(Prepare(route, input));
+            Assert.True(Utf8SliceParser.IsNonBacktrackingFlatGraph(input));
             work = measure.Budget.WorkSteps;
         }
         Assert.InRange(work, 1ul, 10000ul);
@@ -134,8 +108,8 @@ public sealed class Utf8NativeEligibilityAdmissionTests
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             Exception? failure;
-            using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Assert.True(Prepare(route, input)));
-            // All eligibility routes now scan borrowed tree/catalog facts;
+            using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Assert.True(Utf8SliceParser.IsNonBacktrackingFlatGraph(input)));
+            // The flat-graph proof scans borrowed tree/catalog facts;
             // they do not compile a discarded scalar program or vary by map probes.
             if (cutoff == work) Assert.Null(failure);
             else Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
@@ -149,15 +123,14 @@ public sealed class Utf8NativeEligibilityAdmissionTests
         }
     }
 
-    [Theory]
-    [InlineData(Route.Literal)] [InlineData(Route.NonBacktracking)]
-    public void EveryByteCutoffRestoresTemporaryAndTransferredLoans(Route route)
+    [Fact]
+    public void EveryByteCutoffRestoresTemporaryAndTransferredLoans()
     {
-        var input = Make(route, 3);
+        var input = Make(3);
         ulong peak;
         using (var measure = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
-            Assert.True(Prepare(route, input));
+            Assert.True(Utf8SliceParser.IsNonBacktrackingFlatGraph(input));
             peak = measure.Budget.PeakBytes;
         }
         Assert.InRange(peak, 1ul, 30000ul);
@@ -167,7 +140,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             Exception? failure;
-            using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Assert.True(Prepare(route, input)));
+            using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Assert.True(Utf8SliceParser.IsNonBacktrackingFlatGraph(input)));
             if (allowance == peak) Assert.Null(failure);
             if (failure is not null) Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
             Assert.True(owner.Budget.PeakBytes <= 128 + allowance);
@@ -179,54 +152,17 @@ public sealed class Utf8NativeEligibilityAdmissionTests
         }
     }
 
-    [Fact]
-    public void WideBorrowedTreesUseAncestorCapacityAndRestoreParent()
-    {
-        var children = Enumerable.Range(0, 4097)
-            .Select(_ => Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a')).ToArray();
-        var alternate = Node(Utf8TreeNodeKind.Alternate, RegexOptions.None, children);
-        var tree = Tree(Node(Utf8TreeNodeKind.Capture, RegexOptions.None, alternate));
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var checkpoint = owner.Budget.ReservedBytes;
-        Assert.True(Prepare(Route.Literal, tree));
-        Assert.Equal(3ul, owner.Budget.PeakDepth);
-        Assert.InRange(owner.Budget.PeakBytes, 113ul, 1024ul);
-        Assert.True(owner.Budget.WorkSteps >= 4097);
-        Assert.Equal(128ul, owner.Budget.ReservedBytes);
-        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        Assert.Equal(17, parent.Value);
-    }
-
-    [Fact]
-    public void BorrowedLiteralValidationAdmitsEveryScalarBeforeDecoding()
-    {
-        var text = string.Concat(Enumerable.Repeat("😀", 100000)) + '\ud800';
-        var tree = Tree(Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, text));
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 1002, ulong.MaxValue);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var checkpoint = owner.Budget.ReservedBytes;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Prepare(Route.Literal, tree));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-        Assert.Equal(1002ul, owner.Budget.WorkSteps);
-        Assert.Equal(128ul, owner.Budget.ReservedBytes);
-        Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        Assert.Equal(17, parent.Value);
-    }
-
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ScanChecksImpossibleAtomsAfterDecliningFiniteExpansion(bool impossible)
+    [InlineData(@"a$|b", false)]
+    [InlineData(@"a$|\uD800", true)]
+    public void FinalizationChecksImpossibleAtomsAfterDecliningFiniteExpansion(string pattern, bool impossible)
     {
-        var atom = impossible ? Node(Utf8TreeNodeKind.Nothing, RegexOptions.None)
-            : Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
-        var anchor = Node(Utf8TreeNodeKind.EndZ, RegexOptions.None);
-        var root = Node(Utf8TreeNodeKind.Capture, RegexOptions.None,
-            Node(Utf8TreeNodeKind.Alternate, RegexOptions.None, atom, anchor));
-
-        Assert.Equal((impossible, false), Utf8NativeExecutionAnalyzer.ScanLiteralEligibility(root));
+        var text = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
+        var bytes = Utf8OwnedTreeParser.TryParse(System.Text.Encoding.UTF8.GetBytes(pattern), RegexOptions.CultureInvariant, out _);
+        Assert.NotNull(text);
+        Assert.NotNull(bytes);
+        Assert.Equal((impossible, false), text.LiteralEligibility);
+        Assert.Equal(text.LiteralEligibility, bytes.LiteralEligibility);
     }
 
     [Fact]
@@ -236,7 +172,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
-        Assert.False(Prepare(Route.NonBacktracking, tree));
+        Assert.False(Utf8SliceParser.IsNonBacktrackingFlatGraph(tree));
         Assert.True(owner.Budget.PeakBytes > 128);
         Assert.True(owner.Budget.WorkSteps > 2);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
