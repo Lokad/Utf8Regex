@@ -2397,36 +2397,33 @@ internal static class Utf8OwnedTreeParser
                     return node;
                 }
 
-                var fused = storage.Buffer<Utf8TreeNode>();
-                var pending = storage.Buffer<Utf8TreeNode>();
-                var pendingOptions = RegexOptions.None;
-                foreach (var child in children)
+                // The parser owns these children exclusively. Compact into
+                // their existing extent, copying only when a run shortens it.
+                var write = 0;
+                var start = 0;
+                for (var read = 0; read < children.Count; read++)
                 {
                     Utf8ConstructionScope.Checkpoint();
-                    if (IsMergeableLiteral(child) && (pending.Count == 0 ||
-                        child.Options == pendingOptions && child.MatchCaseInsensitive == pending[0].MatchCaseInsensitive))
-                    {
-                        if (pending.Count == 0)
-                        {
-                            pendingOptions = child.Options;
-                        }
-
-                        pending.Add(child);
+                    var child = children[read];
+                    if (IsMergeableLiteral(child) && (start == read ||
+                        child.Options == children[start].Options &&
+                        child.MatchCaseInsensitive == children[start].MatchCaseInsensitive))
                         continue;
-                    }
 
-                    FlushMergePending(storage, node, fused, pending, native);
-                    fused.Add(child);
+                    write = FlushMergePending(storage, children, start, read, write, native);
+                    if (write != read) children[write] = child;
+                    write++;
+                    start = read + 1;
                 }
 
-                FlushMergePending(storage, node, fused, pending, native);
-                if (fused.Count == children.Count)
+                write = FlushMergePending(storage, children, start, children.Count, write, native);
+                if (write == children.Count)
                 {
                     return node;
                 }
 
-                node.Children = fused;
-                foreach (var child in fused)
+                children.Truncate(write);
+                foreach (var child in children)
                 {
                     Utf8ConstructionScope.Checkpoint();
                     child.Parent = node;
@@ -2437,7 +2434,7 @@ internal static class Utf8OwnedTreeParser
                     return node;
                 }
 
-                return fused.Count == 1 ? fused[0] : node;
+                return children.Count == 1 ? children[0] : node;
             }
 
             return node;
@@ -2446,22 +2443,22 @@ internal static class Utf8OwnedTreeParser
         static bool IsMergeableLiteral(Utf8TreeNode node) => node.Kind == Utf8TreeNodeKind.One && node.Str is null ||
             node.Kind == Utf8TreeNodeKind.Multi && (node.Str is not null || node.LiteralUtf8 is not null);
 
-        static void FlushMergePending(Utf8ConstructionSession storage, Utf8TreeNode parent, Utf8ConstructionBuffer<Utf8TreeNode> fused, Utf8ConstructionBuffer<Utf8TreeNode> pending, bool native)
+        static int FlushMergePending(Utf8ConstructionSession storage, Utf8ConstructionBuffer<Utf8TreeNode> children,
+            int start, int end, int write, bool native)
         {
-            if (pending.Count == 0)
+            if (start == end)
             {
-                return;
+                return write;
             }
 
-            if (pending.Count == 1)
+            if (end - start == 1)
             {
-                fused.Add(pending[0]);
-                pending.Clear();
-                return;
+                if (write != start) children[write] = children[start];
+                return write + 1;
             }
 
             var run = new OwnedLiteralRun(storage, native);
-            foreach (var literal in pending)
+            foreach (var literal in children.Span[start..end])
             {
                 Utf8ConstructionScope.Checkpoint();
                 if (literal.Kind == Utf8TreeNodeKind.One)
@@ -2480,12 +2477,12 @@ internal static class Utf8OwnedTreeParser
             }
 
             Utf8ConstructionScope.Checkpoint();
-            var merged = native ? Utf8TreeNode.CreateUtf8Literal(pending[0].Options, run.ToUtf8(storage))
-                : Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, pending[0].Options, run.ToText());
-            merged.MatchCaseInsensitive = pending[0].MatchCaseInsensitive;
-            merged.Parent = parent;
-            fused.Add(merged);
-            pending.Clear();
+            var first = children[start];
+            var merged = native ? Utf8TreeNode.CreateUtf8Literal(first.Options, run.ToUtf8(storage))
+                : Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, first.Options, run.ToText());
+            merged.MatchCaseInsensitive = first.MatchCaseInsensitive;
+            children[write] = merged;
+            return write + 1;
         }
         static bool TryTakeLookaroundKind(ParserState state, out Utf8TreeNodeKind kind, out bool isLookbehind)
         {
