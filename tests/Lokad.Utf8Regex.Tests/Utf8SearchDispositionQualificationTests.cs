@@ -53,7 +53,7 @@ public sealed class Utf8SearchDispositionQualificationTests
     [Fact]
     public void DefaultAndPreparedEmptyPlansHaveNoSearchOperation()
     {
-        var prepared = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(Utf8SearchKind.None));
+        var prepared = Utf8SearchPlan.Prepare(default);
         using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
         var empty = default(Utf8SearchPlan);
         foreach (var plan in new[] { empty, prepared })

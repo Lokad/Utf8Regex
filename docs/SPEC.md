@@ -331,7 +331,8 @@ to `RegexOptions.None`.
 
 Positive construction policy values tighten the backstops and null keeps
 the defaults. A program allowance handles byte admission for funded creation,
-including an optional `MaxBytes`. Denials use `ConstructionWorkSteps`,
+including an optional `MaxBytes`. Transient search facts borrow their separately
+admitted payloads without a separate byte charge. Denials use `ConstructionWorkSteps`,
 `ConstructionDepth`, `ConstructionInstructionCapacity` or `ConstructionBytes`.
 Construction timeout has empty `Input` and uses the supplied text `Pattern`
 or an empty pattern for byte source diagnostics.

@@ -6,7 +6,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     public static Utf8SearchFacts Analyze(Utf8SemanticRegex semanticRegex)
     {
         if (semanticRegex.RuntimeTree is not { } tree)
-            return Utf8SearchFacts.Create(Utf8SearchKind.None);
+            return default;
 
         using var construction = Utf8ConstructionScope.Enter();
         var result = AnalyzeTree(tree, semanticRegex.ExecutionOptions);
@@ -20,10 +20,10 @@ internal static class Utf8FrontEndSearchAnalyzer
         var width = Utf8OwnedFindOptimizations.ComputeByteWidth(root);
         TrySelectRequiredLiteralPrefilter(root, out var requiredLiteral, out var requiredAlternatives);
         TrySelectBoundaryRequirements(root, out var leadingBoundary, out var trailingBoundary);
-        var facts = new Utf8SearchFactData
+        var facts = new Utf8SearchFacts
         {
-            RequiredPrefilterLiteralUtf8 = requiredLiteral ?? [],
-            RequiredPrefilterAlternateLiteralsUtf8 = requiredAlternatives ?? [],
+            RequiredPrefilterLiteralUtf8 = requiredLiteral,
+            RequiredPrefilterAlternateLiteralsUtf8 = requiredAlternatives,
             MinRequiredLength = width.Minimum,
             ExactRequiredLength = width.IsFixed ? width.Minimum : null,
             MaxPossibleLength = width.IsFixed ? null : width.Maximum,
@@ -33,12 +33,11 @@ internal static class Utf8FrontEndSearchAnalyzer
 
         // Keep search priority and prepare each candidate only when it can be used.
         if (TrySelectTrailingFixedLengthAnchor(root, width, out var trailingKind))
-            return Utf8SearchFacts.Create(trailingKind, facts);
+            return facts with { Kind = trailingKind };
 
         var invariantIgnoreCase = UsesInvariantIgnoreCase(options);
         if (!invariantIgnoreCase && TrySelectFixedDistanceLiteral(root, out var fixedLiteral, out var distance))
-            return Utf8SearchFacts.Create(Utf8SearchKind.FixedDistanceAsciiLiteral,
-                facts with { LiteralUtf8 = fixedLiteral, Distance = distance });
+            return facts with { Kind = Utf8SearchKind.FixedDistanceAsciiLiteral, LiteralUtf8 = fixedLiteral, Distance = distance };
 
         var prefixes = Utf8OwnedFindOptimizations.FindAlternatePrefixes(root, tree.Options);
         if (!invariantIgnoreCase && prefixes is { Length: > 1 })
@@ -46,8 +45,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             var kind = prefixes.Any(static literal => literal.Any(static b => b > 0x7F))
                 ? Utf8SearchKind.ExactUtf8Literals
                 : Utf8SearchKind.ExactAsciiLiterals;
-            return Utf8SearchFacts.Create(kind,
-                facts with { AlternateLiteralsUtf8 = prefixes, CanGuideFallbackStarts = CanGuideFallbackStarts(options) });
+            return facts with { Kind = kind, AlternateLiteralsUtf8 = prefixes, CanGuideFallbackStarts = CanGuideFallbackStarts(options) };
         }
 
         var leadingLiteral = Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(root);
@@ -56,14 +54,15 @@ internal static class Utf8FrontEndSearchAnalyzer
         if (candidate.Length != 0)
         {
             var kind = invariantIgnoreCase ? Utf8SearchKind.AsciiFoldedByteLiteral : Utf8SearchKind.ExactAsciiLiteral;
-            return Utf8SearchFacts.Create(kind, facts with
+            return facts with
             {
+                Kind = kind,
                 LiteralUtf8 = candidate,
                 CanGuideFallbackStarts = hasAsciiLeadingLiteral && CanGuideFallbackStarts(options),
-            });
+            };
         }
 
-        return Utf8SearchFacts.Create(Utf8SearchKind.None, facts);
+        return facts;
     }
 
     public static Utf8SearchFacts AnalyzeLiteral(
@@ -79,7 +78,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     public static Utf8SearchFacts AnalyzeLiteral(
         byte[] literalUtf8,
         NativeExecutionKind executionKind,
-        byte[] trailingLiteralUtf8,
+        byte[]? trailingLiteralUtf8,
         Utf8BoundaryRequirement leadingBoundary,
         Utf8BoundaryRequirement trailingBoundary)
     {
@@ -87,18 +86,15 @@ internal static class Utf8FrontEndSearchAnalyzer
             ? Utf8SearchKind.AsciiFoldedByteLiteral
             : Utf8SearchKind.ExactAsciiLiteral;
 
-        return Utf8SearchFacts.Create(
-                   searchKind,
-                   new Utf8SearchFactData
-                   {
-                       // This is the complete leading literal, not an interior anchor.
-                       CanGuideFallbackStarts = literalUtf8.Length > 0 &&
-                           executionKind != NativeExecutionKind.AsciiLiteralIgnoreCase,
-                       LiteralUtf8 = literalUtf8,
-                       TrailingLiteralUtf8 = trailingLiteralUtf8,
-                       LeadingBoundary = leadingBoundary,
-                       TrailingBoundary = trailingBoundary
-                   });
+        return new(searchKind)
+        {
+            // This is the complete leading literal, not an interior anchor.
+            CanGuideFallbackStarts = literalUtf8.Length > 0 && executionKind != NativeExecutionKind.AsciiLiteralIgnoreCase,
+            LiteralUtf8 = literalUtf8,
+            TrailingLiteralUtf8 = trailingLiteralUtf8,
+            LeadingBoundary = leadingBoundary,
+            TrailingBoundary = trailingBoundary,
+        };
     }
 
     private static byte[] SelectAsciiCandidateLiteral(Utf8TreeNode root, byte[][]? alternatePrefixes)

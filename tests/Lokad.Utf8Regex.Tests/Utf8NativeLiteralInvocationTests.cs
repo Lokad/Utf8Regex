@@ -107,8 +107,8 @@ public sealed class Utf8NativeLiteralInvocationTests
     }
 
     private static Utf8SearchPlan Plan(byte[] literal, bool folded, byte[] trailing)
-        => Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(folded ? Utf8SearchKind.AsciiFoldedByteLiteral : Utf8SearchKind.ExactAsciiLiteral,
-            new() { LiteralUtf8 = literal, TrailingLiteralUtf8 = trailing }));
+        => Utf8SearchPlan.Prepare(new(folded ? Utf8SearchKind.AsciiFoldedByteLiteral : Utf8SearchKind.ExactAsciiLiteral)
+        { LiteralUtf8 = literal, TrailingLiteralUtf8 = trailing });
 
     private static Utf8PreparedRegex Prepared(Utf8Regex regex)
         => Assert.IsType<Utf8PreparedRegex>(typeof(Utf8Regex).GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(regex));

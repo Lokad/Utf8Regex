@@ -9,9 +9,8 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8PreparedFamilyCandidateTests
 {
     private static Utf8SearchPlan Plan(byte[][] literals, bool withSuffix = true) => Utf8SearchPlan.Prepare(
-        Utf8SearchFacts.Create(Utf8SearchKind.ExactUtf8Literals, new Utf8SearchFactData {
-            AlternateLiteralsUtf8 = literals, TrailingLiteralUtf8 = withSuffix ? "!"u8.ToArray() : []
-        }));
+        new(Utf8SearchKind.ExactUtf8Literals)
+        { AlternateLiteralsUtf8 = literals, TrailingLiteralUtf8 = withSuffix ? "!"u8.ToArray() : null });
 
     [Theory]
     [InlineData(2)] [InlineData(3)] [InlineData(8)] [InlineData(9)] [InlineData(10)]

@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 internal readonly struct Utf8RegexAnalysis
 {
     private Utf8RegexAnalysis(
-        Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, Utf8SearchFacts searchFacts,
+        Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, in Utf8SearchFacts searchFacts,
         NativeExecutionKind executionKind, byte[]? literalUtf8)
     {
         SemanticRegex = semanticRegex;
@@ -20,17 +20,17 @@ internal readonly struct Utf8RegexAnalysis
 
     public Utf8RegexFeatures Features { get; }
 
-    public Utf8SearchFacts SearchFacts { get; }
+    public readonly Utf8SearchFacts SearchFacts;
 
     public NativeExecutionKind ExecutionKind { get; }
 
     public byte[]? LiteralUtf8 { get; }
 
     public static Utf8RegexAnalysis Create(
-        Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, Utf8SearchFacts searchFacts, NativeExecutionKind executionKind)
+        Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, in Utf8SearchFacts searchFacts, NativeExecutionKind executionKind)
         => new(semanticRegex, features, searchFacts, executionKind, null);
 
     public static Utf8RegexAnalysis CreateLiteral(
-        Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, Utf8SearchFacts searchFacts, NativeExecutionKind executionKind, byte[] literalUtf8)
+        Utf8SemanticRegex semanticRegex, Utf8RegexFeatures features, in Utf8SearchFacts searchFacts, NativeExecutionKind executionKind, byte[] literalUtf8)
         => new(semanticRegex, features, searchFacts, executionKind, literalUtf8);
 }

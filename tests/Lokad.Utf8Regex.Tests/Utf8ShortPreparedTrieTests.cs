@@ -12,10 +12,8 @@ public sealed class Utf8ShortPreparedTrieTests
         from h in new[] { "H", "h" } from e in new[] { "E", "e" }
         select Encoding.UTF8.GetBytes(s + h + e)).ToArray();
 
-    private static Utf8SearchPlan Plan() => Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
-        Utf8SearchKind.ExactUtf8Literals, new Utf8SearchFactData {
-            AlternateLiteralsUtf8 = Prefixes, TrailingLiteralUtf8 = "!"u8.ToArray()
-        }));
+    private static Utf8SearchPlan Plan() => Utf8SearchPlan.Prepare(new(Utf8SearchKind.ExactUtf8Literals)
+    { AlternateLiteralsUtf8 = Prefixes, TrailingLiteralUtf8 = "!"u8.ToArray() });
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]

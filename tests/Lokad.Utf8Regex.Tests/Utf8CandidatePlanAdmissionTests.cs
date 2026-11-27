@@ -10,7 +10,7 @@ public sealed class Utf8CandidatePlanAdmissionTests
     [Fact]
     public void SearchPreparationHonorsDepthAndRecoversInTheSameOwner()
     {
-        var facts = Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiteral, new() { LiteralUtf8 = "a"u8.ToArray() });
+        var facts = new Utf8SearchFacts(Utf8SearchKind.ExactAsciiLiteral) { LiteralUtf8 = "a"u8.ToArray() };
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 1);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;

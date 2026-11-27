@@ -15,8 +15,8 @@ public sealed class Utf8NativeFamilyInvocationTests
         (Utf8PreparedRegex)typeof(Utf8Regex).GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex)!;
 
     private static Utf8SearchPlan Plan(byte[][] literals, bool folded = false, byte[]? trailing = null) =>
-        Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(folded ? Utf8SearchKind.AsciiFoldedByteLiterals : Utf8SearchKind.ExactAsciiLiterals,
-            new Utf8SearchFactData { AlternateLiteralsUtf8 = literals, TrailingLiteralUtf8 = trailing ?? [] }));
+        Utf8SearchPlan.Prepare(new(folded ? Utf8SearchKind.AsciiFoldedByteLiterals : Utf8SearchKind.ExactAsciiLiterals)
+        { AlternateLiteralsUtf8 = literals, TrailingLiteralUtf8 = trailing });
 
     public static IEnumerable<object[]> OrderCases()
     {

@@ -18,11 +18,11 @@ public sealed class Utf8CanonicalSearchPayloadTests
         return owner.Budget.ReservedBytes;
     }
     private static Utf8SearchFacts Fallback(byte[][] literals, byte[]? primary = null) =>
-        Utf8SearchFacts.Create(Utf8SearchKind.None, new()
+        new(Utf8SearchKind.None)
         {
-            RequiredPrefilterLiteralUtf8 = primary ?? [],
+            RequiredPrefilterLiteralUtf8 = primary,
             RequiredPrefilterAlternateLiteralsUtf8 = literals,
-        });
+        };
 
     [Fact]
     public void DirectFamiliesShareOneExactPayloadAndAdmitOnlyItsReachableStorage()
@@ -32,8 +32,8 @@ public sealed class Utf8CanonicalSearchPayloadTests
         {
             var payload = FamilyBytes(literals, out var payloadPeak);
             var unicode = literals.Any(literal => literal.Any(b => b >= 128));
-            var facts = Utf8SearchFacts.Create(unicode ? Utf8SearchKind.ExactUtf8Literals : Utf8SearchKind.ExactAsciiLiterals,
-                new() { AlternateLiteralsUtf8 = literals });
+            var facts = new Utf8SearchFacts(unicode ? Utf8SearchKind.ExactUtf8Literals : Utf8SearchKind.ExactAsciiLiterals)
+            { AlternateLiteralsUtf8 = literals };
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
             var plan = Utf8SearchPlan.Prepare(facts);
             Assert.Equal(PreparedMultiLiteralKind.ExactDirect, plan.MultiLiteralSearch.Kind);
@@ -76,7 +76,7 @@ public sealed class Utf8CanonicalSearchPayloadTests
         var family = Bytes("foo", "bar");
         foreach (var facts in new[]
         {
-            Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiterals, new() { AlternateLiteralsUtf8 = family }),
+            new Utf8SearchFacts(Utf8SearchKind.ExactAsciiLiterals) { AlternateLiteralsUtf8 = family },
             Fallback(family), Fallback(family, "needle"u8.ToArray()),
         })
         {

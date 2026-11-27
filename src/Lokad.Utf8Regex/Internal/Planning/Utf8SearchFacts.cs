@@ -1,71 +1,22 @@
-using Lokad.Utf8Regex.Internal.Search;
-using Lokad.Utf8Regex.Internal.FrontEnd;
-
 namespace Lokad.Utf8Regex.Internal.Planning;
 
 /// <summary>
-/// Named analysis payload for a search-fact shape. Reference-valued members use
-/// empty storage for absence; nullable lengths represent a genuine unbounded or
-/// unknown fact rather than selecting the search kind.
+/// Transient search hints passed from analysis to preparation. Missing arrays
+/// represent absent hints. Present arrays are borrowed from their producers.
 /// </summary>
-// Initializers are values: no heap object can be acquired before Create admits
-// its complete field state and retaining descriptor. Payload arrays stay borrowed
-// from their independently admitted producers.
-internal readonly struct Utf8SearchFactData
+internal readonly struct Utf8SearchFacts(Utf8SearchKind kind)
 {
-    public Utf8SearchFactData() { }
-    public byte[] LiteralUtf8 { get; init; } = [];
-    public byte[][] AlternateLiteralsUtf8 { get; init; } = [];
+    public Utf8SearchKind Kind { get; init; } = kind;
+    public byte[]? LiteralUtf8 { get; init; }
+    public byte[][]? AlternateLiteralsUtf8 { get; init; }
     public bool CanGuideFallbackStarts { get; init; }
-    public byte[] RequiredPrefilterLiteralUtf8 { get; init; } = [];
-    public byte[][] RequiredPrefilterAlternateLiteralsUtf8 { get; init; } = [];
-    public byte[] TrailingLiteralUtf8 { get; init; } = [];
+    public byte[]? RequiredPrefilterLiteralUtf8 { get; init; }
+    public byte[][]? RequiredPrefilterAlternateLiteralsUtf8 { get; init; }
+    public byte[]? TrailingLiteralUtf8 { get; init; }
     public int Distance { get; init; }
     public int MinRequiredLength { get; init; }
     public int? ExactRequiredLength { get; init; }
     public int? MaxPossibleLength { get; init; }
     public Utf8BoundaryRequirement LeadingBoundary { get; init; }
     public Utf8BoundaryRequirement TrailingBoundary { get; init; }
-}
-
-internal readonly struct Utf8SearchFacts
-{
-    private sealed class Storage(Utf8SearchFactData state)
-    {
-        internal readonly Utf8SearchFactData State = state;
-    }
-    private static readonly Storage s_empty = new(new Utf8SearchFactData());
-    private readonly Storage? _data;
-
-    private Utf8SearchFacts(Utf8SearchKind kind, Storage data)
-    {
-        Kind = kind;
-        _data = data;
-    }
-
-    public Utf8SearchKind Kind { get; }
-    public byte[] LiteralUtf8 => Data.LiteralUtf8;
-    public byte[][] AlternateLiteralsUtf8 => Data.AlternateLiteralsUtf8;
-    public bool CanGuideFallbackStarts => Data.CanGuideFallbackStarts;
-    public byte[] RequiredPrefilterLiteralUtf8 => Data.RequiredPrefilterLiteralUtf8;
-    public byte[][] RequiredPrefilterAlternateLiteralsUtf8 => Data.RequiredPrefilterAlternateLiteralsUtf8;
-    public byte[] TrailingLiteralUtf8 => Data.TrailingLiteralUtf8;
-    public int Distance => Data.Distance;
-    public int MinRequiredLength => Data.MinRequiredLength;
-    public int? ExactRequiredLength => Data.ExactRequiredLength;
-    public int? MaxPossibleLength => Data.MaxPossibleLength;
-    public Utf8BoundaryRequirement LeadingBoundary => Data.LeadingBoundary;
-    public Utf8BoundaryRequirement TrailingBoundary => Data.TrailingBoundary;
-
-    private ref readonly Utf8SearchFactData Data => ref (_data ?? s_empty).State;
-
-    public static Utf8SearchFacts Create(Utf8SearchKind kind) => new(kind, s_empty);
-
-    public static Utf8SearchFacts Create(Utf8SearchKind kind, Utf8SearchFactData data)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        var stored = construction.Budget.AllocateObject(data, static state => new Storage(state));
-        construction.Complete();
-        return new Utf8SearchFacts(kind, stored);
-    }
 }

@@ -9,7 +9,7 @@ using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8SimpleLiteralAndFactAdmissionTests
+public sealed class Utf8SimpleLiteralAdmissionTests
 {
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
     private static object? Call(Type type, string name, params object?[] args)
@@ -20,24 +20,8 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         catch (TargetInvocationException error) when (error.InnerException is { } inner)
         { ExceptionDispatchInfo.Capture(inner).Throw(); throw; }
     }
-    private static Utf8SearchFactData Data() => new()
-    {
-        LiteralUtf8 = "one"u8.ToArray(),
-        AlternateLiteralsUtf8 = ["two"u8.ToArray()],
-        CanGuideFallbackStarts = true,
-        RequiredPrefilterLiteralUtf8 = "three"u8.ToArray(),
-        RequiredPrefilterAlternateLiteralsUtf8 = ["four"u8.ToArray()],
-        TrailingLiteralUtf8 = "five"u8.ToArray(),
-        Distance = 19,
-        MinRequiredLength = 23,
-        ExactRequiredLength = 29,
-        MaxPossibleLength = 31,
-        LeadingBoundary = Utf8BoundaryRequirement.Boundary,
-        TrailingBoundary = Utf8BoundaryRequirement.NonBoundary
-    };
     private static object Input(int route) => route switch
     {
-        0 => Data(),
         1 => AsciiCharClass.FromBytes("AaBb"u8),
         2 => AsciiCharClass.FromBytes("Aa"u8),
         3 => new AsciiPatternToken[][] { [new AsciiPatternToken(AsciiCharClass.FromBytes("Ab"u8)), new AsciiPatternToken((byte)'!')] },
@@ -48,14 +32,6 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     {
         switch (route)
         {
-            case 0:
-                var data = Assert.IsType<Utf8SearchFactData>(input); var facts = Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiteral, data);
-                foreach (var property in typeof(Utf8SearchFactData).GetProperties())
-                {
-                    var view = typeof(Utf8SearchFacts).GetProperty(property.Name); Assert.NotNull(view);
-                    Assert.Equal(property.GetValue(data), view.GetValue(facts));
-                }
-                break;
             case 1:
                 object?[] bytesArgs = [input, true, null];
                 Assert.True(Assert.IsType<bool>(Call(typeof(Utf8FiniteLiteralLowerer), "TryExtractLiteralBytes", bytesArgs)));
@@ -78,9 +54,9 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     }
     public static IEnumerable<object[]> RootDenials()
     {
-        for (var route = 0; route < 5; route++)
+        for (var route = 1; route < 5; route++)
         for (var denial = 0; denial < 3; denial++)
-            if ((denial != 1 || route >= 1) && (denial != 0 || route != 2)) yield return [route, denial];
+            if (denial != 0 || route != 2) yield return [route, denial];
     }
     [Theory]
     [MemberData(nameof(RootDenials))]
@@ -96,7 +72,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
+    [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
     public void EveryWorkCutoffRestoresParentAndAcceptedOutputsRetainLoans(int route)
     {
         var input = Input(route); ulong work;
@@ -116,36 +92,6 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
             else { Assert.Null(error); Assert.Equal(route != 2, owner.Budget.ReservedBytes > 128); }
             Assert.Equal(0ul, owner.Budget.Depth); Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2); Assert.Equal(17, parent.Value);
         }
-    }
-    [Fact]
-    public void SearchFactStorageAdmitsCompleteStateAndKeepsPayloadsBorrowed()
-    {
-        var data = Data(); var bytes = Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<Utf8SearchFactData>());
-        using var owner = new Utf8ConstructionScope(0, bytes, 2, ulong.MaxValue);
-        var facts = Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiteral, data);
-        Assert.Equal(bytes, owner.Budget.ReservedBytes); Assert.Equal(2ul, owner.Budget.WorkSteps);
-        Assert.Same(data.LiteralUtf8, facts.LiteralUtf8);
-        Assert.True(owner.Budget.ReservedBytes > 0);
-        Assert.Equal(bytes, owner.Budget.ReservedBytes);
-    }
-    [Fact]
-    public void SharedEmptyFactsAndDefaultFactsAcquireNoPerOwnerStorage()
-    {
-        using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
-        var facts = Utf8SearchFacts.Create(Utf8SearchKind.None);
-        Assert.Empty(facts.LiteralUtf8); Assert.Empty(default(Utf8SearchFacts).AlternateLiteralsUtf8);
-        Assert.Equal(0ul, owner.Budget.ReservedBytes);
-    }
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void LaterFailedFactStorageKeepsPreviouslyAcceptedFacts(bool work)
-    {
-        var data = Data(); var bytes = Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<Utf8SearchFactData>());
-        using var owner = new Utf8ConstructionScope(0, work ? ulong.MaxValue : bytes, work ? 2ul : ulong.MaxValue, ulong.MaxValue);
-        var facts = Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiteral, data); var checkpoint = owner.Budget.ReservedBytes;
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiteral, data));
-        Assert.Equal(work ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes, error.ResourceKind);
-        Assert.Equal(bytes, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Same(data.LiteralUtf8, facts.LiteralUtf8);
     }
     [Theory]
     [InlineData(false)] [InlineData(true)]

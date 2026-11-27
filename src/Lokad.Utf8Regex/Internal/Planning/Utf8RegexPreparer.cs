@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal static class Utf8RegexPreparer
 {
-    internal static Utf8PreparedRegex Prepare(Utf8RegexAnalysis analyzedRegex, RegexOptions scalarOptions,
+    internal static Utf8PreparedRegex Prepare(in Utf8RegexAnalysis analyzedRegex, RegexOptions scalarOptions,
         Utf8BoundedProgramEmitter.Compilation proofCompilation = default)
     {
         using var scope = Utf8ConstructionScope.Enter();

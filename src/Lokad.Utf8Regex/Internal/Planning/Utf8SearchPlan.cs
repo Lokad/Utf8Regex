@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal readonly struct Utf8SearchPlan
 {
-    private Utf8SearchPlan(Utf8SearchFacts facts, Utf8SliceProgram? scalarProgram, Utf8ConstructionBudget budget)
+    private Utf8SearchPlan(in Utf8SearchFacts facts, Utf8SliceProgram? scalarProgram, Utf8ConstructionBudget budget)
     {
         var kind = facts.Kind;
         var literalUtf8 = NullIfEmpty(facts.LiteralUtf8);
@@ -79,7 +79,7 @@ internal readonly struct Utf8SearchPlan
         TrailingBoundary = trailingBoundary;
     }
 
-    public static Utf8SearchPlan Prepare(Utf8SearchFacts facts, Utf8SliceProgram? scalarProgram = null)
+    public static Utf8SearchPlan Prepare(in Utf8SearchFacts facts, Utf8SliceProgram? scalarProgram = null)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
@@ -94,7 +94,7 @@ internal readonly struct Utf8SearchPlan
         finally { budget.LeaveDepth(); }
     }
 
-    private static T[]? NullIfEmpty<T>(T[] values) => values.Length == 0 ? null : values;
+    private static T[]? NullIfEmpty<T>(T[]? values) => values is { Length: > 0 } ? values : null;
 
     public Utf8SearchKind Kind { get; }
 

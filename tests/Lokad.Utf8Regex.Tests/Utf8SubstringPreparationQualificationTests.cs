@@ -186,7 +186,7 @@ public sealed class Utf8SubstringPreparationQualificationTests
         var literal = "anchor"u8.ToArray();
         foreach (var kind in new[] { Utf8SearchKind.ExactAsciiLiteral, Utf8SearchKind.FixedDistanceAsciiLiteral })
         {
-            var facts = Utf8SearchFacts.Create(kind, new Utf8SearchFactData { LiteralUtf8 = literal });
+            var facts = new Utf8SearchFacts(kind) { LiteralUtf8 = literal };
             using var denied = new Utf8ConstructionScope(0, ulong.MaxValue, 1, ulong.MaxValue);
             Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SearchPlan.Prepare(facts)).ResourceKind);
