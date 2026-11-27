@@ -1145,8 +1145,12 @@ internal static class Pcre2BacktrackingRunner
 
                         if (runCount < instruction.Minimum) break;
                         // Retain the visited endpoint and the number of shorter
-                        // choices. The subject stays valid and unchanged.
+                        // choices. A terminal lookbehind run needs no retry
+                        // when shortening cannot reach its required end.
                         if (canRetryRun && runCount > instruction.Minimum && instructionIndex + 1 < greedyOptionalTail &&
+                            (inputIndex > requiredEnd || program.Instructions.AsSpan(instructionIndex + 1) is not
+                                ([{ Kind: Pcre2BacktrackingInstructionKind.Accept }] or
+                                 [{ Kind: Pcre2BacktrackingInstructionKind.CaptureEnd }, { Kind: Pcre2BacktrackingInstructionKind.Accept }])) &&
                             (instructionIndex + 2 != greedyOptionalTail ||
                              !CanEnterRequiredClass(program.Instructions[instructionIndex + 1], input, inputIndex)))
                         {

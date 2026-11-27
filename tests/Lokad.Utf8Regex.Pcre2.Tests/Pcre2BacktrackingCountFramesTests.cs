@@ -41,7 +41,19 @@ public sealed class Pcre2BacktrackingCountFramesTests
         var count = regex.Count(bytes, cancellationToken: token.Token);
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.Equal(24, count);
-        Assert.True(allocated < 120_000, $"Count allocated {allocated} bytes across lookbehind retries.");
+        Assert.True(allocated < 48_000, $"Count allocated {allocated} bytes across lookbehind retries.");
+    }
+
+    [Fact]
+    public void TerminalLookbehindRetreatsWhenItsGreedyRunPassesTheRequiredEnd()
+    {
+        using var regex = Create(@"(?<=(?P<left>é{1,3}))é😀");
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[2];
+        var match = regex.Match("éé😀"u8, captures: captures);
+        Assert.True(match.Success);
+        Assert.Equal((2, 8), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.True(captures[1].Success);
+        Assert.Equal((0, 2), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
     }
 
     [Theory]
