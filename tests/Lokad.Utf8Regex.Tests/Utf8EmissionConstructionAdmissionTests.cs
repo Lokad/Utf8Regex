@@ -140,21 +140,18 @@ public sealed class Utf8EmissionConstructionAdmissionTests
 
     }
 
-    [Theory]
-    [InlineData(true)]
-    public void ProductionCountUnwindsAtEveryWorkAndDepthCutoff(bool depth)
+    [Fact]
+    public void ProductionCountUnwindsAtEveryDepthCutoff()
     {
-        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         ulong required;
         using (var funded = Utf8ConstructionScope.Enter())
         {
             _ = CompileCount();
-            required = depth ? funded.Budget.PeakDepth : funded.Budget.DiagnosticCheckpoints;
+            required = funded.Budget.PeakDepth;
         }
         for (var cutoff = 0UL; cutoff < required; cutoff++)
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue,
-                depth ? cutoff : ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cutoff);
             var parent = owner.Budget.AllocateArray<byte>(8, true);
             parent[0] = 37;
             var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => CompileCount());
@@ -180,8 +177,7 @@ public sealed class Utf8EmissionConstructionAdmissionTests
             funded.Budget.CheckpointHook = () => count++;
             _ = CompileCount();
         }
-        // Count hook invocations, including the zero-work checkpoint after the
-        // opaque CLR call. Work totals alone would miss that final interruption.
+        // Include the checkpoint after the opaque CLR call.
         for (var target = 1; target <= count; target++)
         {
             using var owner = Utf8ConstructionScope.Enter();

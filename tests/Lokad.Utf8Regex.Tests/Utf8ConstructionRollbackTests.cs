@@ -1,38 +1,10 @@
-using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8ConstructionWorkDepthTests
+public sealed class Utf8ConstructionRollbackTests
 {
-    [Theory]
-    [InlineData("a|é")] [InlineData("[A-Z-[AE]]")]
-    [InlineData("(?<x>😀)\\k<x>")] [InlineData("(?i:[é😀-🙏])")]
-    public void ParserWorkCutoffsPreserveParentCapacityAndDepth(string pattern)
-    {
-        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
-        // Node, tree, frame and catalog descriptors survive in the enclosing owner;
-        // continuation and declaration-array scratch release before returning.
-        var frameDescriptor = Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<(Utf8ConstructionBudget, bool, Array, int)>());
-        ulong work, retained;
-        using (var measured = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-        {
-            var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
-            Assert.NotNull(tree);
-            work = measured.Budget.DiagnosticCheckpoints;
-            retained = measured.Budget.ReservedBytes;
-            Assert.True(retained > frameDescriptor);
-            Assert.NotNull(tree);
-            Assert.Equal(0ul, measured.Budget.Depth);
-        }
-        Assert.InRange(work, 1ul, 2_000_000ul);
-        // Cover individual cutoffs for small parses and bounded sampled cutoffs
-        // for scalar-class expansion; exact measured total must still admit.
-        var cutoffs = work < 512 ? Enumerable.Range(0, (int)work + 1).Select(i => (ulong)i)
-            : new[] { 0ul, 1ul, work / 4, work / 2, work - 1, work };
-    }
-
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(4)] [InlineData(8)]
     public void NestedParserFramesRejectBeforeExceedingDepthAndRecover(int maximum)
@@ -84,11 +56,17 @@ public sealed class Utf8ConstructionWorkDepthTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void FailedGrowthCopyReleasesOnlyTheNewArray(bool instructions)
+    public void CanceledGrowthCopyReleasesOnlyTheNewArray(bool instructions)
     {
         var budget = new Utf8ConstructionBudget(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         using var buffer = new Utf8ConstructionBuffer<int>(budget, instructions);
         buffer.Add(42);
+        var held = budget.ReservedBytes;
+        using var cancellation = new CancellationTokenSource();
+        budget.CancellationToken = cancellation.Token;
+        budget.CheckpointHook = () => { if (budget.ReservedBytes > held) cancellation.Cancel(); };
+        var failure = Assert.Throws<OperationCanceledException>(() => buffer.Add(43));
+        Assert.Equal(cancellation.Token, failure.CancellationToken);
         Assert.Equal(1, buffer.Count);
         Assert.Equal(42, buffer[0]);
         Assert.Equal(Utf8ConstructionBudget.ArrayBytes<int>(1), budget.ReservedBytes);
@@ -97,26 +75,22 @@ public sealed class Utf8ConstructionWorkDepthTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void FailedFinalCopyLeavesTheOriginalVectorOwned(bool instructions)
+    public void CanceledFinalCopyLeavesTheOriginalVectorOwned(bool instructions)
     {
         var budget = new Utf8ConstructionBudget(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         using var buffer = new Utf8ConstructionBuffer<int>(budget, instructions);
         buffer.Add(1); buffer.Add(2); buffer.Add(3);
+        var held = budget.ReservedBytes;
+        using var cancellation = new CancellationTokenSource();
+        budget.CancellationToken = cancellation.Token;
+        budget.CheckpointHook = () => { if (budget.ReservedBytes > held) cancellation.Cancel(); };
+        var failure = Assert.Throws<OperationCanceledException>(() => buffer.Take());
+        Assert.Equal(cancellation.Token, failure.CancellationToken);
         Assert.Equal(3, buffer.Count);
         Assert.Equal(4, buffer.Capacity);
+        Assert.Equal(new[] { 1, 2, 3 }, buffer.Span.ToArray());
         Assert.Equal(Utf8ConstructionBudget.ArrayBytes<int>(4), budget.ReservedBytes);
         Assert.Equal(instructions ? 4ul : 0ul, budget.Reserved);
-    }
-
-    [Fact]
-    public void FailedMapRehashPreservesItsPreviousArrayAndEntryCount()
-    {
-        var budget = new Utf8ConstructionBudget(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        using var map = new Utf8ConstructionMap<int, int>(budget, EqualityComparer<int>.Default);
-        map.Add(0, 10); map.Add(1, 11);
-        var held = budget.ReservedBytes;
-        Assert.Equal(2, map.Count);
-        Assert.Equal(held, budget.ReservedBytes);
     }
 
     [Theory]

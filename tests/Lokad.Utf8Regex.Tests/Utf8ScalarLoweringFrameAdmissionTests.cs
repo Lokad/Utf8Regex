@@ -83,9 +83,8 @@ public sealed class Utf8ScalarLoweringFrameAdmissionTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void EveryWorkCutoffRestoresAnalysisEmissionAndBranchScratch(bool nonBacktracking)
+    public void CancellationAtEveryLoweringCheckpointRestoresParentLoans(bool nonBacktracking)
     {
-        using var checkpointObservation = global::Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Start();
         // Borrow one immutable DAG throughout replay so reference-identity hash
         // probes remain the same. Include shared nodes, empty branches, finite
         // optional copies, a nullable loop, assertions and a conditional test.
@@ -99,14 +98,32 @@ public sealed class Utf8ScalarLoweringFrameAdmissionTests
             new Utf8SliceNode.ConditionalNode(-1, Leaf, new Utf8SliceNode.EmptyNode(), new Utf8SliceNode.LookaheadNode(Leaf, true)),
             new Utf8SliceNode.LookbehindNode(Leaf, true),
         ]);
-        ulong work;
+        var checkpointCount = 0;
         using (var measure = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
-            Assert.NotNull(Utf8SliceLowerer.Lower(root, null, false, false, false, null, false, false,
-                Utf8ScalarCaseBehavior.Invariant, nonBacktracking));
-            work = measure.Budget.DiagnosticCheckpoints;
+            measure.Budget.CheckpointHook = () => checkpointCount++;
+            Assert.NotNull(Lower());
         }
-        Assert.InRange(work, 1ul, 10000ul);
+        Assert.InRange(checkpointCount, 1, 10000);
+        for (var target = 1; target <= checkpointCount; target++)
+        {
+            using var owner = Utf8ConstructionScope.Enter();
+            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
+            var held = owner.Budget.ReservedBytes;
+            using var cancellation = new CancellationTokenSource();
+            owner.Budget.CancellationToken = cancellation.Token;
+            var checkpoints = 0;
+            owner.Budget.CheckpointHook = () => { if (++checkpoints == target) cancellation.Cancel(); };
+            var failure = Assert.Throws<OperationCanceledException>(() => Lower());
+            Assert.Equal(cancellation.Token, failure.CancellationToken);
+            Assert.Equal(held, owner.Budget.ReservedBytes);
+            Assert.Equal(0ul, owner.Budget.Reserved);
+            Assert.Equal(0ul, owner.Budget.Depth);
+            Assert.Equal(17, parent.Value);
+        }
+
+        Utf8SliceProgram? Lower() => Utf8SliceLowerer.Lower(root, null, false, false, false,
+            null, false, false, Utf8ScalarCaseBehavior.Invariant, nonBacktracking);
     }
 
     [Fact]
