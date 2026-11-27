@@ -435,11 +435,11 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                 matchOptions,
                 _program.Request,
                 budget);
-            return new Utf8Pcre2ValueMatchEnumerator(input, fallbackCursor, _programMemory);
+            return new Utf8Pcre2ValueMatchEnumerator(input, in fallbackCursor, _programMemory);
         }
 
         if (Pcre2GlobalOperationDriver.TryCreateCursor(_program, input, start, matchOptions, out var directCursor, budget))
-            return new Utf8Pcre2ValueMatchEnumerator(input, directCursor, _programMemory);
+            return new Utf8Pcre2ValueMatchEnumerator(input, in directCursor, _programMemory);
 
         return new Utf8Pcre2ValueMatchEnumerator(_programMemory);
     }

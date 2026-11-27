@@ -354,9 +354,10 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
 
     internal Utf8Pcre2ValueMatchEnumerator(
         ReadOnlySpan<byte> input,
-        Pcre2GlobalMatchCursor directMatches,
-        Utf8FundedStorage? programMemory) : this(programMemory)
+        scoped in Pcre2GlobalMatchCursor directMatches,
+        Utf8FundedStorage? programMemory)
     {
+        _programMemory = programMemory;
         _mode = Pcre2ValueMatchEnumeratorMode.Pcre2DirectGlobal;
         _input = input;
         _directMatches = directMatches;
@@ -364,9 +365,10 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
 
     internal Utf8Pcre2ValueMatchEnumerator(
         ReadOnlySpan<byte> input,
-        Pcre2SliceGlobalMatchCursor sliceMatches,
-        Utf8FundedStorage? programMemory) : this(programMemory)
+        scoped in Pcre2SliceGlobalMatchCursor sliceMatches,
+        Utf8FundedStorage? programMemory)
     {
+        _programMemory = programMemory;
         _mode = Pcre2ValueMatchEnumeratorMode.Pcre2Slice;
         _input = input;
         _sliceMatches = sliceMatches;
