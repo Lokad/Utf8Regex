@@ -118,7 +118,7 @@ internal static class Utf8ScalarAsciiProjector
         return true;
     }
 
-    private static bool TryProjectRanges(ReadOnlySpan<int> ranges, int maximumEnd, out AsciiCharClass charClass)
+    internal static bool TryProjectRanges(ReadOnlySpan<int> ranges, int maximumEnd, out AsciiCharClass charClass)
     {
         charClass = default;
         if ((ranges.Length & 1) != 0) return false;

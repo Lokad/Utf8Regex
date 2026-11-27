@@ -2778,14 +2778,18 @@ internal static class Utf8OwnedTreeParser
             if ((options & RegexOptions.IgnoreCase) == 0) return null;
             var equivalents = Utf8SliceCaseEquivalences.GetEquivalents(value, behavior);
             if (equivalents.Length < 2) return null;
+            // The case fiber's lookup order can differ from scalar order.
+            Span<char> ordered = stackalloc char[equivalents.Length];
+            equivalents.CopyTo(ordered);
+            ordered.Sort();
             Span<int> ranges = stackalloc int[3 + equivalents.Length * 2];
             ranges[0] = 0;
             ranges[1] = equivalents.Length * 2;
             ranges[2] = 0;
             for (var index = 0; index < equivalents.Length; index++)
             {
-                ranges[3 + index * 2] = equivalents[index];
-                ranges[4 + index * 2] = equivalents[index] + 1;
+                ranges[3 + index * 2] = ordered[index];
+                ranges[4 + index * 2] = ordered[index] + 1;
             }
             var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, options & ~RegexOptions.IgnoreCase, Utf8ScalarClass.Create(ranges));
             node.MatchCaseInsensitive = true;

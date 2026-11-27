@@ -2,8 +2,8 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 /// <summary>Owned scalar class data. Each subtraction segment has a negation,
 /// range-endpoint count and predicate count followed by half-open scalar ranges
-/// and predicates. Counts and endpoints are full integers; U+110000 is the
-/// exclusive upper bound. No subject is interpreted as UTF-16 units.
+/// ordered by start, then predicates. Counts and endpoints are full integers.
+/// U+110000 is the exclusive upper bound. No subject is interpreted as UTF-16 units.
 /// </summary>
 internal sealed class Utf8ScalarClass
 {

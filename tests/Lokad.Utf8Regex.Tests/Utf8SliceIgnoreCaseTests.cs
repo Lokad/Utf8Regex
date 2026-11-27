@@ -176,6 +176,8 @@ public sealed class Utf8SliceIgnoreCaseTests
             var regex = new Utf8Regex("i", options: RegexOptions.IgnoreCase);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
             Assert.Equal(oracle.IsMatch("I"), regex.IsMatch(Encoding.UTF8.GetBytes("I")));
+            Assert.Equal(oracle.IsMatch("İ"), regex.IsMatch("İ"u8));
+            Assert.Equal(oracle.IsMatch("i"), regex.IsMatch("i"u8));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally

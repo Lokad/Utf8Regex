@@ -295,41 +295,33 @@ internal static class Utf8OwnedTreeSliceLowerer
                 position += 3;
                 if ((rangeLength & 1) != 0 || rangeLength < 0 || categoryLength < 0 ||
                     (long)rangeLength + categoryLength > data.Length - position) return null;
-                using var ranges = new Utf8ConstructionBuffer<(int Low, int High)>(arena.Budget);
-                for (var index = 0; index < rangeLength; index += 2)
-                {
-                    Utf8ConstructionScope.ChargeWork(1);
-                    var low = data[position + index];
-                    var high = data[position + index + 1];
-                    if (low < 0 || high > 0x110000 || high <= low) return null;
-                    ranges.Add((low, high));
-                }
+                var ranges = data.Slice(position, rangeLength);
+                if (!Utf8ScalarAsciiProjector.TryProjectRanges(ranges, 0x110000, out var asciiRanges)) return null;
                 position += rangeLength;
                 using var categories = new Utf8ConstructionBuffer<Utf8SliceNode.CategorySetMember>(arena.Budget);
                 using var members = new Utf8ConstructionBuffer<Utf8SliceShorthand>(arena.Budget);
                 if (!DecodeCategories(data.Slice(position, categoryLength), categories, members, arena)) return null;
                 position += categoryLength;
-                ranges.Sort(static (left, right) => left.Low.CompareTo(right.Low));
                 var mask = arena.Allocate<byte>(16, true);
+                BinaryPrimitives.WriteUInt64LittleEndian(mask, asciiRanges.LowMask);
+                BinaryPrimitives.WriteUInt64LittleEndian(mask.AsSpan(8), asciiRanges.HighMask);
                 using var unicode = new Utf8ConstructionBuffer<int>(arena.Budget);
                 var pendingLow = -1;
                 var pendingHigh = -1;
-                foreach (var range in ranges)
+                for (var index = 0; index < ranges.Length; index += 2)
                 {
                     Utf8ConstructionScope.ChargeWork(1);
-                    for (var value = range.Low; value < Math.Min(range.High, 128); value++)
-                        {
-                        Utf8ConstructionScope.ChargeWork(1);
-                        mask[value >> 3] |= (byte)(1 << (value & 7));
-                    }
-                    var low = Math.Max(range.Low, 128);
-                    if (low >= range.High) continue;
-                    if (pendingLow >= 0 && low <= pendingHigh) pendingHigh = Math.Max(pendingHigh, range.High);
+                    var start = ranges[index];
+                    if (index != 0 && start < ranges[index - 2]) return null;
+                    var low = Math.Max(start, 128);
+                    var high = ranges[index + 1];
+                    if (low >= high) continue;
+                    if (pendingLow >= 0 && low <= pendingHigh) pendingHigh = Math.Max(pendingHigh, high);
                     else
                     {
                         if (pendingLow >= 0) AppendRange(unicode, pendingLow, pendingHigh);
                         pendingLow = low;
-                        pendingHigh = range.High;
+                        pendingHigh = high;
                     }
                 }
                 if (pendingLow >= 0) AppendRange(unicode, pendingLow, pendingHigh);
