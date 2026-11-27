@@ -557,12 +557,15 @@ internal static partial class Utf8SearchExecutor
         for (; position <= limit; position += Vector512<byte>.Count)
         {
             var heads = MemoryMarshal.Read<Vector512<byte>>(input[position..]);
-            var firstHeads = Vector512.Equals(heads, head0);
-            var secondHeads = Vector512.Equals(heads, head1);
-            if ((firstHeads | secondHeads) == Vector512<byte>.Zero) continue;
+            var firstHeads = Vector512.Equals(heads, head0).ExtractMostSignificantBits();
+            var secondHeads = Vector512.Equals(heads, head1).ExtractMostSignificantBits();
+            if ((firstHeads | secondHeads) == 0) continue;
             var tails = MemoryMarshal.Read<Vector512<byte>>(input[(position + anchor)..]);
-            var candidates = ((firstHeads & Vector512.Equals(tails, tail0)) |
-                (secondHeads & Vector512.Equals(tails, tail1))).ExtractMostSignificantBits();
+            // Keep the comparisons as lane masks so the JIT can use AVX-512
+            // mask results directly without expanding them back into vectors.
+            var firstTails = Vector512.Equals(tails, tail0).ExtractMostSignificantBits();
+            var secondTails = Vector512.Equals(tails, tail1).ExtractMostSignificantBits();
+            var candidates = (firstHeads & firstTails) | (secondHeads & secondTails);
             while (candidates != 0)
             {
                 var lane = BitOperations.TrailingZeroCount(candidates);
