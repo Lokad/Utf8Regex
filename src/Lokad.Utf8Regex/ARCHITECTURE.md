@@ -12,24 +12,12 @@ parse -> analyze -> prepare -> immutable instructions -> invoke
   literal, search and cursor plans. It borrows the capture catalog and
   releases the parse tree after compilation.
 - `Internal/Execution` selects an engine from the prepared capabilities.
-  The scalar interpreter covers general patterns. Core with `Compiled` can
-  emit bounded forward programs to verify Boolean, whole-range and Count results.
-  A proven delimiter can let ordered alternatives share an emitted
-  continuation. The admitted extent can bound a decimal run with a proved
-  endpoint. Search applies invocation checks at each admitted origin.
-  Eligible ordinary Core calls accumulate visits from short absolute and
-  contiguous proofs and from unanchored checks admitted to run the entire
-  emitted proof. A contiguous proof uses the suffix at its admitted byte
-  origin and rebases the returned endpoint. Search and Count contribute their
-  totals once per scan, including checks that entered the general matcher.
-  Construction admits separate tier state for eligible programs and keeps
-  the lowered program fields immutable. One caller claims bounded
-  compilation and publishes the delegate for future eligible calls.
-  Funded and interruptible calls retain their original paths.
-  A ready proof can select a fixed-decimal candidate before the scalar
-  interpreter publishes its captures on the original subject. The supported
-  `NonBacktracking` subset uses its own ordered traversal. Eligible literal
-  families also use emitted delegates.
+  The scalar interpreter covers general patterns. The supported
+  `NonBacktracking` subset uses ordered traversal. Eligible Core operations
+  can emit managed code to prove candidates or whole results when dynamic code
+  is available. Tiered compilation publishes a reusable delegate and leaves
+  the prepared instructions immutable. Funded and interruptible calls keep
+  their original invocation controls.
 
 The matcher consumes caller-valid, unchanged UTF-8 and publishes byte ranges.
 Candidate discovery can narrow a search or prove an endpoint. The invocation

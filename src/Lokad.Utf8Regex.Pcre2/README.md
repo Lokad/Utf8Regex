@@ -90,14 +90,7 @@ share progress and disposal. Dispose an abandoned cursor and keep its
 borrowed input alive while using published ranges.
 [Cursor and result lifetimes](../../docs/SPEC-PCRE2.md#cursor-and-result-lifetimes)
 
-The tables compare public operations with equivalent outputs and valid UTF-8
-on both sides. The native comparator uses `PCRE2_NO_UTF_CHECK`.
 [Benchmark procedure](../../docs/BENCHMARKS.md) · [Release notes](../../CHANGELOG.md)
-
-The `simple/ab-plus` Count ratio reflects the archived paired run. In fixed-CPU
-replays with matching results and native settings, the native Count median
-ranged from 0.34 to 1.07 µs across processes. Running a Count workload first
-reproduced the faster timing with the same benchmark binary.
 
 <!-- BEGIN GENERATED PCRE2 BENCHMARKS -->
 ## Benchmarks

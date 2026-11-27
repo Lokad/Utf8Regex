@@ -68,12 +68,9 @@ host retention after releasing a receipt is the host's responsibility.
 
 ## Upgrading and further documentation
 
-Version 0.4 introduced scalar matching over strict UTF-8 in place of the older
-UTF-16 matching behavior. Version 0.5 adds .NET 11 assets and POSIX, consolidates
-byte-only results and requires caller-valid subjects across all profiles. When
-upgrading from 0.4, move whole-subject validation to the text boundary. If you
-used a 0.5 development build with a validation option, remove `inputValidation`
-arguments and `InputValidation` property reads.
+When upgrading from 0.4, move whole-subject validation to the text boundary
+and use byte coordinates for results. Version 0.5 adds .NET 11 and the POSIX
+profile.
 
 NuGet's project-website link leads to the repository specifications, release
 notes, profile examples and benchmark tables. Those tables identify the measured

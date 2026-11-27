@@ -1,9 +1,8 @@
 # Lokad.Utf8Regex
 
-Regular expressions directly over UTF-8 spans for **.NET 10 and .NET 11**. Match, count,
-enumerate and replace without first decoding the subject to a string.
-Core and the optional adapters are fully managed .NET libraries.
-This README describes the upcoming 0.5.0 API.
+Fully managed regular expressions over UTF-8 spans for **.NET 10 and .NET 11**.
+Match, count, enumerate and replace without decoding the subject to a string.
+This README describes 0.5.0.
 
 ## Quick start
 
@@ -41,30 +40,18 @@ collections and text decoding belong to the host.
 Adapters require the matching Core package version. Their specifications
 define the supported grammar and operation boundaries.
 
-## Unicode and input
-
-Matching uses **Unicode scalars**. For example,
-`new Utf8Regex(".").Count("A😀"u8)` returns 2; the emoji occupies four bytes.
-Classes, quantifiers, captures and empty-match advancement respect scalar boundaries.
-
-All four profiles consume already-valid UTF-8 text. Match and capture results
-expose byte coordinates only; callers derive character positions or strings.
-Keep borrowed input unchanged and its owner alive while a view or cursor uses it.
-Owned snapshots remain valid after cursor advance or disposal.
-
 ## Subject input contract
 
-Validate external bytes where they become text, using
-`System.Text.Unicode.Utf8.IsValid` when validity is not already guaranteed by the
-host's text representation. Regex operations do not perform a separate subject
-validity pass and expose no validation policy or token.
+Matching uses **Unicode scalars**. For example,
+`new Utf8Regex(".").Count("A😀"u8)` returns 2. The emoji occupies four bytes.
+Match and capture ranges use byte coordinates.
 
-This applies to matching, counting, replacements, splits and cursors in Core,
-PythonRe, PCRE2 and POSIX. Malformed subjects have unspecified matching results;
-managed bounds checking, cancellation and enforceable resource controls remain.
-Pattern, replacement-template and assembled-output checks remain independent.
-Live route eligibility, scalar decoding and output sizing may still inspect text.
-See the [input contract](docs/SPEC.md#subject-input-contract).
+All profiles require valid UTF-8. Use `System.Text.Unicode.Utf8.IsValid` where
+external bytes become text. Regex operations trust that guarantee. Pattern,
+replacement-template and assembled-output checks follow their own rules.
+Keep borrowed input unchanged and its owner alive during use. Owned snapshots
+remain valid after cursor advance or disposal.
+[Input contract](docs/SPEC.md#subject-input-contract)
 
 ## Cancellation and limits
 
@@ -106,10 +93,8 @@ See the [release notes](CHANGELOG.md) for published versions and 0.5.0 upgrades.
 
 ## Runtime support
 
-The 0.5.0 development branch targets `net10.0` and `net11.0`. .NET 11
-uses the stable SDK pinned in [global.json](global.json) and is the
-primary benchmark baseline. .NET 10 remains a compatibility target, with both
-runtimes checked in Windows/Linux CI. Published 0.4.0 packages target .NET 10.
+The packages target `net10.0` and `net11.0`. CI tests both on Windows and Linux.
+Benchmarks use .NET 11. [Pinned SDK](global.json)
 
 ## Benchmarks
 
@@ -121,16 +106,8 @@ and calls with finite limits, deadlines and cancellation.
 
 Ordinary and compiled rows use matching .NET compilation flags. All tables rank
 `Utf8Regex / .NET predecoded` ratios from highest to lowest; lower is better.
-The `common/match-word` and `lokad/docs/inline-doc-prefix` rows compare the
-first whole-match range on both sides. The other Lokad prefix-loop rows from
-the dev.117 refresh include .NET's `Match` object allocation.
-
-[refresh-benchmarks.ps1](tools/refresh-benchmarks.ps1) runs the full cycle or selected
-phases; [bench.ps1](tools/bench.ps1) supports focused single-case iterations.
-
-Focused Core counts use the caller-valid text contract, for example
-`--measure-readme-public-case industry/mariomka-email-count 1 9`.
-These measurements label that contract and leave recorded tables unchanged.
+The `common/match-word` and Lokad prefix-loop rows compare the first
+whole-match range on both sides.
 
 Profile comparisons are in the
 [PythonRe](src/Lokad.Utf8Regex.PythonRe/README.md#benchmarks),

@@ -2,44 +2,32 @@
 
 ## Unreleased — 0.5.0
 
-### Platform and profiles
+### Added
 
-- Add .NET 11 alongside .NET 10. Benchmark comparisons use .NET 11 as their
-  primary runtime.
-- Add `Lokad.Utf8Regex.Posix` for a scalar POSIX ERE subset with leftmost-longest
-  matching, hierarchical capture priority and invariant optional case folding.
-- All adapters require the exact Core package version.
+- Support .NET 11 alongside .NET 10. Benchmarks use .NET 11.
+- Add `Lokad.Utf8Regex.Posix` for a POSIX ERE subset with Unicode scalar
+  matching, leftmost-longest selection and hierarchical capture priority.
+- Extend managed scalar execution to more patterns and operations with
+  cancellation, deadlines and finite limits.
 
-### Upgrading
+### Upgrading from 0.4.0
 
-- All profiles require already-valid, unchanged UTF-8 subjects. Validate external
-  bytes where they become text. Matching no longer validates the entire subject.
-- Use byte offsets and result ranges throughout. Use caller-owned capture slots
-  for synchronous matches and memory cursors for capture snapshots that live
-  across calls.
-- Compile expressions in the host and pass `Utf8RegexPolicy` for timeouts,
-  limits and program funding. Remove the static Core and PCRE2 matching
-  conveniences and the Core global pattern cache.
-- Use UTF-8 replacement templates and capture-name keys. Decode, collect or
-  compute custom output in the host. PythonRe exposes numbered captures and
-  `LastIndex`; PCRE2 exposes final capture slots, MARK and its supported partial
-  probes.
-- Recompile callers after upgrading. Use named arguments for byte bounds, capture
-  buffers and cancellation. PythonRe `Match` uses an explicit mode for search
-  and full matching. Core `EnumerateMatches` accepts a scalar-aligned byte start.
-  See the [profile contracts](README.md#choose-a-profile) for current APIs.
+- Upgrade Core and any adapters together. Adapters require the exact Core
+  version.
+- Validate external bytes where they become text. Matching trusts valid,
+  unchanged UTF-8 subjects. Pattern and replacement-template checks are separate.
+- Use byte offsets, UTF-8 templates and UTF-8 capture-name keys. Supply capture
+  slots for synchronous matches or use memory cursors for snapshots across calls.
+  PythonRe `Match` takes an explicit mode for search or full matching. Core
+  `EnumerateMatches` accepts a scalar-aligned byte start.
+- Replace static Core and PCRE2 matching calls with reusable instances.
+  Manage compiled instances in the host in place of the Core global pattern
+  cache. Set timeouts, limits and optional program funding through
+  `Utf8RegexPolicy`. Recheck finite limits after upgrading. Byte limits cover
+  modeled capacities.
 
-### Execution
-
-- Use the general owned scalar engines for more patterns, including calls with
-  limits, deadlines and caller-provided memory allowances. Improve candidate
-  discovery, repeat execution and reuse of assertion scratch.
-- Preserve original-token cancellation, scalar progress, byte coordinates and
-  retained result lifetimes. Limits cover modeled work and capacities. Recheck
-  finite settings after upgrading.
-- The libraries remain managed and bounds-checked. Benchmark rows record their
-  measured configuration and workload. Compatibility follows each profile's
-  documented scope.
+See the [profile contracts](README.md#choose-a-profile) for APIs and supported
+semantics.
 
 
 ## 0.4.0 — 2026-10-27
