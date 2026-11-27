@@ -1231,6 +1231,7 @@ internal static class Utf8OwnedTreeParser
                 state.Position + 1 < state.Pattern.Length && state.Pattern[state.Position + 1] is 'd' or 'D' or 'w' or 'W' or 's' or 'S';
             if (!TryTakeShorthandMembers(ref state, ranges, categories)) return false;
             using var data = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
+            data.EnsureCapacity(checked(3 + ranges.Count + categories.Count));
             data.Add(0); data.Add(ranges.Count); data.Add(categories.Count);
             data.AddRange(ranges.Span); data.AddRange(categories.Span);
             node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, Utf8ScalarClass.Create(data));
