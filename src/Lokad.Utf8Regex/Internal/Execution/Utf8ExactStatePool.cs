@@ -19,7 +19,8 @@ internal static class Utf8ExactStatePool
 {
     internal const int MaximumRetainedBytes = 256 * 1024;
     internal const int MaximumEntries = 64;
-    private readonly record struct Entry(Array? Value, int Bytes);
+    // Keep lookup keys together so scans need not access every retained array.
+    private readonly record struct Entry(Array Value, Type ArrayType, int Capacity, int Bytes);
     private static SpinLock s_gate = new(enableThreadOwnerTracking: false);
     private static Entry[]? s_items;
     private static int s_retainedBytes;
@@ -46,8 +47,14 @@ internal static class Utf8ExactStatePool
             s_gate.Enter(ref taken);
             var bytes = 0;
             if (s_items is { } cache)
+            {
+                var arrayType = typeof(T[]);
                 for (var index = 0; index < s_count; index++)
-                    if (cache[index].Value?.GetType() == typeof(T[])) bytes += cache[index].Bytes;
+                {
+                    ref readonly var entry = ref cache[index];
+                    if (entry.ArrayType == arrayType) bytes += entry.Bytes;
+                }
+            }
             return bytes;
         }
         finally { if (taken) s_gate.Exit(); }
@@ -72,15 +79,19 @@ internal static class Utf8ExactStatePool
                     catch { s_retainedBytes = 0; throw; }
                 }
                 if (taken && s_items is { } cache)
+                {
+                    var arrayType = typeof(T[]);
                     for (var index = 0; index < s_count; index++)
                     {
-                        var value = cache[index].Value!;
-                        if (value.Length == capacity && value.GetType() == typeof(T[]))
+                        ref readonly var entry = ref cache[index];
+                        if (entry.ArrayType == arrayType && entry.Capacity == capacity)
                         {
+                            var value = (T[])entry.Value;
                             RemoveAt(cache, index);
-                            return (T[])value;
+                            return value;
                         }
                     }
+                }
             }
             finally { if (taken) s_gate.Exit(); }
         }
@@ -92,7 +103,8 @@ internal static class Utf8ExactStatePool
         if (!retain || !CanPool<T>(items.Length)) return;
         // Reference arrays are covariant. A pooled leaf must have the exact
         // requested element type so later borrowers can write any T safely.
-        if (items.GetType() != typeof(T[])) return;
+        var arrayType = typeof(T[]);
+        if (items.GetType() != arrayType) return;
         var extent = Utf8ConstructionBudget.ArrayBytes<T>(items.Length);
         if (extent > (ulong)Utf8ExactStatePool<T>.MaximumRetainedBytes) return;
         var bytes = (int)extent;
@@ -110,9 +122,10 @@ internal static class Utf8ExactStatePool
             // Every returned leaf contributes to both retention bounds.
             for (var index = 0; index < s_count; index++)
             {
-                var entry = cache[index];
+                ref readonly var entry = ref cache[index];
+                if (entry.ArrayType != arrayType) continue;
                 if (ReferenceEquals(entry.Value, items)) return;
-                if (entry.Value!.GetType() == typeof(T[])) typeBytes += entry.Bytes;
+                typeBytes += entry.Bytes;
             }
             if (bytes > Utf8ExactStatePool<T>.MaximumRetainedBytes - typeBytes) return;
             while (s_count == cache.Length || bytes > MaximumRetainedBytes - s_retainedBytes)
@@ -122,7 +135,7 @@ internal static class Utf8ExactStatePool
                 RemoveAt(cache, victim);
             }
             s_retainedBytes += bytes; // Admit the physical leaf before adoption.
-            cache[s_count++] = new(items, bytes);
+            cache[s_count++] = new(items, arrayType, items.Length, bytes);
         }
         finally { if (taken) s_gate.Exit(); }
     }
