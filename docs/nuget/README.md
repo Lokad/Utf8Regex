@@ -78,6 +78,11 @@ When upgrading from 0.4, move whole-subject validation to the text boundary
 and use byte coordinates for results. Version 0.5 adds .NET 11 and the POSIX
 profile.
 
+When upgrading from 0.5, remove `MaxWorkSteps` from construction and
+execution policies and `MatchLimit` from PCRE2 limits. Use cancellation
+tokens to interrupt work and timeouts to set elapsed-time limits. Recheck
+finite depth and byte limits when moving to the new version.
+
 NuGet's project-website link leads to the repository specifications, release
 notes, profile examples and benchmark tables. Those tables identify the measured
 sources and runtimes.

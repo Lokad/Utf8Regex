@@ -6,6 +6,8 @@
   `MatchLimit` from PCRE2's managed limits. Use a cancellation token for
   cooperative interruption. Timeouts, depth limits and storage admission
   remain available.
+- Fix Core's inline option handling for free-spacing groups and for
+  case-sensitive suffixes after `(?-i)`.
 - POSIX reports recognized syntax outside its ERE subset through
   `PosixUnsupportedSyntaxException`, a subtype of `ArgumentException`.
 - Add opt-in GNU basic and extended backreferences to POSIX longest matching.
@@ -15,6 +17,8 @@
 - Accept numbered PCRE2 callouts without callbacks.
 - Keep subject anchors, boundaries and nested lookaheads visible inside
   PCRE2 lookbehind assertions.
+- Reuse retry storage for variable-length PCRE2 lookbehind and reduce
+  retry allocations for bounded literal repeats.
 - Add PCRE2 `MatchInvalidUtf8` to search valid fragments of malformed subjects
   with original byte offsets.
 
