@@ -90,6 +90,36 @@ public sealed class Utf8SliceNonBacktrackingTests
         Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options: options));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NonBacktrackingFindsCaseSensitiveSuffixAfterEmptyAlternative(bool utf8Pattern)
+    {
+        const string pattern = "(?i)(a|)(?-i)b";
+        const RegexOptions options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant;
+        using var regex = utf8Pattern ? Utf8Regex.Compile("(?i)(a|)(?-i)b"u8, options) : new Utf8Regex(pattern, options);
+        var input = "a Éb éb"u8.ToArray();
+
+        // .NET 10.0.12 and 11.0.0 NonBacktracking skip the first b in this subject.
+        // The empty alternative captures at each b, and the final literal is case-sensitive.
+        Assert.Equal(2, regex.Count(input));
+        Assert.False(regex.IsMatch("B"u8));
+        var first = regex.Match(input);
+        Assert.True(first.Success);
+        Assert.Equal((4, 5), (first.StartOffsetInBytes, first.EndOffsetInBytes));
+
+        using var cursor = regex.CreateMatchCursor(input);
+        foreach (var start in new[] { 4, 8 })
+        {
+            Assert.True(cursor.MoveNext(out var match));
+            Assert.Equal((start, start + 1), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
+            Assert.True(match.TryGetGroup(1, out var capture));
+            Assert.True(capture.Success);
+            Assert.Equal((start, start), (capture.StartOffsetInBytes, capture.EndOffsetInBytes));
+        }
+        Assert.False(cursor.MoveNext(out _));
+    }
+
     public static IEnumerable<object?[]> ParityCases()
     {
         yield return new object?[] { "abc", "xxabcxx", true };
