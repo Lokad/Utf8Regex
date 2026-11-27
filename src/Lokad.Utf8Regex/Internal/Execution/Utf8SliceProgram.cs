@@ -1736,6 +1736,8 @@ internal static class Utf8SliceLowerer
                     EmitLiteral(literal.Value, literal.FoldCase);
                     break;
                 case Utf8SliceNode.LiteralRunNode run:
+                    // Every scalar in this materialized run emits one instruction.
+                    Instructions.EnsureCapacity(checked(Instructions.Count + run.Scalars.Length));
                     foreach (var scalar in run.Scalars)
                     {
                         Budget.Checkpoint();
