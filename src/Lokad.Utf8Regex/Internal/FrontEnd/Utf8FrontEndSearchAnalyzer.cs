@@ -23,7 +23,10 @@ internal static class Utf8FrontEndSearchAnalyzer
         var root = tree.Root;
         var width = Utf8OwnedFindOptimizations.ComputeByteWidth(root);
         TrySelectRequiredLiteralPrefilter(root, out var requiredLiteral, out var requiredAlternatives);
-        TrySelectFallbackStartTransform(root, out var fallbackStartTransform);
+        var leading = GetLeadingContentNode(root);
+        var fallbackStartTransform = leading is not null && IsLeadingAsciiWhitespaceNode(leading)
+            ? new Utf8FallbackStartTransform(0, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace)
+            : default;
         TrySelectBoundaryRequirements(root, out var leadingBoundary, out var trailingBoundary);
         var facts = new Utf8SearchFactData
         {
@@ -50,7 +53,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             return Utf8SearchFacts.Create(Utf8SearchKind.FixedDistanceAsciiSets,
                 facts with { FixedDistanceSets = deterministicSets, MinRequiredLength = deterministicMinimum });
 
-        if (TrySelectFixedDistanceLiteral(root, invariantIgnoreCase, out var fixedLiteral, out var distance))
+        if (TrySelectFixedDistanceLiteral(root, leading, invariantIgnoreCase, out var fixedLiteral, out var distance))
             return Utf8SearchFacts.Create(Utf8SearchKind.FixedDistanceAsciiLiteral,
                 facts with { LiteralUtf8 = fixedLiteral, Distance = distance, MinRequiredLength = width.Minimum });
 
@@ -239,19 +242,6 @@ internal static class Utf8FrontEndSearchAnalyzer
         return -1;
     }
 
-    private static bool TrySelectFallbackStartTransform(Utf8TreeNode root, out Utf8FallbackStartTransform transform)
-    {
-        var leading = GetLeadingContentNode(root);
-        if (leading is not null && IsLeadingAsciiWhitespaceNode(leading))
-        {
-            transform = new Utf8FallbackStartTransform(0, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace);
-            return true;
-        }
-
-        transform = default;
-        return false;
-    }
-
     private static Utf8TreeNode? GetLeadingContentNode(Utf8TreeNode node)
     {
         using var construction = Utf8ConstructionScope.Enter();
@@ -314,12 +304,16 @@ internal static class Utf8FrontEndSearchAnalyzer
         return kind != Utf8SearchKind.None;
     }
 
-    private static bool TrySelectFixedDistanceLiteral(Utf8TreeNode root, bool ignoreCase,
+    private static bool TrySelectFixedDistanceLiteral(Utf8TreeNode root, Utf8TreeNode? leading, bool ignoreCase,
         out byte[] literalUtf8, out int distance)
     {
         literalUtf8 = [];
         distance = 0;
+        // The leading probe skips only zero-width anchors and boundaries.
+        // An unbounded scalar repeat there rules out a fixed-distance literal.
         if (ignoreCase ||
+            leading is { Kind: Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy or
+                Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy, N: int.MaxValue } ||
             Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(root) is not { } fixedDistance ||
             !IsAscii(fixedDistance.Literal) ||
             fixedDistance.Literal.Length <= 1)
