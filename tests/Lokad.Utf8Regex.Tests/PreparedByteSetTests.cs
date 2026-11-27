@@ -103,7 +103,7 @@ public sealed class PreparedByteSetTests
         var full = new AsciiCharClass(ulong.MaxValue, ulong.MaxValue, negated: true);
         using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
         Assert.Same(PreparedByteSet.Empty, PreparedByteSet.CreateOwned(Array.Empty<byte>()));
-        Assert.Same(PreparedByteSet.Empty, Utf8PreparedByteSearchFactory.CreateSet(full));
+        Assert.Same(PreparedByteSet.Empty, PreparedByteSet.CreateOwned(full.ActualLowMask, full.ActualHighMask, 0, 0));
         Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
     }
 
@@ -121,7 +121,7 @@ public sealed class PreparedByteSetTests
     }
 
     [Fact]
-    public void DirectAsciiMaskAndFixedDistanceSearchAgreeIncludingEmptyComplements()
+    public void PreparedAsciiMaskMatchesSearchValuesIncludingEmptyComplements()
     {
         byte[] input = Enumerable.Range(0, 256).Select(value => (byte)value).ToArray();
         foreach (var count in new[] { 0, 1, 4, 16, 63, 64, 127, 128 })
@@ -129,15 +129,12 @@ public sealed class PreparedByteSetTests
         {
             var values = input[..count];
             var charClass = AsciiCharClass.FromBytes(values, negated);
-            var direct = Utf8PreparedByteSearchFactory.CreateSet(charClass);
-            var fixedSet = new Utf8FixedDistanceSet(7, charClass).PrepareAnchor();
-            var anchor = Assert.IsType<PreparedByteSet>(fixedSet.AnchorSearch);
+            var direct = PreparedByteSet.CreateOwned(charClass.ActualLowMask, charClass.ActualHighMask, 0, 0);
             var expected = input.Where(value => value < 128 && ((value < count) != negated)).ToArray();
             var oracle = SearchValues.Create(expected);
             foreach (var value in input)
             {
                 Assert.Equal(expected.Contains(value), direct.Contains(value));
-                Assert.Equal(expected.Contains(value), anchor.Contains(value));
             }
             for (var offset = 0; offset < input.Length; offset++)
             {
@@ -146,7 +143,6 @@ public sealed class PreparedByteSetTests
                 Assert.Equal(subject.LastIndexOfAny(oracle), direct.LastIndexOf(subject));
                 Assert.Equal(subject.IndexOfAnyExcept(oracle), direct.IndexOfAnyExcept(subject));
                 Assert.Equal(subject.LastIndexOfAnyExcept(oracle), direct.LastIndexOfAnyExcept(subject));
-                Assert.Equal(subject.IndexOfAny(oracle), anchor.IndexOf(subject));
             }
         }
     }

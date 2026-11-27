@@ -140,50 +140,6 @@ internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
         return new AsciiCharClass(low, high, negated);
     }
 
-    public byte[] GetPositiveMatchBytes()
-    {
-        return Negated ? [] : GetMatchBytes();
-    }
-
-    public byte[] GetMatchBytes()
-    {
-        if (Count == 0) return [];
-        using var scope = Utf8ConstructionScope.Enter();
-        var budget = scope.Budget;
-        budget.EnterDepth();
-        try
-        {
-            var values = budget.AllocateArray<byte>(Count, false);
-            budget.ChargeWork((ulong)values.Length);
-            CopyMatchBytes(values);
-            scope.Complete();
-            return values;
-        }
-        finally { budget.LeaveDepth(); }
-    }
-
-    // Caller-owned output also lets execution inspect a class without acquiring
-    // a construction buffer. Membership is complemented only inside ASCII.
-    public int CopyMatchBytes(Span<byte> destination)
-    {
-        if (destination.Length < Count)
-            throw new ArgumentException("The destination cannot hold the ASCII class.", nameof(destination));
-        var low = ActualLowMask;
-        var high = ActualHighMask;
-        var index = 0;
-        while (low != 0)
-        {
-            destination[index++] = (byte)BitOperations.TrailingZeroCount(low);
-            low &= low - 1;
-        }
-        while (high != 0)
-        {
-            destination[index++] = (byte)(64 + BitOperations.TrailingZeroCount(high));
-            high &= high - 1;
-        }
-        return index;
-    }
-
     public AsciiCharClass ToIgnoreCaseInvariant()
     {
         ulong low = _lowMask;

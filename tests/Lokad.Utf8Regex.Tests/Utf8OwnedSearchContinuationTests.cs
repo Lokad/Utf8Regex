@@ -49,7 +49,6 @@ public sealed class Utf8OwnedSearchContinuationTests
     {
         facts.Kind, facts.LiteralUtf8, facts.AlternateLiteralsUtf8, facts.CanGuideFallbackStarts,
         facts.RequiredPrefilterLiteralUtf8, facts.RequiredPrefilterAlternateLiteralsUtf8,
-        Sets = facts.FixedDistanceSets.Select(static set => new { set.Distance, Bytes = set.ByteSet.GetMatchBytes() }),
         facts.TrailingLiteralUtf8,
         facts.Distance, facts.MinRequiredLength, facts.ExactRequiredLength,
         facts.MaxPossibleLength, facts.LeadingBoundary, facts.TrailingBoundary,
@@ -61,33 +60,5 @@ public sealed class Utf8OwnedSearchContinuationTests
         node.Children = children.Length == 1 ? children[0] : children;
         foreach (var child in children) child.Parent = node;
         return node;
-    }
-
-    [Theory]
-    [InlineData(65)]
-    [InlineData(16385)]
-    public void PrefixSetsKeepPartialInnerSequenceAndResumeOuterSibling(int depth)
-    {
-        var root = Parent(Utf8TreeNodeKind.Concatenate,
-            Parent(Utf8TreeNodeKind.Concatenate, Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "ab"),
-                Utf8TreeNode.Create(Utf8TreeNodeKind.PositiveLookaround, RegexOptions.CultureInvariant)),
-            Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'c'));
-        for (var index = 0; index < depth; index++) root = Parent(Utf8TreeNodeKind.Concatenate, root);
-        Span<(int Distance, AsciiCharClass ByteSet)> scratch = stackalloc (int, AsciiCharClass)[Utf8FrontEndSearchAnalyzer.MaxDeterministicPrefixSets];
-        var count = Utf8FrontEndSearchAnalyzer.ExtractDeterministicPrefixSets(root, 0, scratch);
-        var sets = scratch[..count].ToArray();
-        Assert.Equal(new[] { 0, 1, 2 }, sets.Select(static set => set.Distance));
-        Assert.Equal(new[] { "a", "b", "c" }, sets.Select(static set => System.Text.Encoding.ASCII.GetString(set.ByteSet.GetMatchBytes())));
-        // A known assertion consumes zero bytes. An unknown inner atom has no
-        // fixed width and cannot permit the same continuation at any depth.
-        var opaque = Parent(Utf8TreeNodeKind.Concatenate,
-            Parent(Utf8TreeNodeKind.Concatenate, Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "ab"),
-                Utf8TreeNode.Create(Utf8TreeNodeKind.Unknown, RegexOptions.CultureInvariant)),
-            Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'c'));
-        for (var index = 0; index < depth; index++) opaque = Parent(Utf8TreeNodeKind.Concatenate, opaque);
-        count = Utf8FrontEndSearchAnalyzer.ExtractDeterministicPrefixSets(opaque, 0, scratch);
-        sets = scratch[..count].ToArray();
-        Assert.Equal(new[] { 0, 1 }, sets.Select(static set => set.Distance));
-        Assert.Equal(new[] { "a", "b" }, sets.Select(static set => System.Text.Encoding.ASCII.GetString(set.ByteSet.GetMatchBytes())));
     }
 }

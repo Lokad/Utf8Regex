@@ -411,69 +411,6 @@ public sealed class Utf8FindByteFactsTests
         }
     }
 
-    [Fact]
-    public void CanonicalFixedMasksKeepCaseWidthProofAndRecoverConstructionAdmission()
-    {
-        var tree = Utf8OwnedTreeParser.TryParse("😀[ab][0-9]", RegexOptions.CultureInvariant);
-        Assert.NotNull(tree);
-        ulong work;
-        using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-        {
-            var sets = Utf8OwnedFindOptimizations.FindFixedDistanceSets(tree.Root);
-            Assert.NotNull(sets);
-            Assert.Equal(new[] { 4, 5 }, sets.Select(static set => set.Distance));
-            for (var value = 0; value < 128; value++)
-            {
-                Assert.Equal(value is 'a' or 'b', sets[0].Contains((byte)value));
-                Assert.Equal(value is >= '0' and <= '9', sets[1].Contains((byte)value));
-            }
-            Assert.Equal(0ul, measure.Budget.Depth);
-            work = measure.Budget.WorkSteps;
-        }
-        var folded = Utf8OwnedTreeParser.TryParse("[a-z][ab]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-        Assert.NotNull(folded);
-        Assert.Null(Utf8OwnedFindOptimizations.FindFixedDistanceSets(folded.Root));
-        for (var denial = 0; denial < 3; denial++)
-        {
-            using var owner = new Utf8ConstructionScope(0, denial == 0 ? 128ul : ulong.MaxValue,
-                denial == 2 ? 2ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                Utf8OwnedFindOptimizations.FindFixedDistanceSets(tree.Root));
-            Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
-                1 => Utf8ResourceLimitKind.ConstructionDepth, _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, failure.ResourceKind);
-            Assert.Equal(128ul, owner.Budget.ReservedBytes);
-            Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-            Assert.Equal(17, parent.Value);
-        }
-        for (var cutoff = 0ul; cutoff < work; cutoff++)
-        {
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.FindFixedDistanceSets(tree.Root));
-            Assert.Equal(128ul, owner.Budget.ReservedBytes);
-            Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-            Assert.Equal(17, parent.Value);
-        }
-        var decline = Utf8OwnedTreeParser.TryParse("[ab](?=c)", RegexOptions.CultureInvariant);
-        Assert.NotNull(decline);
-        using (var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-        {
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            Assert.Null(Utf8OwnedFindOptimizations.FindFixedDistanceSets(decline.Root));
-            Assert.Equal(128ul, owner.Budget.ReservedBytes);
-            Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-            Assert.True(owner.Budget.WorkSteps > 2);
-            Assert.Equal(17, parent.Value);
-        }
-    }
-
     public static IEnumerable<object?[]> WidthCases()
     {
         var cases = new (string Pattern, int Minimum, int? Maximum)[]
@@ -532,23 +469,15 @@ public sealed class Utf8FindByteFactsTests
     }
 
     [Theory]
-    [InlineData("(é)[ab]", 2)]
-    [InlineData("(😀)[ab]", 4)]
-    public void AsciiSetDistancesIncludeTheWholeEncodedPrefix(string pattern, int distance)
-    {
-        var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant) ?? throw new InvalidOperationException();
-        var sets = Utf8OwnedFindOptimizations.FindFixedDistanceSets(tree.Root);
-        Assert.NotNull(sets);
-        Assert.Equal(distance, Assert.Single(sets).Distance);
-    }
-
-    [Theory]
     [InlineData(false, false)] [InlineData(true, false)] [InlineData(false, true)] [InlineData(true, true)]
     public void PublicSearchKeepsVariableScalarPrefixesAndByteCoordinates(bool compiled, bool rtl)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
             (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
         foreach (var row in new[] { (Pattern: "(?:é|中)ab", Subject: "中ab"), (Pattern: ".ab", Subject: "😀ab"),
+            (Pattern: "(ab.*)cd", Subject: "ab😀écd"), (Pattern: "(ab(?i:k))cd", Subject: "abKcd"),
+            (Pattern: "a[é-ê]{2}bc", Subject: "aéêbc"), (Pattern: "(?i:ab)cd", Subject: "ABcd"),
+            (Pattern: @"\s*abc[0-9]", Subject: "\u00a0abc7"),
             (Pattern: "a{2,4}bc", Subject: "aaaabc"),
             (Pattern: rtl ? @"\k<x>(?<x>😀)ab" : @"(?<x>😀)\k<x>ab", Subject: "😀😀ab") })
         {
@@ -557,7 +486,6 @@ public sealed class Utf8FindByteFactsTests
             Assert.True(regex.IsMatch(input), row.Pattern);
             Assert.Equal(1, regex.Count(input));
             var match = regex.Match(input);
-            Assert.True(match.Success);
             Assert.True(match.Success);
             Assert.Equal(1, match.StartOffsetInBytes);
             Assert.Equal(Encoding.UTF8.GetByteCount(row.Subject), (match.EndOffsetInBytes - match.StartOffsetInBytes));

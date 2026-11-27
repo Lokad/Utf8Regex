@@ -10,7 +10,6 @@ internal enum Utf8SearchKind
     AsciiFoldedByteLiterals = 5,
     FixedDistanceAsciiLiteral = 6,
     FixedDistanceAsciiChar = 7,
-    FixedDistanceAsciiSets = 8,
     TrailingAnchorFixedLengthEnd = 9,
     TrailingAnchorFixedLengthEndZ = 10,
 }

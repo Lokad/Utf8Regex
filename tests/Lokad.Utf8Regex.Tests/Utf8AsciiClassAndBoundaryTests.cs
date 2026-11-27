@@ -33,7 +33,19 @@ public sealed class Utf8AsciiClassAndBoundaryTests
         var predicate = AsciiCharClass.FromPredicate(Utf8AsciiBytePredicates.IsDigit);
 
         Assert.Equal(range, predicate);
-        Assert.Equal(Enumerable.Range('0', 10).Select(static value => (byte)value), range.GetPositiveMatchBytes());
+    }
+
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void RepeatedAsciiClassReplacesOnlyCompleteMatches(RegexOptions options)
+    {
+        using var regex = new Utf8Regex("[ABCD]{2,4}", RegexOptions.CultureInvariant | options);
+        var input = "😀ABCD中ABC😀A"u8.ToArray();
+        Assert.Equal(2, regex.Count(input));
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.Equal((4, 8), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
+        Assert.Equal("😀X中X😀A"u8.ToArray(), regex.Replace(input, "X"u8));
     }
 
     [Fact]
@@ -184,7 +196,6 @@ public sealed class Utf8AsciiClassAndBoundaryTests
 
         var coreFiles = Directory.GetFiles(Path.Combine(root, "src", "Lokad.Utf8Regex"), "*.cs", SearchOption.AllDirectories);
         Assert.DoesNotContain(coreFiles, static file => File.ReadAllText(file).Contains("struct Utf8AsciiByteSet", StringComparison.Ordinal));
-        Assert.DoesNotContain(coreFiles, static file => File.ReadAllText(file).Contains("MatchesSet(byte value, Utf8FixedDistanceSet", StringComparison.Ordinal));
     }
 
     private static void AssertBoundary(byte[] utf8, int byteOffset, int utf16Offset, HashSet<int> boundaries)

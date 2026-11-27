@@ -16,7 +16,6 @@ internal readonly struct Utf8SearchPlan
         var canGuideFallbackStarts = facts.CanGuideFallbackStarts;
         var requiredPrefilterLiteralUtf8 = NullIfEmpty(facts.RequiredPrefilterLiteralUtf8);
         var requiredPrefilterAlternateLiteralsUtf8 = NullIfEmpty(facts.RequiredPrefilterAlternateLiteralsUtf8);
-        var fixedDistanceSets = NullIfEmpty(facts.FixedDistanceSets);
         var trailingLiteralUtf8 = NullIfEmpty(facts.TrailingLiteralUtf8);
         var distance = facts.Distance;
         var minRequiredLength = facts.MinRequiredLength;
@@ -71,7 +70,6 @@ internal readonly struct Utf8SearchPlan
         if (scalarProgram is not null && Utf8SliceRunner.PrepareAlignedDelimiterAlternatives(
             scalarProgram, _requiredPrefilterSearcher, budget))
             AlignedClassDelimiterProgram = scalarProgram;
-        FixedDistanceSets = fixedDistanceSets;
         TrailingLiteralUtf8 = trailingLiteralUtf8;
         Distance = distance;
         MinRequiredLength = minRequiredLength;
@@ -158,7 +156,6 @@ internal readonly struct Utf8SearchPlan
 
     public AsciiExactLiteralSearchData? AlternateLiteralSearchData => AlternateLiteralSearch?.SearchData;
 
-    public Utf8FixedDistanceSet[]? FixedDistanceSets { get; }
 
     public byte[]? TrailingLiteralUtf8 { get; }
 
@@ -350,19 +347,4 @@ internal enum Utf8AlternateLiteralOverlapKind : byte
     None = 0,
     SameStartPrefix = 1,
     ProperStart = 2,
-}
-
-internal readonly struct Utf8FixedDistanceSet(
-    int distance, AsciiCharClass byteSet, PreparedByteSet? anchorSearch = null)
-{
-    public int Distance { get; } = distance;
-
-    public AsciiCharClass ByteSet { get; } = byteSet;
-
-    public PreparedByteSet? AnchorSearch { get; } = anchorSearch;
-
-    public bool Contains(byte value) => ByteSet.Contains(value);
-
-    internal Utf8FixedDistanceSet PrepareAnchor()
-        => new(Distance, ByteSet, Utf8PreparedByteSearchFactory.CreateSet(ByteSet));
 }

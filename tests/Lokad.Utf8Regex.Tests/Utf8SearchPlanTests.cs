@@ -339,41 +339,6 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void RuffNoqaRealPatternRetainsScalarSearchFacts()
-    {
-        const string pattern = "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)";
-        var scalarAnalysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
-        // Unicode whitespace does not certify the six-byte ASCII inverse
-        // transform. Keep the original grammar and qualify its scalar route.
-        Assert.Equal(Utf8SearchKind.None, scalarAnalysis.SearchPlan.Kind);
-        Assert.Null(scalarAnalysis.SearchPlan.FixedDistanceSets);
-        var original = new Utf8Regex(pattern);
-        Assert.NotNull(original.Inspection.PreparedRegex.ScalarProgram);
-        // The same structural assertions remain for the complete ASCII control.
-        var analysis = Utf8FrontEnd.Compile(pattern.Replace("\\s", "[\\t-\\r ]", StringComparison.Ordinal), RegexOptions.None);
-
-        Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.FixedDistanceAsciiSets, analysis.SearchPlan.Kind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(analysis));
-        Assert.NotEmpty(analysis.SearchPlan.FixedDistanceSets!);
-        Assert.NotNull(analysis.SearchPlan.FixedDistanceSets);
-        Assert.True(analysis.SearchPlan.FixedDistanceSets!.Length >= 6);
-        Assert.True(analysis.SearchPlan.FixedDistanceSets[0].Distance >= 2);
-        var primaryBytes = analysis.SearchPlan.FixedDistanceSets[0].ByteSet.GetPositiveMatchBytes();
-        Assert.Contains(primaryBytes, static value => value is (byte)'A' or (byte)'N' or (byte)'O' or (byte)'Q' or (byte)'a' or (byte)'n' or (byte)'o' or (byte)'q');
-    }
-
-    [Fact]
-    public void RuffNoqaTweakedPatternUsesScalar()
-    {
-        const string pattern = "(?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?";
-        var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
-
-        Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(analysis));
-    }
-
-    [Fact]
     public void VariableGapRequiredLiteralRetainsSearchFacts()
     {
         const string pattern = "[A-Za-z]{10}\\s+[\\s\\S]{0,100}Result[\\s\\S]{0,100}\\s+[A-Za-z]{10}";
@@ -382,13 +347,18 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void NoqaMatchesUnicodeWhitespaceInBothDirections()
+    public void NoqaMatchesAsciiAndUnicodeWhitespaceInBothDirections()
     {
         const string pattern = "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)";
-        foreach (var subject in new[] { "   # NOQA: ABC123", "\u00a0# NOQA: ABC123", "\u2003# NOQA: ABC123" })
+        var asciiPattern = pattern.Replace("\\s", "[\\t-\\r ]", StringComparison.Ordinal);
+        foreach (var (regexPattern, subject) in new[]
+        {
+            (asciiPattern, "   # NOQA: ABC123"), (pattern, "   # NOQA: ABC123"),
+            (pattern, "\u00a0# NOQA: ABC123"), (pattern, "\u2003# NOQA: ABC123"),
+        })
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.Compiled | RegexOptions.RightToLeft })
         {
-            using var regex = new Utf8Regex(pattern, options: mode);
+            using var regex = new Utf8Regex(regexPattern, options: mode);
             var bytes = Encoding.UTF8.GetBytes(subject);
             Assert.True(regex.IsMatch(bytes));
             Assert.Equal(1, regex.Count(bytes));

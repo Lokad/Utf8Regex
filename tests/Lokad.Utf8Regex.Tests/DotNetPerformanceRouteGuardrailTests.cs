@@ -68,7 +68,6 @@ public sealed class DotNetPerformanceRouteGuardrailTests
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.FixedDistanceAsciiSets, regex.Inspection.SearchPlan.Kind);
         Assert.True(regex.Inspection.SearchPlan.HasRequiredPrefilter);
         Assert.Equal(PreparedSearcherKind.ExactLiteral, regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind);
         var match = regex.Match("😀 # noqa: A123, B456"u8);

@@ -40,7 +40,6 @@ internal static partial class Utf8SearchExecutor
                 : FindAnyLiteralWithTrailingRequirement(plan, input, 0),
             Utf8SearchKind.FixedDistanceAsciiLiteral when literal is not null => FindFixedDistanceLiteral(plan, input, 0),
             Utf8SearchKind.FixedDistanceAsciiChar when literal is not null => FindFixedDistanceChar(plan, input, 0),
-            Utf8SearchKind.FixedDistanceAsciiSets when plan.FixedDistanceSets is not null => FindFixedDistanceSets(plan, input, 0),
             Utf8SearchKind.TrailingAnchorFixedLengthEnd => FindTrailingAnchorFixedLengthEnd(plan, input, 0),
             Utf8SearchKind.TrailingAnchorFixedLengthEndZ => FindTrailingAnchorFixedLengthEndZ(plan, input, 0),
             _ => -1,
@@ -60,7 +59,6 @@ internal static partial class Utf8SearchExecutor
             Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral => FindLiteralStart(plan, input, startIndex, reverse: false),
             Utf8SearchKind.FixedDistanceAsciiLiteral => FindFixedDistanceLiteral(plan, input, startIndex),
             Utf8SearchKind.FixedDistanceAsciiChar => FindFixedDistanceChar(plan, input, startIndex),
-            Utf8SearchKind.FixedDistanceAsciiSets => FindFixedDistanceSets(plan, input, startIndex),
             Utf8SearchKind.TrailingAnchorFixedLengthEnd => FindTrailingAnchorFixedLengthEnd(plan, input, startIndex),
             Utf8SearchKind.TrailingAnchorFixedLengthEndZ => FindTrailingAnchorFixedLengthEndZ(plan, input, startIndex),
             _ =>
@@ -472,74 +470,6 @@ internal static partial class Utf8SearchExecutor
         }
 
         return -1;
-    }
-
-    private static int FindFixedDistanceSets(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
-    {
-        var sets = plan.FixedDistanceSets;
-        if (sets is not { Length: > 0 })
-        {
-            return -1;
-        }
-
-        var primary = sets[0];
-        var searchIndex = startIndex + primary.Distance;
-        if (searchIndex < 0 || searchIndex > input.Length)
-        {
-            return -1;
-        }
-
-        while (true)
-        {
-            var absolute = FindNextSetMatch(input, primary, searchIndex);
-            if (absolute < 0)
-            {
-                return -1;
-            }
-
-            var candidate = absolute - primary.Distance;
-            if (candidate >= startIndex &&
-                candidate >= 0 &&
-                candidate <= input.Length - Math.Max(1, plan.MinRequiredLength) &&
-                MatchesRemainingSets(input, sets, candidate))
-            {
-                Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                return candidate;
-            }
-
-            searchIndex = absolute + 1;
-            if (searchIndex > input.Length)
-            {
-                return -1;
-            }
-        }
-    }
-
-    private static int FindNextSetMatch(ReadOnlySpan<byte> input, Utf8FixedDistanceSet set, int startIndex)
-    {
-        if ((uint)startIndex > (uint)input.Length)
-        {
-            return -1;
-        }
-
-        var span = input[startIndex..];
-        var relative = set.AnchorSearch!.IndexOf(span);
-        return relative < 0 ? -1 : startIndex + relative;
-    }
-
-    private static bool MatchesRemainingSets(ReadOnlySpan<byte> input, Utf8FixedDistanceSet[] sets, int candidate)
-    {
-        for (var i = 1; i < sets.Length; i++)
-        {
-            var set = sets[i];
-            var index = candidate + set.Distance;
-            if ((uint)index >= (uint)input.Length || !set.Contains(input[index]))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     internal static bool MatchesBoundaryRequirements(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, int literalLength)

@@ -27,7 +27,6 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         CanGuideFallbackStarts = true,
         RequiredPrefilterLiteralUtf8 = "three"u8.ToArray(),
         RequiredPrefilterAlternateLiteralsUtf8 = ["four"u8.ToArray()],
-        FixedDistanceSets = [default],
         TrailingLiteralUtf8 = "five"u8.ToArray(),
         Distance = 19,
         MinRequiredLength = 23,

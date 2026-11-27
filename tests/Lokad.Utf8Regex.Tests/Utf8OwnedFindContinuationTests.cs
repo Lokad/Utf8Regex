@@ -59,13 +59,7 @@ public sealed class Utf8OwnedFindContinuationTests
             Utf8OwnedFindOptimizations.FindAlternatePrefixes(actual, deep.Options));
         Assert.Equal(Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(expected),
             Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(actual));
-        Assert.Equal(Sets(Utf8OwnedFindOptimizations.FindFixedDistanceSets(expected)),
-            Sets(Utf8OwnedFindOptimizations.FindFixedDistanceSets(actual)));
     }
-
-    private static string[]? Sets(Utf8FixedDistanceSet[]? sets)
-        => sets?.Select(static set => string.Join("|", set.Distance, set.ByteSet.ActualLowMask,
-            set.ByteSet.ActualHighMask)).ToArray();
 
     [Theory]
     [InlineData(false)]
@@ -116,7 +110,6 @@ public sealed class Utf8OwnedFindContinuationTests
             Utf8OwnedFindOptimizations.FindAlternatePrefixes(body, RegexOptions.CultureInvariant)?.Select(Encoding.UTF8.GetString).ToArray());
         Assert.Equal(((string Literal, int Distance)?)("b", depth),
             Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(body));
-        Assert.Null(Utf8OwnedFindOptimizations.FindFixedDistanceSets(body));
     }
 
     [Theory]
@@ -138,7 +131,6 @@ public sealed class Utf8OwnedFindContinuationTests
         Assert.Null(Utf8OwnedFindOptimizations.TryExtractLongestLiteral(body));
         Assert.Equal(new[] { "abababab" }, Utf8OwnedFindOptimizations.FindAlternatePrefixes(body, RegexOptions.CultureInvariant)?.Select(Encoding.UTF8.GetString).ToArray());
         Assert.Null(Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(body));
-        Assert.Null(Utf8OwnedFindOptimizations.FindFixedDistanceSets(body));
     }
 
     [Theory]
