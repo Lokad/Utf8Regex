@@ -57,6 +57,14 @@ BRE, collating or equivalence elements, backreferences, assertions other
 than `^` and `$`, shorthand or property escapes, extended groups and
 non-ERE quantifier suffixes are outside this subset.
 
+The constructor and `Compile` throw `PosixUnsupportedSyntaxException`
+when the parser encounters an extended group such as `a(?=b)`, a collating
+or equivalence element, an escape outside ERE punctuation, or a lazy or
+possessive repetition suffix. A malformed ERE such as `(a` throws
+`ArgumentException` directly. Both carry `ParamName = "pattern"` and
+the UTF-16 pattern offset in the diagnostic. Classification uses the
+first parser error in the POSIX grammar.
+
 ## Selection and captures
 
 Choose the earliest start and then the greatest end at that start. For

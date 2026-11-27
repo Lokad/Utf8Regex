@@ -33,10 +33,13 @@ public sealed class PosixPublicContractTests
 
     public static IEnumerable<object[]> SelectionCases() => FixtureRows("cases");
     public static IEnumerable<object[]> IterationCases() => FixtureRows("iterationCases");
-    public static IEnumerable<object[]> RejectedPatterns()
+    public static IEnumerable<object[]> UnsupportedPatterns() => PatternRows("unsupportedPatterns");
+    public static IEnumerable<object[]> MalformedPatterns() => PatternRows("malformedPatterns");
+
+    private static IEnumerable<object[]> PatternRows(string family)
     {
         using var fixtures = Fixtures();
-        foreach (var pattern in fixtures.RootElement.GetProperty("rejectedPatterns").EnumerateArray())
+        foreach (var pattern in fixtures.RootElement.GetProperty(family).EnumerateArray())
             yield return [pattern.GetString()!];
     }
 
@@ -49,10 +52,33 @@ public sealed class PosixPublicContractTests
         foreach (var row in fixtures.RootElement.GetProperty(family).EnumerateArray())
             yield return [row.GetProperty("id").GetString()!, row.GetRawText()];
     }
+
     [Theory]
-    [MemberData(nameof(RejectedPatterns))]
+    [MemberData(nameof(UnsupportedPatterns))]
     public void UnsupportedPatternsFailAtPublicAdmission(string pattern)
-        => Assert.Throws<ArgumentException>(() => new Utf8PosixRegex(pattern));
+    {
+        var failure = Assert.Throws<PosixUnsupportedSyntaxException>("pattern", () => Utf8PosixRegex.Compile(pattern));
+        Assert.Contains("UTF-16 pattern offset", failure.Message);
+        Assert.Throws<PosixUnsupportedSyntaxException>("pattern", () => new Utf8PosixRegex(pattern));
+    }
+
+    [Theory]
+    [MemberData(nameof(MalformedPatterns))]
+    public void MalformedPatternsFailAtPublicAdmission(string pattern)
+    {
+        var failure = Assert.Throws<ArgumentException>("pattern", () => Utf8PosixRegex.Compile(pattern));
+        Assert.Contains("UTF-16 pattern offset", failure.Message);
+        Assert.Throws<ArgumentException>("pattern", () => new Utf8PosixRegex(pattern));
+    }
+
+    [Fact]
+    public void CompileAcceptsAnOrdinaryEre()
+    {
+        using var regex = Utf8PosixRegex.Compile("a(b)");
+        Assert.True(regex.IsMatch("ab"u8));
+        Assert.Equal(1, regex.GroupCount);
+    }
+
     [Theory]
     [MemberData(nameof(SelectionCases))]
     public void PublicMatchPreservesWinnerForEveryCaptureSpanSize(string id, string fixture)

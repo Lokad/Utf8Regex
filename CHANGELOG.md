@@ -6,6 +6,8 @@
   `MatchLimit` from PCRE2's managed limits. Use a cancellation token for
   cooperative interruption. Timeouts, depth limits and storage admission
   remain available.
+- POSIX reports recognized syntax outside its ERE subset through
+  `PosixUnsupportedSyntaxException`, a subtype of `ArgumentException`.
 
 ## 0.5.0 — 2026-11-27
 

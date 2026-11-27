@@ -100,5 +100,6 @@
     { "id": "fold-newline-progress", "pattern": "^k+$", "input": "K\nK", "options": "IgnoreCase, Newline", "matches": [[0,3],[4,1]] },
     { "id": "fold-greedy-newline-progress", "pattern": "^([[:alpha:]]+)([0-9]+)$", "input": "z\nKK007\nx9", "options": "IgnoreCase, Newline", "matches": [[2,7],[10,2]] }
   ],
-  "rejectedPatterns": ["\\d", "\\w", "\\1", "(?=a)", "(?<=a)", "(?:a)", "(?<x>a)", "(?i:a)", "a*?", "a++", "(?>a)", "(?(1)a|b)", "[[.ch.]]", "[[=a=]]", "[[:unknown:]]", "a{256}", "a{3,2}", "a{foo}", "[z-a]", "^*", "(", "[", "\\"]
+  "unsupportedPatterns": ["\\d", "\\w", "\\1", "a(?=b)", "a(?=b)[", "(?=a)", "(?<=a)", "(?:a)", "(?<x>a)", "(?i:a)", "a*?", "a++", "a{2}+", "(?>a)", "(?(1)a|b)", "[[.ch.]]", "[[=a=]]", "[a-[.z.]]", "[a-[=z=]]"],
+  "malformedPatterns": ["[[:unknown:]]", "a{256}", "a{3,2}", "a{foo}", "[z-a]", "^*", "a**", "(a", "(", "[", "\\", ")(?=b)"]
 }

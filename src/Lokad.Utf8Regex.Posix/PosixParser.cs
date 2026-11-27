@@ -83,6 +83,8 @@ internal sealed class PosixParser
                         case '?': minimum = 0; maximum = 1; _position++; break;
                         default: (minimum, maximum) = ReadInterval(); break;
                     }
+                    if (_position < _pattern.Length && _pattern[_position] is '?' or '+')
+                        throw Unsupported("Lazy and possessive repetition are unsupported");
                     nodes.Push(_budget.AllocateObject((atom, minimum, maximum),
                         static x => new Utf8SliceNode.RepeatNode(x.atom, x.minimum, x.maximum, false)));
                     canRepeat = false;
@@ -92,7 +94,7 @@ internal sealed class PosixParser
                 if (next == '(')
                 {
                     _position++;
-                    if (_position < _pattern.Length && _pattern[_position] == '?') throw Error("Extended groups are unsupported");
+                    if (_position < _pattern.Length && _pattern[_position] == '?') throw Unsupported("Extended groups are unsupported");
                     _budget.EnterDepth(); opened++;
                     operators.Push(new(Operator.Open, checked(++_groups)));
                     needsAtom = true; canRepeat = false;
@@ -115,7 +117,7 @@ internal sealed class PosixParser
                     case '\\':
                         _position++;
                         var escaped = ReadScalar();
-                        if (escaped > 127 || !".^$[]()|*+?{}\\".Contains((char)escaped)) throw Error("Unsupported escape");
+                        if (escaped > 127 || !".^$[]()|*+?{}\\".Contains((char)escaped)) throw Unsupported("Unsupported escape");
                         node = NewLiteral(escaped);
                         break;
                     default: node = NewLiteral(ReadScalar()); break;
@@ -201,7 +203,7 @@ internal sealed class PosixParser
                 throw Error("A literal hyphen must be first or last");
             if (_pattern[_position] == '[' && _position + 1 < _pattern.Length && _pattern[_position + 1] is ':' or '.' or '=')
             {
-                if (_pattern[_position + 1] != ':') throw Error("Locale collation is unsupported");
+                if (_pattern[_position + 1] != ':') throw Unsupported("Locale collation is unsupported");
                 ReadNamedClass(ranges);
                 if (_position + 1 < _pattern.Length && _pattern[_position] == '-' && _pattern[_position + 1] != ']')
                     throw Error("A named class cannot be a range endpoint");
@@ -213,8 +215,11 @@ internal sealed class PosixParser
                 _pattern[_position] == '-' && _pattern[_position + 1] != ']')
             {
                 _position++;
-                if (_pattern[_position] == '[' && _position + 1 < _pattern.Length && _pattern[_position + 1] is ':' or '.' or '=')
-                    throw Error("A named class cannot be a range endpoint");
+                if (_pattern[_position] == '[' && _position + 1 < _pattern.Length)
+                {
+                    if (_pattern[_position + 1] is '.' or '=') throw Unsupported("Locale collation is unsupported");
+                    if (_pattern[_position + 1] == ':') throw Error("A named class cannot be a range endpoint");
+                }
                 end = ReadScalar();
                 if (end < start) throw Error("Descending scalar range");
             }
@@ -322,5 +327,7 @@ internal sealed class PosixParser
     private Utf8SliceNode NewEmpty() => _budget.AllocateObject(0, static _ => new Utf8SliceNode.EmptyNode());
     private Utf8SliceNode NewLiteral(int value) => _budget.AllocateObject((value, _ignoreCase),
         static x => new Utf8SliceNode.LiteralNode(x.value, x._ignoreCase));
-    private ArgumentException Error(string reason) => new($"{reason} at UTF-16 pattern offset {_position}.", "pattern");
+    private ArgumentException Error(string reason) => new(Diagnostic(reason), "pattern");
+    private PosixUnsupportedSyntaxException Unsupported(string reason) => new(Diagnostic(reason));
+    private string Diagnostic(string reason) => $"{reason} at UTF-16 pattern offset {_position}.";
 }

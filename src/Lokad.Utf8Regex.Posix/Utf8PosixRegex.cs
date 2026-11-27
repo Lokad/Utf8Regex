@@ -11,6 +11,8 @@ public sealed class Utf8PosixRegex : IDisposable
 {
     /// <summary>Constructs an ERE with immutable construction, execution and optional program-funding settings.</summary>
     /// <remarks>Null policy timeouts mean infinite. Default construction borrows existing internal admission; explicit construction/funding controls own one scope. Funded expressions reject new matching calls after close, while already-admitted calls/cursors retain program funding. Subjects remain caller-valid unchanged UTF-8.</remarks>
+    /// <exception cref="PosixUnsupportedSyntaxException">The parser encountered syntax outside the supported ERE subset.</exception>
+    /// <exception cref="ArgumentException">The pattern is malformed.</exception>
     public Utf8PosixRegex(string pattern, PosixCompileOptions options = PosixCompileOptions.None,
         Utf8RegexPolicy? policy = null) : this(pattern, options, policy, default, explicitCompile: false) { }
 
@@ -73,6 +75,8 @@ public sealed class Utf8PosixRegex : IDisposable
 
     /// <summary>Compiles an ERE eagerly under one policy and an independent construction token.</summary>
     /// <remarks>Entry cancellation precedes policy/pattern work. One construction owner covers admission and publication. The token is not retained for matching; later operations use their own deadlines and cancellation.</remarks>
+    /// <exception cref="PosixUnsupportedSyntaxException">The parser encountered syntax outside the supported ERE subset.</exception>
+    /// <exception cref="ArgumentException">The pattern is malformed.</exception>
     public static Utf8PosixRegex Compile(string pattern, PosixCompileOptions options = PosixCompileOptions.None,
         Utf8RegexPolicy? policy = null, CancellationToken cancellationToken = default)
     {
