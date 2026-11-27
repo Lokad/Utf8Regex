@@ -1300,6 +1300,16 @@ internal static class Utf8SliceLowerer
 
     private static bool TryGetLeafFacts(Utf8SliceNode node, bool nonBacktracking, out NodeFacts facts)
     {
+        if (node is Utf8SliceNode.RepeatNode repeat && TryGetAtomFacts(repeat.Body, nonBacktracking, out var body))
+        {
+            facts = SummarizeRepeat(repeat, body, nonBacktracking);
+            return true;
+        }
+        return TryGetAtomFacts(node, nonBacktracking, out facts);
+    }
+
+    private static bool TryGetAtomFacts(Utf8SliceNode node, bool nonBacktracking, out NodeFacts facts)
+    {
         switch (node)
         {
             case Utf8SliceNode.LiteralNode literal:
@@ -1410,10 +1420,7 @@ internal static class Utf8SliceLowerer
                     }
                     return new(anyEmpty, allZeroWidth, alternation.Branches.Length == 0 ? 0 : minimum, maximum);
                 case Utf8SliceNode.RepeatNode repeat:
-                    var body = Get(repeat.Body);
-                    return new(repeat.Minimum == 0 || body.CanMatchEmpty, nonBacktracking && (repeat.Maximum == 0 || body.IsZeroWidth),
-                        Saturate((long)body.Minimum * repeat.Minimum),
-                        repeat.Maximum == long.MaxValue || body.Maximum == int.MaxValue ? int.MaxValue : Saturate((long)body.Maximum * repeat.Maximum));
+                    return SummarizeRepeat(repeat, Get(repeat.Body), nonBacktracking);
                 default:
                     return new(false, false, 0, int.MaxValue);
             }
@@ -1432,11 +1439,17 @@ internal static class Utf8SliceLowerer
                 minimum += fact.Minimum;
                 maximum += fact.Maximum;
             }
-            return new(empty, zeroWidth, Saturate(minimum), Saturate(maximum));
+            return new(empty, zeroWidth, SaturateNodeWidth(minimum), SaturateNodeWidth(maximum));
         }
-
-        static int Saturate(long value) => value > int.MaxValue ? int.MaxValue : (int)value;
     }
+
+    private static NodeFacts SummarizeRepeat(Utf8SliceNode.RepeatNode repeat, NodeFacts body, bool nonBacktracking)
+        => new(repeat.Minimum == 0 || body.CanMatchEmpty, nonBacktracking && (repeat.Maximum == 0 || body.IsZeroWidth),
+            SaturateNodeWidth((long)body.Minimum * repeat.Minimum),
+            repeat.Maximum == long.MaxValue || body.Maximum == int.MaxValue
+                ? int.MaxValue : SaturateNodeWidth((long)body.Maximum * repeat.Maximum));
+
+    private static int SaturateNodeWidth(long value) => value > int.MaxValue ? int.MaxValue : (int)value;
 
     private struct AnalysisFrame(Utf8SliceNode node)
     {
