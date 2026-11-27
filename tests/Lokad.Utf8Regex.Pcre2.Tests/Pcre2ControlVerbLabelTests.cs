@@ -67,7 +67,7 @@ public sealed class Pcre2ControlVerbLabelTests
     [InlineData(@"(*atomic:\C)", Pcre2ErrorKind.BackslashCDisabled)]
     [InlineData("(*MARK:(tag)(?<100>a)", Pcre2ErrorKind.InvalidAfterParensQuery)]
     [InlineData(@"(*MARK:(tag)\C", Pcre2ErrorKind.BackslashCDisabled)]
-    [InlineData("(*MARK:(tag)(?C)a", Pcre2ErrorKind.CalloutUnsupported)]
+    [InlineData("(*MARK:(tag)(?C\"label\")a", Pcre2ErrorKind.CalloutUnsupported)]
     [InlineData("(*MARK:(tag)a(", Pcre2ErrorKind.MissingClosingParenthesis)]
     [InlineData("(*MARK:unterminated", Pcre2ErrorKind.MissingClosingParenthesis)]
     public void RealRegexBodiesAndFollowingSyntaxRemainValidated(string pattern, Pcre2ErrorKind kind)

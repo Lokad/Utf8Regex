@@ -9,7 +9,7 @@ public sealed class Pcre2NativeLexicalTests
 {
     public static IEnumerable<object?[]> SyntaxCases()
     {
-        yield return ["é😀(?C)", Pcre2CompileOptions.None, Pcre2ErrorKind.CalloutUnsupported];
+        yield return ["é😀(?C\"label\")", Pcre2CompileOptions.None, Pcre2ErrorKind.CalloutUnsupported];
         yield return [@"é\C", Pcre2CompileOptions.None, Pcre2ErrorKind.BackslashCDisabled];
         yield return [@"(?=\K)", Pcre2CompileOptions.None, Pcre2ErrorKind.LookaroundBackslashKDisabled];
         yield return [@"[\R]", Pcre2CompileOptions.None, Pcre2ErrorKind.EscapeInvalidInClass];
@@ -27,7 +27,7 @@ public sealed class Pcre2NativeLexicalTests
         yield return ["(?x:# ignored\n)(?-x:\\C)", Pcre2CompileOptions.None, Pcre2ErrorKind.BackslashCDisabled];
         yield return ["(?xx:[ ]#](?=\\K))", Pcre2CompileOptions.None, Pcre2ErrorKind.LookaroundBackslashKDisabled];
         yield return ["\\p{é(?C)}", Pcre2CompileOptions.None, null]; // Operand meaning belongs to the parser.
-        yield return ["(?#" + new string('é', 2047) + "😀)(?C)", Pcre2CompileOptions.None, Pcre2ErrorKind.CalloutUnsupported];
+        yield return ["(?#" + new string('é', 2047) + "😀)(?C\"label\")", Pcre2CompileOptions.None, Pcre2ErrorKind.CalloutUnsupported];
     }
 
     [Theory]
@@ -48,7 +48,7 @@ public sealed class Pcre2NativeLexicalTests
     [InlineData(Pcre2NewlineConvention.Nul, "\0")]
     public void NativeCommentsEndAtTheCompleteConfiguredScalar(Pcre2NewlineConvention newline, string separator)
     {
-        var pattern = "# é😀 \\C" + separator + "(?C)";
+        var pattern = "# é😀 \\C" + separator + "(?C\"label\")";
         Assert.Equal(Pcre2ErrorKind.CalloutUnsupported,
             Inspect(pattern, Pcre2CompileOptions.Extended, newline, native: true));
         Assert.Equal(Pcre2ErrorKind.CalloutUnsupported,
@@ -62,12 +62,11 @@ public sealed class Pcre2NativeLexicalTests
     public void ContinuationBytesCannotTerminateNativeComments(string text)
     {
         // Å ends in 0x85, which is NEL only as a complete U+0085 scalar.
-        Assert.Null(Inspect("# " + text + "(?C)", Pcre2CompileOptions.Extended,
+        Assert.Null(Inspect("# " + text + "(?C\"label\")", Pcre2CompileOptions.Extended,
             Pcre2NewlineConvention.Any, native: true));
     }
 
     [Theory]
-    [InlineData(0, false)] [InlineData(0, true)]
     [InlineData(1, false)] [InlineData(1, true)]
     [InlineData(2, false)] [InlineData(2, true)]
     public void NativeScansRetainOriginalInterruptionAndParentStorage(int entry, bool timeout)
@@ -97,7 +96,7 @@ public sealed class Pcre2NativeLexicalTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(1)] [InlineData(2)]
     public void NativeLexicalGroupsAdmitBeforeAllocatingTheirScopeStack(int entry)
     {
         var pattern = Encoding.UTF8.GetBytes(new string('(', 8192) + "😀" + new string(')', 8192));
@@ -128,7 +127,6 @@ public sealed class Pcre2NativeLexicalTests
         var pattern = new Utf8ConstructionPattern(bytes);
         switch (entry)
         {
-            case 0: _ = Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?C", Pcre2CompileOptions.Extended, default); break;
             case 1: Pcre2CaptureNameValidator.Validate(pattern, Pcre2CompileOptions.Extended, default); break;
             default: Pcre2CompileValidator.ValidatePattern(pattern, Pcre2CompileOptions.Extended, default); break;
         }

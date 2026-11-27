@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2LexicalAdmissionTests
 {
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(1)] [InlineData(2)]
     public void LexicalGroupsCannotAllocatePastTheParentByteAllowance(int entry)
     {
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, 49, 1);
@@ -49,7 +49,6 @@ public sealed class Pcre2LexicalAdmissionTests
     }
 
     [Theory]
-    [InlineData(0, false)] [InlineData(0, true)]
     [InlineData(1, false)] [InlineData(1, true)]
     [InlineData(2, false)] [InlineData(2, true)]
     public void LongPlainScansObserveOriginalAuthorityAfterEntry(int entry, bool timeout)
@@ -94,7 +93,6 @@ public sealed class Pcre2LexicalAdmissionTests
     {
         switch (entry)
         {
-            case 0: _ = Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?C", default, default); break;
             case 1: Pcre2CaptureNameValidator.Validate(pattern, default, default); break;
             default: Pcre2CompileValidator.ValidatePattern(pattern, default, default); break;
         }

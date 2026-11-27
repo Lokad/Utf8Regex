@@ -16,7 +16,8 @@ own validation rules. Starts and reported endpoints use byte offsets.
 The adapter supports captures, backreferences, assertions, branch reset,
 duplicate names, recursion, conditionals, atomic groups and backtracking
 verbs. Use `Probe` for ordinary MARK results and supported soft or hard
-partial decisions. The scope excludes DFA matching, callouts, invalid-UTF
+partial decisions. Numbered callouts such as `(?C1)` match without invoking
+a callback. The scope excludes string callouts, DFA matching, invalid-UTF
 subject mode, RTL, split and full capture history.
 [Grammar and probe coverage](../../docs/SPEC-PCRE2.md)
 

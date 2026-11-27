@@ -135,6 +135,14 @@ internal sealed class Pcre2BacktrackingParser
                 continue;
             }
 
+            // Callouts occupy a syntax position but consume no input and
+            // produce no instructions when there is no callback.
+            if (_pattern[_offset] == '(' && Pcre2PatternCodeScan.TrySkipNumberedCallout(_pattern, ref _offset))
+            {
+                RequiresProfileOptions = true;
+                continue;
+            }
+
             if (_pattern.StartsWithAscii(_offset, "\\Q"))
             {
                 if (!TryParseQuotedSequence(out var quotedChildren))
@@ -1031,7 +1039,17 @@ internal sealed class Pcre2BacktrackingParser
         {
             return false;
         }
-        _offset += 3;
+        _offset += 2;
+        var hasCallout = Pcre2PatternCodeScan.TrySkipNumberedCallout(_pattern, ref _offset);
+        if (hasCallout)
+        {
+            RequiresProfileOptions = true;
+            SkipExtendedTrivia();
+            if (!_pattern.StartsWithAscii(_offset, "(?"))
+                throw new Pcre2CompileException("A PCRE2 callout condition must precede an assertion.",
+                    Pcre2ErrorKind.InvalidAfterParensQuery);
+        }
+        _offset++;
         if (_pattern.StartsWithAscii(_offset, "DEFINE)"))
         {
             _offset += 7;
@@ -1058,6 +1076,11 @@ internal sealed class Pcre2BacktrackingParser
         if (TryParseConditionalAssertion(out assertion))
         {
             conditionKind = Pcre2BacktrackingConditionKind.Assertion;
+        }
+        else if (hasCallout)
+        {
+            throw new Pcre2CompileException("A PCRE2 callout condition must precede an assertion.",
+                Pcre2ErrorKind.InvalidAfterParensQuery);
         }
         else if (!TryParseConditionalReference(out conditionKind, out target))
         {

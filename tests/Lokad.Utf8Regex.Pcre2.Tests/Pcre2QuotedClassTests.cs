@@ -91,7 +91,7 @@ public sealed class Pcre2QuotedClassTests
 
     [Theory]
     [InlineData(@"[\Q\C\E]\C", Pcre2ErrorKind.BackslashCDisabled)]
-    [InlineData(@"[\Q(?C]\E](?C)", Pcre2ErrorKind.CalloutUnsupported)]
+    [InlineData("[\\Q(?C]\\E](?C\"label\")", Pcre2ErrorKind.CalloutUnsupported)]
     public void ActualCodeAfterQuotedClassesKeepsItsValidation(string pattern, Pcre2ErrorKind kind)
     {
         Assert.Equal(kind, Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex(pattern)).ErrorKind);

@@ -86,8 +86,8 @@
     "Notes": "Tracks the spec decision that global iteration rejects successful non-monotone matches."
   },
   {
-    "Id": "pcre2.outofscope.callout",
-    "Pattern": "a(?C1)b",
+    "Id": "pcre2.outofscope.string-callout",
+    "Pattern": "a(?C\"label\")b",
     "PatternEncoding": "Utf16Text",
     "CompileOptions": [],
     "CompileSettings": {
@@ -106,7 +106,7 @@
       "ErrorKind": "CalloutUnsupported"
     },
     "Status": "OutOfScopeBySpec",
-    "Source": "ported/spec-pcre2/callout-non-goal"
+    "Source": "ported/spec-pcre2/string-callout-non-goal"
   },
   {
     "Id": "pcre2.c11.callout.class-literal",
@@ -541,7 +541,7 @@
     "Source": "ported/spec-pcre2/lexical-scan-escaped"
   },
   {
-    "Id": "pcre2.c11.callout.bare-rejected",
+    "Id": "pcre2.c11.callout.bare",
     "Pattern": "a(?C)b",
     "PatternEncoding": "Utf16Text",
     "CompileOptions": [],
@@ -555,13 +555,26 @@
     "MatchOptions": [],
     "InputText": "ab",
     "StartOffsetInBytes": 0,
-    "Operation": "Compile",
+    "Operation": "Match",
     "Expected": {
-      "Outcome": "CompileError",
-      "ErrorKind": "CalloutUnsupported"
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 2,
+      "HasContiguousByteRange": true,
+      "ValueText": "ab",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 2,
+          "ValueText": "ab"
+        }
+      ],
+      "NameEntries": []
     },
-    "Status": "OutOfScopeBySpec",
-    "Source": "ported/spec-pcre2/callout-non-goal"
+    "Status": "Active",
+    "Source": "ported/spec-pcre2/numbered-callouts"
   },
   {
     "Id": "pcre2.spec.kreset-repeat-global-suppression.count",

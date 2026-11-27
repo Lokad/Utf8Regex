@@ -9,6 +9,7 @@
 - POSIX reports recognized syntax outside its ERE subset through
   `PosixUnsupportedSyntaxException`, a subtype of `ArgumentException`.
 - Align PCRE2 `\X` Indic conjunct boundaries with native PCRE2 10.47.
+- Accept numbered PCRE2 callouts without callbacks.
 
 ## 0.5.0 — 2026-11-27
 

@@ -1,16 +1,9 @@
 [
   {
-    "Id": "pcre2.outofscope.callout",
+    "Id": "pcre2.outofscope.string-callout",
     "Operation": "Compile",
     "Status": "OutOfScopeBySpec",
-    "Source": "ported/spec-pcre2/callout-non-goal",
-    "Reason": "CalloutNonGoal"
-  },
-  {
-    "Id": "pcre2.c11.callout.bare-rejected",
-    "Operation": "Compile",
-    "Status": "OutOfScopeBySpec",
-    "Source": "ported/spec-pcre2/callout-non-goal",
+    "Source": "ported/spec-pcre2/string-callout-non-goal",
     "Reason": "CalloutNonGoal"
   }
 ]

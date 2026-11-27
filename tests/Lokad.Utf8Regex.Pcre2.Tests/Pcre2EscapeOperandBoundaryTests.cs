@@ -53,7 +53,7 @@ public sealed class Pcre2EscapeOperandBoundaryTests
     }
 
     [Theory]
-    [InlineData(@"\c\Q(?C)", Pcre2ErrorKind.CalloutUnsupported)]
+    [InlineData("\\c\\Q(?C\"label\")", Pcre2ErrorKind.CalloutUnsupported)]
     [InlineData(@"\c((?<1>a)", Pcre2ErrorKind.InvalidAfterParensQuery)]
     [InlineData(@"(?=\c)\K)i", Pcre2ErrorKind.LookaroundBackslashKDisabled)]
     [InlineData(@"[\c]\C]", Pcre2ErrorKind.BackslashCDisabled)]

@@ -14,8 +14,9 @@ binary or BCL matcher is used by the libraries.
 Adapters require the exact matching Core version. These profiles have documented
 boundaries; they do not promise full .NET, Python, PCRE2 or locale-aware POSIX
 equivalence. POSIX excludes lookarounds, backreferences and locale collation.
-PCRE2 excludes DFA matching, invalid-UTF subject mode, callouts, split and full
-capture history; partial probing has a limited supported scope.
+PCRE2 accepts numbered callouts without callbacks. String callouts, DFA
+matching, invalid-UTF subject mode, split and full capture history are
+outside its scope. Partial probing supports a limited set of patterns.
 
 POSIX is case-sensitive by default. `PosixCompileOptions.IgnoreCase` uses invariant
 Unicode 16.0 simple-lowercase equivalence, retaining longest-match selection and

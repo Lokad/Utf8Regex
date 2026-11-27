@@ -265,7 +265,12 @@ their original input contract. Result traffic stays cumulative after refund.
 ## Isolation and scope
 
 Core is the adapter's only non-BCL implementation dependency. Shipped
-matching is managed. Callouts, the DFA matcher, invalid-UTF mode, RTL,
-split and full capture history are outside this profile. Use cursor ranges
+matching is managed. `(?C)` and numbered callouts `(?C0)` through `(?C255)`
+are accepted without callbacks. A callout consumes no input, opens no
+capture and cannot be quantified. One numbered callout may precede an
+assertion condition. String callouts report `CalloutUnsupported`.
+
+The DFA matcher, invalid-UTF mode, RTL, split and full capture history
+are outside this profile. Use cursor ranges
 for host-defined output. [Profile examples](../src/Lokad.Utf8Regex.Pcre2/README.md) ·
 [Implementation](ARCHITECTURE-PCRE2.md)

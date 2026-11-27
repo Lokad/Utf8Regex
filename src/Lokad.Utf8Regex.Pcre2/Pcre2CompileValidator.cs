@@ -101,11 +101,6 @@ internal static class Pcre2CompileValidator
                 hasGroupSyntax |= block.IndexOfAny('?', '*') >= 0;
             }
         }
-        if (hasGroupSyntax && Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?C", options, compileSettings.Newline))
-        {
-            throw new Pcre2CompileException("PCRE2 callouts are out of scope for this profile.", Pcre2ErrorKind.CalloutUnsupported);
-        }
-
         if (hasEscape && compileSettings.BackslashC == Pcre2BackslashCPolicy.Forbid && ContainsBackslashC(pattern, false, options, compileSettings.Newline))
         {
             throw new Pcre2CompileException(@"Using \C is disabled by this library profile.", Pcre2ErrorKind.BackslashCDisabled);
@@ -205,6 +200,7 @@ internal static class Pcre2CompileValidator
             }
 
             if (!inCharacterClass && Pcre2PatternCodeScan.TrySkipExtendedComment(pattern, ref offset, extended != 0, newline)) continue;
+            if (extended != 0 && character is (' ' or '\t' or '\n' or '\v' or '\f' or '\r')) continue;
 
             if (character == '\\')
             {
@@ -248,6 +244,12 @@ internal static class Pcre2CompileValidator
 
             if (character == '(')
             {
+                if (Pcre2PatternCodeScan.TrySkipNumberedCallout(pattern, ref offset))
+                {
+                    offset--;
+                    previousWasZeroWidth = true;
+                    continue;
+                }
                 ValidateOptionOpening(pattern, offset);
                 if (Pcre2PatternCodeScan.EnterExtendedGroup(pattern, ref offset, ref extended, extendedScopes)) continue;
                 groupDepth++;

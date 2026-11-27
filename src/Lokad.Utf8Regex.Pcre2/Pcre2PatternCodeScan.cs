@@ -9,140 +9,34 @@ namespace Lokad.Utf8Regex.Pcre2;
 // as declaration and structural admission.
 internal static class Pcre2PatternCodeScan
 {
-    public static bool ContainsCodeText(string pattern, string text,
-        Pcre2CompileOptions options, Pcre2NewlineConvention newline)
-        => ContainsCodeText(new Utf8ConstructionPattern(pattern), text, options, newline);
-
-    public static bool ContainsCodeText(Utf8ConstructionPattern pattern, string text,
-        Pcre2CompileOptions options, Pcre2NewlineConvention newline)
+    // Called at a pattern item or an assertion condition. Leave the offset
+    // immediately after ')' so callers can keep the original source coordinates.
+    internal static bool TrySkipNumberedCallout(Utf8ConstructionPattern pattern, ref int offset)
     {
-        // Admit the full lexical extent, including skipped quotes/comments.
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        budget.Checkpoint();
-        var quoted = false;
-        var inCharacterClass = false;
-        var classHasAtom = false;
-        var classStart = false;
-        byte extended = (options & Pcre2CompileOptions.ExtendedMore) != 0 ? (byte)2 : (options & Pcre2CompileOptions.Extended) != 0 ? (byte)1 : (byte)0;
-        using var scopes = new Utf8ConstructionBuffer<byte>(budget);
-        var nextCheckpoint = 0;
-        for (var offset = 0; offset < pattern.Length; offset++)
+        if (!pattern.StartsWithAscii(offset, "(?C")) return false;
+        var start = offset + 3;
+        if (start < pattern.Length && pattern[start] is ('`' or '\'' or '"' or '^' or '%' or '#' or '$' or '{'))
+            throw new Pcre2CompileException("PCRE2 string callouts are out of scope for this profile.",
+                Pcre2ErrorKind.CalloutUnsupported);
+
+        var end = start;
+        var number = 0;
+        while (end < pattern.Length && char.IsAsciiDigit(pattern[end]))
         {
-            if (offset >= nextCheckpoint)
-            {
-                budget.Checkpoint();
-                nextCheckpoint = offset + 2048;
-            }
-            var character = pattern[offset];
-            if (quoted)
-            {
-                if (character == '\\' && offset + 1 < pattern.Length && pattern[offset + 1] == 'E')
-                {
-                    quoted = false;
-                    offset++;
-                }
-                else if (inCharacterClass) { classHasAtom = true; classStart = false; }
-
-                continue;
-            }
-
-            if (inCharacterClass)
-            {
-                if (extended == 2 && character is ' ' or '\t') continue;
-                if (character == '\\' && offset + 1 < pattern.Length)
-                {
-                    if (pattern[offset + 1] is 'Q' or 'E')
-                    {
-                        quoted = pattern[offset + 1] == 'Q';
-                        offset++;
-                        continue;
-                    }
-                    offset++;
-                    SkipEscapeOperand(pattern, ref offset, pattern[offset]);
-                    classHasAtom = true;
-                    classStart = false;
-                    continue;
-                }
-
-                if (classStart && character == '^') { classStart = false; continue; }
-                classStart = false;
-                if (character == ']' && classHasAtom)
-                {
-                    inCharacterClass = false;
-                    classHasAtom = false;
-                    continue;
-                }
-
-                classHasAtom = true;
-                if (character == '[') TrySkipPosixClassToken(pattern, ref offset);
-                continue;
-            }
-
-            if (TrySkipExtendedComment(pattern, ref offset, extended != 0, newline)) continue;
-
-            if (character == '\\')
-            {
-                if (pattern.StartsWithAscii(offset, text))
-                {
-                    return true;
-                }
-
-                if (offset + 1 >= pattern.Length)
-                {
-                    return false;
-                }
-
-                if (pattern[offset + 1] == 'Q')
-                {
-                    quoted = true;
-                }
-
-                offset++;
-                SkipEscapeOperand(pattern, ref offset, pattern[offset]);
-                continue;
-            }
-
-            if (character == '[')
-            {
-                if (pattern.StartsWithAscii(offset, text))
-                {
-                    return true;
-                }
-
-                inCharacterClass = true;
-                classHasAtom = false;
-                classStart = true;
-                continue;
-            }
-
-            if (character == '(' && pattern.StartsWithAscii(offset, "(?#"))
-            {
-                var commentEnd = Pcre2PatternCodeScan.FindClosingParenthesis(pattern, offset + 3);
-                if (commentEnd < 0)
-                {
-                    return false;
-                }
-
-                offset = commentEnd;
-                continue;
-            }
-
-            if (character == '(' && TrySkipControlVerbLabel(pattern, ref offset))
-            {
-                continue;
-            }
-
-            if (pattern.StartsWithAscii(offset, text))
-            {
-                return true;
-            }
-
-            if (character == '(') EnterExtendedGroup(pattern, ref offset, ref extended, scopes);
-            else if (character == ')' && scopes.TryPop(out var previous)) extended = previous;
+            if (((end - start) & 2047) == 0) Utf8ConstructionScope.Checkpoint();
+            number = number * 10 + pattern[end++] - '0';
+            if (number > 255)
+                throw new Pcre2CompileException("PCRE2 callout numbers cannot exceed 255.",
+                    Pcre2ErrorKind.InvalidAfterParensQuery);
         }
-
-        return false;
+        if (end == pattern.Length)
+            throw new Pcre2CompileException("Missing closing parenthesis after PCRE2 callout.",
+                Pcre2ErrorKind.MissingClosingParenthesis);
+        if (pattern[end] != ')')
+            throw new Pcre2CompileException("Invalid numbered PCRE2 callout.",
+                Pcre2ErrorKind.InvalidAfterParensQuery);
+        offset = end + 1;
+        return true;
     }
 
     // Offset points at the escape letter, and leaves at the last operand unit.
@@ -210,10 +104,15 @@ internal static class Pcre2PatternCodeScan
     }
 
     // Mode 0 disables extended syntax, 1 is x, 2 is xx (also ignores horizontal
-    // class whitespace). Return true for a global directive, which opens no group. Scoped
+    // class whitespace). Global directives and callouts open no group. Scoped
     // directives and ordinary groups save the inherited mode for their ')'.
     internal static bool EnterExtendedGroup(Utf8ConstructionPattern pattern, ref int offset, ref byte extended, Utf8ConstructionBuffer<byte> scopes)
     {
+        if (TrySkipNumberedCallout(pattern, ref offset))
+        {
+            offset--; // Lexical for loops advance from the closing parenthesis.
+            return true;
+        }
         var budget = Utf8ConstructionScope.CurrentBudget;
         var maximum = Math.Min(budget.MaximumDepth, Pcre2BacktrackingCompiler.MaximumRecursiveDepth);
         var prospective = budget.Depth + (ulong)scopes.Count + 1;

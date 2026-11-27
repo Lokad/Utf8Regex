@@ -4,25 +4,9 @@ using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Pcre2ValidationWorkTests
+public sealed class Pcre2ValidationInterruptionTests
 {
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void UnterminatedTokenRescansCannotEscapeCumulativeWork(bool verb)
-    {
-        var pattern = verb ? string.Concat(Enumerable.Repeat("(*X", 256))
-            : "[" + string.Concat(Enumerable.Repeat("[:", 256));
-        var maximum = (ulong)pattern.Length * 3;
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var parent = owner.Budget.AllocateArray<byte>(1, false);
-        parent[0] = 37;
-        Assert.Equal(48ul, owner.Budget.ReservedBytes);
-        Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Equal(37, parent[0]);
-    }
-
-    [Theory]
-    [InlineData(0, false)] [InlineData(0, true)]
     [InlineData(1, false)] [InlineData(1, true)]
     [InlineData(2, false)] [InlineData(2, true)]
     public void ValidationInheritsOriginalInterruptionAuthority(int entry, bool timeout)
@@ -121,7 +105,6 @@ public sealed class Pcre2ValidationWorkTests
     {
         switch (entry)
         {
-            case 0: _ = Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?C", Pcre2CompileOptions.None, Pcre2NewlineConvention.Default); break;
             case 1: Pcre2CaptureNameValidator.Validate(pattern, Pcre2CompileOptions.None, Pcre2NewlineConvention.Lf); break;
             default: Pcre2CompileValidator.ValidatePattern(pattern, Pcre2CompileOptions.None, default); break;
         }
