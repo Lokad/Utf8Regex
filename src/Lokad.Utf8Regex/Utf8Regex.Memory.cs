@@ -83,7 +83,7 @@ public sealed partial class Utf8Regex
     }
 
     /// <summary>Counts matches with optional shared admission for temporary matching storage.</summary>
-    /// <remarks>Null allowance inherits program funding when present, otherwise numeric limits only. An explicit allowance overrides working funding, separate from compilation and borrowed input. Work/result policies stay cumulative; covered loans refund synchronously on success, failure and interruption. Refusal is terminal.</remarks>
+    /// <remarks>Null allowance inherits program funding when present, otherwise numeric limits only. An explicit allowance overrides working funding, separate from compilation and borrowed input. Covered loans refund synchronously on success, failure and interruption. Refusal is terminal.</remarks>
     public int Count(ReadOnlySpan<byte> input, CancellationToken cancellationToken = default,
         IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {

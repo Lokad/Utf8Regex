@@ -99,8 +99,9 @@ internal static partial class BenchmarkInspectReporter
                 InputContract = "Caller-valid unchanged UTF-8 / predecoded .NET text; Core performs no subject validation. DecodeThenRegex includes decoding.",
                 Scope = "24 representative patterns; structural neighbours and everyday patterns. Not exhaustive old-catalog coverage or adapter coverage.",
                 OutputContract = "MatchSlots reads last captures into caller slots. For capture-free patterns the BCL lane reads the first value match. Cursor reads complete capture histories. Both return byte ranges, with the BCL coordinate map prepared outside timing. No string materialization. Construction consumes the same CultureInvariant Options mask on every producer, without metadata-array copies.",
-                Policy = "Ordinary Core and .NET lanes use an infinite timeout. Controlled Core lanes use a token, " +
-                    "10-second deadline, 4096 depth, 16 MiB working/result and a caller working allowance in the combined lane.",
+                Policy = "Ordinary Core and .NET lanes have no deadline. Count and Construct use ordinary lanes. CoreToken supplies a live token. " +
+                    "CoreDeadline sets a 10-second deadline. CoreBudget sets 4096 depth and 16 MiB working and result limits. " +
+                    "Combined Core lanes add a caller working allowance to all three controls.",
                 Results = results }, new JsonSerializerOptions { WriteIndented = true }) + "\n");
             Console.WriteLine($"Generality output: {path}; elapsed {started.Elapsed.TotalSeconds:F1}s.");
         }
