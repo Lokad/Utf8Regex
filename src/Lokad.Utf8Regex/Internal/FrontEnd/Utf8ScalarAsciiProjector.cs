@@ -10,10 +10,6 @@ internal static class Utf8ScalarAsciiProjector
 {
     private const ulong AsciiWhitespaceMask = (1UL << 9) | (1UL << 10) | (1UL << 11) | (1UL << 12) | (1UL << 13) | (1UL << 32);
 
-    internal static bool IsPositiveWhitespace(Utf8ScalarClass? scalarClass) => scalarClass is not null &&
-        (scalarClass.Data.AsSpan().SequenceEqual([0, 0, 1, 100]) ||
-         scalarClass.Data.AsSpan().SequenceEqual([0, 4, 0, 9, 14, 32, 33]));
-
     // Fixed byte distances and folded literals require the entire class to be
     // a positive ASCII definition, rather than merely its ASCII intersection.
     internal static bool TryProjectPositiveAsciiDefinition(Utf8ScalarClass? scalarClass, out AsciiCharClass charClass)

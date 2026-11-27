@@ -296,53 +296,6 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         return count;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void CountCandidates(
-        ReadOnlySpan<byte> input,
-        Literal literal,
-        int blockStart,
-        uint candidateBits,
-        int maxStart,
-        ref int nextMatchStart,
-        ref int count)
-    {
-        while (candidateBits != 0)
-        {
-            var anchorIndex = blockStart + BitOperations.TrailingZeroCount(candidateBits);
-            CountCandidate(
-                input,
-                literal,
-                anchorIndex,
-                maxStart,
-                ref nextMatchStart,
-                ref count);
-            candidateBits &= candidateBits - 1;
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void CountCandidate(
-        ReadOnlySpan<byte> input,
-        Literal literal,
-        int anchorIndex,
-        int maxStart,
-        ref int nextMatchStart,
-        ref int count)
-    {
-        var candidate = anchorIndex - literal.AnchorByteOffset;
-        if (candidate < nextMatchStart ||
-            (uint)candidate > (uint)maxStart ||
-            (literal.AnchorPreviousAscii >= 0 &&
-             input[anchorIndex - 2] != (byte)literal.AnchorPreviousAscii) ||
-            !literal.MatchesAt(input, candidate))
-        {
-            return;
-        }
-
-        count++;
-        nextMatchStart = candidate + literal.ByteLength;
-    }
-
     private static int CountSingleLiteral(ReadOnlySpan<byte> input, Literal literal)
     {
         var count = 0;
