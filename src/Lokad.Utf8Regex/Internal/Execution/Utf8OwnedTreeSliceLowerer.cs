@@ -333,22 +333,25 @@ internal static class Utf8OwnedTreeSliceLowerer
                 if (covered != unicode.Count)
                     categories.Add(new Utf8SliceNode.CategorySetMember(
                         Utf8SliceCategoryTable.ForScalarRanges(arena.Take(unicode, true)), false));
-                // Hybrid instructions consult the precomputed mask on ASCII;
-                // their shorthand bits classify only the Unicode remainder.
-                foreach (var member in members)
-                    {
-                    Utf8ConstructionScope.ChargeWork(1);
-                    for (var value = 0; value < 128; value++)
+                // The class decoder emits only space and non-space shorthands.
+                // Hybrid instructions use their mask on ASCII and the original
+                // shorthand bits for wider scalars.
+                if (members.Count != 0)
+                {
+                    var low = BinaryPrimitives.ReadUInt64LittleEndian(mask);
+                    var high = BinaryPrimitives.ReadUInt64LittleEndian(mask.AsSpan(8));
+                    foreach (var member in members)
                     {
                         Utf8ConstructionScope.ChargeWork(1);
-                        var hit = ((int)member >> 1) switch
+                        if (member == Utf8SliceShorthand.Space) low |= Utf8AsciiBytePredicates.WhitespaceMask;
+                        else
                         {
-                            0 => char.IsDigit((char)value),
-                            1 => Utf8SliceScalarClasses.WordCharAsciiLookup[value] != 0,
-                            _ => char.IsWhiteSpace((char)value),
-                        };
-                        if (hit != (((int)member & 1) != 0)) mask[value >> 3] |= (byte)(1 << (value & 7));
+                            low |= ~Utf8AsciiBytePredicates.WhitespaceMask;
+                            high = ulong.MaxValue;
+                        }
                     }
+                    BinaryPrimitives.WriteUInt64LittleEndian(mask, low);
+                    BinaryPrimitives.WriteUInt64LittleEndian(mask.AsSpan(8), high);
                 }
                 var foldMask = foldCase && (categories.Count != 0 || members.Count != 0 ||
                     !Utf8ScalarAsciiProjector.CloseAsciiCaseFiber(mask, caseBehavior));

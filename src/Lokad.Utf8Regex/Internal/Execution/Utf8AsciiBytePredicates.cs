@@ -6,6 +6,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal static class Utf8AsciiBytePredicates
 {
     internal const ulong DecimalMask = 0x3ffUL << '0';
+    internal const ulong WhitespaceMask = (0x1fUL << '\t') | (1UL << ' ');
     // The decimal search checks the scalar at each multibyte lead. No
     // continuation byte can become a start.
     private const ulong MultibyteLeadMask = ((1UL << (0xf4 - 0xc2 + 1)) - 1) << (0xc2 - 0xc0);

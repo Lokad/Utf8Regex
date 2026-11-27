@@ -22,13 +22,24 @@ public sealed class Utf8ScalarClassPreparationTests
     [Theory]
     [InlineData(@"[a-z]")] [InlineData(@"[^a]")] [InlineData(@"[\s-[\t]]")] [InlineData(@"[\s-[\s]]")]
     [InlineData(@"[^\S-[\t]]")] [InlineData(@"[\s-[\t-[\r]]]")] [InlineData(@"[^a-[^b]]")] [InlineData(@"[\p{L}-[A-Z]]")]
-    public void PreparedClassQueriesAgreeOnAsciiOverlap(string pattern)
+    [InlineData(@"\s")] [InlineData(@"\S")] [InlineData(@"[\S\t]")] [InlineData(@"[\s\S]")]
+    public void PreparedClassQueriesAndScalarMatchingAgreeOnAsciiOverlap(string pattern)
     {
         var scalarClass = Class(pattern);
         var comparator = new Regex(@"\A(?:" + pattern + @")\z", RegexOptions.CultureInvariant);
+        using var regex = new Utf8Regex(@"\A(" + pattern + @")\z", RegexOptions.CultureInvariant);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         Assert.True(Utf8ScalarAsciiProjector.TryProjectAsciiQuery(scalarClass, out var mask));
-        for (var value = 0; value < 128; value++) Assert.Equal(comparator.IsMatch(((char)value).ToString()), mask.Contains((byte)value));
+        Span<byte> input = stackalloc byte[1];
+        for (var value = 0; value < 128; value++)
+        {
+            input[0] = (byte)value;
+            var expected = comparator.IsMatch(((char)value).ToString());
+            Assert.Equal(expected, mask.Contains(input[0]));
+            Assert.Equal(expected, regex.IsMatch(input));
+        }
+        foreach (var text in new[] { "\u0085", "\u2003", "é" })
+            Assert.Equal(comparator.IsMatch(text), regex.IsMatch(Encoding.UTF8.GetBytes(text)));
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.PeakBytes);
     }

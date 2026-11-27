@@ -8,8 +8,6 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 /// The mask is an ASCII intersection, not a proof about non-ASCII subjects.</summary>
 internal static class Utf8ScalarAsciiProjector
 {
-    private const ulong AsciiWhitespaceMask = (1UL << 9) | (1UL << 10) | (1UL << 11) | (1UL << 12) | (1UL << 13) | (1UL << 32);
-
     // Fixed byte distances and folded literals require the entire class to be
     // a positive ASCII definition, rather than merely its ASCII intersection.
     internal static bool TryProjectPositiveAsciiDefinition(Utf8ScalarClass? scalarClass, out AsciiCharClass charClass)
@@ -155,7 +153,7 @@ internal static class Utf8ScalarAsciiProjector
             var code = predicates[index];
             if (code is 100 or -100)
             {
-                low |= code > 0 ? AsciiWhitespaceMask : ~AsciiWhitespaceMask;
+                low |= code > 0 ? Utf8AsciiBytePredicates.WhitespaceMask : ~Utf8AsciiBytePredicates.WhitespaceMask;
                 if (code < 0) high = ulong.MaxValue;
             }
             else if (code == Utf8ScalarClass.RangePredicateCode)
@@ -237,7 +235,7 @@ internal static class Utf8ScalarAsciiProjector
         {
             0 => (Utf8AsciiBytePredicates.DecimalMask, 0UL),
             1 => (Utf8AsciiBytePredicates.WordSearch.Mask0, Utf8AsciiBytePredicates.WordSearch.Mask1),
-            2 => (AsciiWhitespaceMask, 0UL),
+            2 => (Utf8AsciiBytePredicates.WhitespaceMask, 0UL),
             _ => (0UL, 0UL),
         };
         if (categoryNegated && !whitespace && !collapse)
