@@ -46,7 +46,11 @@ public sealed class Pcre2AdvancedUnicodeCompilerTests
         yield return [new[] { "a\u094D", "b" }];
         yield return [new[] { "\u0915\u094D", "a" }];
         yield return [new[] { "😀\u200D", "🇦" }];
-        yield return [new[] { "🇦\u200D", "😀" }];
+        yield return [new[] { "🇦", "\u200D", "😀" }];
+        yield return [new[] { "🇦", "\u0301" }];
+        yield return [new[] { "🇦", "\u0903" }];
+        yield return [new[] { "\u0600", "😀" }];
+        yield return [new[] { "😀\u0301\u200D😀" }];
         yield return [new[] { "a\u0E33" }];
         yield return [new[] { "a\u0EB3" }];
         yield return [new[] { "a", "\u102B" }];

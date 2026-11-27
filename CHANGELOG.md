@@ -9,7 +9,8 @@
 - POSIX reports recognized syntax outside its ERE subset through
   `PosixUnsupportedSyntaxException`, a subtype of `ArgumentException`.
 - Add opt-in GNU basic and extended backreferences to POSIX longest matching.
-- Align PCRE2 `\X` Indic conjunct boundaries with native PCRE2 10.47.
+- Align PCRE2 `\X` boundaries with native 10.47 for Indic conjuncts,
+  regional indicators followed by marks or joiners, and `Prepend` before pictographs.
 - Accept numbered PCRE2 callouts without callbacks.
 - Keep subject anchors, boundaries and nested lookaheads visible inside
   PCRE2 lookbehind assertions.

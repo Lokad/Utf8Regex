@@ -1345,6 +1345,37 @@ internal static class Pcre2CharacterRunner
 
 internal static class Pcre2GraphemeClusterSemantics
 {
+    private const ushort Extenders = (1 << (int)Pcre2GraphemeBreak.Extend) |
+        (1 << (int)Pcre2GraphemeBreak.SpacingMark) | (1 << (int)Pcre2GraphemeBreak.ZWJ);
+    private const ushort Regional = 1 << (int)Pcre2GraphemeBreak.RegionalIndicator;
+    private const ushort L = 1 << (int)Pcre2GraphemeBreak.L;
+    private const ushort V = 1 << (int)Pcre2GraphemeBreak.V;
+    private const ushort T = 1 << (int)Pcre2GraphemeBreak.T;
+    private const ushort LV = 1 << (int)Pcre2GraphemeBreak.LV;
+    private const ushort LVT = 1 << (int)Pcre2GraphemeBreak.LVT;
+
+    // PCRE2 10.47, src/pcre2_tables.c and src/pcre2_extuni.c. Indexed by
+    // Pcre2GraphemeBreak. ZWJ and regional-indicator pairs also require context.
+    private static ReadOnlySpan<ushort> JoiningKinds =>
+    [
+        Extenders,                                     // Other
+        0,                                             // Control
+        1 << (int)Pcre2GraphemeBreak.LF,                 // CR
+        0,                                             // LF
+        Extenders,                                     // Extend
+        Extenders | (1 << (int)Pcre2GraphemeBreak.ExtendedPictographic), // ZWJ
+        Regional,                                      // RegionalIndicator
+        Extenders | Regional | L | V | T | LV | LVT |
+            (1 << (int)Pcre2GraphemeBreak.Other) | (1 << (int)Pcre2GraphemeBreak.Prepend), // Prepend
+        Extenders,                                     // SpacingMark
+        Extenders | L | V | LV | LVT,                   // L
+        Extenders | V | T,                              // V
+        Extenders | T,                                  // T
+        Extenders | V | T,                              // LV
+        Extenders | T,                                  // LVT
+        Extenders,                                     // ExtendedPictographic
+    ];
+
     internal static bool TryGetWidth(ReadOnlySpan<byte> input, int offset, ref Pcre2ResourceBudget budget, out int width)
     {
         var controlled = !budget.IsUnmetered;
@@ -1356,10 +1387,11 @@ internal static class Pcre2GraphemeClusterSemantics
         }
 
         var end = offset + previousWidth;
-        var previousProperties = Pcre2GraphemeData.GetProperties(previous.Value);
-        var previousBreak = (Pcre2GraphemeBreak)(previousProperties & 15);
-        var regionalIndicatorCount = previousBreak == Pcre2GraphemeBreak.RegionalIndicator ? 1 : 0;
-        var lastNonExtendWasExtendedPictographic = (previousProperties & Pcre2GraphemeData.ExtendedPictographic) != 0;
+        var previousBreak = Pcre2GraphemeData.GetBreak(previous.Value);
+        var joiningKinds = JoiningKinds;
+        // Pairing here starts at the current cluster. Native also considers
+        // earlier regional indicators when starting inside a run.
+        var joinedRegionalPair = false;
         var zwjFollowsExtendedPictographic = false;
 
         // Poll during the scan because one cluster can span arbitrarily many scalars.
@@ -1371,55 +1403,25 @@ internal static class Pcre2GraphemeClusterSemantics
                 budget.CheckWorkspace();
                 remaining = 256;
             }
-            var nextProperties = Pcre2GraphemeData.GetProperties(next.Value);
-            var nextBreak = (Pcre2GraphemeBreak)(nextProperties & 15);
-            // PCRE2 10.47 does not apply the Unicode Indic conjunct rule (GB9c).
-            var join = previousBreak == Pcre2GraphemeBreak.CR && nextBreak == Pcre2GraphemeBreak.LF ||
-                previousBreak is not (Pcre2GraphemeBreak.Control or Pcre2GraphemeBreak.CR or Pcre2GraphemeBreak.LF) &&
-                nextBreak is not (Pcre2GraphemeBreak.Control or Pcre2GraphemeBreak.CR or Pcre2GraphemeBreak.LF) &&
-                (IsHangulContinuation(previousBreak, nextBreak) ||
-                 nextBreak is Pcre2GraphemeBreak.Extend or Pcre2GraphemeBreak.ZWJ or Pcre2GraphemeBreak.SpacingMark ||
-                 previousBreak == Pcre2GraphemeBreak.Prepend ||
-                 previousBreak == Pcre2GraphemeBreak.ZWJ && zwjFollowsExtendedPictographic &&
-                    (nextProperties & Pcre2GraphemeData.ExtendedPictographic) != 0 ||
-                 previousBreak == Pcre2GraphemeBreak.RegionalIndicator && nextBreak == Pcre2GraphemeBreak.RegionalIndicator && regionalIndicatorCount % 2 != 0);
-            if (!join)
-            {
+            var nextBreak = Pcre2GraphemeData.GetBreak(next.Value);
+            if ((joiningKinds[(int)previousBreak] & (1 << (int)nextBreak)) == 0 ||
+                previousBreak == Pcre2GraphemeBreak.ZWJ && nextBreak == Pcre2GraphemeBreak.ExtendedPictographic &&
+                !zwjFollowsExtendedPictographic ||
+                previousBreak == Pcre2GraphemeBreak.RegionalIndicator && joinedRegionalPair)
                 break;
-            }
 
             end += nextWidth;
-            if (nextBreak == Pcre2GraphemeBreak.RegionalIndicator)
-            {
-                regionalIndicatorCount++;
-            }
-            else if (nextBreak != Pcre2GraphemeBreak.Extend)
-            {
-                regionalIndicatorCount = 0;
-            }
-
-            if (nextBreak == Pcre2GraphemeBreak.ZWJ)
-            {
-                zwjFollowsExtendedPictographic = lastNonExtendWasExtendedPictographic;
-                lastNonExtendWasExtendedPictographic = false;
-            }
-            else if (nextBreak != Pcre2GraphemeBreak.Extend)
-            {
-                lastNonExtendWasExtendedPictographic = (nextProperties & Pcre2GraphemeData.ExtendedPictographic) != 0;
-                zwjFollowsExtendedPictographic = false;
-            }
-
-            previousBreak = nextBreak;
+            joinedRegionalPair = previousBreak == Pcre2GraphemeBreak.RegionalIndicator;
+            zwjFollowsExtendedPictographic = previousBreak == Pcre2GraphemeBreak.ExtendedPictographic &&
+                nextBreak == Pcre2GraphemeBreak.ZWJ;
+            // Keep the pictographic class through intervening Extend scalars.
+            if (previousBreak != Pcre2GraphemeBreak.ExtendedPictographic || nextBreak != Pcre2GraphemeBreak.Extend)
+                previousBreak = nextBreak;
         }
 
         width = end - offset;
         return true;
     }
-
-    private static bool IsHangulContinuation(Pcre2GraphemeBreak previous, Pcre2GraphemeBreak next) =>
-        previous == Pcre2GraphemeBreak.L && next is (Pcre2GraphemeBreak.L or Pcre2GraphemeBreak.V or Pcre2GraphemeBreak.LV or Pcre2GraphemeBreak.LVT) ||
-        previous is (Pcre2GraphemeBreak.LV or Pcre2GraphemeBreak.V) && next is (Pcre2GraphemeBreak.V or Pcre2GraphemeBreak.T) ||
-        previous is (Pcre2GraphemeBreak.LVT or Pcre2GraphemeBreak.T) && next == Pcre2GraphemeBreak.T;
 }
 
 internal static class Pcre2CharacterSemantics
