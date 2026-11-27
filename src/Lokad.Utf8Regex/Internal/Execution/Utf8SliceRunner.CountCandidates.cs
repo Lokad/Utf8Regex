@@ -449,8 +449,8 @@ internal static partial class Utf8SliceRunner
     }
 
     internal static Utf8ExecutionLimitKind TrySeekAsciiCandidate(ReadOnlySpan<byte> input, ref int position,
-        byte first, byte last, ref Utf8SliceInvocation invocation)
-        => TrySeekLeadingByte(input, ref position, first, last, false, ref invocation);
+        byte first, byte last, ref Utf8SliceInvocation invocation, bool sparsePair = false)
+        => TrySeekLeadingByte(input, ref position, first, last, false, ref invocation, sparsePair: sparsePair);
 
     private static ReadOnlySpan<byte> GetExactLeadingLiteral(Utf8SliceProgram program, int index, Span<byte> storage)
     {

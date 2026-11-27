@@ -32,6 +32,7 @@ internal struct PythonReScalarMatchState
     private Utf8InvocationResultLedger _results;
     private Utf8SliceSlots _slots;
     private Utf8SliceRunner.AttemptWorkspace _workspace;
+    private bool _hasExactAsciiPair;
     private bool _leadingAsciiMayMatchUnicode;
     private bool _retryNonEmpty;
     private bool _finished;
@@ -89,6 +90,18 @@ internal struct PythonReScalarMatchState
             // operation intent avoids preparing hints they cannot consume.
             if (prepareSearch)
             {
+                if (program is { GroupCount: 0, RightToLeft: false, IsNonBacktracking: false, IgnoreCase: false,
+                        Instructions: [{ Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } set,
+                            { Kind: Utf8SliceInstructionKind.Accept }],
+                        LeadingByteCandidate: { InstructionIndex: 0, SparsePair: true, First: >= 0 and < 128 } pair } &&
+                    program.SetMasks[set.A].Length == 16)
+                {
+                    // An ASCII-only pair is the complete match. Its bytes cannot occur inside a scalar.
+                    _leadingAsciiLow = pair.First;
+                    _leadingAsciiHigh = pair.Last;
+                    _hasExactAsciiPair = true;
+                    return;
+                }
                 if (CanUseCandidateRegex(program, candidateRegex)) _candidateRegex = candidateRegex;
                 if (_candidateRegex is null)
                 {
@@ -365,6 +378,19 @@ internal struct PythonReScalarMatchState
 
     internal bool MoveNext(ReadOnlySpan<byte> input, bool existenceOnly = false)
     {
+        if (_hasExactAsciiPair)
+        {
+            if (_finished) return false;
+            Checkpoint();
+            var breach = Utf8SliceRunner.TrySeekAsciiCandidate(input, ref _position,
+                (byte)_leadingAsciiLow, (byte)_leadingAsciiHigh, ref _invocation, sparsePair: true);
+            if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+            Checkpoint();
+            if (_position < 0) { _finished = true; return false; }
+            _invocation.AnchorOriginByte = _position;
+            return RecordMatch(new(true, _position + 1, Utf8ExecutionLimitKind.None));
+        }
+
         // A scalar cursor exclusively owns this admitted scratch. Published
         // snapshots copy values; ResetAttempt never touches retained results.
         var keepWorkspace = false;

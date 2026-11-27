@@ -8,13 +8,14 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReSplitInterruptionTests
 {
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void CapturedSplitChecksOriginalAuthorityBeforePublication(bool expire)
+    [InlineData("([,;])|(😀)", false)]
+    [InlineData("([,;])|(😀)", true)]
+    [InlineData("[,;]", false)]
+    [InlineData("[,;]", true)]
+    public void SplitChecksOriginalAuthorityBeforePublication(string pattern, bool expire)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        const string pattern = "([,;])|(😀)";
         var timeout = TimeSpan.FromMilliseconds(20);
         using var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
@@ -26,7 +27,7 @@ public sealed class PythonReSplitInterruptionTests
                 MaxResultBytes = 1 << 20
             }
         });
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("éa,b😀c;", 8)));
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("éa.,b😀c;", 8)));
         var checkpoints = new List<ulong>();
         Utf8PythonCaptureRange[] retained;
         var observation = Utf8SearchDiagnosticsSession.Start(steps => checkpoints.Add(steps));
@@ -34,8 +35,17 @@ public sealed class PythonReSplitInterruptionTests
         finally { observation.Complete(); }
         Assert.NotEmpty(checkpoints);
         var expected = PythonReSplitAssert.Decode(input, retained);
-        Assert.Contains(null, expected);
-        Assert.Contains("😀", expected);
+        Assert.Equal("éa.", expected[0]);
+        if (regex.CaptureGroupCount == 0)
+        {
+            Assert.Equal(17, expected.Length);
+            Assert.Equal("b😀c", expected[1]);
+        }
+        else
+        {
+            Assert.Contains(null, expected);
+            Assert.Contains("😀", expected);
+        }
 
         foreach (var stop in checkpoints.Distinct())
         {
