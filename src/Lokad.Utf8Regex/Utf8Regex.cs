@@ -255,7 +255,6 @@ public sealed partial class Utf8Regex : IDisposable
     internal int RequiredLiteralOptionalRun => _preparedRegex.RequiredLiteralOptionalRun;
     internal byte[]? RequiredLiteralTerminalSuffix => _preparedRegex.RequiredLiteralTerminalSuffix;
 
-    private Utf8StructuralSearchPlan StructuralSearchPlan => _preparedRegex.SearchPlan.StructuralSearchPlan;
 
     private Utf8SearchPortfolioKind SearchPortfolioKind => _preparedRegex.SearchPlan.PortfolioKind;
 

@@ -53,8 +53,8 @@ internal readonly struct Utf8SearchPlan
         {
             BoundaryFamilyCounter = Utf8PackedNibbleLiteralFamilyCountStrategy.CreateBoundaryCounter(boundaryLiterals);
         }
-        _preparedSearcher = CreatePreparedSearcher(kind, LiteralSearch, CreateMultiLiteralSearch(kind, alternateLiteralsUtf8));
-        ref readonly var multiLiteralSearch = ref _preparedSearcher.MultiLiteralSearch;
+        PreparedSearcher = CreatePreparedSearcher(kind, LiteralSearch, CreateMultiLiteralSearch(kind, alternateLiteralsUtf8));
+        ref readonly var multiLiteralSearch = ref PreparedSearcher.MultiLiteralSearch;
         // Direct portfolios already own the exact tables used by compatibility
         // consumers. Borrow them instead of acquiring the same payload twice.
         AlternateLiteralSearch = alternateLiteralsUtf8 is { Length: > 0 } && kind != Utf8SearchKind.AsciiFoldedByteLiterals
@@ -62,7 +62,7 @@ internal readonly struct Utf8SearchPlan
                 ? multiLiteralSearch.ExactSearch
                 : new PreparedLiteralSetSearch(alternateLiteralsUtf8)
             : null;
-        PortfolioKind = DeterminePortfolioKind(kind, _preparedSearcher.Kind, multiLiteralSearch.Kind);
+        PortfolioKind = DeterminePortfolioKind(kind, PreparedSearcher.Kind, multiLiteralSearch.Kind);
         // A short exact prefilter can share the same prepared needle as
         // candidate discovery. The runner can then reuse its first occurrence.
         _requiredPrefilterSearcher = requiredPrefilterLiteralUtf8 is { Length: <= 64 } &&
@@ -75,22 +75,18 @@ internal readonly struct Utf8SearchPlan
         FixedDistanceSets = fixedDistanceSets;
         TrailingLiteralUtf8 = trailingLiteralUtf8;
         FallbackStartTransform = fallbackStartTransform;
-        var structuralSearchPlan = Utf8StructuralSearchPlan.Create(
-            kind,
-            distance,
-            canGuideFallbackStarts,
-            in _preparedSearcher,
-            fixedDistanceSets,
-            fallbackStartTransform,
-            leadingBoundary, trailingBoundary, trailingLiteralUtf8,
-            exactRequiredLength);
-        StructuralSearchPlan = structuralSearchPlan;
         Distance = distance;
         MinRequiredLength = minRequiredLength;
         ExactRequiredLength = exactRequiredLength;
         MaxPossibleLength = maxPossibleLength;
         LeadingBoundary = leadingBoundary;
         TrailingBoundary = trailingBoundary;
+        HasStructuralCandidates = PreparedSearcher.HasValue
+            ? canGuideFallbackStarts || StructuralStartTransform.HasValue ||
+                kind is Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiLiteral or
+                    Utf8SearchKind.AsciiFoldedByteLiteral or Utf8SearchKind.ExactAsciiLiterals or
+                    Utf8SearchKind.AsciiFoldedByteLiterals or Utf8SearchKind.ExactUtf8Literals
+            : kind == Utf8SearchKind.FixedDistanceAsciiSets && fixedDistanceSets is { Length: > 0 };
     }
 
     public static Utf8SearchPlan Prepare(Utf8SearchFacts facts, Utf8SliceProgram? scalarProgram = null)
@@ -147,13 +143,11 @@ internal readonly struct Utf8SearchPlan
     public PreparedAsciiIgnoreCaseLiteralSetSearch? AlternateIgnoreCaseLiteralSearch =>
         MultiLiteralSearch.Kind == PreparedMultiLiteralKind.AsciiIgnoreCase ? MultiLiteralSearch.IgnoreCaseSearch : null;
 
-    private readonly PreparedSearcher _preparedSearcher;
-
-    public PreparedSearcher PreparedSearcher => _preparedSearcher;
+    public readonly PreparedSearcher PreparedSearcher;
 
     // Borrow the same literal tables used by the selected searcher.
     [UnscopedRef]
-    public ref readonly PreparedMultiLiteralSearch MultiLiteralSearch => ref _preparedSearcher.MultiLiteralSearch;
+    public ref readonly PreparedMultiLiteralSearch MultiLiteralSearch => ref PreparedSearcher.MultiLiteralSearch;
 
     public Utf8SearchPortfolioKind PortfolioKind { get; }
 
@@ -178,7 +172,9 @@ internal readonly struct Utf8SearchPlan
 
     public Utf8FallbackStartTransform FallbackStartTransform { get; }
 
-    public Utf8StructuralSearchPlan StructuralSearchPlan { get; }
+    public Utf8FallbackStartTransform StructuralStartTransform =>
+        Kind is Utf8SearchKind.FixedDistanceAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiChar
+            ? FallbackStartTransform.WithAdditionalOffset(Distance) : FallbackStartTransform;
 
     public int Distance { get; }
 
@@ -196,7 +192,7 @@ internal readonly struct Utf8SearchPlan
 
     public bool HasPreparedSearcher => PreparedSearcher.HasValue;
 
-    public bool HasStructuralCandidates => StructuralSearchPlan.HasValue;
+    public bool HasStructuralCandidates { get; }
 
     public bool HasAlternateLiterals => AlternateLiteralsUtf8 is { Length: > 0 };
 

@@ -2790,39 +2790,35 @@ internal static partial class BenchmarkInspectReporter
         WriteStructuralSearchPlan(plan);
     }
 
-    private static void WriteStructuralSearchPlan(Utf8SearchPlan search)
+    private static void WriteStructuralSearchPlan(in Utf8SearchPlan plan)
     {
-        var plan = search.StructuralSearchPlan;
-        ref readonly var data = ref plan.Payload;
-        Console.WriteLine($"StructuralSource  : {DescribeStructuralSource(plan)}");
-        if (data.StartTransform.HasValue)
+        var source = !plan.HasStructuralCandidates ? "None" : plan.PreparedSearcher.HasValue
+            ? plan.PreparedSearcher.Kind.ToString()
+            : $"{plan.FixedDistanceSets!.Length} fixed-distance sets";
+        Console.WriteLine($"StructuralSource  : {source}");
+        if (!plan.HasStructuralCandidates) return;
+
+        var transform = plan.StructuralStartTransform;
+        if (transform.HasValue)
         {
-            Console.WriteLine($"StartTransform    : {data.StartTransform.Kind}, offset {data.StartTransform.Offset}");
+            Console.WriteLine($"StartTransform    : {transform.Kind}, offset {transform.Offset}");
         }
-        if (data.LeadingBoundary != Utf8BoundaryRequirement.None || data.TrailingBoundary != Utf8BoundaryRequirement.None)
+        if (plan.HasBoundaryRequirements)
         {
-            Console.WriteLine($"Boundaries        : {data.LeadingBoundary}, {data.TrailingBoundary}");
+            Console.WriteLine($"Boundaries        : {plan.LeadingBoundary}, {plan.TrailingBoundary}");
         }
-        if (data.TrailingLiteral is { Length: > 0 } literal)
+        if (plan.TrailingLiteralUtf8 is { Length: > 0 } literal)
         {
             Console.WriteLine($"TrailingLiteral   : {Encoding.UTF8.GetString(literal)}");
         }
-        if (data.ExactLength > 0)
+        if (plan.ExactRequiredLength is > 0 and var exact)
         {
-            Console.WriteLine($"ExactLength       : {data.ExactLength}");
+            Console.WriteLine($"ExactLength       : {exact}");
         }
-        else if (plan.HasValue && search.MaxPossibleLength is > 0 and var maximum)
+        else if (plan.MaxPossibleLength is > 0 and var maximum)
         {
             Console.WriteLine($"MaximumLength     : {maximum}");
         }
-    }
-
-    private static string DescribeStructuralSource(Utf8StructuralSearchPlan plan)
-    {
-        ref readonly var data = ref plan.Payload;
-        return !plan.HasValue ? "None" : data.Searcher.HasValue
-            ? data.Searcher.Kind.ToString()
-            : $"{data.FixedDistanceSets!.Length} fixed-distance sets";
     }
 
     private static string DumpNode(Utf8TreeNode node, int depth = 0)

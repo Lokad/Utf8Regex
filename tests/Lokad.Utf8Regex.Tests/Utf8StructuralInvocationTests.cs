@@ -269,9 +269,15 @@ public sealed class Utf8StructuralInvocationTests
     [InlineData(true)]
     public void StartTransformsKeepFullSubjectBoundaryRequirementsInBothDirections(bool reverse)
     {
-        var plan = Utf8StructuralSearchPlan.Create(Utf8SearchKind.ExactAsciiLiteral, 0, canGuideFallbackStarts: false,
-            Searcher(0), null, new Utf8FallbackStartTransform(0, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace),
-            Utf8BoundaryRequirement.Boundary, Utf8BoundaryRequirement.Boundary, trailingLiteralUtf8: "!"u8.ToArray());
+        var facts = Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiteral, new()
+        {
+            LiteralUtf8 = "target"u8.ToArray(),
+            FallbackStartTransform = new(0, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace),
+            LeadingBoundary = Utf8BoundaryRequirement.Boundary,
+            TrailingBoundary = Utf8BoundaryRequirement.Boundary,
+            TrailingLiteralUtf8 = "!"u8.ToArray(),
+        });
+        var plan = Utf8SearchPlan.Prepare(facts);
         var input = Encoding.UTF8.GetBytes("xtarget! " + new string(' ', 140000) + "target! targetx");
         var state = default(PreparedSearchScanState);
         var found = reverse ? plan.TryFindLastCandidate(input, input.Length, out var candidate)
@@ -297,10 +303,14 @@ public sealed class Utf8StructuralInvocationTests
                 new Utf8FixedDistanceSet(1, AsciiCharClass.ForByte((byte)'a')).PrepareAnchor(),
                 new Utf8FixedDistanceSet(3, AsciiCharClass.ForByte((byte)'c')),
             }
-            : null;
+            : [];
         var kind = set ? Utf8SearchKind.FixedDistanceAsciiSets : Utf8SearchKind.FixedDistanceAsciiLiteral;
-        var plan = Utf8StructuralSearchPlan.Create(kind, set ? 0 : 2, canGuideFallbackStarts: false,
-            set ? default : Searcher(0), sets, default);
+        var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(kind, new()
+        {
+            Distance = set ? 0 : 2,
+            LiteralUtf8 = set ? [] : "target"u8.ToArray(),
+            FixedDistanceSets = sets,
+        }));
         var hit = set ? "zaQc" : "zztarget";
         var input = Encoding.UTF8.GetBytes(new string('x', offset) + hit + "xxxxx" + hit);
         var state = default(PreparedSearchScanState);
@@ -316,7 +326,7 @@ public sealed class Utf8StructuralInvocationTests
     {
         var facts = Utf8SearchFacts.Create(Utf8SearchKind.FixedDistanceAsciiLiteral,
             new Utf8SearchFactData { LiteralUtf8 = "aa"u8.ToArray(), TrailingLiteralUtf8 = "a!"u8.ToArray() });
-        var plan = Utf8SearchPlan.Prepare(facts).StructuralSearchPlan;
+        var plan = Utf8SearchPlan.Prepare(facts);
         var input = "😀aaa!"u8;
         var state = default(PreparedSearchScanState);
         var expected = new PreparedSearchMatch(4, 2, 0);

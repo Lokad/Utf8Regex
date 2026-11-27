@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Benchmarks;
 internal static class Utf8FallbackReplay
 {
     private static bool TryFindNextVerifiedMatch(
-        Utf8StructuralSearchPlan plan,
+        in Utf8SearchPlan plan,
         Utf8PreparedRegex prepared,
         ReadOnlySpan<byte> input,
         int startIndex,
@@ -19,7 +19,7 @@ internal static class Utf8FallbackReplay
         var entryBreach = invocation.TryChargeInputStep();
         if (entryBreach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException($"Scalar candidate search exceeded {entryBreach}.");
-        if (!plan.HasValue || (uint)startIndex > (uint)input.Length)
+        if (!plan.HasStructuralCandidates || (uint)startIndex > (uint)input.Length)
         {
             return false;
         }
@@ -45,9 +45,8 @@ internal static class Utf8FallbackReplay
         return false;
     }
 
-    public static int CountCandidates(Utf8SearchPlan searchPlan, ReadOnlySpan<byte> input, bool requireScalarBoundary)
+    public static int CountCandidates(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, bool requireScalarBoundary)
     {
-        var plan = searchPlan.StructuralSearchPlan;
         var state = default(PreparedSearchScanState);
         var count = 0;
         while (plan.TryFindNextCandidate(input, ref state, out var candidate))
@@ -65,8 +64,8 @@ internal static class Utf8FallbackReplay
         invocation.AnchorOriginByte = 0;
         var count = 0;
         var position = 0;
-        var plan = regex.Inspection.StructuralSearchPlan;
-        while ((uint)position <= (uint)input.Length && TryFindNextVerifiedMatch(plan,
+        ref readonly var plan = ref regex.SearchPlan;
+        while ((uint)position <= (uint)input.Length && TryFindNextVerifiedMatch(in plan,
             regex.Inspection.PreparedRegex, input, position, ref invocation, out var match))
         {
             count++;

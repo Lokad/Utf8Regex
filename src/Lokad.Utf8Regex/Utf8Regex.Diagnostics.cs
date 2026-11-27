@@ -34,8 +34,6 @@ public sealed partial class Utf8Regex
 
         public Utf8SearchPlan SearchPlan => _owner.SearchPlan;
 
-        public Utf8StructuralSearchPlan StructuralSearchPlan => _owner.StructuralSearchPlan;
-
         public Utf8SearchPortfolioKind SearchPortfolioKind => _owner.SearchPortfolioKind;
 
         public Utf8CompiledEngineKind CompiledEngineKind => _owner.CompiledEngineKind;

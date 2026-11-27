@@ -20,8 +20,8 @@ internal static class Utf8CandidateVerificationReplay
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         var program = prepared.ScalarProgram ??
             throw new InvalidOperationException("Candidate verification requires the prepared scalar program.");
-        var plan = prepared.SearchPlan;
-        var exactLength = plan.StructuralSearchPlan.Payload.ExactLength;
+        ref readonly var plan = ref prepared.SearchPlan;
+        var exactLength = plan.HasStructuralCandidates ? Math.Max(0, plan.ExactRequiredLength.GetValueOrDefault()) : 0;
         var end = GetCandidateEnd(candidate.Index, input.Length, exactLength, plan.MaxPossibleLength.GetValueOrDefault());
         var attempt = program.RightToLeft && end >= 0 ? end : candidate.Index;
         if (!IsBoundary(input, candidate.Index) || !IsBoundary(input, attempt))

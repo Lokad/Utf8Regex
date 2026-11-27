@@ -142,7 +142,7 @@ internal static partial class Utf8SearchExecutor
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
         {
             var state = new PreparedSearchScanState(startIndex, default);
-            while (plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate))
+            while (plan.TryFindNextCandidate(input, ref state, out var candidate))
             {
                 if (candidate.Index >= startIndex)
                 {
@@ -189,7 +189,7 @@ internal static partial class Utf8SearchExecutor
         if (plan.HasStructuralCandidates &&
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
         {
-            if (plan.StructuralSearchPlan.TryFindLastCandidate(input, startIndex, out var candidate))
+            if (plan.TryFindLastCandidate(input, startIndex, out var candidate))
             {
                 Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
                 return candidate.Index;
@@ -216,7 +216,7 @@ internal static partial class Utf8SearchExecutor
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
         {
             var candidateState = new PreparedSearchScanState(startIndex, default);
-            while (plan.StructuralSearchPlan.TryFindNextCandidate(input, ref candidateState, out var candidate))
+            while (plan.TryFindNextCandidate(input, ref candidateState, out var candidate))
             {
                 if (candidate.Index < startIndex)
                 {
@@ -305,7 +305,7 @@ internal static partial class Utf8SearchExecutor
             !plan.HasAlternateLiteralPrefixOverlap &&
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
         {
-            if (plan.StructuralSearchPlan.TryFindLastCandidate(input, startIndex, out var candidate))
+            if (plan.TryFindLastCandidate(input, startIndex, out var candidate))
             {
                 match = candidate;
                 Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();

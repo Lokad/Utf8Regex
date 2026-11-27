@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal static class Utf8StructuralSearchExecutor
 {
     public static bool TryFindLastCandidate(
-        this Utf8StructuralSearchPlan plan,
+        this in Utf8SearchPlan plan,
         ReadOnlySpan<byte> input,
         int endIndex,
         out PreparedSearchMatch candidate)
@@ -18,25 +18,23 @@ internal static class Utf8StructuralSearchExecutor
             endIndex = input.Length;
         }
 
-        ref readonly var data = ref plan.Payload;
-        return plan.HasValue && TryFindLastStartCandidate(input, in data, endIndex, out candidate);
+        return plan.HasStructuralCandidates && TryFindLastStartCandidate(input, in plan, endIndex, out candidate);
     }
 
     public static bool TryFindNextCandidate(
-        this Utf8StructuralSearchPlan plan,
+        this in Utf8SearchPlan plan,
         ReadOnlySpan<byte> input,
         ref PreparedSearchScanState searchState,
         out PreparedSearchMatch candidate)
     {
         candidate = default;
-        if (!plan.HasValue)
+        if (!plan.HasStructuralCandidates)
         {
             return false;
         }
 
-        ref readonly var data = ref plan.Payload;
-        ref readonly var searcher = ref data.Searcher;
-        var startTransform = data.StartTransform;
+        ref readonly var searcher = ref plan.PreparedSearcher;
+        var startTransform = plan.StructuralStartTransform;
         while (true)
         {
             int rawStartIndex;
@@ -55,7 +53,7 @@ internal static class Utf8StructuralSearchExecutor
             }
             else
             {
-                if (!TryFindNextFixedDistanceCandidate(input, data.FixedDistanceSets!, searchState.NextStart, out rawStartIndex))
+                if (!TryFindNextFixedDistanceCandidate(input, plan.FixedDistanceSets!, searchState.NextStart, out rawStartIndex))
                 {
                     return false;
                 }
@@ -72,7 +70,7 @@ internal static class Utf8StructuralSearchExecutor
             }
 
             var requirementBaseIndex = GetRequirementBaseIndex(input, startIndex, startTransform);
-            if (!SatisfiesStartRequirements(input, in data, requirementBaseIndex, matchedLength))
+            if (!SatisfiesStartRequirements(input, in plan, requirementBaseIndex, matchedLength))
             {
                 continue;
             }
@@ -84,13 +82,13 @@ internal static class Utf8StructuralSearchExecutor
 
     private static bool TryFindLastStartCandidate(
         ReadOnlySpan<byte> input,
-        in Utf8StructuralSearchPlan.Data plan,
+        in Utf8SearchPlan plan,
         int endIndex,
         out PreparedSearchMatch candidate)
     {
         candidate = default;
-        ref readonly var searcher = ref plan.Searcher;
-        var startTransform = plan.StartTransform;
+        ref readonly var searcher = ref plan.PreparedSearcher;
+        var startTransform = plan.StructuralStartTransform;
 
         if (searcher.HasValue)
         {
@@ -202,7 +200,7 @@ internal static class Utf8StructuralSearchExecutor
     }
 
     private static bool SatisfiesStartRequirements(
-        ReadOnlySpan<byte> input, in Utf8StructuralSearchPlan.Data plan, int startIndex, int matchLength)
+        ReadOnlySpan<byte> input, in Utf8SearchPlan plan, int startIndex, int matchLength)
     {
         if (plan.LeadingBoundary != Utf8BoundaryRequirement.None &&
             !Utf8ScalarWordBoundary.MatchesRequirement(plan.LeadingBoundary, input, startIndex))
@@ -217,14 +215,15 @@ internal static class Utf8StructuralSearchExecutor
             return false;
         }
 
-        if (plan.TrailingLiteral is { Length: > 0 } literal &&
+        if (plan.TrailingLiteralUtf8 is { Length: > 0 } literal &&
             (trailingOffset < 0 || trailingOffset > input.Length - literal.Length ||
              !input.Slice(trailingOffset, literal.Length).SequenceEqual(literal)))
         {
             return false;
         }
 
-        return plan.ExactLength == 0 || startIndex <= input.Length - plan.ExactLength;
+        var exactLength = plan.ExactRequiredLength.GetValueOrDefault();
+        return exactLength <= 0 || startIndex <= input.Length - exactLength;
     }
 
     private static int GetRequirementBaseIndex(ReadOnlySpan<byte> input, int startIndex, Utf8FallbackStartTransform startTransform)
