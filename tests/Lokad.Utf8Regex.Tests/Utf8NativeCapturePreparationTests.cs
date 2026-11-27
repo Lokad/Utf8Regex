@@ -15,7 +15,7 @@ public sealed class Utf8NativeCapturePreparationTests
     public void FreeSpacingLiteralsUseTheParsedMatchBytes(string pattern, string value)
     {
         var input = Encoding.UTF8.GetBytes(value);
-        using var textPattern = new Utf8Regex(pattern);
+        using var textPattern = Utf8Regex.Compile(pattern, RegexOptions.CultureInvariant);
         using var bytePattern = Utf8Regex.Compile(Encoding.UTF8.GetBytes(pattern));
         foreach (var regex in new[] { textPattern, bytePattern })
         {

@@ -239,21 +239,26 @@ public sealed class Utf8OwnedTreeParserIgnoreCaseTests
     }
 
     [Theory]
-    [InlineData("(?i)a(?-i)bx", "é ABx Abx abx aBx", 7, 3, 2)]
-    [InlineData("(?i)a(?-i)b|xy", "é AB Ab xy XY", 6, 2, 2)]
-    [InlineData("(?i)a(?-i)b{1,2}", "é AB Abb ab aBB", 6, 3, 2)]
-    [InlineData("(?i)[a](?-i)[b]|xy", "é AB Ab xy XY", 6, 2, 2)]
-    public void FiniteLiteralExecutionHonorsUnscopedCaseToggles(string pattern, string subject,
+    [InlineData("(?i)a(?-i)bx", "ABx", "Abx", "é ABx Abx abx aBx", 7, 3, 2)]
+    [InlineData("(?i)a(?-i)b|xy", "XY", "xy", "é AB Ab xy XY", 6, 2, 2)]
+    [InlineData("(?i)a(?-i)b{1,2}", "ABB", "Abb", "é AB Abb ab aBB", 6, 3, 2)]
+    [InlineData("(?i)[a](?-i)[b]|xy", "AB", "Ab", "é AB Ab xy XY", 6, 2, 2)]
+    public void FiniteLiteralExecutionHonorsUnscopedCaseToggles(string pattern, string rejected, string accepted, string subject,
         int firstStart, int firstLength, int expectedCount)
     {
         var input = Encoding.UTF8.GetBytes(subject);
+        var rejectInput = Encoding.UTF8.GetBytes(rejected);
+        var acceptInput = Encoding.UTF8.GetBytes(accepted);
         var patternUtf8 = Encoding.UTF8.GetBytes(pattern);
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var options = RegexOptions.CultureInvariant | mode;
-            foreach (var regex in new[] { new Utf8Regex(pattern, options), Utf8Regex.Compile(patternUtf8, options) })
+            using var textPattern = Utf8Regex.Compile(pattern, options);
+            using var bytePattern = Utf8Regex.Compile(patternUtf8, options);
+            foreach (var regex in new[] { textPattern, bytePattern })
             {
-                Assert.False(regex.IsMatch("ABX"u8));
+                Assert.False(regex.IsMatch(rejectInput));
+                Assert.True(regex.IsMatch(acceptInput));
                 Assert.Equal(expectedCount, regex.Count(input));
                 var match = regex.Match(input);
                 Assert.True(match.Success);
