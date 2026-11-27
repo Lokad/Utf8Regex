@@ -2,7 +2,6 @@
 
 Fully managed regular expressions over UTF-8 spans for **.NET 10 and .NET 11**.
 Match, count, enumerate and replace without decoding the subject to a string.
-This README describes 0.5.0.
 
 ## Quick start
 

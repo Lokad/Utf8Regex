@@ -1,6 +1,11 @@
 # Release notes
 
-## Unreleased — 0.5.0
+## 0.5.0 — 2026-11-27
+
+Published on NuGet. [Core](https://www.nuget.org/packages/Lokad.Utf8Regex/0.5.0) ·
+[PythonRe](https://www.nuget.org/packages/Lokad.Utf8Regex.PythonRe/0.5.0) ·
+[PCRE2](https://www.nuget.org/packages/Lokad.Utf8Regex.Pcre2/0.5.0) ·
+[POSIX](https://www.nuget.org/packages/Lokad.Utf8Regex.Posix/0.5.0)
 
 ### Added
 
@@ -29,6 +34,12 @@
 See the [profile contracts](README.md#choose-a-profile) for APIs and supported
 semantics.
 
+### Known issues
+
+- Core can miss `ab` for the string pattern `(?x)(a b)`.
+- Core can match `ABx` for `(?i)a(?-i)bx` despite the case-sensitive suffix.
+
+Both fixes are on `master`.
 
 ## 0.4.0 — 2026-10-27
 
