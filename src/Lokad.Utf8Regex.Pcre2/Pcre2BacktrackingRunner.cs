@@ -15,13 +15,13 @@ internal enum Pcre2BacktrackingResumeAction : byte
     None = 0,
     EnterRepeat = 1,
     ControlVerb = 2,
-    RetreatClassRepeat = 3,
+    RetreatScalarRepeat = 3,
 }
 
 // A control frame stores its THEN target in Instruction and its SKIP
 // name in RepeatIdOrNameId. Its input offset is already the SKIP position.
 // A lazy-repeat retry starts its next iteration at the saved input offset.
-// A class-repeat frame stores the last tried endpoint in InputOffsetInBytes
+// A scalar-repeat frame stores the last tried endpoint in InputOffsetInBytes
 // and the number of shorter choices in RepeatCount.
 internal readonly record struct Pcre2BacktrackingFrame(
     int Instruction,
@@ -1093,8 +1093,8 @@ internal static class Pcre2BacktrackingRunner
                         continue;
 
                     case Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat:
-                    case Pcre2BacktrackingInstructionKind.GreedyClassRepeat:
-                        var canRetryRun = instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyClassRepeat;
+                    case Pcre2BacktrackingInstructionKind.GreedyScalarRepeat:
+                        var canRetryRun = instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyScalarRepeat;
                         var runCount = 0;
                         var meterRun = !budget.IsUnmetered;
                         var asciiByteSet =
@@ -1163,7 +1163,7 @@ internal static class Pcre2BacktrackingRunner
                                     markMutations.Count,
                                     markTrail.Count,
                                     matchBoundaryWasReset,
-                                    Pcre2BacktrackingResumeAction.RetreatClassRepeat,
+                                    Pcre2BacktrackingResumeAction.RetreatScalarRepeat,
                                     RepeatCount: runCount - instruction.Minimum),
                                 depthBase,
                                 subroutineCalls.Count,
@@ -1857,7 +1857,8 @@ internal static class Pcre2BacktrackingRunner
     }
 
     private static bool CanEnterRequiredClass(in Pcre2BacktrackingInstruction next, ReadOnlySpan<byte> input, int position)
-        => next is { Kind: Pcre2BacktrackingInstructionKind.GreedyClassRepeat, Minimum: 1, Maximum: > 0 } &&
+        => next is { Kind: Pcre2BacktrackingInstructionKind.GreedyScalarRepeat, Token.Kind: Pcre2CharacterTokenKind.CharacterClass,
+                Minimum: 1, Maximum: > 0 } &&
             (next.Token.Options & Pcre2CharacterOptions.Caseless) == 0 && position < input.Length &&
             next.Token.CharacterClass.AsciiByteSet is { } ascii && ascii.Contains(input[position]);
 
@@ -2124,17 +2125,17 @@ internal static class Pcre2BacktrackingRunner
                     ref repeatMutations,
                     ref budget);
             }
-            else if (frame.ResumeAction == Pcre2BacktrackingResumeAction.RetreatClassRepeat)
+            else if (frame.ResumeAction == Pcre2BacktrackingResumeAction.RetreatScalarRepeat)
             {
                 budget.CheckWorkspace();
                 if (!TryRetreatScalar(input, resumeOffset, out resumeOffset))
-                    throw new InvalidOperationException("A PCRE2 class-repeat endpoint must follow a consumed scalar.");
+                    throw new InvalidOperationException("A PCRE2 scalar-repeat endpoint must follow a consumed scalar.");
 
                 // The next retry uses the capacity and depth just vacated by
                 // this frame, with the restored checkpoints still in force.
                 if (frame.RepeatCount > 1 && !frames.TryPush(frame with
                     { InputOffsetInBytes = resumeOffset, RepeatCount = frame.RepeatCount - 1 }, ref budget))
-                    throw new InvalidOperationException("The PCRE2 class-repeat frame lost its admitted capacity.");
+                    throw new InvalidOperationException("The PCRE2 scalar-repeat frame lost its admitted capacity.");
             }
 
             if (frame.ResumeAction != Pcre2BacktrackingResumeAction.ControlVerb)

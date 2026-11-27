@@ -404,8 +404,8 @@ internal sealed class Pcre2BacktrackingProgram
                 split.PrimaryTarget != start - 2 || split.SecondaryTarget != start ||
                 head is not { Kind: Pcre2BacktrackingInstructionKind.Token, Token.Kind: Pcre2CharacterTokenKind.Literal } ||
                 !head.Token.Literal.IsAscii || (head.Token.Options & Pcre2CharacterOptions.Caseless) != 0 ||
-                run is not { Kind: Pcre2BacktrackingInstructionKind.GreedyClassRepeat, Minimum: 0 }) break;
-            // Once the exact head matches, the class can consume zero or more
+                run is not { Kind: Pcre2BacktrackingInstructionKind.GreedyScalarRepeat, Minimum: 0 }) break;
+            // Once the exact head matches, the run can consume zero or more
             // scalars and the rest of the tail can always accept.
             start -= 3;
         }
@@ -493,7 +493,7 @@ internal enum Pcre2BacktrackingInstructionKind : byte
     ControlDeferred = 20,
     MatchBoundaryReset = 21,
     PossessiveTokenRepeat = 22,
-    GreedyClassRepeat = 23,
+    GreedyScalarRepeat = 23,
     CaptureToken = 24,
 }
 
@@ -593,12 +593,12 @@ internal readonly struct Pcre2BacktrackingInstruction
             maximum,
             Pcre2RepeatPreference.Possessive);
 
-    internal static Pcre2BacktrackingInstruction CreateGreedyClassRepeat(
+    internal static Pcre2BacktrackingInstruction CreateGreedyScalarRepeat(
         Pcre2CharacterToken token,
         int minimum,
         int maximum) =>
         new(
-            Pcre2BacktrackingInstructionKind.GreedyClassRepeat,
+            Pcre2BacktrackingInstructionKind.GreedyScalarRepeat,
             token,
             0,
             0,

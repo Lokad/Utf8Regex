@@ -461,15 +461,20 @@ internal sealed class Pcre2BacktrackingLowerer
                             : Pcre2BacktrackingInstruction.CreateSplit(exit, fork + 1);
                     }
                     else if (repeat.Preference == Pcre2RepeatPreference.Greedy &&
-                        repeat.Body is Pcre2TokenBacktrackingNode { Token: { Kind: Pcre2CharacterTokenKind.CharacterClass } classToken })
+                        repeat.Body is Pcre2TokenBacktrackingNode { Token: var scalarToken } &&
+                        (scalarToken.Kind == Pcre2CharacterTokenKind.CharacterClass ||
+                         scalarToken.Kind == Pcre2CharacterTokenKind.Literal && repeat.Maximum != int.MaxValue))
                     {
-                        if ((classToken.Options & Pcre2CharacterOptions.Caseless) == 0)
+                        // Either token consumes exactly one scalar. Retries can
+                        // retreat through the run without a repeat journal.
+                        if (scalarToken.Kind == Pcre2CharacterTokenKind.CharacterClass &&
+                            (scalarToken.Options & Pcre2CharacterOptions.Caseless) == 0)
                         {
-                            classToken.CharacterClass.PrepareAsciiByteSet();
+                            scalarToken.CharacterClass.PrepareAsciiByteSet();
                         }
 
-                        _instructions.Add(Pcre2BacktrackingInstruction.CreateGreedyClassRepeat(
-                            classToken, repeat.Minimum, repeat.Maximum));
+                        _instructions.Add(Pcre2BacktrackingInstruction.CreateGreedyScalarRepeat(
+                            scalarToken, repeat.Minimum, repeat.Maximum));
                     }
                     else if (repeat.Preference == Pcre2RepeatPreference.Possessive)
                     {

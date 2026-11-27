@@ -2640,7 +2640,7 @@ internal sealed class Pcre2ExecutionDiagnosticsCollector
                 VmRepeatEnterSteps++;
                 VmPossessiveTokenScanSteps++;
                 break;
-            case Pcre2BacktrackingInstructionKind.GreedyClassRepeat:
+            case Pcre2BacktrackingInstructionKind.GreedyScalarRepeat:
                 VmRepeatSteps++;
                 VmRepeatEnterSteps++;
                 break;

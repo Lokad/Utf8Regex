@@ -103,7 +103,7 @@ public sealed class Pcre2SubroutineCaptureReturnTests
                 ResourcePolicy = new() { MaxDepth = 64, MaxWorkingBytes = 16 << 10 }
             } : null);
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
-        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyClassRepeat);
+        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyScalarRepeat);
 
         using var source = new CancellationTokenSource();
         Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];

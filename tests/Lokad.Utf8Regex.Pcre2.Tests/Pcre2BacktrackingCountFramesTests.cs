@@ -41,7 +41,7 @@ public sealed class Pcre2BacktrackingCountFramesTests
         var count = regex.Count(bytes, cancellationToken: token.Token);
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.Equal(24, count);
-        Assert.True(allocated < 320_000, $"Count allocated {allocated} bytes across lookbehind retries.");
+        Assert.True(allocated < 120_000, $"Count allocated {allocated} bytes across lookbehind retries.");
     }
 
     [Theory]

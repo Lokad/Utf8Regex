@@ -147,7 +147,7 @@ public sealed class Pcre2AutoPossessifyTests
             ResourcePolicy = new() { MaxDepth = 2, MaxWorkingBytes = 1024 }
         });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
-        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyClassRepeat);
+        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyScalarRepeat);
 
         var input = new byte[16 * 1024 + 1];
         input.AsSpan(0, input.Length - 1).Fill((byte)'a');
@@ -159,14 +159,18 @@ public sealed class Pcre2AutoPossessifyTests
         Assert.Equal((0, input.Length - 1), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
     }
 
-    [Fact]
-    public void FundedGreedyClassRunPollsOriginalTokenDuringLongScan()
+    [Theory]
+    [InlineData(@"\A(?P<run>[a-z]+)[Z!]\z")]
+    [InlineData(@"\A(?P<run>a{1,65535})a!\z")]
+    public void FundedGreedyScalarRunPollsOriginalTokenDuringLongScan(string pattern)
     {
-        using var regex = new Utf8Pcre2Regex(@"\A(?P<run>[a-z]+)[Z!]\z", policy: new Utf8RegexPolicy
+        using var regex = new Utf8Pcre2Regex(pattern, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromSeconds(10),
             ResourcePolicy = new() { MaxDepth = 2, MaxWorkingBytes = 1024 }
         });
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch).Program;
+        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyScalarRepeat);
         var input = new byte[256 * 1024 + 1];
         input.AsSpan(0, input.Length - 1).Fill((byte)'a');
         input[^1] = (byte)'Z';
@@ -189,26 +193,28 @@ public sealed class Pcre2AutoPossessifyTests
             ResourcePolicy = new() { MaxDepth = 1, MaxWorkingBytes = 128 }
         });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch).Program;
-        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyClassRepeat);
+        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyScalarRepeat);
 
         using var source = new CancellationTokenSource();
         Assert.False(regex.IsMatch("a!!"u8, cancellationToken: source.Token));
         Assert.False(regex.IsMatch("😀!!"u8, cancellationToken: source.Token));
     }
 
-    [Fact]
-    public void ShorterClassEndpointsReuseOneFrameAndRestoreCaptures()
+    [Theory]
+    [InlineData(@"\A(?P<run>[a😀]+)a{8}!\z", "a")]
+    [InlineData(@"\A(?P<run>😀{1,40})😀{8}!\z", "😀")]
+    public void ShorterScalarEndpointsReuseOneFrameAndRestoreCaptures(string pattern, string tail)
     {
-        using var regex = new Utf8Pcre2Regex(@"\A(?P<run>[a😀]+)a{8}!\z", policy: new Utf8RegexPolicy
+        using var regex = new Utf8Pcre2Regex(pattern, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new() { MaxDepth = 2, MaxWorkingBytes = 1024 }
         });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
         Assert.Equal(0, program.RepeatCount);
-        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyClassRepeat);
+        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyScalarRepeat);
 
         var prefix = string.Concat(Enumerable.Repeat("😀", 32));
-        var input = Encoding.UTF8.GetBytes(prefix + "aaaaaaaa!");
+        var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(tail, 8)) + "!");
         using var source = new CancellationTokenSource();
         Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[2];
         var result = regex.Match(input, captures: captures, cancellationToken: source.Token);
