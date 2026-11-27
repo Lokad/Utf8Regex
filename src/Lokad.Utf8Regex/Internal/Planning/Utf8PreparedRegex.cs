@@ -39,11 +39,10 @@ internal sealed class Utf8PreparedRegex
     internal static Utf8PreparedRegex Create(
         Utf8PreparedSemanticRegex semanticRegex, Utf8RegexFeatures features,
         NativeExecutionKind executionKind, Utf8SliceProgram? scalarProgram, in Utf8SearchPlan searchPlan,
-        byte[]? literalUtf8, Utf8AnchoredLiteralPlan anchoredLiteral)
+        byte[]? literalUtf8, Utf8AnchoredLiteralPlan anchoredLiteral, Utf8ConstructionBudget budget)
     {
-        using var scope = Utf8ConstructionScope.Enter();
-        scope.Budget.CheckBytes(ObjectBytes);
-        scope.Budget.ChargeWork(2);
+        budget.CheckBytes(ObjectBytes);
+        budget.ChargeWork(2);
         ref readonly var prefilter = ref searchPlan.RequiredPrefilterSearcher;
         var requiredLiteralProvesMatch = false;
         var requiredLiteralContinuation = 0;
@@ -54,23 +53,21 @@ internal sealed class Utf8PreparedRegex
             prefilter.Kind == PreparedSearcherKind.ExactLiteral)
         {
             var needle = prefilter.LiteralSearch.Needle;
-            requiredLiteralProvesMatch = Utf8SliceRunner.PrepareRequiredLiteralWitness(scalarProgram, needle, scope.Budget);
+            requiredLiteralProvesMatch = Utf8SliceRunner.PrepareRequiredLiteralWitness(scalarProgram, needle, budget);
             if (!requiredLiteralProvesMatch)
             {
                 (requiredLiteralContinuation, requiredLiteralOptionalRun) =
-                    Utf8SliceRunner.PrepareRequiredLiteralContinuation(scalarProgram, needle, scope.Budget);
+                    Utf8SliceRunner.PrepareRequiredLiteralContinuation(scalarProgram, needle, budget);
                 if (requiredLiteralContinuation == needle.Length && needle.Length is >= 3 and <= 16)
                     requiredLiteralTerminalSuffix = Utf8SliceRunner.PrepareRequiredLiteralTerminalSuffix(
-                        scalarProgram, requiredLiteralContinuation, scope.Budget);
+                        scalarProgram, requiredLiteralContinuation, budget);
             }
         }
-        scope.Budget.ReserveBytes(ObjectBytes);
-        var result = new Utf8PreparedRegex(
+        budget.ReserveBytes(ObjectBytes);
+        return new Utf8PreparedRegex(
             anchoredLiteral, searchPlan, semanticRegex, features,
             executionKind, scalarProgram, literalUtf8, requiredLiteralProvesMatch,
             requiredLiteralContinuation, requiredLiteralTerminalSuffix, requiredLiteralOptionalRun);
-        scope.Complete();
-        return result;
     }
 
     public Utf8PreparedSemanticRegex SemanticRegex { get; }

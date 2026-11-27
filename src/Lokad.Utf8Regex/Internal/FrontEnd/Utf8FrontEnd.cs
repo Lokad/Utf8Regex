@@ -29,11 +29,15 @@ internal static class Utf8FrontEnd
     }
 
     internal static Utf8RegexAnalysis Analyze(string pattern, RegexOptions options)
-        => Analyze(new Utf8ConstructionPattern(pattern), options);
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        var analysis = Analyze(new Utf8ConstructionPattern(pattern), options);
+        owner.Complete();
+        return analysis;
+    }
 
     private static Utf8RegexAnalysis Analyze(Utf8ConstructionPattern pattern, RegexOptions options)
     {
-        using var owner = Utf8ConstructionScope.Enter();
         var effectiveOptions = options;
         var consumedOptions = Utf8OwnedOptionPrelude.ConsumeLeadingGlobalOptions(pattern, ref effectiveOptions);
         Utf8PatternDiagnostic diagnostic;
@@ -49,8 +53,6 @@ internal static class Utf8FrontEnd
             pattern.IsUtf8 ? 0 : consumedOptions,
             effectiveOptions,
             runtimeTree);
-        var analysis = Utf8FrontEndAnalyzer.Analyze(semanticRegex);
-        owner.Complete();
-        return analysis;
+        return Utf8FrontEndAnalyzer.Analyze(semanticRegex);
     }
 }

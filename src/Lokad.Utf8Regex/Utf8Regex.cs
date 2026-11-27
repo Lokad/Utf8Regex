@@ -166,7 +166,7 @@ public sealed partial class Utf8Regex : IDisposable
                 return true;
             }
 
-            _replacementCache = Utf8ReplacementPlanCache.Create();
+            _replacementCache = Utf8ReplacementPlanCache.Create(construction.Budget);
             if (pattern.IsUtf8)
             {
                 // Parsing borrows only during this call. Retained source bytes are

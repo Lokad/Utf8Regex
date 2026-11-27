@@ -26,7 +26,8 @@ internal static class Utf8RegexPreparer
                 scalarProgram,
                 searchPlan,
                 analyzedRegex.LiteralUtf8,
-                anchoredLiteral);
+                anchoredLiteral,
+                budget);
             scope.Complete();
             return result;
         }

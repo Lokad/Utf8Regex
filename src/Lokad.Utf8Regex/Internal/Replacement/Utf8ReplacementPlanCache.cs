@@ -10,13 +10,10 @@ internal sealed class Utf8ReplacementPlanCache
 
     private Utf8ReplacementPlanCache(Utf8BoundedPreparationCache<byte[], Utf8AnalyzedReplacement> plans) => _plans = plans;
 
-    internal static Utf8ReplacementPlanCache Create()
+    internal static Utf8ReplacementPlanCache Create(Utf8ConstructionBudget budget)
     {
-        using var owner = Utf8ConstructionScope.Enter();
         var plans = Utf8BoundedPreparationCache<byte[], Utf8AnalyzedReplacement>.CreateRetained(Capacity, Utf8ReplacementKeyComparer.Instance);
-        var result = owner.Budget.AllocateObject(plans, static value => new Utf8ReplacementPlanCache(value));
-        owner.Complete();
-        return result;
+        return budget.AllocateObject(plans, static value => new Utf8ReplacementPlanCache(value));
     }
 
     internal int Count => _plans.Count;
