@@ -36,8 +36,8 @@ public sealed class Utf8FindByteFactsTests
             Assert.NotNull(tree);
             var leading = Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(tree.Root);
             var mandatory = Utf8OwnedFindOptimizations.TryExtractLongestLiteral(tree.Root);
-            var fixedLiteral = Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(tree.Root);
-            var widths = Utf8OwnedFindOptimizations.ComputeByteWidth(tree.Root);
+            var (widths, candidate) = Utf8OwnedFindOptimizations.MeasureByteFacts(tree.Root);
+            var fixedLiteral = Utf8OwnedFindOptimizationsTests.ReadFixedLiteral(candidate);
             var program = Utf8OwnedTreeSliceLowerer.TryLower(tree, options);
             Assert.NotNull(program);
             var starts = new int[program.GroupCount];
@@ -112,7 +112,7 @@ public sealed class Utf8FindByteFactsTests
             var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, text);
             Assert.Null(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(node));
             Assert.Null(Utf8OwnedFindOptimizations.TryExtractLongestLiteral(node));
-            Assert.Null(Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(node));
+            Assert.Null(Utf8OwnedFindOptimizationsTests.ReadFixedLiteral(Utf8OwnedFindOptimizations.MeasureByteFacts(node).FixedLiteral));
         }
         foreach (var value in new[] { '\ud800', '\udfff' })
         {
@@ -125,7 +125,7 @@ public sealed class Utf8FindByteFactsTests
             var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.IgnoreCase, text);
             Assert.Null(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(node));
             Assert.Null(Utf8OwnedFindOptimizations.TryExtractLongestLiteral(node));
-            Assert.Null(Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(node));
+            Assert.Null(Utf8OwnedFindOptimizationsTests.ReadFixedLiteral(Utf8OwnedFindOptimizations.MeasureByteFacts(node).FixedLiteral));
         }
         var punctuation = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.IgnoreCase, "12!😀");
         Assert.Null(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(punctuation));
@@ -133,7 +133,7 @@ public sealed class Utf8FindByteFactsTests
         Assert.Equal("12!", Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(punctuation));
         Assert.Equal("12!", Utf8OwnedFindOptimizations.TryExtractLongestLiteral(punctuation));
         var unknown = Utf8TreeNode.Create((Utf8TreeNodeKind)255, RegexOptions.None);
-        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(0, null), Utf8OwnedFindOptimizations.ComputeByteWidth(unknown));
+        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(0, null), Utf8OwnedFindOptimizations.MeasureByteFacts(unknown, selectFixedLiteral: false).Width);
     }
 
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
@@ -376,7 +376,7 @@ public sealed class Utf8FindByteFactsTests
     public void BoundsDescribeConsumedScalarBytes(string pattern, RegexOptions options, int minimum, int? maximum)
     {
         var tree = Utf8OwnedTreeParser.TryParse(pattern, options) ?? throw new InvalidOperationException();
-        var width = Utf8OwnedFindOptimizations.ComputeByteWidth(tree.Root);
+        var width = Utf8OwnedFindOptimizations.MeasureByteFacts(tree.Root, selectFixedLiteral: false).Width;
         Assert.Equal(minimum, width.Minimum);
         Assert.Equal(maximum, width.Maximum);
         Assert.Equal(maximum is int high && high == minimum, width.IsFixed);
@@ -402,7 +402,7 @@ public sealed class Utf8FindByteFactsTests
     public void FixedDistancesRequireAConstantBytePrefix(string pattern, string? literal, int distance)
     {
         var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant) ?? throw new InvalidOperationException();
-        var result = Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(tree.Root);
+        var result = Utf8OwnedFindOptimizationsTests.ReadFixedLiteral(Utf8OwnedFindOptimizations.MeasureByteFacts(tree.Root).FixedLiteral);
         if (literal is null) Assert.Null(result);
         else Assert.Equal(((string Literal, int Distance)?)(literal, distance), result);
     }
@@ -438,19 +438,19 @@ public sealed class Utf8FindByteFactsTests
     public void NonInvariantCaseBoundsCoverCultureDependentByteWidths()
     {
         var node = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.IgnoreCase, 'I');
-        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(1, 2), Utf8OwnedFindOptimizations.ComputeByteWidth(node));
+        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(1, 2), Utf8OwnedFindOptimizations.MeasureByteFacts(node, selectFixedLiteral: false).Width);
     }
 
     [Theory]
     [InlineData(0)] [InlineData(1)]
     public void FixedLiteralProofAdmitsItsRootBeforeAnyAcquisition(int denial)
     {
-        var node = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
+        var node = Utf8OwnedTreeParser.TryParse("ab.*cd", RegexOptions.None)!.Root;
         using var owner = new Utf8ConstructionScope(0, denial == 0 ? 48ul : ulong.MaxValue,
             denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         var checkpoint = owner.Budget.ReservedBytes;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(node));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.MeasureByteFacts(node));
         Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
             1 => Utf8ResourceLimitKind.ConstructionDepth}, failure.ResourceKind);
         Assert.Equal(48ul, owner.Budget.ReservedBytes);

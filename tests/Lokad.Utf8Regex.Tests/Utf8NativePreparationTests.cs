@@ -17,7 +17,7 @@ public sealed class Utf8NativePreparationTests
         int minimum, int? maximum, int anchor)
     {
         var tree = Parse(pattern, options);
-        var width = Utf8OwnedFindOptimizations.ComputeByteWidth(tree.Root);
+        var width = Utf8OwnedFindOptimizations.MeasureByteFacts(tree.Root, selectFixedLiteral: false).Width;
         Assert.Equal(minimum, width.Minimum); Assert.Equal(maximum, width.Maximum);
         Assert.Equal((Utf8TreeNodeKind)anchor, Utf8OwnedFindOptimizations.FindTrailingAnchor(tree.Root));
     }
@@ -30,8 +30,8 @@ public sealed class Utf8NativePreparationTests
     [InlineData("(?<=😀)é{2}", RegexOptions.CultureInvariant, 4, 4)]
     public void ScalarAndFoldedBoundsDoNotBecomeByteCounts(string pattern, RegexOptions options, int minimum, int maximum)
     {
-        var native = Utf8OwnedFindOptimizations.ComputeByteWidth(Parse(pattern, options).Root);
-        var text = Utf8OwnedFindOptimizations.ComputeByteWidth(Utf8OwnedTreeParser.TryParse(pattern, options)!.Root);
+        var native = Utf8OwnedFindOptimizations.MeasureByteFacts(Parse(pattern, options).Root, selectFixedLiteral: false).Width;
+        var text = Utf8OwnedFindOptimizations.MeasureByteFacts(Utf8OwnedTreeParser.TryParse(pattern, options)!.Root, selectFixedLiteral: false).Width;
         Assert.Equal(text, native);
         Assert.Equal(minimum, native.Minimum); Assert.Equal(maximum, native.Maximum);
     }

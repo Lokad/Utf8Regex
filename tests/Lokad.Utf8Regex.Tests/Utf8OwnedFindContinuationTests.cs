@@ -51,14 +51,14 @@ public sealed class Utf8OwnedFindContinuationTests
         // one atomic wrapper also preserves its established literal exclusions.
         var expected = shallow.Root;
         var actual = deep.Root;
-        Assert.Equal(Utf8OwnedFindOptimizations.ComputeByteWidth(expected), Utf8OwnedFindOptimizations.ComputeByteWidth(actual));
+        Assert.Equal(Utf8OwnedFindOptimizations.MeasureByteFacts(expected, selectFixedLiteral: false).Width, Utf8OwnedFindOptimizations.MeasureByteFacts(actual, selectFixedLiteral: false).Width);
         Assert.Equal(Utf8OwnedFindOptimizations.FindTrailingAnchor(expected), Utf8OwnedFindOptimizations.FindTrailingAnchor(actual));
         Assert.Equal(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(expected), Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(actual));
         Assert.Equal(Utf8OwnedFindOptimizations.TryExtractLongestLiteral(expected), Utf8OwnedFindOptimizations.TryExtractLongestLiteral(actual));
         Assert.Equal(Utf8OwnedFindOptimizations.FindAlternatePrefixes(expected, shallow.Options),
             Utf8OwnedFindOptimizations.FindAlternatePrefixes(actual, deep.Options));
-        Assert.Equal(Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(expected),
-            Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(actual));
+        Assert.Equal(Utf8OwnedFindOptimizationsTests.ReadFixedLiteral(Utf8OwnedFindOptimizations.MeasureByteFacts(expected).FixedLiteral),
+            Utf8OwnedFindOptimizationsTests.ReadFixedLiteral(Utf8OwnedFindOptimizations.MeasureByteFacts(actual).FixedLiteral));
     }
 
     [Theory]
@@ -102,14 +102,14 @@ public sealed class Utf8OwnedFindContinuationTests
             suffix.Parent = concat;
             body = concat;
         }
-        Assert.Equal(depth + 1, Utf8OwnedFindOptimizations.ComputeByteWidth(body).Minimum);
-        Assert.Equal(depth + 1, Utf8OwnedFindOptimizations.ComputeByteWidth(body).Maximum);
+        Assert.Equal(depth + 1, Utf8OwnedFindOptimizations.MeasureByteFacts(body, selectFixedLiteral: false).Width.Minimum);
+        Assert.Equal(depth + 1, Utf8OwnedFindOptimizations.MeasureByteFacts(body, selectFixedLiteral: false).Width.Maximum);
         Assert.Null(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(body));
         Assert.Equal("b", Utf8OwnedFindOptimizations.TryExtractLongestLiteral(body));
         Assert.Equal(new[] { "a" + new string('b', depth) },
             Utf8OwnedFindOptimizations.FindAlternatePrefixes(body, RegexOptions.CultureInvariant)?.Select(Encoding.UTF8.GetString).ToArray());
         Assert.Equal(((string Literal, int Distance)?)("b", depth),
-            Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(body));
+            Utf8OwnedFindOptimizationsTests.ReadFixedLiteral(Utf8OwnedFindOptimizations.MeasureByteFacts(body).FixedLiteral));
     }
 
     [Theory]
@@ -125,12 +125,12 @@ public sealed class Utf8OwnedFindContinuationTests
             body.Parent = loop;
             body = loop;
         }
-        Assert.Equal(int.MaxValue, Utf8OwnedFindOptimizations.ComputeByteWidth(body).Minimum);
-        Assert.Null(Utf8OwnedFindOptimizations.ComputeByteWidth(body).Maximum);
+        Assert.Equal(int.MaxValue, Utf8OwnedFindOptimizations.MeasureByteFacts(body, selectFixedLiteral: false).Width.Minimum);
+        Assert.Null(Utf8OwnedFindOptimizations.MeasureByteFacts(body, selectFixedLiteral: false).Width.Maximum);
         Assert.Null(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(body));
         Assert.Null(Utf8OwnedFindOptimizations.TryExtractLongestLiteral(body));
         Assert.Equal(new[] { "abababab" }, Utf8OwnedFindOptimizations.FindAlternatePrefixes(body, RegexOptions.CultureInvariant)?.Select(Encoding.UTF8.GetString).ToArray());
-        Assert.Null(Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(body));
+        Assert.Null(Utf8OwnedFindOptimizationsTests.ReadFixedLiteral(Utf8OwnedFindOptimizations.MeasureByteFacts(body).FixedLiteral));
     }
 
     [Theory]

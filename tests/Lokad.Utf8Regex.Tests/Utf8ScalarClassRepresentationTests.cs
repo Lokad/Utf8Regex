@@ -278,7 +278,7 @@ public sealed class Utf8ScalarClassRepresentationTests
         var node = tree.Root.Child(0);
         Assert.NotNull(node.ScalarClass);
         Assert.Null(node.Str);
-        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(4, 4), Utf8OwnedFindOptimizations.ComputeByteWidth(node));
+        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(4, 4), Utf8OwnedFindOptimizations.MeasureByteFacts(node, selectFixedLiteral: false).Width);
         Assert.NotNull(Utf8OwnedTreeSliceLowerer.TryLower(tree, RegexOptions.CultureInvariant));
         foreach (var lazy in new[] { false, true })
         {
@@ -287,7 +287,7 @@ public sealed class Utf8ScalarClassRepresentationTests
             Assert.Null(repeat.Str);
             Assert.Equal(node.MatchCaseInsensitive, repeat.MatchCaseInsensitive);
             Assert.Equal(lazy ? Utf8TreeNodeKind.Setlazy : Utf8TreeNodeKind.Setloop, repeat.Kind);
-            Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(8, 12), Utf8OwnedFindOptimizations.ComputeByteWidth(repeat));
+            Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(8, 12), Utf8OwnedFindOptimizations.MeasureByteFacts(repeat, selectFixedLiteral: false).Width);
         }
     }
 

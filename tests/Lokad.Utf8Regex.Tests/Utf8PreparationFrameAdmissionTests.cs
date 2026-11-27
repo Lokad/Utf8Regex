@@ -19,7 +19,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
 
     private static object? Prepare(int route, Utf8TreeNode find) => route switch
     {
-        0 => Utf8OwnedFindOptimizations.ComputeByteWidth(find),
+        0 => Utf8OwnedFindOptimizations.MeasureByteFacts(find, selectFixedLiteral: false).Width,
         1 => Utf8OwnedFindOptimizations.TryExtractLongestLiteral(find),
         _ => throw new ArgumentOutOfRangeException(nameof(route)),
     };
@@ -80,7 +80,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
         using var owner = new Utf8ConstructionScope(0, 0, 1);
 
         Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(6, 6),
-            Utf8OwnedFindOptimizations.ComputeByteWidth(leaf));
+            Utf8OwnedFindOptimizations.MeasureByteFacts(leaf, selectFixedLiteral: false).Width);
         Assert.Equal(1ul, owner.Budget.PeakDepth);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(0ul, owner.Budget.PeakBytes);
@@ -95,7 +95,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
 
         using var owner = new Utf8ConstructionScope(0, 1024, 2);
         Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(1024, 1024),
-            Utf8OwnedFindOptimizations.ComputeByteWidth(root));
+            Utf8OwnedFindOptimizations.MeasureByteFacts(root, selectFixedLiteral: false).Width);
         Assert.Equal(2ul, owner.Budget.PeakDepth);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(0ul, owner.Budget.ReservedBytes);

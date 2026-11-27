@@ -16,7 +16,7 @@ public sealed class Utf8LengthArithmeticTests
     {
         var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(tree);
-        return Utf8OwnedFindOptimizations.ComputeByteWidth(tree.Root);
+        return Utf8OwnedFindOptimizations.MeasureByteFacts(tree.Root, selectFixedLiteral: false).Width;
     }
 
     [Fact]

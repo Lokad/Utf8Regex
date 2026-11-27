@@ -76,7 +76,7 @@ public sealed class Utf8ConstructionWorkDepthTests
             ch: '\0', str: null, m: 0, n: 0,
             children: leaf, parent: null, matchCaseInsensitive: (RegexOptions.None & RegexOptions.IgnoreCase) != 0);
         using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 1);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.ComputeByteWidth(root));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.MeasureByteFacts(root, selectFixedLiteral: false).Width);
         Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, failure.ResourceKind);
         Assert.Equal(0ul, scope.Budget.Depth);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);

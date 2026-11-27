@@ -84,7 +84,7 @@ public sealed class Utf8ScalarIrAdmissionTests
         var root = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.None);
         root.Children = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
         using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, maximumBytes);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.ComputeByteWidth(root));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.MeasureByteFacts(root, selectFixedLiteral: false).Width);
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         Assert.True(scope.Budget.PeakBytes <= maximumBytes);

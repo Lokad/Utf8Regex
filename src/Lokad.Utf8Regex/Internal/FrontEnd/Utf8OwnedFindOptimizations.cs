@@ -15,7 +15,8 @@ internal static class Utf8OwnedFindOptimizations
         internal bool IsFixed => Maximum is int maximum && maximum == Minimum;
     }
 
-    public static ByteWidth ComputeByteWidth(Utf8TreeNode node)
+    public static (ByteWidth Width, (Utf8TreeNode Node, int Distance)? FixedLiteral) MeasureByteFacts(
+        Utf8TreeNode node, bool selectFixedLiteral = true)
     {
         var leaf = node.ChildCount == 0;
         // A leaf has no continuation or retained storage to roll back.
@@ -27,20 +28,20 @@ internal static class Utf8OwnedFindOptimizations
             try
             {
                 budget.Checkpoint();
-                return new WidthFrame(node).Complete();
+                var width = new WidthFrame(node).Complete();
+                return (width, selectFixedLiteral && width.IsFixed && ExactLiteralLength(node) > 0 ? (node, 0) : null);
             }
             finally { budget.LeaveDepth(); }
         }
 
         using var frames = Utf8ConstructionFrames<WidthFrame>.Create(budget, new(node));
-        return MeasureByteWidths(frames, budget);
-    }
-
-    // Each child contributes its bounds to the parent before its frame is
-    // discarded. Only the fixed-distance walk needs the per-node results.
-    private static ByteWidth MeasureByteWidths(Utf8ConstructionFrames<WidthFrame> frames,
-        Utf8ConstructionBudget budget, Utf8ConstructionMap<Utf8TreeNode, ByteWidth>? widths = null)
-    {
+        (Utf8TreeNode Node, int Distance)? fixedLiteral = null;
+        var bestLength = 0;
+        var distance = 0;
+        // Only concatenation and its structural wrappers expose their children
+        // as a sequence. Use one completed width for an alternative, assertion
+        // or repeat, without treating its children as mandatory literals.
+        var prefixAtom = selectFixedLiteral && IsPrefixAtom(node) ? 0 : -1;
         while (true)
         {
             budget.Checkpoint();
@@ -50,19 +51,46 @@ internal static class Utf8OwnedFindOptimizations
             {
                 var child = frame.Node.Child(frame.NextChild++);
                 frames[index] = frame;
+                if (selectFixedLiteral && prefixAtom < 0 && IsPrefixAtom(child))
+                    prefixAtom = index + 1;
                 frames.Push(new(child));
                 continue;
             }
 
             var width = frame.Complete();
-            if (widths is not null) widths[frame.Node] = width;
+            if (index == prefixAtom)
+            {
+                prefixAtom = -1;
+                // The first variable-width atom ends the fixed-distance
+                // prefix. The rest of the tree still contributes to bounds.
+                selectFixedLiteral = width.IsFixed && width.Minimum <= int.MaxValue - distance;
+                if (selectFixedLiteral)
+                {
+                    var length = ExactLiteralLength(frame.Node);
+                    if (length > 0 && length >= bestLength)
+                    {
+                        fixedLiteral = (frame.Node, distance);
+                        bestLength = length;
+                    }
+                    distance += width.Minimum;
+                }
+            }
             frames.Pop();
-            if (index == 0) return width;
+            if (index == 0) return (width, fixedLiteral);
 
             var parent = frames[index - 1];
             parent.AddChild(width, budget);
             frames[index - 1] = parent;
         }
+    }
+
+    private static bool IsPrefixAtom(Utf8TreeNode node) =>
+        node.Kind is not (Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic or Utf8TreeNodeKind.Concatenate);
+
+    private static int ExactLiteralLength(Utf8TreeNode node)
+    {
+        var length = node.Kind == Utf8TreeNodeKind.One ? 1 : node.Kind == Utf8TreeNodeKind.Multi ? node.Str?.Length ?? 0 : 0;
+        return length > 0 && IsExactLiteral(node) ? length : 0;
     }
 
     private struct WidthFrame(Utf8TreeNode node)
@@ -483,47 +511,6 @@ internal static class Utf8OwnedFindOptimizations
     // prefixes cover every alternative and never authorize a following suffix.
     public static byte[][]? FindAlternatePrefixes(Utf8TreeNode node, RegexOptions options)
         => Utf8OwnedPrefixFamilies.Find(node, options);
-
-    // A candidate is mandatory at this byte offset only while its entire
-    // preceding prefix has one proven byte width. An opaque variable node ends
-    // the proof; a longer literal after it must never displace a safe prefix.
-    public static (string Literal, int Distance)? TryExtractFixedDistanceLiteral(Utf8TreeNode node)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<WidthFrame>.Create(budget, new(node));
-        using var widths = Utf8ConstructionMap<Utf8TreeNode, ByteWidth>.Create(budget, ReferenceEqualityComparer.Instance);
-        MeasureByteWidths(frames, budget, widths);
-        string? best = null; var bestDistance = 0; var distance = 0;
-        frames.Push(new(node));
-        while (frames.Count != 0)
-        {
-            budget.Checkpoint();
-            var index = frames.Count - 1; var frame = frames[index]; var current = frame.Node;
-            if (current.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic or Utf8TreeNodeKind.Concatenate)
-            {
-                if (frame.NextChild < current.ChildCount)
-                {
-                    var child = current.Child(frame.NextChild++); frames[index] = frame; frames.Push(new(child));
-                }
-                else frames.Pop();
-                continue;
-            }
-            var width = widths[current];
-            if (!width.IsFixed || width.Minimum > int.MaxValue - distance) break;
-            if (current.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Multi && IsExactLiteral(current))
-            {
-                var text = current.Kind == Utf8TreeNodeKind.One ? budget.CopyText([current.Ch]) : current.Str;
-                if (!string.IsNullOrEmpty(text) && (best is null || text.Length >= best.Length))
-                    { best = text; bestDistance = distance; }
-            }
-            distance += width.Minimum; frames.Pop();
-        }
-        if (best is null) return null;
-        construction.Complete();
-        return (best, bestDistance);
-
-    }
 
     private struct LongestLiteralFrame(Utf8TreeNode node)
     {

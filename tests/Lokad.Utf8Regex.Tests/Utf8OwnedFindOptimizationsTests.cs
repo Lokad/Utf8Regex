@@ -135,8 +135,8 @@ public sealed class Utf8OwnedFindOptimizationsTests
         var expectedTrail = (Utf8TreeNodeKind)trail;
         var ownedTree = Utf8OwnedTreeParser.TryParse(pattern, options);
         Assert.NotNull(ownedTree);
-        Assert.Equal(min, Utf8OwnedFindOptimizations.ComputeByteWidth(ownedTree.Root).Minimum);
-        Assert.Equal(max, Utf8OwnedFindOptimizations.ComputeByteWidth(ownedTree.Root).Maximum);
+        Assert.Equal(min, Utf8OwnedFindOptimizations.MeasureByteFacts(ownedTree.Root, selectFixedLiteral: false).Width.Minimum);
+        Assert.Equal(max, Utf8OwnedFindOptimizations.MeasureByteFacts(ownedTree.Root, selectFixedLiteral: false).Width.Maximum);
         Assert.Equal(expectedTrail, Utf8OwnedFindOptimizations.FindTrailingAnchor(ownedTree.Root));
     }
 
@@ -156,8 +156,8 @@ public sealed class Utf8OwnedFindOptimizationsTests
         // saturates like the BCL-observed formulas, so these rows pin owned values only.
         var ownedTree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(ownedTree);
-        Assert.Equal(min, Utf8OwnedFindOptimizations.ComputeByteWidth(ownedTree.Root).Minimum);
-        Assert.Equal(max, Utf8OwnedFindOptimizations.ComputeByteWidth(ownedTree.Root).Maximum);
+        Assert.Equal(min, Utf8OwnedFindOptimizations.MeasureByteFacts(ownedTree.Root, selectFixedLiteral: false).Width.Minimum);
+        Assert.Equal(max, Utf8OwnedFindOptimizations.MeasureByteFacts(ownedTree.Root, selectFixedLiteral: false).Width.Maximum);
     }
 
     public static IEnumerable<object?[]> LiteralCases()
@@ -766,7 +766,7 @@ public sealed class Utf8OwnedFindOptimizationsTests
     {
         var ownedTree = Utf8OwnedTreeParser.TryParse(pattern, options);
         Assert.NotNull(ownedTree);
-        var owned = Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(ownedTree.Root);
+        var owned = ReadFixedLiteral(Utf8OwnedFindOptimizations.MeasureByteFacts(ownedTree.Root).FixedLiteral);
         if (literal is null)
         {
             Assert.Null(owned);
@@ -778,4 +778,7 @@ public sealed class Utf8OwnedFindOptimizationsTests
             Assert.Equal(distance, owned.Value.Distance);
         }
     }
+
+    internal static (string Literal, int Distance)? ReadFixedLiteral((Utf8TreeNode Node, int Distance)? candidate)
+        => candidate is { } fact ? (fact.Node.Str ?? fact.Node.Ch.ToString(), fact.Distance) : null;
 }
