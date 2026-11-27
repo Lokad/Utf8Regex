@@ -51,12 +51,14 @@ internal static partial class Utf8FiniteLiteralLowerer
                         case Utf8TreeNodeKind.Oneloop:
                         case Utf8TreeNodeKind.Set:
                         case Utf8TreeNodeKind.Setloop:
-                            // The published byte family has one fold mode. Check the
-                            // consuming node so unscoped toggles are covered too.
-                            if (node.MatchCaseInsensitive != ignoreCase) return false;
+                            var literal = node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Oneloop;
+                            // Exact families can expand a folded set because the parser
+                            // already included its equivalents. Literals and globally
+                            // folded families must agree with the consuming node.
+                            if ((literal || ignoreCase) && node.MatchCaseInsensitive != ignoreCase) return false;
                             AsciiPatternToken token;
                             if (!budget.TryReserve(1, 1)) return false;
-                            if (node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Oneloop)
+                            if (literal)
                             {
                                 if (!TryLowerLiteral(node.Ch, out token)) return false;
                             }
