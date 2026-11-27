@@ -31,7 +31,7 @@ public sealed class Pcre2AdvancedUnicodeCompilerTests
 
     [Theory]
     [InlineData("각", 1)]
-    [InlineData("क्\u200Dष", 1)]
+    [InlineData("क्\u200Dष", 2)]
     [InlineData("1️⃣", 1)]
     [InlineData("🇫🇷🇩🇪🇮", 3)]
     public void ExtendedGraphemeAtomCoversHangulIndicKeycapAndRegionalIndicators(
@@ -52,8 +52,9 @@ public sealed class Pcre2AdvancedUnicodeCompilerTests
         yield return [new[] { "a", "\u102B" }];
         yield return [new[] { "😀\u200D\u200D", "😀" }];
         yield return [new[] { "a\u200D", "😀" }];
-        yield return [new[] { "\u0915\u094D\u200D\u0937" }];
-        yield return [new[] { "\u0915\u094D\u034F\u0915" }];
+        yield return [new[] { "\u0915\u094D", "\u0937" }];
+        yield return [new[] { "\u0915\u094D\u200D", "\u0937" }];
+        yield return [new[] { "\u0915\u094D\u034F", "\u0915" }];
         yield return [new[] { "\u0915\u094D\u200C", "\u0915" }];
         yield return [new[] { "\u0915\u0BCD", "\u0915" }];
         yield return [new[] { "a\u0301", "\r\n", "각", "🇫🇷", "🇩" }];
@@ -108,8 +109,8 @@ public sealed class Pcre2AdvancedUnicodeCompilerTests
                     Assert.Equal(segments[0], System.Text.Encoding.UTF8.GetString((group.Success ? result1Input.Span.Slice(group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
                 }
             }
-        // The existing Unicode Indic-conjunct rule remains supported even where
-        // native PCRE2 10.47 splits a conjunct; property predicates are now exact.
+        using var single = new Utf8Pcre2Regex(@"\A\X\z");
+        Assert.Equal(segments.Length == 1, single.IsMatch(input));
         var repeated = new Utf8Pcre2Regex(@"^\X+$");
         Assert.True(repeated.IsMatch(input));
         Assert.Equal(1, repeated.Count(input));

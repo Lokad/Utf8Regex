@@ -1359,8 +1359,6 @@ internal static class Pcre2GraphemeClusterSemantics
         var regionalIndicatorCount = previousBreak == Pcre2GraphemeBreak.RegionalIndicator ? 1 : 0;
         var lastNonExtendWasExtendedPictographic = (previousProperties & Pcre2GraphemeData.ExtendedPictographic) != 0;
         var zwjFollowsExtendedPictographic = false;
-        var indicConsonantSeen = (previousProperties & Pcre2GraphemeData.IndicConsonant) != 0;
-        var indicLinkerSeen = false;
 
         // Poll during the scan because one cluster can span arbitrarily many scalars.
         var remaining = 256;
@@ -1373,6 +1371,7 @@ internal static class Pcre2GraphemeClusterSemantics
             }
             var nextProperties = Pcre2GraphemeData.GetProperties(next.Value);
             var nextBreak = (Pcre2GraphemeBreak)(nextProperties & 15);
+            // PCRE2 10.47 does not apply the Unicode Indic conjunct rule (GB9c).
             var join = previousBreak == Pcre2GraphemeBreak.CR && nextBreak == Pcre2GraphemeBreak.LF ||
                 previousBreak is not (Pcre2GraphemeBreak.Control or Pcre2GraphemeBreak.CR or Pcre2GraphemeBreak.LF) &&
                 nextBreak is not (Pcre2GraphemeBreak.Control or Pcre2GraphemeBreak.CR or Pcre2GraphemeBreak.LF) &&
@@ -1381,8 +1380,7 @@ internal static class Pcre2GraphemeClusterSemantics
                  previousBreak == Pcre2GraphemeBreak.Prepend ||
                  previousBreak == Pcre2GraphemeBreak.ZWJ && zwjFollowsExtendedPictographic &&
                     (nextProperties & Pcre2GraphemeData.ExtendedPictographic) != 0 ||
-                 previousBreak == Pcre2GraphemeBreak.RegionalIndicator && nextBreak == Pcre2GraphemeBreak.RegionalIndicator && regionalIndicatorCount % 2 != 0 ||
-                 indicConsonantSeen && indicLinkerSeen && (nextProperties & Pcre2GraphemeData.IndicConsonant) != 0);
+                 previousBreak == Pcre2GraphemeBreak.RegionalIndicator && nextBreak == Pcre2GraphemeBreak.RegionalIndicator && regionalIndicatorCount % 2 != 0);
             if (!join)
             {
                 break;
@@ -1407,21 +1405,6 @@ internal static class Pcre2GraphemeClusterSemantics
             {
                 lastNonExtendWasExtendedPictographic = (nextProperties & Pcre2GraphemeData.ExtendedPictographic) != 0;
                 zwjFollowsExtendedPictographic = false;
-            }
-
-            if ((nextProperties & Pcre2GraphemeData.IndicLinker) != 0 && indicConsonantSeen)
-            {
-                indicLinkerSeen = true;
-            }
-            else if ((nextProperties & Pcre2GraphemeData.IndicConsonant) != 0)
-            {
-                indicConsonantSeen = true;
-                indicLinkerSeen = false;
-            }
-            else if ((nextProperties & Pcre2GraphemeData.IndicExtend) == 0)
-            {
-                indicConsonantSeen = false;
-                indicLinkerSeen = false;
             }
 
             previousBreak = nextBreak;

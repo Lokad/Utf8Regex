@@ -124,10 +124,10 @@ Caseless `Xuc` does not add ASCII K. `Xps`, `Xsp` and UCP space include NEL
 and U+180E. Without UCP, generic and POSIX space are ASCII. Explicit property
 escapes remain Unicode-aware.
 
-`\X` uses pinned Unicode 16 grapheme data, including Indic conjunct and
-no-break-before-ZWJ rules that differ from native 10.47 in some cases.
-Extended substitution uppercases final sigma to uppercase sigma, a disclosed
-native difference. Other Unicode properties are not all pinned.
+`\X` uses pinned Unicode 16 grapheme data and follows native 10.47 for
+Indic conjunct boundaries. Known differences from native 10.47 include
+some ZWJ boundaries and uppercasing of final sigma in extended substitution.
+Other Unicode properties can depend on the host runtime.
 
 ## Partial probing
 
