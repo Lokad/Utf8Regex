@@ -31,7 +31,8 @@ internal static class Pcre2CompileValidator
         Pcre2CompileOptions.Ungreedy |
         Pcre2CompileOptions.NoAutoCapture |
         Pcre2CompileOptions.Ucp |
-        Pcre2CompileOptions.FirstLine;
+        Pcre2CompileOptions.FirstLine |
+        Pcre2CompileOptions.MatchInvalidUtf8;
 
     internal static void ValidateArguments(
         Pcre2CompileOptions options,

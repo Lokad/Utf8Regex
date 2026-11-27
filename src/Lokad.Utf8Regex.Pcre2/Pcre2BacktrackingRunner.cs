@@ -147,6 +147,24 @@ internal readonly struct Pcre2FragmentBounds(int readFloor, bool endsAtBarrier)
     internal bool EndsAtBarrier { get; } = endsAtBarrier;
 }
 
+// One extent for an unchanged subject. A new start still determines its own
+// backward read floor, even when it lies inside the last scanned fragment.
+internal struct Pcre2FragmentScan
+{
+    private int _start;
+    private int _end;
+
+    internal readonly int End => _end;
+
+    internal bool TryGetEnd(int start, out int end)
+    {
+        end = _end;
+        return start >= _start && start < end;
+    }
+
+    internal void SetExtent(int start, int end) => (_start, _end) = (start, end);
+}
+
 internal static class Pcre2BacktrackingRunner
 {
     internal static Pcre2BacktrackingMatch Match(
@@ -210,7 +228,8 @@ internal static class Pcre2BacktrackingRunner
         Utf8BytePosition searchStart,
         Utf8BytePosition firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
-        ref Pcre2ResourceBudget budget)
+        ref Pcre2ResourceBudget budget,
+        Pcre2FragmentBounds fragment = default)
         => MatchCore(
             program,
             candidateSearch,
@@ -219,7 +238,7 @@ internal static class Pcre2BacktrackingRunner
             firstMatchingPosition,
             matchOptions,
             Pcre2CaptureMaterialization.ProjectedFinalSlots,
-            ref budget);
+            ref budget, fragment: fragment);
 
     internal static Pcre2BacktrackingMatch MatchByteRanges(Pcre2BacktrackingProgram program,
         in Pcre2CandidateSearchProgram candidateSearch, ReadOnlySpan<byte> input,
@@ -232,8 +251,26 @@ internal static class Pcre2BacktrackingRunner
         ReadOnlySpan<byte> input, Utf8BytePosition start, Pcre2MatchOptions options,
         Pcre2CaptureMaterialization materialization, ref Pcre2ResourceBudget budget,
         scoped Span<Utf8Pcre2CaptureRange> destination = default)
-        => MatchCore(program, default, input, start, start, options,
-            materialization, ref budget, destination, allowInvalidUtf8: true);
+    {
+        var scan = new Pcre2FragmentScan();
+        return MatchInvalidUtf8(program, input, start, start, options, materialization, ref budget, ref scan, destination);
+    }
+
+    internal static Pcre2BacktrackingMatch MatchInvalidUtf8(Pcre2BacktrackingProgram program,
+        ReadOnlySpan<byte> input, Utf8BytePosition start, Utf8BytePosition firstMatchingPosition,
+        Pcre2MatchOptions options, Pcre2CaptureMaterialization materialization, ref Pcre2ResourceBudget budget,
+        ref Pcre2FragmentScan scan, scoped Span<Utf8Pcre2CaptureRange> destination = default)
+    {
+        var frames = CreateFrames(ref budget, 0);
+        var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
+        var workspace = new Pcre2BacktrackingWorkspace();
+        try
+        {
+            return MatchFragments(program, input, start, firstMatchingPosition, options,
+                materialization, ref budget, ref frames, ref repeatMutations, ref workspace, ref scan, destination);
+        }
+        finally { workspace.Dispose(ref budget); repeatMutations.Dispose(ref budget); frames.Dispose(ref budget); }
+    }
 
     private static Pcre2BacktrackingMatch MatchCore(
         Pcre2BacktrackingProgram program,
@@ -244,30 +281,35 @@ internal static class Pcre2BacktrackingRunner
         Pcre2MatchOptions matchOptions,
         Pcre2CaptureMaterialization captureMaterialization,
         ref Pcre2ResourceBudget budget, scoped Span<Utf8Pcre2CaptureRange> destination = default,
-        bool allowInvalidUtf8 = false)
+        Pcre2FragmentBounds fragment = default)
     {
+        if (program.Request.MatchesInvalidUtf8 && !fragment.IsFragment)
+        {
+            var scan = new Pcre2FragmentScan();
+            return MatchInvalidUtf8(program, input, start, firstMatchingPosition, matchOptions,
+                captureMaterialization, ref budget, ref scan, destination);
+        }
+
         var frames = CreateFrames(ref budget, 0);
         var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
         var workspace = new Pcre2BacktrackingWorkspace();
         try
         {
-            if (allowInvalidUtf8)
-                return MatchFragments(program, input, start, firstMatchingPosition, matchOptions,
-                    captureMaterialization, ref budget, ref frames, ref repeatMutations, ref workspace, destination);
             return MatchCore(program, candidateSearch, input, start, firstMatchingPosition,
-                matchOptions, captureMaterialization, ref budget, ref frames, ref repeatMutations, ref workspace, destination);
+                matchOptions, captureMaterialization, ref budget, ref frames, ref repeatMutations, ref workspace, destination, fragment);
         }
         finally { workspace.Dispose(ref budget); repeatMutations.Dispose(ref budget); frames.Dispose(ref budget); }
     }
 
-    private static Pcre2BacktrackingMatch MatchFragments(
+    internal static Pcre2BacktrackingMatch MatchFragments(
         Pcre2BacktrackingProgram program, ReadOnlySpan<byte> input,
         Utf8BytePosition start, Utf8BytePosition firstMatchingPosition,
         Pcre2MatchOptions matchOptions, Pcre2CaptureMaterialization captureMaterialization,
         ref Pcre2ResourceBudget budget,
         scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
         scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
-        scoped ref Pcre2BacktrackingWorkspace workspace, scoped Span<Utf8Pcre2CaptureRange> destination)
+        scoped ref Pcre2BacktrackingWorkspace workspace, ref Pcre2FragmentScan scan,
+        scoped Span<Utf8Pcre2CaptureRange> destination)
     {
         budget.CheckWorkspace();
         _ = Utf8BytePosition.CreateChecked(input.Length, start.Value, "startOffsetInBytes");
@@ -276,17 +318,22 @@ internal static class Pcre2BacktrackingRunner
         Pcre2BacktrackingMatch last = default;
         for (var first = true; ; first = false)
         {
-            var end = FindFragmentEnd(input, candidate, ref budget);
+            if (!scan.TryGetEnd(candidate, out var end))
+            {
+                end = FindFragmentEnd(input, candidate, ref budget);
+                scan.SetExtent(candidate, end);
+            }
             var barrier = end < input.Length;
             // Native PCRE2 attempts the initial fragment even when it is
             // empty. Subsequent malformed runs do not create empty attempts.
             if (first || end > candidate)
             {
                 var options = barrier ? matchOptions | Pcre2MatchOptions.NotEol : matchOptions;
-                last = MatchCore(program, default, input[..end], new Utf8BytePosition(candidate), firstMatchingPosition,
+                var attempt = MatchCore(program, default, input[..end], new Utf8BytePosition(candidate), firstMatchingPosition,
                     options, captureMaterialization, ref budget, ref frames, ref repeatMutations, ref workspace,
                     destination, new Pcre2FragmentBounds(readFloor, barrier));
-                if (last.Success) return last;
+                if (attempt.Success) return attempt;
+                last = attempt.Mark is null ? attempt with { Mark = last.Mark } : attempt;
             }
             if (!barrier) return last;
             candidate = SkipContinuations(input, end + 1, ref budget);
@@ -295,7 +342,7 @@ internal static class Pcre2BacktrackingRunner
         }
     }
 
-    private static int SkipContinuations(ReadOnlySpan<byte> input, int offset, ref Pcre2ResourceBudget budget)
+    internal static int SkipContinuations(ReadOnlySpan<byte> input, int offset, ref Pcre2ResourceBudget budget)
     {
         var start = offset;
         while (offset < input.Length && (input[offset] & 0xC0) == 0x80)
@@ -306,7 +353,7 @@ internal static class Pcre2BacktrackingRunner
         return offset;
     }
 
-    private static int FindFragmentEnd(ReadOnlySpan<byte> input, int offset, ref Pcre2ResourceBudget budget)
+    internal static int FindFragmentEnd(ReadOnlySpan<byte> input, int offset, ref Pcre2ResourceBudget budget)
     {
         while (offset < input.Length)
         {
@@ -1514,10 +1561,8 @@ internal static class Pcre2BacktrackingRunner
                             continue;
                         }
 
-                        var acceptEmptyDisallowed =
-                            (matchOptions & Pcre2MatchOptions.NotEmpty) != 0 && inputIndex == reportedStartOffsetInBytes ||
-                            (matchOptions & Pcre2MatchOptions.NotEmptyAtStart) != 0 &&
-                            candidate == firstMatchingPosition && inputIndex == reportedStartOffsetInBytes;
+                        var acceptEmptyDisallowed = IsEmptyDisallowed(matchOptions, fragment, candidate,
+                            firstMatchingPosition, reportedStartOffsetInBytes, inputIndex);
                         if (!acceptEmptyDisallowed) goto PublishMatch;
                         break;
 
@@ -1579,8 +1624,8 @@ internal static class Pcre2BacktrackingRunner
                     case Pcre2BacktrackingInstructionKind.Accept:
                         var endAnchored = !isAssertion && (program.Request.Options & Pcre2CompileOptions.EndAnchored) != 0 ||
                             (matchOptions & Pcre2MatchOptions.EndAnchored) != 0;
-                        var emptyDisallowed = (matchOptions & Pcre2MatchOptions.NotEmpty) != 0 && inputIndex == reportedStartOffsetInBytes ||
-                            (matchOptions & Pcre2MatchOptions.NotEmptyAtStart) != 0 && candidate == firstMatchingPosition && inputIndex == reportedStartOffsetInBytes;
+                        var emptyDisallowed = IsEmptyDisallowed(matchOptions, fragment, candidate,
+                            firstMatchingPosition, reportedStartOffsetInBytes, inputIndex);
                         if ((!endAnchored || inputIndex == (requiredEnd < 0 ? input.Length : requiredEnd)) &&
                             !emptyDisallowed) goto PublishMatch;
                         break;
@@ -1852,6 +1897,12 @@ internal static class Pcre2BacktrackingRunner
         }
         return false;
     }
+
+    private static bool IsEmptyDisallowed(Pcre2MatchOptions options, Pcre2FragmentBounds fragment,
+        int candidate, int firstMatchingPosition, int reportedStart, int end) => end == reportedStart &&
+        ((options & Pcre2MatchOptions.NotEmpty) != 0 ||
+         (options & Pcre2MatchOptions.NotEmptyAtStart) != 0 &&
+         (fragment.IsFragment ? reportedStart : candidate) == firstMatchingPosition);
 
     private static void ThrowIfDisallowedNonMonotoneLookaroundReset(
         Pcre2BacktrackingProgram program,

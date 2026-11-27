@@ -13,12 +13,13 @@ public sealed partial class Utf8Pcre2Regex
     private Pcre2ResourceBudget _budget;
     private readonly Pcre2BacktrackingProgram? _captureProgram;
     private readonly bool _anchored;
-    private readonly Pcre2MatchOptions _matchOptions;
+    private Pcre2MatchOptions _matchOptions;
     private readonly Pcre2CompiledProgram _compiled;
     private readonly bool _firstLine;
     private int _originalStart;
     private int _candidateScan;
     private int _candidateLimit;
+    private Pcre2FragmentBounds _fragment;
 
     internal Pcre2PartialProbeRunner(ReadOnlySpan<byte> input, Pcre2CompiledProgram program,
         Pcre2MatchOptions matchOptions, Pcre2ResourceBudget budget)
@@ -42,15 +43,40 @@ public sealed partial class Utf8Pcre2Regex
         _candidateLimit = input.Length;
     }
 
+    internal Utf8Pcre2ProbeResult ProbeFragments(Pcre2PartialMode partialMode, int start)
+    {
+        var subject = _input;
+        var options = _matchOptions;
+        var candidate = Pcre2BacktrackingRunner.SkipContinuations(subject, start, ref _budget);
+        var floor = candidate == start ? 0 : candidate;
+        for (var first = true; ; first = false)
+        {
+            var end = Pcre2BacktrackingRunner.FindFragmentEnd(subject, candidate, ref _budget);
+            var barrier = end < subject.Length;
+            if (first || end > candidate)
+            {
+                _input = subject[..end];
+                _fragment = new(floor, barrier);
+                _matchOptions = barrier ? options | Pcre2MatchOptions.NotEol : options;
+                var result = Probe(partialMode, candidate, _compiled, _matchOptions, start);
+                if (result.Kind == Utf8Pcre2ProbeKind.FullMatch || !barrier) return result;
+            }
+            candidate = Pcre2BacktrackingRunner.SkipContinuations(subject, end + 1, ref _budget);
+            if (candidate == subject.Length) return NoMatch();
+            floor = candidate;
+        }
+    }
+
     internal Utf8Pcre2ProbeResult Probe(
         Pcre2PartialMode partialMode,
         int startOffsetInBytes,
-        Pcre2CompiledProgram compiled, Pcre2MatchOptions matchOptions)
+        Pcre2CompiledProgram compiled, Pcre2MatchOptions matchOptions, int? originalStart = null)
     {
         var program = compiled.PartialProbe;
         var input = _input;
-        _originalStart = startOffsetInBytes;
+        _originalStart = originalStart ?? startOffsetInBytes;
         _candidateScan = startOffsetInBytes;
+        _candidateLimit = input.Length;
         try
         {
             _budget.CheckDeadline();
@@ -119,7 +145,7 @@ public sealed partial class Utf8Pcre2Regex
         canRetry = assertion.Kind == Pcre2CharacterTokenKind.BeginningOfLine &&
             (assertion.Options & Pcre2CharacterOptions.Multiline) != 0;
         _budget.CheckWorkspace();
-        return Pcre2CharacterRunner.TryMatchToken(assertion, compiled.Request, input, start, _originalStart, matchOptions, ref _budget, out _);
+        return Pcre2CharacterRunner.TryMatchToken(assertion, compiled.Request, input, start, _originalStart, matchOptions, ref _budget, out _, _fragment);
     }
 
     private Utf8Pcre2ProbeResult ProbeViaLiteralDotStar(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
@@ -140,7 +166,7 @@ public sealed partial class Utf8Pcre2Regex
     {
         // Reuse the admitted whole-subject dot semantics. Scalar widths and the
         // selected newline convention determine the endpoint, not byte count.
-        while (Pcre2CharacterRunner.TryMatchToken(dot, request, input, end, _originalStart, _matchOptions, ref _budget, out var next))
+        while (Pcre2CharacterRunner.TryMatchToken(dot, request, input, end, _originalStart, _matchOptions, ref _budget, out var next, _fragment))
         {
             _budget.CheckWorkspace();
             end = next;
@@ -351,6 +377,10 @@ public sealed partial class Utf8Pcre2Regex
     private Utf8Pcre2ProbeResult ProbeViaEndAssertion(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, bool allowFinalNewline)
     {
         _budget.CheckWorkspace();
+        if (_fragment.EndsAtBarrier) return NoMatch();
+        if ((_matchOptions & Pcre2MatchOptions.NotEol) != 0 &&
+            _compiled.ProbeRoot is Pcre2TokenBacktrackingNode { Token.Kind: Pcre2CharacterTokenKind.EndOfLine })
+            return NoMatch();
         var newline = _compiled.Request.Settings.Newline;
         var matchIndex = allowFinalNewline
             ? Pcre2CharacterSemantics.GetFirstFinalNewlineOrEnd(input, startOffsetInBytes, newline)
@@ -424,7 +454,7 @@ public sealed partial class Utf8Pcre2Regex
             if (candidate == input.Length || input[candidate] is not ((byte)'a' or (byte)'b'))
             {
                 var end = candidate;
-                while (Pcre2CharacterRunner.TryMatchToken(dot, request, input, end, _originalStart, _matchOptions, ref _budget, out var nextEnd))
+                while (Pcre2CharacterRunner.TryMatchToken(dot, request, input, end, _originalStart, _matchOptions, ref _budget, out var nextEnd, _fragment))
                 {
                     _budget.CheckWorkspace();
                     end = nextEnd;
@@ -479,7 +509,7 @@ public sealed partial class Utf8Pcre2Regex
         var count = 0;
         var newline = Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.NewlineSequence, Pcre2CharacterOptions.None);
         while (count < maxCount && Pcre2CharacterRunner.TryMatchToken(newline, request, input,
-            cursor, _originalStart, _matchOptions, ref _budget, out var next))
+            cursor, _originalStart, _matchOptions, ref _budget, out var next, _fragment))
         {
             _budget.CheckWorkspace();
             var loneFinalCr = next == input.Length && next == cursor + 1 && input[cursor] == (byte)'\r';
@@ -640,7 +670,7 @@ public sealed partial class Utf8Pcre2Regex
         // ASCII byte classification would falsely reject Unicode word scalars.
         _budget.CheckWorkspace();
         if (Pcre2CharacterRunner.TryMatchToken(word, compiled.Request, input,
-            startOffsetInBytes + aCount, _originalStart, _matchOptions, ref _budget, out var end))
+            startOffsetInBytes + aCount, _originalStart, _matchOptions, ref _budget, out var end, _fragment))
         {
             return Full([Project(0, startOffsetInBytes, end)]);
         }
@@ -666,7 +696,7 @@ public sealed partial class Utf8Pcre2Regex
         // subject for their suffixes; later text is not part of the match.
         _budget.CheckWorkspace();
         if (!Pcre2CharacterRunner.TryMatchToken(prefix, compiled.Request, input,
-            startOffsetInBytes, _originalStart, _matchOptions, ref _budget, out var cursor))
+            startOffsetInBytes, _originalStart, _matchOptions, ref _budget, out var cursor, _fragment))
             return NoMatch();
 
         var result = ProbeTrailingAssertion(input, partialMode, startOffsetInBytes, cursor, assertion, compiled.Request);
@@ -679,7 +709,7 @@ public sealed partial class Utf8Pcre2Regex
         var terminal = ((Pcre2TokenBacktrackingNode)((Pcre2SequenceBacktrackingNode)branches[1]).Children[1]).Token;
         _budget.CheckWorkspace();
         if (Pcre2CharacterRunner.TryMatchToken(terminal, compiled.Request, input,
-            cursor, _originalStart, _matchOptions, ref _budget, out var end))
+            cursor, _originalStart, _matchOptions, ref _budget, out var end, _fragment))
             return Full([Project(0, startOffsetInBytes, end)]);
         if (partialMode != Pcre2PartialMode.None && cursor == input.Length)
             return Partial(Project(0, startOffsetInBytes, cursor));
@@ -700,7 +730,7 @@ public sealed partial class Utf8Pcre2Regex
             var end = candidate;
             var count = 0;
             while (count < maxCount && Pcre2CharacterRunner.TryMatchToken(dot, compiled.Request,
-                input, end, _originalStart, _matchOptions, ref _budget, out var next))
+                input, end, _originalStart, _matchOptions, ref _budget, out var next, _fragment))
             {
                 _budget.CheckWorkspace();
                 end = next;
@@ -787,7 +817,7 @@ public sealed partial class Utf8Pcre2Regex
     {
         if (leading is not { } assertion) return true;
         _budget.CheckWorkspace();
-        return Pcre2CharacterRunner.TryMatchToken(assertion, request, input, start, _originalStart, _matchOptions, ref _budget, out _);
+        return Pcre2CharacterRunner.TryMatchToken(assertion, request, input, start, _originalStart, _matchOptions, ref _budget, out _, _fragment);
     }
 
     private Utf8Pcre2ProbeResult ProbeViaAnchoredExactLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
@@ -818,7 +848,7 @@ public sealed partial class Utf8Pcre2Regex
     {
         _budget.CheckWorkspace();
         var full = Pcre2CharacterRunner.TryMatchToken(assertion, request, input,
-            end, _originalStart, _matchOptions, ref _budget, out _);
+            end, _originalStart, _matchOptions, ref _budget, out _, _fragment);
         if (partialMode != Pcre2PartialMode.None)
         {
             var dollar = assertion.Kind == Pcre2CharacterTokenKind.EndOfLine;
@@ -904,7 +934,7 @@ public sealed partial class Utf8Pcre2Regex
             var value = groups[0];
             var detailed = Pcre2BacktrackingRunner.MatchDetailed(captureProgram, default, _input,
                 new Utf8BytePosition(value.StartOffsetInBytes), new Utf8BytePosition(_originalStart),
-                Pcre2MatchOptions.Anchored | _matchOptions, ref _budget);
+                Pcre2MatchOptions.Anchored | _matchOptions, ref _budget, _fragment);
             try
             {
                 if (!detailed.Success || detailed.StartOffsetInBytes != value.StartOffsetInBytes ||

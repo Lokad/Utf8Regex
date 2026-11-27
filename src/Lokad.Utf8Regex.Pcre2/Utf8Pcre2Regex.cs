@@ -17,13 +17,13 @@ namespace Lokad.Utf8Regex.Pcre2;
 public sealed partial class Utf8Pcre2Regex : IDisposable
 {
 
-    /// <summary>Compiles an expression for caller-valid, unchanged UTF-8 subjects.</summary>
-    /// <remarks>A null timeout uses DefaultMatchTimeout. Subject bytes remain caller-valid/unchanged; host text/collections are outside regex controls. Policy construction limits/deadline and optional program funding are independent of matching; Compile additionally accepts a construction token.</remarks>
+    /// <summary>Compiles a PCRE2 expression over UTF-8 subjects.</summary>
+    /// <remarks>A null timeout uses DefaultMatchTimeout. Keep subject bytes unchanged and supply valid UTF-8 unless <see cref="Pcre2CompileOptions.MatchInvalidUtf8"/> is selected. Policy construction limits/deadline and optional program funding are independent of matching; Compile additionally accepts a construction token.</remarks>
     public Utf8Pcre2Regex(string pattern, Pcre2CompileOptions options = Pcre2CompileOptions.None, Utf8Pcre2CompileSettings compileSettings = default, Utf8RegexPolicy? policy = null)
         : this(new Utf8ConstructionPattern(pattern), options, compileSettings, policy, default, explicitCompile: false) { }
 
-    /// <summary>Compiles a strict UTF-8 pattern for caller-valid, unchanged UTF-8 subjects.</summary>
-    /// <remarks>A null timeout uses DefaultMatchTimeout. Subject bytes remain caller-valid/unchanged; host text/collections are outside regex controls. Policy construction limits/deadline and optional program funding are independent of matching; Compile additionally accepts a construction token.</remarks>
+    /// <summary>Compiles a strict UTF-8 pattern for matching UTF-8 subjects.</summary>
+    /// <remarks>A null timeout uses DefaultMatchTimeout. Keep subject bytes unchanged and supply valid UTF-8 unless <see cref="Pcre2CompileOptions.MatchInvalidUtf8"/> is selected. Policy construction limits/deadline and optional program funding are independent of matching; Compile additionally accepts a construction token.</remarks>
     public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options = Pcre2CompileOptions.None, Utf8Pcre2CompileSettings compileSettings = default, Utf8RegexPolicy? policy = null)
         : this(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, policy, default, explicitCompile: false) { }
 
@@ -156,7 +156,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         ref var invocation = ref budget.WorkingInvocation;
         try
         {
-            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation);
+            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation, _program.Request.MatchesInvalidUtf8);
             if (Pcre2Runner.TryIsMatch(_program, input, start, matchOptions, ref budget, out var result))
             {
                 if (!invocation.IsUnmetered)
@@ -182,7 +182,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     }
 
     /// <summary>Determines whether a match exists using an explicit start byte offset and per-operation options, observing cancellation during matching.</summary>
-    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="input">The unchanged UTF-8 subject. <see cref="Pcre2CompileOptions.MatchInvalidUtf8"/> allows malformed sequences.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
     /// <param name="cancellationToken">The token to observe before entry and during bounded matching.</param>
@@ -213,7 +213,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
             if (matchOptions == Pcre2MatchOptions.None &&
                 _program.Operations.Count is Pcre2LiteralDirectProgram { Program.CanCountDirectly: true } literal)
             {
-                var admittedStart = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation);
+                var admittedStart = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation, _program.Request.MatchesInvalidUtf8);
                 var suffix = input[admittedStart.Value..];
                 int count;
                 if (invocation.IsUnmetered && invocation.CheckpointHook is null)
@@ -224,7 +224,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                 Pcre2SliceDriver.CheckInvocation(ref invocation);
                 return count;
             }
-            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation);
+            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation, _program.Request.MatchesInvalidUtf8);
             if (Pcre2GlobalOperationDriver.TryCount(_program, input, start, matchOptions, ref invocation, out var result))
             {
                 Pcre2SliceDriver.CheckInvocation(ref invocation);
@@ -243,7 +243,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     }
 
     /// <summary>Counts non-overlapping matches using an explicit start byte offset and per-operation options, observing cancellation during cumulative global matching.</summary>
-    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="input">The unchanged UTF-8 subject. <see cref="Pcre2CompileOptions.MatchInvalidUtf8"/> allows malformed sequences.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
     /// <param name="cancellationToken">The token retained through all matching work.</param>
@@ -265,7 +265,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         ref var invocation = ref budget.WorkingInvocation;
         try
         {
-            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation);
+            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation, _program.Request.MatchesInvalidUtf8);
             if (Pcre2Runner.TryMatch(_program, input, start, matchOptions, ref budget, out var directMatch, out var mark))
             {
                 if (!output.IsEmpty)
@@ -320,7 +320,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         try
         {
-            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation);
+            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation, _program.Request.MatchesInvalidUtf8);
             var slots = Utf8SliceSlots.Empty;
             var match = Pcre2Runner.MatchByteRanges(_program, input, start, start, matchOptions,
                 ref budget, ref slots, ref workspace, output);
@@ -379,7 +379,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
         try
         {
-            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation);
+            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation, _program.Request.MatchesInvalidUtf8);
             return EnumerateMatchesAdmitted(input, start, matchOptions, in invocation);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
@@ -436,7 +436,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         new("SPEC-PCRE2 does not support this pattern in the managed profile.");
 
     /// <summary>Creates a match cursor using an explicit start byte offset and per-operation options, retaining cancellation and cumulative limits through every advance.</summary>
-    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="input">The unchanged UTF-8 subject. <see cref="Pcre2CompileOptions.MatchInvalidUtf8"/> allows malformed sequences.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
     /// <remarks>Funded span enumeration borrows an open expression at creation and each advance. Copied positions and cumulative numeric limits remain independent/shared respectively; no host working loan remains between advances. Use a persistent cursor to survive program disposal.</remarks>
@@ -462,7 +462,25 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         var invocation = Pcre2SliceDriver.CreateExclusiveInvocation(_program.Request, cancellationToken);
         try
         {
-            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation);
+            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation, _program.Request.MatchesInvalidUtf8);
+            if (_program.Request.MatchesInvalidUtf8)
+            {
+                if (partialMode == Pcre2PartialMode.None)
+                    return MatchFullProbe(input, start, matchOptions, ref invocation);
+                if (_program.PartialProbe.Kind != Pcre2PartialProbeProgramKind.None)
+                {
+                    var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
+                    var runner = new Pcre2PartialProbeRunner(input, _program, matchOptions, budget);
+                    return runner.ProbeFragments(partialMode, start.Value);
+                }
+                // Empty and start-only assertions never attempt a partial.
+                if (_program.ProbeRoot is not null)
+                    return MatchFullProbe(input, start, matchOptions, ref invocation);
+                if (partialMode == Pcre2PartialMode.Soft &&
+                    MatchFullProbe(input, start, matchOptions, ref invocation) is { Kind: Utf8Pcre2ProbeKind.FullMatch } full)
+                    return full;
+                throw CreateUnsupportedProbeException();
+            }
             if (_program.Operations.Match is Pcre2LiteralDirectProgram literalProgram)
             {
                 var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
@@ -504,7 +522,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     }
 
     /// <summary>Probes for a full or partial match using an explicit start byte offset and per-operation options, observing live cancellation during execution and required result shaping.</summary>
-    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="input">The unchanged UTF-8 subject. <see cref="Pcre2CompileOptions.MatchInvalidUtf8"/> allows malformed sequences.</param>
     /// <param name="partialMode">The permitted subject-end partial-match mode.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
@@ -519,7 +537,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     }
 
     /// <summary>Replaces matches using a UTF-8 template with explicit start, substitution, and per-match options, observing cancellation during matching and output shaping.</summary>
-    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="input">The unchanged UTF-8 subject. <see cref="Pcre2CompileOptions.MatchInvalidUtf8"/> allows malformed sequences.</param>
     /// <param name="replacementPatternUtf8">The PCRE2 replacement template encoded as well-formed UTF-8.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="substitutionOptions">The substitution options.</param>
@@ -549,7 +567,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
             if (construction is not null) construction.Budget.Deadline = invocation.Budget.Deadline;
             using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation, token);
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8Validation.TryValidateOnly(replacementPatternUtf8, ref invocation));
-            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation);
+            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation, _program.Request.MatchesInvalidUtf8);
             var replacement = replacementPatternUtf8;
             Pcre2ReplacementPreparation? preparation = null;
             if (TryReplaceUsingLiteralDriver(input, start, replacement, substitutionOptions,
@@ -577,7 +595,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
 
     /// <summary>Attempts to write a replacement result, observing cancellation during preparation, discovery and copying.</summary>
     /// <remarks>Input and replacement may overlap the destination. Matched overlapping input uses admitted temporary output; a short destination is unchanged. Null working admission inherits program funding, or retains numeric controls without a shared account.</remarks>
-    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="input">The unchanged UTF-8 subject. <see cref="Pcre2CompileOptions.MatchInvalidUtf8"/> allows malformed sequences.</param>
     /// <param name="replacementPatternUtf8">The PCRE2 replacement template encoded as well-formed UTF-8.</param>
     /// <param name="destination">The destination buffer for the UTF-8 replacement result.</param>
     /// <param name="bytesWritten">When this method returns, the number of bytes written to the destination.</param>
@@ -923,7 +941,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         try
         {
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8Validation.TryValidateOnly(replacement, ref invocation));
-            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation);
+            var start = Pcre2Runner.AdmitStart(input, startOffsetInBytes, ref invocation, _program.Request.MatchesInvalidUtf8);
             var result = ReplaceAdmitted(input, start, replacement, options,
                 matchOptions, invocation, Pcre2ReplacementResultKind.Bytes, default);
             Pcre2SliceDriver.CheckInvocation(ref invocation);

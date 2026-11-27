@@ -6,9 +6,11 @@ ships without native binaries or interop.
 
 ## Subject input contract
 
-Pass valid UTF-8 and keep borrowed bytes unchanged during use. Validate
+Pass valid UTF-8 by default and keep borrowed bytes unchanged during use. Validate
 external bytes as they become text. Patterns and UTF-8 templates have their
 own validation rules. Starts and reported endpoints use byte offsets.
+Select `Pcre2CompileOptions.MatchInvalidUtf8` when a subject can contain malformed
+bytes. Matches stay inside valid fragments and retain their original offsets.
 [Input and range rules](../../docs/SPEC-PCRE2.md#subject-input-contract)
 
 ## Supported scope and limitations
@@ -17,8 +19,8 @@ The adapter supports captures, backreferences, assertions, branch reset,
 duplicate names, recursion, conditionals, atomic groups and backtracking
 verbs. Use `Probe` for ordinary MARK results and supported soft or hard
 partial decisions. Numbered callouts such as `(?C1)` match without invoking
-a callback. The scope excludes string callouts, DFA matching, invalid-UTF
-subject mode, RTL, split and full capture history.
+a callback. The scope excludes string callouts, DFA matching, RTL, split and
+full capture history.
 [Grammar and probe coverage](../../docs/SPEC-PCRE2.md)
 
 Opted-in `\C` can return byte fragments. Check `IsUtf8SliceWellFormed`

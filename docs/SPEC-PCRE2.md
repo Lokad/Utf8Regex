@@ -8,8 +8,9 @@ independently. [Supported scope](../src/Lokad.Utf8Regex.Pcre2/README.md#supporte
 
 ## Subject input contract
 
-Supply valid UTF-8 and keep borrowed storage unchanged throughout use. Validate
-external bytes where they become text. Regex operations trust this guarantee.
+By default, supply valid UTF-8 and keep borrowed storage unchanged throughout
+use. Validate external bytes where they become text. Regex operations trust
+this guarantee.
 Benchmarks use native `PCRE2_NO_UTF_CHECK` under the same input guarantee.
 Pattern and template validation remain independent.
 
@@ -18,8 +19,16 @@ boundaries. The prefix remains available to anchors and lookbehind. Results
 expose byte coordinates. The rules for `\C` and `\K` below govern byte fragments
 and noncontiguous reported ranges.
 
+With `Pcre2CompileOptions.MatchInvalidUtf8`, malformed sequences are impassable
+barriers rather than replacement scalars. Operations search valid fragments,
+keep original byte offsets and permit a start anywhere in the byte range.
+A start on a continuation byte advances past the continuation run and denies
+lookbehind access to the skipped bytes. Absolute anchors retain their original
+subject meaning. Explicit `Anchored` and `EndAnchored` options apply at fragment
+edges. Borrowed storage must still remain unchanged.
+
 Lookbehind must finish at the assertion location. Its anchors, boundaries
-and nested lookaheads can inspect the original subject.
+and nested lookaheads can inspect the original context within these bounds.
 
 ## Operations and results
 
@@ -51,8 +60,8 @@ exposes such ranges with `HasContiguousByteRange = false`. Byte extraction
 throws. Global operations can reject non-monotone patterns before discovery
 or reject a yielded non-monotone result with `NotSupportedException`.
 
-Opted-in `\C` consumes one byte and is forbidden in UTF lookbehind. The
-subject remains valid UTF-8 even when a range contains a byte fragment.
+Opted-in `\C` consumes one byte and is forbidden in UTF lookbehind. A range
+can contain a byte fragment even for a valid subject.
 Check `IsUtf8SliceWellFormed` before decoding a range. Replacement in this
 mode can produce byte output that is invalid UTF-8.
 
@@ -61,6 +70,10 @@ an empty match it retries anchored and nonempty at that position. A failed
 retry stops anchored iteration or advances to the next scalar boundary.
 Caller `NotEmpty` and `NotEmptyAtStart` options apply to each attempt.
 Substitution can retain a reset-empty `\K` result suppressed by enumeration.
+With `MatchInvalidUtf8`, reported-empty matches retry with `NotEmptyAtStart`
+and the original search options. The retry can search later candidates
+and stops at the subject end. `NotEmptyAtStart` tests the reported start after
+`\K` in this mode.
 
 With CRLF-aware newlines, unanchored wildcard discovery skips the LF in a
 CRLF pair after a failed CR candidate. An explicit LF start or an explicit
@@ -142,6 +155,10 @@ decisions can throw `NotSupportedException`, including a Hard full match
 whose priority cannot be established or a marked Soft miss. Read the
 supported scope before relying on partial outcomes. [Profile scope](../src/Lokad.Utf8Regex.Pcre2/README.md#supported-scope-and-limitations)
 
+With `MatchInvalidUtf8`, supported partial decisions are attempted within each
+valid fragment. Hard partial may suppress a full alternative in that fragment.
+A partial range is published only at the actual subject end.
+
 Partial combined with compile or match `EndAnchored` throws
 `Pcre2MatchException` with `BadOption`. Pre-cancellation takes precedence.
 Operational failures throw without a probe outcome.
@@ -153,6 +170,8 @@ Use PCRE2 byte-template syntax. Default forms include `$$`, `$n`, `${n}`,
 Backslash processing requires Extended. Strict UTF-8 validation covers the
 complete template before matching, including misses and `SubstituteLiteral`.
 Syntax errors preserve native no-match and unselected-fallback deferral.
+With `MatchInvalidUtf8`, full output preserves unmatched malformed bytes.
+`SubstituteReplacementOnly` omits those gaps.
 
 Discovery, capture and MARK access, output growth and copying share one
 invocation. Cold template keys and parser buffers require admission.
@@ -273,7 +292,7 @@ are accepted without callbacks. A callout consumes no input, opens no
 capture and cannot be quantified. One numbered callout may precede an
 assertion condition. String callouts report `CalloutUnsupported`.
 
-The DFA matcher, invalid-UTF mode, RTL, split and full capture history
-are outside this profile. Use cursor ranges
+The DFA matcher, RTL, split and full capture history are outside this profile.
+Use cursor ranges
 for host-defined output. [Profile examples](../src/Lokad.Utf8Regex.Pcre2/README.md) ·
 [Implementation](ARCHITECTURE-PCRE2.md)

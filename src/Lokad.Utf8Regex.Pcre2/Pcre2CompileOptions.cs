@@ -42,4 +42,7 @@ public enum Pcre2CompileOptions
 
     /// <summary>Restricts an unanchored match to the subject's first line.</summary>
     FirstLine = 1 << 11,
+
+    /// <summary>Treats malformed UTF-8 sequences in the subject as barriers to matching.</summary>
+    MatchInvalidUtf8 = 1 << 12,
 }

@@ -14,6 +14,7 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
     private readonly Pcre2MatchOptions _options;
     private Pcre2ResourceBudget _budget;
     private Pcre2GlobalProgress _progress;
+    private Pcre2FragmentScan _fragmentScan;
     private Utf8SliceSlots _sliceSlots = Utf8SliceSlots.Empty;
     private Utf8SliceRunner.AttemptWorkspace _sliceWorkspace = new();
     private Utf8FundedStorage.Use? _programUse;
@@ -28,9 +29,10 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
         _budget = new(program.Request.DefaultLimits, invocation, false);
         try
         {
-            var admittedStart = Pcre2Runner.AdmitStart(input.Span, start, ref _budget.WorkingInvocation);
+            var admittedStart = Pcre2Runner.AdmitStart(input.Span, start, ref _budget.WorkingInvocation,
+                program.Request.MatchesInvalidUtf8);
             _input = input;
-            _progress = new(admittedStart);
+            _progress = new(admittedStart, program.Request.MatchesInvalidUtf8);
             Checkpoint();
         }
         catch (Utf8ExecutionDeadlineExpiredException) { Close(Pcre2CursorStatus.Faulted); throw TimeoutFailure(); }
@@ -101,14 +103,19 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
             try
             {
                 _progress.GetAttempt(_options, out var restart, out var firstMatchingPosition, out var options);
-                var outcome = Pcre2Runner.MatchByteRanges(_program!, subject, restart, firstMatchingPosition, options,
-                    ref _budget, ref _sliceSlots, ref _sliceWorkspace);
+                var program = _program!;
+                var outcome = program.Request.MatchesInvalidUtf8
+                    ? Pcre2BacktrackingRunner.MatchInvalidUtf8(((Pcre2BacktrackingDirectProgram)program.Operations.Match).Program,
+                        subject, restart, firstMatchingPosition, options, Pcre2CaptureMaterialization.ByteFinalSlots,
+                        ref _budget, ref _fragmentScan)
+                    : Pcre2Runner.MatchByteRanges(program, subject, restart, firstMatchingPosition, options,
+                        ref _budget, ref _sliceSlots, ref _sliceWorkspace);
                 var groups = outcome.CaptureResult.ByteGroups;
                 if (outcome.Success) captureBytes = Utf8ConstructionBudget.ArrayBytes<Utf8Pcre2CaptureRange>(groups.Length);
                 Checkpoint();
                 if (!outcome.Success) { _progress.AfterMiss(subject, _program!.Request, _options); continue; }
                 _progress.Accept(outcome.StartOffsetInBytes, outcome.EndOffsetInBytes,
-                    outcome.ConsumedStartOffsetInBytes, outcome.ConsumedEndOffsetInBytes);
+                    outcome.ConsumedStartOffsetInBytes, outcome.ConsumedEndOffsetInBytes, subject.Length);
                 var completed = new Utf8Pcre2RangeMatch(_input, groups, outcome.Mark);
                 Utf8Pcre2RetainedRangeMatch? receipt = null;
                 var allowance = resultAllowance ?? _budget.WorkingInvocation.Ledger.MemoryAllowance;

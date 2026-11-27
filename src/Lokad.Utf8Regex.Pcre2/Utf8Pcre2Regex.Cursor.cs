@@ -2,8 +2,8 @@ namespace Lokad.Utf8Regex.Pcre2;
 
 public sealed partial class Utf8Pcre2Regex
 {
-    /// <summary>Creates a persistent range cursor over caller-valid, unchanged UTF-8 memory.</summary>
-    /// <remarks>Starts are scalar-aligned bytes in the original subject, preserving assertion context. Each advance accepts its current-call token; the creation token, absolute deadline and cumulative numeric limits remain authoritative. Dispose abandoned cursors. Null working admission inherits program funding. Major scratch/result staging remains admitted; ordinary publication ends live result admission. An existing cursor retains program admission after expression disposal until EOF, failure or Dispose.</remarks>
+    /// <summary>Creates a persistent range cursor over unchanged subject memory.</summary>
+    /// <remarks>Supply valid UTF-8 and scalar-aligned starts by default. <see cref="Pcre2CompileOptions.MatchInvalidUtf8"/> admits byte starts and searches valid fragments. Each advance accepts its current-call token; the creation token, absolute deadline and cumulative numeric limits remain authoritative. Dispose abandoned cursors. Null working admission inherits program funding. Major scratch/result staging remains admitted; ordinary publication ends live result admission. An existing cursor retains program admission after expression disposal until EOF, failure or Dispose.</remarks>
     public Utf8Pcre2MatchCursor CreateMatchCursor(ReadOnlyMemory<byte> input, int startOffsetInBytes = 0,
         Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default,
         IUtf8MemoryAllowance? workingMemoryAllowance = null)

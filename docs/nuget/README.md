@@ -15,7 +15,7 @@ Adapters require the exact matching Core version. These profiles have documented
 boundaries; they do not promise full .NET, Python, PCRE2 or locale-aware POSIX
 equivalence. POSIX excludes lookarounds, backreferences and locale collation.
 PCRE2 accepts numbered callouts without callbacks. String callouts, DFA
-matching, invalid-UTF subject mode, split and full capture history are
+matching, split and full capture history are
 outside its scope. Partial probing supports a limited set of patterns.
 
 POSIX is case-sensitive by default. `PosixCompileOptions.IgnoreCase` uses invariant
@@ -36,14 +36,17 @@ int count = regex.Count("A😀"u8); // 2 scalars
 var match = regex.Match("😀"u8); // Utf8CaptureRange: byte endpoints [0, 4)
 ```
 
-All profiles require already-valid UTF-8 subjects and unchanged borrowed bytes.
-Regex operations do not validate subjects or expose a validation policy. Check
+All profiles require already-valid UTF-8 subjects by default and unchanged
+borrowed bytes in every mode. Check
 external bytes where they become text, using `System.Text.Unicode.Utf8.IsValid`
-when the host representation does not already guarantee validity. Malformed
-subjects have unspecified matching results; managed bounds checking, cancellation
-and enforceable resource limits remain. Pattern, template and assembled-output
+when the host representation does not already guarantee validity. In the default
+mode, malformed subjects have unspecified matching results. Managed bounds
+checking, cancellation and enforceable resource limits remain. Pattern, template and assembled-output
 checks stay independent. Live route eligibility, scalar matching and output sizing
-may still inspect text. Match results expose byte endpoints only.
+may still inspect text. Match results expose byte endpoints only. PCRE2's
+`Pcre2CompileOptions.MatchInvalidUtf8` searches valid fragments in a malformed
+subject and retains original byte offsets. Unmatched malformed bytes stay in
+full replacement output.
 
 PCRE2's explicitly enabled `\C` byte atom and special `\K` ranges have separate
 slice-validity rules; check result slice properties before decoding those results.

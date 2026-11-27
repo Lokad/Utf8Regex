@@ -45,12 +45,16 @@ Matching uses **Unicode scalars**. For example,
 `new Utf8Regex(".").Count("A😀"u8)` returns 2. The emoji occupies four bytes.
 Match and capture ranges use byte coordinates.
 
-All profiles require valid UTF-8. Use `System.Text.Unicode.Utf8.IsValid` where
+All profiles require valid UTF-8 by default. Use `System.Text.Unicode.Utf8.IsValid` where
 external bytes become text. Regex operations trust that guarantee. Pattern,
 replacement-template and assembled-output checks follow their own rules.
 Keep borrowed input unchanged and its owner alive during use. Owned snapshots
 remain valid after cursor advance or disposal.
 [Input contract](docs/SPEC.md#subject-input-contract)
+
+PCRE2 offers `Pcre2CompileOptions.MatchInvalidUtf8` for searching valid
+fragments of a malformed subject with original byte offsets.
+[PCRE2 input contract](docs/SPEC-PCRE2.md#subject-input-contract)
 
 ## Cancellation and limits
 

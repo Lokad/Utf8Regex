@@ -198,6 +198,26 @@ public sealed class Pcre2MemoryCursorTests
     }
 
     [Fact]
+    public void MalformedSubjectRetainedCapturesSurviveCursorClose()
+    {
+        var root = new Root();
+        var working = new Account(root);
+        var results = new Account(root);
+        using var regex = new Utf8Pcre2Regex("(A|B)", Pcre2CompileOptions.MatchInvalidUtf8);
+        using var cursor = regex.CreateMatchCursor(Convert.FromHexString("418042"), workingMemoryAllowance: working);
+        Assert.True(cursor.MoveNextRetained(out var receipt, resultMemoryAllowance: results));
+        var copy = receipt.Match;
+        Assert.True(cursor.MoveNext(out _));
+        cursor.Dispose();
+        Assert.Equal(0UL, working.Used);
+        Assert.Equal(receipt.ChargedBytes, results.Used);
+        receipt.Dispose();
+        Assert.Equal(0UL, root.Used);
+        Assert.True(copy.Groups[1].IsUtf8SliceWellFormed);
+        Assert.True(copy.GetGroupMemory(1).Span.SequenceEqual("A"u8));
+    }
+
+    [Fact]
     public void RetainedChargeExcludesCaptureNamesAndIncludesMark()
     {
         var root = new Root();

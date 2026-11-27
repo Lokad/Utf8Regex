@@ -12,6 +12,8 @@
 - Accept numbered PCRE2 callouts without callbacks.
 - Keep subject anchors, boundaries and nested lookaheads visible inside
   PCRE2 lookbehind assertions.
+- Add PCRE2 `MatchInvalidUtf8` to search valid fragments of malformed subjects
+  with original byte offsets.
 
 ## 0.5.0 — 2026-11-27
 

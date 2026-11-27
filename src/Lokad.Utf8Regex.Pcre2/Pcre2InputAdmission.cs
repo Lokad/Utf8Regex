@@ -5,12 +5,14 @@ namespace Lokad.Utf8Regex.Pcre2;
 
 internal static partial class Pcre2Runner
 {
-    // Check the requested scalar edge with the original invocation.
+    // The malformed-subject matcher normalizes byte starts inside fragments.
     internal static Utf8BytePosition AdmitStart(ReadOnlySpan<byte> input,
-        int start, ref Utf8SliceInvocation invocation)
+        int start, ref Utf8SliceInvocation invocation, bool matchInvalidUtf8 = false)
     {
         Pcre2SliceDriver.CheckInvocation(ref invocation);
-        var position = Utf8BytePosition.CreateScalarChecked(input, start, "startOffsetInBytes");
+        var position = matchInvalidUtf8
+            ? Utf8BytePosition.CreateChecked(input.Length, start, "startOffsetInBytes")
+            : Utf8BytePosition.CreateScalarChecked(input, start, "startOffsetInBytes");
         Pcre2SliceDriver.ThrowIfSliceBreached(invocation.CheckInput());
         invocation.Budget.ThrowIfCancellationRequested();
         return position;

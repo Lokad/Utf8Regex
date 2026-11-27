@@ -81,12 +81,33 @@ internal static partial class Pcre2PartialProbeCompiler
         budget.EnterDepth();
         try
         {
-            var program = TryCompileTokenSequence(root, request, out var tokens)
-                ? tokens : CompileTree(root, request);
+            var program = TryCompileTokenSequence(root, request, out var tokens) ? tokens :
+                request.MatchesInvalidUtf8 && root is Pcre2AlternationBacktrackingNode alternation &&
+                TryCompileLiteralAlternation(alternation, budget, out var literals) ? literals : CompileTree(root, request);
             if (program.Kind != Pcre2PartialProbeProgramKind.None) construction.Complete();
             return program;
         }
         finally { budget.LeaveDepth(); }
+    }
+
+    private static bool TryCompileLiteralAlternation(Pcre2AlternationBacktrackingNode alternation,
+        Utf8ConstructionBudget budget, out Pcre2PartialProbeProgram program)
+    {
+        program = Pcre2PartialProbeProgram.None;
+        using var construction = Utf8ConstructionScope.Enter();
+        var operands = budget.AllocateArray<byte[]>(alternation.Alternatives.Length, false);
+        for (var i = 0; i < operands.Length; i++)
+        {
+            budget.Checkpoint();
+            ref readonly var branch = ref alternation.Alternatives[i];
+            ReadOnlySpan<IPcre2BacktrackingNode> nodes = branch is Pcre2SequenceBacktrackingNode sequence
+                ? sequence.Children : new ReadOnlySpan<IPcre2BacktrackingNode>(in branch);
+            if (nodes.IsEmpty || !TryGetLiteral(nodes, out operands[i], Pcre2CharacterOptions.None)) return false;
+        }
+
+        program = Publish(Pcre2PartialProbeProgramKind.OrderedLiteralAlternation, operands, 0, 0, false, '\0');
+        construction.Complete();
+        return true;
     }
 
     private static bool TryCompileTokenSequence(
@@ -114,6 +135,13 @@ internal static partial class Pcre2PartialProbeCompiler
         {
             program = Create(Pcre2PartialProbeProgramKind.EndAssertion,
                 flag: firstToken.Kind == Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline);
+            return true;
+        }
+        if (request.MatchesInvalidUtf8 && nodes.Length == 1 && firstToken.Kind == Pcre2CharacterTokenKind.EndOfLine &&
+            (firstToken.Options & Pcre2CharacterOptions.Multiline) == 0)
+        {
+            program = Create(Pcre2PartialProbeProgramKind.EndAssertion,
+                flag: (request.Options & Pcre2CompileOptions.DollarEndOnly) == 0);
             return true;
         }
         if (nodes.Length == 2 &&
@@ -183,8 +211,8 @@ internal static partial class Pcre2PartialProbeCompiler
         for (var index = 0; index < nodes.Length; index++)
         {
             if ((index & 255) == 0) budget.Checkpoint();
-            var token = ((Pcre2TokenBacktrackingNode)nodes[index]).Token;
-            if (token.Kind != Pcre2CharacterTokenKind.Literal ||
+            if (nodes[index] is not Pcre2TokenBacktrackingNode { Token: var token } ||
+                token.Kind != Pcre2CharacterTokenKind.Literal ||
                 (token.Options & ~inertOptions) != Pcre2CharacterOptions.None)
             {
                 literal = [];

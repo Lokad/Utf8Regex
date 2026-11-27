@@ -3,7 +3,7 @@ enum Pcre2BsrConvention : Int32 { AnyCrlf = 1, Default = 0, Unicode = 2 }
 class Pcre2CompileException : Exception, Runtime.Serialization.ISerializable
   ctor Pcre2CompileException(String message, Pcre2ErrorKind errorKind)
   property Pcre2ErrorKind ErrorKind { get; }
-[Flags] enum Pcre2CompileOptions : Int32 { Anchored = 32, Caseless = 1, DollarEndOnly = 128, DotAll = 4, EndAnchored = 64, Extended = 8, ExtendedMore = 16, FirstLine = 2048, Multiline = 2, NoAutoCapture = 512, None = 0, Ucp = 1024, Ungreedy = 256 }
+[Flags] enum Pcre2CompileOptions : Int32 { Anchored = 32, Caseless = 1, DollarEndOnly = 128, DotAll = 4, EndAnchored = 64, Extended = 8, ExtendedMore = 16, FirstLine = 2048, MatchInvalidUtf8 = 4096, Multiline = 2, NoAutoCapture = 512, None = 0, Ucp = 1024, Ungreedy = 256 }
 enum Pcre2ErrorKind : Int32 { BackslashCDisabled = 10, BackslashCInUtfLookbehind = 11, BadOption = 28, BadReplacementEscape = 17, CalloutUnsupported = 14, ClassRangeOrder = 6, DepthLimit = 25, DisallowedLookaroundBackslashK = 13, EscapeInvalidInClass = 5, HeapLimit = 26, InvalidAfterParensQuery = 1, InvalidReplacementReference = 18, LookaroundBackslashKDisabled = 12, MalformedReplacementPattern = 19, MissingCharacterClassTerminator = 4, MissingClosingParenthesis = 8, MissingClosingReplacementBrace = 20, MissingCommentClosing = 9, PartialMatch = 15, PartialSubs = 16, QuantifierInvalid = 7, QuantifierNumbersOutOfOrder = 2, QuantifierTooBig = 3, ResultLimit = 27, Timeout = 23, UnknownReplacementGroup = 21, UnrecognizedEscape = 0, UnsetReplacementGroup = 22 }
 class Pcre2MatchException : Exception, Runtime.Serialization.ISerializable
   ctor Pcre2MatchException(String message, Pcre2ErrorKind errorKind)
