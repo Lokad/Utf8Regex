@@ -281,6 +281,12 @@ internal static class Utf8OwnedPrefixFamilies
                     for (var value = low; value < high; value++)
                         if (!AsciiFiber(value, node.Options)) return empty with { Complete = false };
             }
+            if (data[1] == 2 && !topFold && !node.MatchCaseInsensitive)
+            {
+                // A single unfolded interval emits one entry per valid scalar.
+                parts.EnsureCapacity(checked(parts.Count + count));
+                families.EnsureCapacity(checked(families.Count + count));
+            }
             var start = families.Count;
             ulong seenLow = 0, seenHigh = 0;
             for (var index = 3; index < data.Length; index += 2)

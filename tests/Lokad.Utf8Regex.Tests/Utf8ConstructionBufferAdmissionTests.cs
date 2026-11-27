@@ -11,6 +11,7 @@ public sealed class Utf8ConstructionBufferAdmissionTests
     [InlineData("(?<x>a?)*b", "aaab", true, true)]
     [InlineData("(?=😀)(?<x>.)\\k<x>", "😀😀", false, false)]
     [InlineData("(?=😀)(?<x>.)\\k<x>", "😀😀", false, true)]
+    [InlineData("[a-z]+ing|[a-z]+ed|[a-z]+ly", "walking wanted slowly", false, false)]
     public void ByteCutoffsFailOwnedAndRestoreBothCounters(string pattern, string text, bool nonBacktracking, bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (nonBacktracking ? RegexOptions.NonBacktracking : 0)
