@@ -1,29 +1,11 @@
 using Lokad.Utf8Regex.Internal;
-using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
-using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8CandidatePlanAdmissionTests
 {
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
-
-    [Fact]
-    public void SearchPreparationBorrowsFixedDistanceSetsWithoutAllocatingAnotherPlan()
-    {
-        var set = new Utf8FixedDistanceSet(0, AsciiCharClass.FromBytes("ab"u8)).PrepareAnchor();
-        var facts = Utf8SearchFacts.Create(Utf8SearchKind.FixedDistanceAsciiSets, new() { FixedDistanceSets = [set] });
-        using var owner = new Utf8ConstructionScope(0, 0, ulong.MaxValue, ulong.MaxValue);
-        var plan = Utf8SearchPlan.Prepare(facts);
-        Assert.True(plan.HasStructuralCandidates);
-        Assert.Same(facts.FixedDistanceSets, plan.FixedDistanceSets);
-        Assert.Equal(0ul, owner.Budget.PeakBytes);
-        var state = default(PreparedSearchScanState);
-        Assert.True(plan.TryFindNextCandidate("😀xb"u8, ref state, out var candidate));
-        Assert.Equal(5, candidate.Index);
-        Assert.Equal(0ul, owner.Budget.Depth);
-    }
 
     [Fact]
     public void SearchPreparationHonorsDepthAndRecoversInTheSameOwner()
@@ -42,7 +24,7 @@ public sealed class Utf8CandidatePlanAdmissionTests
             Assert.Equal(1ul, owner.Budget.Depth);
         }
         finally { owner.Budget.LeaveDepth(); }
-        Assert.True(Utf8SearchPlan.Prepare(facts).HasStructuralCandidates);
+        Assert.True(Utf8SearchPlan.Prepare(facts).HasPreparedSearcher);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(17, parent.Value);
     }

@@ -271,24 +271,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     }
 
 
-    public int ExecuteUtf8CountFallbackCandidates()
-    {
-        EnsureCountModel();
-        return Utf8FallbackReplay.CountCandidates(Utf8Regex.Inspection.SearchPlan, InputBytes, false);
-    }
-
-    public int ExecuteUtf8CountFallbackBoundaryCandidates()
-    {
-        EnsureCountModel();
-        return Utf8FallbackReplay.CountCandidates(Utf8Regex.Inspection.SearchPlan, InputBytes, true);
-    }
-
-    public int ExecuteUtf8CountFallbackVerified()
-    {
-        EnsureCountModel();
-        return Utf8FallbackReplay.Count(Utf8Regex, InputBytes);
-    }
-
     private int ExecuteUtf8PrefixMatchLoop()
     {
         var total = 0;

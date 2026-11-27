@@ -1730,9 +1730,6 @@ internal static partial class BenchmarkInspectReporter
 
         Measure("PrefilterOnly", iterations, context.ExecuteUtf8CountPrefilterOnly);
         Measure("CompiledCount", iterations, context.ExecuteUtf8CountCompiled);
-        Measure("FallbackCandidates", iterations, context.ExecuteUtf8CountFallbackCandidates);
-        Measure("FallbackBoundaryCandidates", iterations, context.ExecuteUtf8CountFallbackBoundaryCandidates);
-        Measure("FallbackVerifiedCount", iterations, context.ExecuteUtf8CountFallbackVerified);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
         Measure("DecodeThenRegex", iterations, context.ExecuteDecodeThenRegex);
         Measure("PredecodedRegex", iterations, context.ExecutePredecodedRegex);
@@ -2027,9 +2024,6 @@ internal static partial class BenchmarkInspectReporter
             WriteCountDiagnostics("Baseline", baselineDiagnostics);
             WriteCountDiagnostics("Compiled", compiledDiagnostics);
 
-            Measure("FallbackCandidates", iterations, () => Utf8FallbackReplay.CountCandidates(context.Utf8Regex.Inspection.SearchPlan, context.InputBytes, false));
-            Measure("FallbackBoundaryCandidates", iterations, () => Utf8FallbackReplay.CountCandidates(context.Utf8Regex.Inspection.SearchPlan, context.InputBytes, true));
-            Measure("FallbackVerifiedCount", iterations, () => Utf8FallbackReplay.Count(context.Utf8Regex, context.InputBytes));
         }
         else if (context.Operation == LokadPublicBenchmarkOperation.IsMatch)
         {
@@ -2725,14 +2719,6 @@ internal static partial class BenchmarkInspectReporter
         return value.Replace("\"", "\"\"");
     }
 
-    public static int RunDumpStructuralSearchRebarCase(string caseId)
-    {
-        var benchmarkCase = DotNetPerformanceReplicaBenchmarkCatalog.Get(caseId);
-        var context = new DotNetPerformanceReplicaBenchmarkContext(benchmarkCase);
-        WriteStructuralSearchDump(caseId, benchmarkCase.Origin, context.Pattern, benchmarkCase.Options, context.Utf8Regex.Inspection.SearchPlan);
-        return 0;
-    }
-
     private static void WriteRegexInspection(
         string sourceKind,
         string pattern,
@@ -2769,40 +2755,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"PortfolioKind     : {regex.Inspection.SearchPortfolioKind}");
         Console.WriteLine($"PreparedSearcher  : {regex.Inspection.SearchPlan.PreparedSearcher.Kind}");
         Console.WriteLine($"RequiredPrefilter : {(regex.Inspection.SearchPlan.RequiredPrefilterSearcher.HasValue ? regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind : "None")}");
-        WriteStructuralSearchPlan(regex.Inspection.SearchPlan);
-    }
-
-    private static void WriteStructuralSearchDump(
-        string caseId,
-        string? origin,
-        string pattern,
-        RegexOptions options,
-        Utf8SearchPlan plan)
-    {
-        Console.WriteLine($"CaseId            : {caseId}");
-        if (origin is not null)
-        {
-            Console.WriteLine($"Origin            : {origin}");
-        }
-
-        Console.WriteLine($"Pattern           : {pattern}");
-        Console.WriteLine($"Options           : {options}");
-        WriteStructuralSearchPlan(plan);
-    }
-
-    private static void WriteStructuralSearchPlan(in Utf8SearchPlan plan)
-    {
-        var source = !plan.HasStructuralCandidates ? "None" : plan.PreparedSearcher.HasValue
-            ? plan.PreparedSearcher.Kind.ToString()
-            : $"{plan.FixedDistanceSets!.Length} fixed-distance sets";
-        Console.WriteLine($"StructuralSource  : {source}");
-        if (!plan.HasStructuralCandidates) return;
-
-        var transform = plan.StructuralStartTransform;
-        if (transform.HasValue)
-        {
-            Console.WriteLine($"StartTransform    : {transform.Kind}, offset {transform.Offset}");
-        }
+        ref readonly var plan = ref regex.SearchPlan;
         if (plan.HasBoundaryRequirements)
         {
             Console.WriteLine($"Boundaries        : {plan.LeadingBoundary}, {plan.TrailingBoundary}");

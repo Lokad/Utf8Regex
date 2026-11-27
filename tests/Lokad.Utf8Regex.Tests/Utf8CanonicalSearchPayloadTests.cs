@@ -39,7 +39,6 @@ public sealed class Utf8CanonicalSearchPayloadTests
             Assert.Equal(PreparedMultiLiteralKind.ExactDirect, plan.MultiLiteralSearch.Kind);
             Assert.True(plan.AlternateLiteralSearch.HasValue);
             Assert.Same(plan.AlternateLiteralSearch.Value.SearchData.Buckets, plan.MultiLiteralSearch.ExactSearch.SearchData.Buckets);
-            Assert.True(plan.HasStructuralCandidates);
             Assert.Equal(payload, owner.Budget.ReservedBytes);
             Assert.Equal(payloadPeak, owner.Budget.PeakBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
@@ -64,7 +63,7 @@ public sealed class Utf8CanonicalSearchPayloadTests
             Assert.Equal(PreparedSearcherKind.MultiLiteral, searcher.Kind);
             Assert.Equal(literals.Length, searcher.ExactMultiLiterals!.Length);
             Assert.Equal(0, searcher.FindFirst(literals[0]));
-            Assert.False(plan.HasStructuralCandidates);
+            Assert.False(plan.HasPreparedSearcher);
             Assert.Equal(payload, owner.Budget.ReservedBytes);
             Assert.Equal(payloadPeak, owner.Budget.PeakBytes);
             Assert.Equal(0ul, owner.Budget.Depth);

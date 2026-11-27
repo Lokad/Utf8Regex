@@ -30,7 +30,7 @@ internal static partial class Utf8SearchExecutor
         var literal = plan.LiteralUtf8;
         return plan.Kind switch
         {
-            Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral when literal is not null => FindFilteredLiteralStart(plan, input, 0),
+            Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral when literal is not null => FindLiteralStart(plan, input, 0, reverse: false),
             Utf8SearchKind.ExactAsciiLiterals when plan.HasPreparedSearcher => plan.PreparedSearcher.FindFirst(input),
             Utf8SearchKind.AsciiFoldedByteLiterals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
                 ? FindAnyIgnoreCaseLiteralWithBoundaries(plan, input, 0)
@@ -57,7 +57,7 @@ internal static partial class Utf8SearchExecutor
 
         return plan.Kind switch
         {
-            Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral => FindFilteredLiteralStart(plan, input, startIndex),
+            Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral => FindLiteralStart(plan, input, startIndex, reverse: false),
             Utf8SearchKind.FixedDistanceAsciiLiteral => FindFixedDistanceLiteral(plan, input, startIndex),
             Utf8SearchKind.FixedDistanceAsciiChar => FindFixedDistanceChar(plan, input, startIndex),
             Utf8SearchKind.FixedDistanceAsciiSets => FindFixedDistanceSets(plan, input, startIndex),
@@ -73,7 +73,7 @@ internal static partial class Utf8SearchExecutor
         var literal = plan.LiteralUtf8;
         return plan.Kind switch
         {
-            Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral when literal is not null => FindFilteredLastLiteralStart(plan, input, input.Length),
+            Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral when literal is not null => FindLiteralStart(plan, input, input.Length, reverse: true),
             Utf8SearchKind.ExactAsciiLiterals when plan.HasPreparedSearcher => plan.PreparedSearcher.FindLast(input),
             Utf8SearchKind.AsciiFoldedByteLiterals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
                 ? FindLastAnyIgnoreCaseLiteralWithBoundaries(plan, input, input.Length)
@@ -119,260 +119,53 @@ internal static partial class Utf8SearchExecutor
         return relative < 0 ? -1 : startIndex + relative;
     }
 
-    private static int FindFilteredLiteralStart(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
+    private static int FindLiteralStart(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int index, bool reverse)
     {
-        var literal = plan.LiteralUtf8;
-        var literalSearch = plan.LiteralSearch;
-        if (literal is null || !literalSearch.HasValue || startIndex > input.Length)
+        var start = reverse ? 0 : index;
+        var end = reverse ? Math.Min(index, input.Length) : input.Length;
+        if (!plan.HasBoundaryRequirements && !plan.HasTrailingLiteralRequirement)
         {
-            return -1;
+            if (reverse)
+                return plan.PreparedSearcher.FindLast(input[..end]);
+            var relative = plan.PreparedSearcher.FindFirst(input[start..]);
+            return relative < 0 ? -1 : start + relative;
         }
 
-        if (CanUseDirectLiteralBoundarySearch(in plan))
-        {
-            return FindLiteralWithBoundaries(in plan, input, startIndex);
-        }
-
-        if (CanUseDirectLiteralTrailingSearch(in plan))
-        {
-            return FindLiteralWithTrailingRequirement(in plan, input, startIndex);
-        }
-
-        if (plan.HasStructuralCandidates &&
-            (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
-        {
-            var state = new PreparedSearchScanState(startIndex, default);
-            while (plan.TryFindNextCandidate(input, ref state, out var candidate))
-            {
-                if (candidate.Index >= startIndex)
-                {
-                    Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                    return candidate.Index;
-                }
-            }
-
-            return -1;
-        }
-
-        return plan.HasBoundaryRequirements
-            ? FindLiteralWithBoundaries(plan, input, startIndex)
-            : FindLiteralWithTrailingRequirement(plan, input, startIndex);
-    }
-
-    private static bool CanUseDirectLiteralBoundarySearch(in Utf8SearchPlan plan)
-    {
-        return plan.HasBoundaryRequirements &&
-            !plan.HasTrailingLiteralRequirement &&
-            !plan.FallbackStartTransform.HasValue &&
-            plan.ExactRequiredLength is null &&
-            plan.MaxPossibleLength is null;
-    }
-
-    private static bool CanUseDirectLiteralTrailingSearch(in Utf8SearchPlan plan)
-    {
-        return plan.HasTrailingLiteralRequirement &&
-            !plan.HasBoundaryRequirements &&
-            !plan.FallbackStartTransform.HasValue &&
-            plan.ExactRequiredLength is null &&
-            plan.MaxPossibleLength is null;
-    }
-
-    private static int FindFilteredLastLiteralStart(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
-    {
-        var literal = plan.LiteralUtf8;
-        var literalSearch = plan.LiteralSearch;
-        if (literal is null || !literalSearch.HasValue)
-        {
-            return -1;
-        }
-
-        if (plan.HasStructuralCandidates &&
-            (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
-        {
-            if (plan.TryFindLastCandidate(input, startIndex, out var candidate))
-            {
-                Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                return candidate.Index;
-            }
-
-            return -1;
-        }
-
-        return plan.HasBoundaryRequirements
-            ? FindLastLiteralWithBoundaries(plan, input, startIndex)
-            : FindLastLiteralWithTrailingRequirement(plan, input, startIndex);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Utf8ExecutionDeadline.Infinite, CancellationToken.None);
+        var breach = TryFindLiteral(plan, input, start, end, reverse, ref invocation, out var matchIndex);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
+        return matchIndex;
     }
 
     private static bool TryFindNextPreparedMatch(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, out PreparedSearchMatch match)
     {
-        if (!plan.HasPreparedSearcher)
-        {
-            match = default;
-            return false;
-        }
+        if (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement)
+            return TryFindConfirmedFamilyMatch(plan, input, startIndex, input.Length, reverse: false, out match);
 
-        if (plan.HasStructuralCandidates &&
-            !plan.HasAlternateLiteralPrefixOverlap &&
-            (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
-        {
-            var candidateState = new PreparedSearchScanState(startIndex, default);
-            while (plan.TryFindNextCandidate(input, ref candidateState, out var candidate))
-            {
-                if (candidate.Index < startIndex)
-                {
-                    continue;
-                }
-
-                match = candidate;
-                Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                return true;
-            }
-
-            match = default;
-            return false;
-        }
-
-        if (plan.Kind is Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.AsciiFoldedByteLiterals or Utf8SearchKind.ExactUtf8Literals)
-        {
-            if (!plan.HasBoundaryRequirements && !plan.HasTrailingLiteralRequirement)
-            {
-                if (plan.PreparedSearcher.TryFindFirstMatch(input[startIndex..], out var relative) &&
-                    TryTranslateMatch(relative, startIndex, out match))
-                {
-                    return true;
-                }
-
-                match = default;
-                return false;
-            }
-
-            var shortestLength = plan.Kind == Utf8SearchKind.AsciiFoldedByteLiterals
-                ? plan.AlternateIgnoreCaseLiteralSearch?.ShortestLength ?? int.MaxValue
-                : plan.AlternateLiteralSearchData?.ShortestLength ?? int.MaxValue;
-            if (shortestLength == int.MaxValue)
-            {
-                match = default;
-                return false;
-            }
-
-            var searchIndex = startIndex;
-            while (searchIndex <= input.Length - shortestLength)
-            {
-                if (!plan.PreparedSearcher.TryFindFirstMatch(input[searchIndex..], out var relative) ||
-                    !TryTranslateMatch(relative, searchIndex, out match))
-                {
-                    match = default;
-                    return false;
-                }
-
-                if ((!plan.HasBoundaryRequirements || MatchesBoundaryRequirements(plan, input, match.Index, match.Length)) &&
-                    (!plan.HasTrailingLiteralRequirement || MatchesTrailingLiteralRequirement(plan, input, match.Index + match.Length)))
-                {
-                    Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                    return true;
-                }
-
-                if (plan.HasAlternateLiteralPrefixOverlap &&
-                    Utf8ConfirmationExecutor.TryFindConfirmedAlternateAtSameStart(
-                        in plan,
-                        plan.ConfirmationPlan,
-                        input,
-                        in match,
-                        out var confirmedMatch))
-                {
-                    match = confirmedMatch;
-                    Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                    return true;
-                }
-
-                searchIndex = match.Index + 1;
-            }
-        }
+        if (plan.PreparedSearcher.TryFindFirstMatch(input[startIndex..], out var relative))
+            return TryTranslateMatch(relative, startIndex, out match);
 
         match = default;
         return false;
     }
 
-    private static bool TryFindLastPreparedMatch(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, out PreparedSearchMatch match)
+    private static bool TryFindLastPreparedMatch(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int endIndex, out PreparedSearchMatch match)
     {
-        if (!plan.HasPreparedSearcher)
-        {
-            match = default;
-            return false;
-        }
+        if (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement)
+            return TryFindConfirmedFamilyMatch(plan, input, 0, endIndex, reverse: true, out match);
 
-        if (plan.HasStructuralCandidates &&
-            !plan.HasAlternateLiteralPrefixOverlap &&
-            (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
-        {
-            if (plan.TryFindLastCandidate(input, startIndex, out var candidate))
-            {
-                match = candidate;
-                Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                return true;
-            }
+        return plan.PreparedSearcher.TryFindLastMatch(input[..endIndex], out match);
+    }
 
-            match = default;
-            return false;
-        }
-
-        if (plan.Kind is Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.AsciiFoldedByteLiterals or Utf8SearchKind.ExactUtf8Literals)
-        {
-            if (!plan.HasBoundaryRequirements && !plan.HasTrailingLiteralRequirement)
-            {
-                if (plan.PreparedSearcher.TryFindLastMatch(input[..Math.Min(startIndex, input.Length)], out match))
-                {
-                    return true;
-                }
-
-                match = default;
-                return false;
-            }
-
-            var shortestLength = plan.Kind == Utf8SearchKind.AsciiFoldedByteLiterals
-                ? plan.AlternateIgnoreCaseLiteralSearch?.ShortestLength ?? int.MaxValue
-                : plan.AlternateLiteralSearchData?.ShortestLength ?? int.MaxValue;
-            if (shortestLength == int.MaxValue)
-            {
-                match = default;
-                return false;
-            }
-
-            var searchLength = Math.Min(startIndex, input.Length);
-            while (searchLength >= shortestLength)
-            {
-                if (!plan.PreparedSearcher.TryFindLastMatch(input[..searchLength], out match))
-                {
-                    match = default;
-                    return false;
-                }
-
-                if ((!plan.HasBoundaryRequirements || MatchesBoundaryRequirements(plan, input, match.Index, match.Length)) &&
-                    (!plan.HasTrailingLiteralRequirement || MatchesTrailingLiteralRequirement(plan, input, match.Index + match.Length)))
-                {
-                    Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                    return true;
-                }
-
-                if (plan.HasAlternateLiteralPrefixOverlap &&
-                    Utf8ConfirmationExecutor.TryFindConfirmedAlternateAtSameStart(
-                        in plan,
-                        plan.ConfirmationPlan,
-                        input,
-                        in match,
-                        out var confirmedMatch))
-                {
-                    match = confirmedMatch;
-                    Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                    return true;
-                }
-
-                searchLength = match.Index;
-            }
-        }
-
-        match = default;
-        return false;
+    private static bool TryFindConfirmedFamilyMatch(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int start, int end,
+        bool reverse, out PreparedSearchMatch match)
+    {
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Utf8ExecutionDeadline.Infinite, CancellationToken.None);
+        var breach = TryFindLiteralFamily(plan, input, start, end, reverse, ref invocation, out match, out var found);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
+        return found;
     }
 
     private static bool TryFindFallbackMatch(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, bool reverse, out PreparedSearchMatch match)
@@ -392,138 +185,6 @@ internal static partial class Utf8SearchExecutor
     {
         absolute = new PreparedSearchMatch(baseIndex + relative.Index, relative.Length, relative.LiteralId);
         return true;
-    }
-
-    private static int FindLiteralWithBoundaries(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
-    {
-        var literal = plan.LiteralUtf8;
-        var literalSearch = plan.LiteralSearch;
-        if (literal is null || !literalSearch.HasValue || startIndex > input.Length)
-        {
-            return -1;
-        }
-
-        var searchIndex = startIndex;
-        while (searchIndex <= input.Length - literal.Length)
-        {
-            var relative = literalSearch.Value.IndexOf(input[searchIndex..]);
-            if (relative < 0)
-            {
-                return -1;
-            }
-
-            var candidate = searchIndex + relative;
-            if (MatchesBoundaryRequirements(plan, input, candidate, literal.Length))
-            {
-                Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                return candidate;
-            }
-
-            searchIndex = candidate + 1;
-        }
-
-        return -1;
-    }
-
-    private static int FindLiteralWithTrailingRequirement(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
-    {
-        var literal = plan.LiteralUtf8;
-        var literalSearch = plan.LiteralSearch;
-        if (literal is null || !literalSearch.HasValue || startIndex > input.Length)
-        {
-            return -1;
-        }
-
-        if (!plan.HasTrailingLiteralRequirement)
-        {
-            return plan.PreparedSearcher.FindFirst(input[startIndex..]) is var relative && relative >= 0
-                ? startIndex + relative
-                : -1;
-        }
-
-        var searchIndex = startIndex;
-        while (searchIndex <= input.Length - literal.Length)
-        {
-            var relative = plan.PreparedSearcher.FindFirst(input[searchIndex..]);
-            if (relative < 0)
-            {
-                return -1;
-            }
-
-            var candidate = searchIndex + relative;
-            if (MatchesTrailingLiteralRequirement(plan, input, candidate + literal.Length))
-            {
-                return candidate;
-            }
-
-            searchIndex = candidate + 1;
-        }
-
-        return -1;
-    }
-
-    private static int FindLastLiteralWithBoundaries(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
-    {
-        var literal = plan.LiteralUtf8;
-        var literalSearch = plan.LiteralSearch;
-        if (literal is null || !literalSearch.HasValue)
-        {
-            return -1;
-        }
-
-        var searchLength = Math.Min(startIndex, input.Length);
-        while (searchLength >= literal.Length)
-        {
-            var candidate = literalSearch.Value.LastIndexOf(input[..searchLength]);
-            if (candidate < 0)
-            {
-                return -1;
-            }
-
-            if (MatchesBoundaryRequirements(plan, input, candidate, literal.Length))
-            {
-                Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                return candidate;
-            }
-
-            searchLength = candidate;
-        }
-
-        return -1;
-    }
-
-    private static int FindLastLiteralWithTrailingRequirement(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
-    {
-        var literal = plan.LiteralUtf8;
-        var literalSearch = plan.LiteralSearch;
-        if (literal is null || !literalSearch.HasValue)
-        {
-            return -1;
-        }
-
-        if (!plan.HasTrailingLiteralRequirement)
-        {
-            return plan.PreparedSearcher.FindLast(input[..Math.Min(startIndex, input.Length)]);
-        }
-
-        var searchLength = Math.Min(startIndex, input.Length);
-        while (searchLength >= literal.Length)
-        {
-            var candidate = plan.PreparedSearcher.FindLast(input[..searchLength]);
-            if (candidate < 0)
-            {
-                return -1;
-            }
-
-            if (MatchesTrailingLiteralRequirement(plan, input, candidate + literal.Length))
-            {
-                return candidate;
-            }
-
-            searchLength = candidate;
-        }
-
-        return -1;
     }
 
     private static int FindAnyLiteralWithBoundaries(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)

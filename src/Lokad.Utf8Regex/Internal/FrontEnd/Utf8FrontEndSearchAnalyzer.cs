@@ -24,15 +24,12 @@ internal static class Utf8FrontEndSearchAnalyzer
         var width = Utf8OwnedFindOptimizations.ComputeByteWidth(root);
         TrySelectRequiredLiteralPrefilter(root, out var requiredLiteral, out var requiredAlternatives);
         var leading = GetLeadingContentNode(root);
-        var fallbackStartTransform = leading is not null && IsLeadingAsciiWhitespaceNode(leading)
-            ? new Utf8FallbackStartTransform(0, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace)
-            : default;
+        var skipAsciiWhitespace = leading is not null && IsLeadingAsciiWhitespaceNode(leading);
         TrySelectBoundaryRequirements(root, out var leadingBoundary, out var trailingBoundary);
         var facts = new Utf8SearchFactData
         {
             RequiredPrefilterLiteralUtf8 = requiredLiteral ?? [],
             RequiredPrefilterAlternateLiteralsUtf8 = requiredAlternatives ?? [],
-            FallbackStartTransform = fallbackStartTransform,
             ExactRequiredLength = width.IsFixed ? width.Minimum : null,
             MaxPossibleLength = width.IsFixed ? null : width.Maximum,
             LeadingBoundary = leadingBoundary,
@@ -48,7 +45,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             return Utf8SearchFacts.Create(Utf8SearchKind.FixedDistanceAsciiSets,
                 facts with { FixedDistanceSets = fixedSets, MinRequiredLength = width.Minimum });
 
-        if (TrySelectDeterministicPrefixSets(root, width.Minimum, fallbackStartTransform,
+        if (TrySelectDeterministicPrefixSets(root, width.Minimum, skipAsciiWhitespace,
             out var deterministicSets, out var deterministicMinimum))
             return Utf8SearchFacts.Create(Utf8SearchKind.FixedDistanceAsciiSets,
                 facts with { FixedDistanceSets = deterministicSets, MinRequiredLength = deterministicMinimum });
@@ -353,7 +350,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     private static bool TrySelectDeterministicPrefixSets(
         Utf8TreeNode root,
         int minRequiredLength,
-        Utf8FallbackStartTransform fallbackStartTransform,
+        bool skipAsciiWhitespace,
         out Utf8FixedDistanceSet[] fixedDistanceSets,
         out int selectedMinRequiredLength)
     {
@@ -363,7 +360,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
 
-        var prefix = fallbackStartTransform.Kind == Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace
+        var prefix = skipAsciiWhitespace
             ? SkipLeadingAsciiWhitespacePrefix(root)
             : (Node: root, StartIndex: 0);
         if (prefix.Node is null) return false;

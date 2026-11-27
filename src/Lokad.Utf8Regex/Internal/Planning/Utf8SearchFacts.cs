@@ -21,7 +21,6 @@ internal readonly struct Utf8SearchFactData
     public byte[][] RequiredPrefilterAlternateLiteralsUtf8 { get; init; } = [];
     public Utf8FixedDistanceSet[] FixedDistanceSets { get; init; } = [];
     public byte[] TrailingLiteralUtf8 { get; init; } = [];
-    public Utf8FallbackStartTransform FallbackStartTransform { get; init; }
     public int Distance { get; init; }
     public int MinRequiredLength { get; init; }
     public int? ExactRequiredLength { get; init; }
@@ -53,7 +52,6 @@ internal readonly struct Utf8SearchFacts
     public byte[][] RequiredPrefilterAlternateLiteralsUtf8 => Data.RequiredPrefilterAlternateLiteralsUtf8;
     public Utf8FixedDistanceSet[] FixedDistanceSets => Data.FixedDistanceSets;
     public byte[] TrailingLiteralUtf8 => Data.TrailingLiteralUtf8;
-    public Utf8FallbackStartTransform FallbackStartTransform => Data.FallbackStartTransform;
     public int Distance => Data.Distance;
     public int MinRequiredLength => Data.MinRequiredLength;
     public int? ExactRequiredLength => Data.ExactRequiredLength;

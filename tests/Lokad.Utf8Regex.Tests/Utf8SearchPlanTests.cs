@@ -61,7 +61,6 @@ public sealed class Utf8SearchPlanTests
 
         Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
         Assert.True(regex.Inspection.SearchPlan.HasLiteral);
-        Assert.True(regex.Inspection.SearchPlan.HasStructuralCandidates);
         Assert.True(regex.Inspection.SearchPlan.PreparedSearcher.HasValue);
         Assert.Equal(1, regex.Count("a😀b"u8));
         Assert.Equal(6, (regex.Match("a😀b"u8).EndOffsetInBytes - regex.Match("a😀b"u8).StartOffsetInBytes));
@@ -100,7 +99,6 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(Utf8SearchKind.ExactUtf8Literals, regex.Inspection.SearchPlan.Kind);
         Assert.True(regex.Inspection.SearchPlan.HasAlternateLiterals);
         Assert.True(regex.Inspection.SearchPlan.AlternateLiteralSearch.HasValue);
-        Assert.True(regex.Inspection.SearchPlan.HasStructuralCandidates);
         Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.LeadingBoundary);
         Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.TrailingBoundary);
         Assert.Equal(["café", "niño"], regex.Inspection.SearchPlan.AlternateLiteralsUtf8!.Select(Encoding.UTF8.GetString));
@@ -114,62 +112,6 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
         Assert.Equal(Utf8SearchPortfolioKind.ExactEarliestFamily, regex.Inspection.SearchPortfolioKind);
         Assert.Equal(PreparedMultiLiteralKind.ExactEarliest, regex.Inspection.SearchPlan.MultiLiteralSearch.Kind);
-    }
-
-    [Fact]
-    public void StructuralSearchPlanCanFilterBoundaryWrappedUtf8AlternationCandidates()
-    {
-        var regex = new Utf8Regex(@"\b(?:café|niño)\b", options: RegexOptions.CultureInvariant);
-        var input = Encoding.UTF8.GetBytes("xcafé café niñoz niño");
-        var firstExpected = Encoding.UTF8.GetByteCount("xcafé ");
-        var secondExpected = Encoding.UTF8.GetByteCount("xcafé café niñoz ");
-        var state = default(PreparedSearchScanState);
-
-        Assert.True(regex.Inspection.SearchPlan.TryFindNextCandidate(input, ref state, out var first));
-        Assert.Equal(firstExpected, first.Index);
-        Assert.True(regex.Inspection.SearchPlan.TryFindNextCandidate(input, ref state, out var second));
-        Assert.Equal(secondExpected, second.Index);
-        Assert.False(regex.Inspection.SearchPlan.TryFindNextCandidate(input, ref state, out _));
-    }
-
-    [Fact]
-    public void StructuralSearchPlanCanFindLastFilteredUtf8AlternationCandidate()
-    {
-        var regex = new Utf8Regex(@"\b(?:café|niño)\b", options: RegexOptions.CultureInvariant);
-        var input = Encoding.UTF8.GetBytes("xcafé café niñoz niño");
-        var expected = Encoding.UTF8.GetByteCount("xcafé café niñoz ");
-
-        Assert.True(regex.Inspection.SearchPlan.TryFindLastCandidate(input, input.Length, out var candidate));
-        Assert.Equal(expected, candidate.Index);
-    }
-
-    [Fact]
-    public void SearchExecutorUsesStructuralPlanForFilteredSingleLiteralSearch()
-    {
-        var regex = new Utf8Regex(@"\bfoo\b", options: RegexOptions.CultureInvariant);
-        var input = Encoding.UTF8.GetBytes("xfoo foo fooz");
-
-        Assert.Equal(5, Utf8SearchExecutor.FindFirst(regex.Inspection.SearchPlan, input));
-        Assert.Equal(5, Utf8SearchExecutor.FindNext(regex.Inspection.SearchPlan, input, 0));
-        Assert.Equal(5, Utf8SearchExecutor.FindLast(regex.Inspection.SearchPlan, input));
-    }
-
-    [Fact]
-    public void StructuralStartPlanIncludesBoundaryStagesForBoundaryWrappedFallbackAnchor()
-    {
-        var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
-                                              Utf8SearchKind.ExactAsciiLiteral,
-                                              new Utf8SearchFactData
-                                              {
-                                                  LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
-                                                  CanGuideFallbackStarts = true,
-                                                  LeadingBoundary = Utf8BoundaryRequirement.Boundary,
-                                                  TrailingBoundary = Utf8BoundaryRequirement.Boundary
-                                              }));
-
-        Assert.True(plan.HasStructuralCandidates);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, plan.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, plan.TrailingBoundary);
     }
 
     [Fact]
@@ -197,16 +139,6 @@ public sealed class Utf8SearchPlanTests
             Assert.True(match.Success);
             Assert.Equal((0, input.Length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         }
-    }
-
-    [Fact]
-    public void FallbackSearchPlanCarriesExplicitCandidateStageForFallbackPattern()
-    {
-        var regex = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
-
-        Assert.True(regex.Inspection.SearchPlan.HasStructuralCandidates);
-        Assert.Equal(1, regex.Count("a😀b"u8));
-        Assert.Equal(6, (regex.Match("a😀b"u8).EndOffsetInBytes - regex.Match("a😀b"u8).StartOffsetInBytes));
     }
 
     [Fact]
@@ -272,10 +204,9 @@ public sealed class Utf8SearchPlanTests
     {
         var literalFamily = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
         var fallback = Utf8FrontEnd.Compile("a.*b", RegexOptions.CultureInvariant);
-        var structural = Utf8FrontEnd.Compile("ab[0-9][0-9]cd", RegexOptions.CultureInvariant);
 
         Assert.True(literalFamily.Inspection.SearchPlan.HasPreparedSearcher);
-        Assert.True(fallback.SearchPlan.HasStructuralCandidates);
+        Assert.True(fallback.SearchPlan.HasPreparedSearcher);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, Utf8CompiledEngineSelector.Select(literalFamily.Inspection.PreparedRegex));
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(fallback));
     }
@@ -415,8 +346,6 @@ public sealed class Utf8SearchPlanTests
         // Unicode whitespace does not certify the six-byte ASCII inverse
         // transform. Keep the original grammar and qualify its scalar route.
         Assert.Equal(Utf8SearchKind.None, scalarAnalysis.SearchPlan.Kind);
-        Assert.False(scalarAnalysis.SearchPlan.HasStructuralCandidates);
-        Assert.Equal(Utf8FallbackStartTransformKind.None, scalarAnalysis.SearchPlan.FallbackStartTransform.Kind);
         Assert.Null(scalarAnalysis.SearchPlan.FixedDistanceSets);
         var original = new Utf8Regex(pattern);
         Assert.NotNull(original.Inspection.PreparedRegex.ScalarProgram);
@@ -426,10 +355,7 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
         Assert.Equal(Utf8SearchKind.FixedDistanceAsciiSets, analysis.SearchPlan.Kind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(analysis));
-        Assert.True(analysis.SearchPlan.HasStructuralCandidates);
         Assert.NotEmpty(analysis.SearchPlan.FixedDistanceSets!);
-        Assert.True(analysis.SearchPlan.StructuralStartTransform.HasValue);
-        Assert.Equal(Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace, analysis.SearchPlan.FallbackStartTransform.Kind);
         Assert.NotNull(analysis.SearchPlan.FixedDistanceSets);
         Assert.True(analysis.SearchPlan.FixedDistanceSets!.Length >= 6);
         Assert.True(analysis.SearchPlan.FixedDistanceSets[0].Distance >= 2);
@@ -456,118 +382,21 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void StructuralSearchPlanCanProduceFallbackStartCandidates()
-    {
-        var regex = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
-        var input = Encoding.UTF8.GetBytes("zzza123bzzz");
-        var state = default(PreparedSearchScanState);
-
-        Assert.True(regex.Inspection.SearchPlan.TryFindNextCandidate(input, ref state, out var candidate));
-        Assert.Equal(3, candidate.Index);
-        Assert.Equal(1, candidate.Length);
-        Assert.Equal(0, candidate.LiteralId);
-    }
-
-    [Fact]
-    public void StructuralSearchPlanCanApplyFallbackStartTransform()
+    public void NoqaMatchesUnicodeWhitespaceInBothDirections()
     {
         const string pattern = "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)";
-        var scalarAnalysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
-        Assert.False(scalarAnalysis.SearchPlan.HasStructuralCandidates);
         foreach (var subject in new[] { "   # NOQA: ABC123", "\u00a0# NOQA: ABC123", "\u2003# NOQA: ABC123" })
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.Compiled | RegexOptions.RightToLeft })
         {
-            var regex = new Utf8Regex(pattern, options: mode);
+            using var regex = new Utf8Regex(pattern, options: mode);
             var bytes = Encoding.UTF8.GetBytes(subject);
             Assert.True(regex.IsMatch(bytes));
             Assert.Equal(1, regex.Count(bytes));
             var match = regex.Match(bytes);
-                Assert.Equal((0, bytes.Length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
-                var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes));
-                Assert.Equal((0, bytes.Length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
-            }
-        var analysis = Utf8FrontEnd.Compile(pattern.Replace("\\s", "[\\t-\\r ]", StringComparison.Ordinal), RegexOptions.None);
-        var input = Encoding.UTF8.GetBytes("   # NOQA: ABC123");
-        var state = default(PreparedSearchScanState);
-
-        Assert.True(analysis.SearchPlan.TryFindNextCandidate(input, ref state, out var candidate));
-        Assert.Equal(0, candidate.Index);
-    }
-
-    [Fact]
-    public void StructuralSearchPlanCanRejectNonBoundaryFallbackAnchorCandidates()
-    {
-        var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
-                                              Utf8SearchKind.ExactAsciiLiteral,
-                                              new Utf8SearchFactData
-                                              {
-                                                  LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
-                                                  CanGuideFallbackStarts = true,
-                                                  LeadingBoundary = Utf8BoundaryRequirement.Boundary,
-                                                  TrailingBoundary = Utf8BoundaryRequirement.Boundary
-                                              }));
-        var input = Encoding.UTF8.GetBytes("xfood bar foo baz bar");
-        var state = default(PreparedSearchScanState);
-
-        Assert.True(plan.TryFindNextCandidate(input, ref state, out var candidate));
-        Assert.Equal("xfood bar ".Length, candidate.Index);
-        Assert.False(plan.TryFindNextCandidate(input, ref state, out _));
-    }
-
-    [Fact]
-    public void StructuralStartPlanKeepsTrailingLiteral()
-    {
-        var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
-                                              Utf8SearchKind.ExactAsciiLiteral,
-                                              new Utf8SearchFactData
-                                              {
-                                                  LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
-                                                  CanGuideFallbackStarts = true,
-                                                  TrailingLiteralUtf8 = Encoding.UTF8.GetBytes("bar")
-                                              }));
-
-        Assert.True("bar"u8.SequenceEqual(plan.TrailingLiteralUtf8));
-    }
-
-    [Fact]
-    public void StructuralSearchPlanCanRejectCandidatesWithoutTrailingLiteral()
-    {
-        var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
-                                              Utf8SearchKind.ExactAsciiLiteral,
-                                              new Utf8SearchFactData
-                                              {
-                                                  LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
-                                                  CanGuideFallbackStarts = true,
-                                                  TrailingLiteralUtf8 = Encoding.UTF8.GetBytes("bar")
-                                              }));
-        var input = Encoding.UTF8.GetBytes("fooqux foobar");
-        var state = default(PreparedSearchScanState);
-
-        Assert.True(plan.TryFindNextCandidate(input, ref state, out var candidate));
-        Assert.Equal("fooqux ".Length, candidate.Index);
-        Assert.False(plan.TryFindNextCandidate(input, ref state, out _));
-    }
-
-    [Fact]
-    public void StructuralSearchRejectsCandidatesWithoutRoomForExactLength()
-    {
-        var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
-                                              Utf8SearchKind.ExactAsciiLiteral,
-                                              new Utf8SearchFactData
-                                              {
-                                                  LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
-                                                  CanGuideFallbackStarts = true,
-                                                  ExactRequiredLength = 5
-                                              }));
-
-        var input = "xxfoozz foo"u8;
-        var state = default(PreparedSearchScanState);
-        var expected = new PreparedSearchMatch(2, 3, 0);
-        Assert.True(plan.TryFindNextCandidate(input, ref state, out var candidate));
-        Assert.Equal(expected, candidate);
-        Assert.False(plan.TryFindNextCandidate(input, ref state, out _));
-        Assert.True(plan.TryFindLastCandidate(input, input.Length, out var reverse));
-        Assert.Equal(expected, reverse);
+            Assert.Equal((0, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+            var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes));
+            Assert.Equal((0, bytes.Length), (detailed.Value.StartOffsetInBytes, detailed.Value.EndOffsetInBytes));
+        }
     }
 
     [Fact]
@@ -631,7 +460,6 @@ public sealed class Utf8SearchPlanTests
     {
         using var regex = new Utf8Regex(@"(?:using var|await using var)[A-Z]{1,3}await", options);
         var input = "😀using varABCDawait / await using varABCawait using varZawait"u8;
-        Assert.True(regex.Inspection.SearchPlan.HasStructuralCandidates);
         Assert.Equal(2, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);

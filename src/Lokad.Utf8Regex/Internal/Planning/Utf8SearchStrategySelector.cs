@@ -6,7 +6,7 @@ internal static class Utf8SearchStrategySelector
     public static Utf8SearchOperationPlan Create(
         in Utf8SearchPlan plan, Utf8ConfirmationPlan confirmation)
     {
-        if (!plan.HasPreparedSearcher && !plan.HasStructuralCandidates)
+        if (!plan.HasPreparedSearcher)
         {
             return default;
         }

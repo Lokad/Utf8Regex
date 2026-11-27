@@ -320,11 +320,6 @@ if (args.Length >= 2 && args[0].Equals("--dump-dotnet-generated-regex-pattern", 
     return BenchmarkInspectReporter.RunDumpDotNetGeneratedRegexPattern(args[1], args.Length >= 3 ? args[2] : null);
 }
 
-if (args.Length >= 2 && args[0].Equals("--dump-structural-search-rebar-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunDumpStructuralSearchRebarCase(args[1]);
-}
-
 if (args.Length >= 1 && args[0].Equals("--engine-portfolio-report", StringComparison.Ordinal))
 {
     return EnginePortfolioReporter.Run();

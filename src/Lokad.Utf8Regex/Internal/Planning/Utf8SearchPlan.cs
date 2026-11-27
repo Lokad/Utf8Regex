@@ -18,7 +18,6 @@ internal readonly struct Utf8SearchPlan
         var requiredPrefilterAlternateLiteralsUtf8 = NullIfEmpty(facts.RequiredPrefilterAlternateLiteralsUtf8);
         var fixedDistanceSets = NullIfEmpty(facts.FixedDistanceSets);
         var trailingLiteralUtf8 = NullIfEmpty(facts.TrailingLiteralUtf8);
-        var fallbackStartTransform = facts.FallbackStartTransform;
         var distance = facts.Distance;
         var minRequiredLength = facts.MinRequiredLength;
         var exactRequiredLength = facts.ExactRequiredLength;
@@ -74,19 +73,12 @@ internal readonly struct Utf8SearchPlan
             AlignedClassDelimiterProgram = scalarProgram;
         FixedDistanceSets = fixedDistanceSets;
         TrailingLiteralUtf8 = trailingLiteralUtf8;
-        FallbackStartTransform = fallbackStartTransform;
         Distance = distance;
         MinRequiredLength = minRequiredLength;
         ExactRequiredLength = exactRequiredLength;
         MaxPossibleLength = maxPossibleLength;
         LeadingBoundary = leadingBoundary;
         TrailingBoundary = trailingBoundary;
-        HasStructuralCandidates = PreparedSearcher.HasValue
-            ? canGuideFallbackStarts || StructuralStartTransform.HasValue ||
-                kind is Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiLiteral or
-                    Utf8SearchKind.AsciiFoldedByteLiteral or Utf8SearchKind.ExactAsciiLiterals or
-                    Utf8SearchKind.AsciiFoldedByteLiterals or Utf8SearchKind.ExactUtf8Literals
-            : kind == Utf8SearchKind.FixedDistanceAsciiSets && fixedDistanceSets is { Length: > 0 };
     }
 
     public static Utf8SearchPlan Prepare(Utf8SearchFacts facts, Utf8SliceProgram? scalarProgram = null)
@@ -170,11 +162,6 @@ internal readonly struct Utf8SearchPlan
 
     public byte[]? TrailingLiteralUtf8 { get; }
 
-    public Utf8FallbackStartTransform FallbackStartTransform { get; }
-
-    public Utf8FallbackStartTransform StructuralStartTransform =>
-        Kind is Utf8SearchKind.FixedDistanceAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiChar
-            ? FallbackStartTransform.WithAdditionalOffset(Distance) : FallbackStartTransform;
 
     public int Distance { get; }
 
@@ -192,7 +179,6 @@ internal readonly struct Utf8SearchPlan
 
     public bool HasPreparedSearcher => PreparedSearcher.HasValue;
 
-    public bool HasStructuralCandidates { get; }
 
     public bool HasAlternateLiterals => AlternateLiteralsUtf8 is { Length: > 0 };
 
@@ -212,10 +198,6 @@ internal readonly struct Utf8SearchPlan
 
     private Utf8ConfirmationPlan CreateConfirmationPlan()
     {
-        if (!HasPreparedSearcher && HasStructuralCandidates)
-        {
-            return new Utf8ConfirmationPlan(Utf8ConfirmationKind.ScalarVerifier);
-        }
         if (HasBoundaryRequirements && HasTrailingLiteralRequirement)
         {
             return new Utf8ConfirmationPlan(Utf8ConfirmationKind.BoundaryAndTrailingLiteral);

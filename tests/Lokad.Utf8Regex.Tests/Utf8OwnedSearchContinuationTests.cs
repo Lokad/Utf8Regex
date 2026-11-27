@@ -51,7 +51,7 @@ public sealed class Utf8OwnedSearchContinuationTests
         facts.RequiredPrefilterLiteralUtf8, facts.RequiredPrefilterAlternateLiteralsUtf8,
         Sets = facts.FixedDistanceSets.Select(static set => new { set.Distance, Bytes = set.ByteSet.GetMatchBytes() }),
         facts.TrailingLiteralUtf8,
-        facts.FallbackStartTransform, facts.Distance, facts.MinRequiredLength, facts.ExactRequiredLength,
+        facts.Distance, facts.MinRequiredLength, facts.ExactRequiredLength,
         facts.MaxPossibleLength, facts.LeadingBoundary, facts.TrailingBoundary,
     });
 

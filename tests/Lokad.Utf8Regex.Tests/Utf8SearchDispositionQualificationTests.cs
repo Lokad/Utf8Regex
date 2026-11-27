@@ -34,7 +34,7 @@ public sealed class Utf8SearchDispositionQualificationTests
             using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
             {
                 var operation = plan.SearchOperation;
-                var native = plan.HasPreparedSearcher || plan.HasStructuralCandidates;
+                var native = plan.HasPreparedSearcher;
                 var confirm = plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement;
                 var expected = !native ? Utf8SearchOperationKind.None :
                     plan.HasRequiredPrefilter ? confirm ? Utf8SearchOperationKind.PrefilterThenConfirm : Utf8SearchOperationKind.PrefilterThenSearch :
@@ -59,7 +59,7 @@ public sealed class Utf8SearchDispositionQualificationTests
         foreach (var plan in new[] { empty, prepared })
         {
             Assert.False(plan.SearchOperation.HasValue); Assert.False(plan.ConfirmationPlan.HasValue);
-            Assert.False(plan.HasStructuralCandidates); Assert.False(plan.HasPreparedSearcher);
+            Assert.False(plan.HasPreparedSearcher);
         }
         Assert.Equal(0ul, zero.Budget.WorkSteps);
     }
